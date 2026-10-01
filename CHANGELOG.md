@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Settings links to the privacy policy.
+
 ## 1.0 (1 October 2026)
 
 The first release.

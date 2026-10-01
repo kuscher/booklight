@@ -73,4 +73,5 @@ The system needs the Action key in every shortcut. Action + Alt + Space and Acti
     <string name="set_glass_balanced">Balanced</string>
     <string name="set_glass_frosted">Frosted</string>
     <string name="set_glass_text">How much of your desktop shows through the panel. Clear shows the most; Frosted is the easiest to read over busy windows.</string>
+    <string name="set_privacy_policy">Privacy policy</string>
 </resources>

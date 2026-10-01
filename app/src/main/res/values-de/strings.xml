@@ -71,4 +71,5 @@ Das System verlangt in jedem Kürzel die Aktionstaste. Aktion + Alt + Leertaste 
     <string name="set_glass_balanced">Ausgewogen</string>
     <string name="set_glass_frosted">Milchig</string>
     <string name="set_glass_text">Wie viel von deinem Desktop durch das Fenster scheint. „Klar“ zeigt am meisten, „Milchig“ liest sich über unruhigen Fenstern am besten.</string>
+    <string name="set_privacy_policy">Datenschutzerklärung</string>
 </resources>

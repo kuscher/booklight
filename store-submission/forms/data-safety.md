@@ -57,3 +57,11 @@ background.
   suggestions feature. Optional (off unless the user turns it on); not used for advertising or
   analytics by Booklight; transferred over HTTPS; not stored by Booklight.
 - Data encrypted in transit: yes. Deletion request: nothing is held by the developer.
+
+**As filed in the Play Console (1 October 2026).** App activity › In-app search history is declared as
+both **collected** and **shared**. That is not a mistake: Play's form defines "collected" as data
+transmitted off the device "to you or a third party", so declaring sharing alone would under-declare, even
+though the developer receives nothing. Optional (users choose); not marked as processed ephemerally
+(Booklight can't vouch for what a search engine keeps); purpose App functionality for both; encrypted in
+transit; no account. The optional deletion-request question is left unanswered: the developer holds nothing.
+Don't "correct" the form to "not collected".

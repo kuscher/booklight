@@ -26,8 +26,14 @@ locale bug in the calculator, debug flags, file writes). All findings marked mus
 requires `android.hardware.type.pc`, so it is offered to Googlebooks only (PLAN.md §11.11). The privacy page is
 live at googlebook.studio/privacy/booklight.
 
+**In review.** The Play session sent 1.0 for review on closed testing on 1 October (listing, forms, data
+safety, content rating Everyone, testers googlebook-studio-testers, 178 countries). Tester link once approved:
+https://play.google.com/apps/testing/io.github.kuscher.booklight. Production is Alex's call and not part of it.
+
 **Next**
-1. The Play session uploads the listing, files the forms and sends 1.0 for review; it reports to Alex.
+1. The next version must carry the in-app privacy policy link (Play asks for it): it is on `main` in
+   Settings › What Booklight keeps, unreleased (CHANGELOG "Unreleased"). After the review: check with the Play
+   session that Play offers the app to the five Googlebooks only.
 2. **1.1 "Jot"** (PLAN.md §4): quick email (`mail …` → Gmail compose filled in), quick note, calendar
    event, timer, new file and folder. Alex asked for quick email and notes by name. Needs a spec and plan
    first; `docs/research/use-cases.md` has the intents and what to verify on the HP.

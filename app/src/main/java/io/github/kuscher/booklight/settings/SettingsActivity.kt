@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.BuildConfig
 import io.github.kuscher.booklight.R
+import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Engines
 import io.github.kuscher.booklight.data.SiteEntry
 import io.github.kuscher.booklight.ui.BooklightTheme
@@ -111,6 +112,10 @@ class SettingsActivity : ComponentActivity() {
                                 OutlinedButton(onClick = { app.historyStore.clear(); cleared = true }, enabled = !cleared) {
                                     Text(stringResource(if (cleared) R.string.set_forgotten else R.string.set_forget))
                                 }
+                                // Play asks for the policy to be reachable from inside the app.
+                                TextButton(onClick = { app.executor.run(Effect.OpenUrl(PRIVACY_URL), this@SettingsActivity) }) {
+                                    Text(stringResource(R.string.set_privacy_policy))
+                                }
                             }
 
                             Column(Modifier.padding(horizontal = 8.dp)) {
@@ -124,6 +129,8 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 }
+
+private const val PRIVACY_URL = "https://googlebook.studio/privacy/booklight"
 
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
