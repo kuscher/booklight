@@ -4,23 +4,32 @@ WHAT IT FINDS
 - Apps. Type the start of a name, the start of any word in it, or its initials. A few loose letters are enough.
 - Settings pages, by name or by what they are for: "dark", "pair", "printer".
 - Sums. 150 + 20%, 12 * 3.5, sqrt(2). Enter copies the answer.
-- The web. A typed address opens in your browser, and anything you type can be searched for. A keyword in front searches one site directly.
+- The web. A typed address opens in your browser, and anything you type can be searched for. A keyword and a space search one site: yt lofi.
+
+WHAT IT DOES
+- A row shows everything it can do as a row of icons. Tab moves along them: open in a new window, in the left or right half, app info, uninstall. "chrome uninstall" arms Uninstall straight away.
+- Jot things down in one line: mail anna@example.com Lunch? / See you at 1 opens your mail app's compose window, filled in. note, event, remind, timer, alarm and new file work the same way, each with a preview of what was understood.
+- Small controls: vol and brightness change with the arrow keys, pause and next reach your music.
+- Things to copy: an emoji grid, symbols, colour values, QR codes, passwords.
+- A question or a longer text opens in the Gemini app, typed in for you. You send it there.
+- Your own commands: links with placeholders, snippets, and recipes that do several things at once.
 
 IT LEARNS YOUR SHORTHAND
 What you pick for the text you typed comes first the next time you type it. One letter can mean one app for you and another for someone else.
 
 MADE FOR THE KEYBOARD
-Up and Down move through the rows. Enter runs the selected row. Tab shows what else a row can do. Ctrl with a number runs that row. Esc, a click outside, or your shortcut again closes the panel.
+Up and Down move through the rows. Enter runs the selected row. Tab moves along what a row can do. Ctrl with a number runs that row. Esc, a click outside, or your shortcut again closes the panel.
 
 YOUR SHORTCUT
-Booklight opens whenever you start it, so a keyboard shortcut for the app is all it needs. In Keyboard shortcuts, choose App shortcuts, then Add shortcut, pick Booklight and press your keys. The first time you open Booklight it shows you where.
+Booklight opens when its keyboard shortcut is pressed. In Keyboard shortcuts, choose App shortcuts, then Add shortcut, pick Booklight and press your keys. The app's icon opens a window that shows you where, and holds every setting.
 
 HOW IT LOOKS
-One panel in the upper middle of the screen, in the colors of your wallpaper, light or dark with the system. The selection glides from row to row and lists arrive in a quick cascade. If your system has animations turned off, Booklight cuts instead.
+One panel in the upper middle of the screen, in the colours of your wallpaper or its own, light or dark. It unfolds when it opens, the selection glides from row to row, lists arrive in a quick cascade, and nothing pops. You choose how see-through it is and how fast it opens. If your system has animations turned off, Booklight cuts instead.
 
 PRIVACY
-No account, no ads, no analytics. What Booklight learns is kept on your device, and you can clear it in settings.
-Search suggestions are off until you turn them on. If you do, the text you type is sent to the search engine you chose (Google, DuckDuckGo, Bing, Brave Search or Ecosia) to suggest searches. Sums and web addresses are not sent. You can turn suggestions off again at any time.
-Booklight has no accessibility service and asks for no permission prompts.
+No account, no ads, no analytics. What Booklight learns is kept on your device, and you can clear it.
+Search suggestions are off until you turn them on. If you do, the text you type is sent to the search engine you chose (Google, DuckDuckGo, Bing, Brave Search or Ecosia) to suggest searches. Sums, web addresses and anything typed after a keyword are not sent. You can turn suggestions off again at any time.
+A mail, an event, a timer or a question for Gemini is handed to the app that opens; Booklight sends nothing itself.
+Booklight has no accessibility service and shows no permission prompts. Uninstalling an app is confirmed by Android; brightness works only after you switch it on in Settings.
 
 Booklight is a personal hobby project by Alexander Kuscher. It is not affiliated with or endorsed by Google.
