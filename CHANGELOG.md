@@ -46,6 +46,8 @@ device's own model. Spec: `docs/superpowers/specs/2026-10-01-booklight-2.0-desig
 - A column of sections and one page. "No key yet" until a key has opened the panel.
 - A shadow around the panel: off, low, medium (the default), high. Never under the glass.
 - The closing draws in to the field's centre line; the footer rides the window's lower edge.
+- Two old flaws gone: a list that is emptied fades (it was cut in one frame), and a panel that shrinks no
+  longer shows a strip of blur without glass under it.
 
 **Under the hood**
 - `com.google.mlkit:genai-prompt` 1.0.0-beta4, as shipped: two install-time permissions and Google's usage

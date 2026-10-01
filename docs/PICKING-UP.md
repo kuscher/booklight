@@ -8,7 +8,19 @@
 (spec §1 and §2): other apps' commands as rows; a pinned window; the system's shortcuts as answers; more
 places, nine icons and a list under the row; `?`; notes that grow; prompts; `s` and `k`; tips; a window with
 a column of sections and a list of commands; a shadow around the panel; answers from the device's own model.
-203 core tests; release build and lint pass; the release build opens in about 110 ms on the Lenovo.
+204 core tests; release build and lint pass; the release build opens in about 110 ms on the Lenovo.
+
+**Reviewed, as built.** Four independent reviews of the built app: interaction, visual, motion (from frame
+sheets recorded on the Lenovo at 120 fps) and code. Every must-fix is in, and the should-fixes but the ones
+listed under "Not done". What the motion review changed: the answer is laid out once and uncovered in draw;
+typing over an opened list brings the new rows at once; the window's Commands page is composed eight rows a
+frame; the pin is never see-through from our side; one turning arrow; rows return as a closing list's edge
+passes them. Two flaws older than 2.0 were found on the way and fixed: a shrinking panel left a strip of blur
+with no glass under it for a frame (the glass is now sized from the window as it stands, `Panel`'s
+`windowPx`), and an emptied list was cut in one frame instead of fading (`ResultsBody`'s `tall`).
+**Measured on the release build** (Lenovo, `dumpsys gfxinfo`, keys typed into the panel): about 1 % of
+frames late in the panel (3 of 320), under 1 % over twelve changes of section in the window, median 6 ms.
+The debug build is three to five times slower in Compose: judge pacing on the release build only.
 
 **What the devices decided** (all in `research/device-findings.md`):
 - **The pin is a picture-in-picture window.** A window in Android 17's pinned layer takes the keyboard when it
@@ -42,6 +54,11 @@ store's release notes are in `store-submission/listing/*/release-notes.txt`.
   "fix this" became Fix + "his"). `./bl debug keys` (40 ms a letter) never loses one. Worth a look in `Panel`'s
   `onChange` if a fast typist reports it.
 - The calculator still has no decimal comma (the German examples use a point).
+- From the motion review, left: when a row's list opens, its first action is drawn over the row that is
+  fading under it for about 50 ms, and the pill's lower edge is ahead of the uncovering edge for as long
+  (the fix is rows riding the edge; it wants its own recording session). A strip whose actions change (an
+  answer lands: Ask becomes Copy, Pin) is exchanged in a fade, not slot by slot. Kind labels blink along a
+  held Down; app icons cut in.
 - TalkBack was not run.
 - Not built: the Gmail relay (Alex: not yet); extensions that answer while you type; "say it plainly" through
   the model (proposed for the release after).
