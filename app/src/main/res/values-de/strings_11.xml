@@ -175,8 +175,6 @@
     <string name="win_commands_title">Deine Befehle</string>
     <string name="win_commands_text">Links, die du mit einem Stichwort erreichst, Textstücke, die du oft einfügst, und Rezepte, die mehreres auf einmal tun.</string>
     <string name="win_links">Links</string>
-    <string name="win_link_takes">nimmt Text</string>
-    <string name="win_link_plain">öffnet</string>
     <string name="win_link_add">Link hinzufügen …</string>
     <string name="win_link_address">Adresse</string>
     <string name="win_link_help">{argument} ist, was du nach dem Stichwort tippst, {clipboard} das Kopierte, {date} das heutige Datum. Ohne {argument} öffnet sich der Link einfach.</string>

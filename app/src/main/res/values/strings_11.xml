@@ -175,8 +175,6 @@
     <string name="win_commands_title">Your commands</string>
     <string name="win_commands_text">Links you reach by a keyword, pieces of text you paste often, and recipes that do several things at once.</string>
     <string name="win_links">Links</string>
-    <string name="win_link_takes">takes text</string>
-    <string name="win_link_plain">opens</string>
     <string name="win_link_add">Add a link…</string>
     <string name="win_link_address">Address</string>
     <string name="win_link_help">{argument} is what you type after the keyword, {clipboard} what you copied, {date} today. Without {argument} the link just opens.</string>

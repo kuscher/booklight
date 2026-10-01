@@ -82,8 +82,8 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
         Label(stringResource(R.string.win_links))
         for (link in s.sites) {
             val takes = Templates.takesArgument(link.url)
-            PageRow(page, "quicklink:${link.keyword}", link.name, link.url, mark = { Cap(link.keyword, it) }, onEnter = { open = "quicklink" to link.keyword }) {
-                Text(stringResource(if (takes) R.string.win_link_takes else R.string.win_link_plain), color = it.copy(alpha = it.alpha * SECOND), style = SMALL)
+            PageRow(page, "quicklink:${link.keyword}", link.name, link.url, mark = { Icon(Symbols.of(if (takes) "search" else "link"), null, tint = it) }, onEnter = { open = "quicklink" to link.keyword }) {
+                Cap(link.keyword, it)
             }
             Editor(open == ("quicklink" to link.keyword)) {
                 LinkEditor(link, s.sites.map { it.keyword.lowercase() }.toSet(), onTyping,
@@ -98,7 +98,7 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
 
         Label(stringResource(R.string.snip_name))
         for (snip in s.snippets) {
-            PageRow(page, "snippet:${snip.key}", snip.key, snip.text.lineSequence().first(), mark = { Cap(snip.key.take(1).uppercase(), it) }, onEnter = { open = "snippet" to snip.key })
+            PageRow(page, "snippet:${snip.key}", snip.key, snip.text.lineSequence().first(), mark = { Icon(Symbols.of("text"), null, tint = it) }, onEnter = { open = "snippet" to snip.key })
             Editor(open == ("snippet" to snip.key)) {
                 SnippetEditor(snip, s.snippets.map { it.key.lowercase() }.toSet(), onTyping,
                     onSave = { new -> set { st -> st.copy(snippets = st.snippets.map { if (it.key == snip.key) new else it }) }; close() },
