@@ -19,7 +19,8 @@ import java.net.URL
 /**
  * Search suggestions from the chosen search engine: the one thing in Booklight that uses the
  * network, and only once the user has turned it on. The typed text goes to the engine's
- * suggestion address over HTTPS; nothing else is sent (no cookies, no identifiers), nothing is kept
+ * suggestion address over HTTPS; nothing else is sent (no cookies, no identifiers, a plain
+ * "Booklight" user agent), nothing is kept
  * beyond a small in-memory cache. Slow or failing requests are simply no suggestions.
  */
 class SuggestProvider(private val context: Context, private val prefs: Prefs) {
@@ -49,6 +50,8 @@ class SuggestProvider(private val context: Context, private val prefs: Prefs) {
             c.readTimeout = 1500
             c.instanceFollowRedirects = false
             c.setRequestProperty("Accept", "application/json")
+            // Not Android's default, which names the device model and build.
+            c.setRequestProperty("User-Agent", "Booklight")
             if (c.responseCode != 200) return emptyList()
             val charset = Regex("charset=([\\w-]+)").find(c.contentType.orEmpty())?.groupValues?.get(1) ?: "UTF-8"
             val body = c.inputStream.use { it.readNBytes(64 * 1024) }.toString(runCatching { charset(charset) }.getOrDefault(Charsets.UTF_8))

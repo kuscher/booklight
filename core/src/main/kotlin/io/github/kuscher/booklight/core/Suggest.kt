@@ -34,11 +34,28 @@ object Suggest {
         emptyList()
     }
 
-    /** When to ask at all: a couple of letters at least, and not something Booklight answers itself. */
+    /**
+     * When to ask the search engine at all. The promise to the user is that sums and addresses
+     * are never sent, and that has to hold while they are still being typed: "1500*" is not a sum
+     * yet and "192.168.1.1" or "me@" is no address [Web.url] knows, but none of them may leave the
+     * device. So only text that reads as words is sent: it has letters, no address marks, and no
+     * digit next to a sign of arithmetic.
+     */
     fun worthAsking(text: String): Boolean {
         val t = text.trim()
-        return t.length in 2..80 && Calc.answer(t) == null && Web.url(t) == null
+        if (t.length !in 2..80 || t.none { it.isLetter() }) return false
+        if (t.startsWith("=") || "://" in t || '@' in t) return false
+        if (Calc.answer(t) != null || Web.url(t) != null) return false
+        // An address or a sum in the making: "localhost:3000", "10.0.0.5:8080/admin", "12 * 3.", "sqrt(", "2 p", "10 mod".
+        if (t.none { it.isWhitespace() } && ('.' in t || ':' in t || '/' in t) && t.any { it.isDigit() }) return false
+        if (t.any { it in MATHS }) {
+            if (t.any { it.isDigit() } || t.endsWith("(")) return false
+        }
+        if (t.first().isDigit() && t.count { it.isLetter() } <= 3 && !t.contains(Regex("[A-Za-z]{4,}"))) return false
+        return true
     }
+
+    private const val MATHS = "+-*/^%×÷=()!"
 
     private class Reader(private val s: String) {
         private var i = 0

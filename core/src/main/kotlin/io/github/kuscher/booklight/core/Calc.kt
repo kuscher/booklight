@@ -27,7 +27,7 @@ object Calc {
         if (v == 0.0) return "0"
         val a = abs(v)
         if (a >= 1e15 || a < 1e-9) {
-            val s = String.format("%.6e", v)
+            val s = String.format(java.util.Locale.ROOT, "%.6e", v)
             val (m, e) = s.split('e')
             return m.trimEnd('0').trimEnd('.') + "e" + e.toInt()
         }
@@ -92,31 +92,32 @@ object Calc {
         }
 
         private fun product(): Double {
-            var v = power()
+            var v = unary()
             while (true) {
                 ws()
                 when {
-                    eat('*') || eat('×') || eat('·') -> { v *= power(); worked = true }
-                    eat('/') || eat('÷') -> { v /= power(); worked = true }
-                    word("of") -> { v *= power(); worked = true }            // 20% of 150
-                    word("mod") -> { val d = power(); v -= d * floor(v / d); worked = true }
+                    eat('*') || eat('×') || eat('·') -> { v *= unary(); worked = true }
+                    eat('/') || eat('÷') -> { v /= unary(); worked = true }
+                    word("of") -> { v *= unary(); worked = true }            // 20% of 150
+                    word("mod") -> { val d = unary(); v -= d * floor(v / d); worked = true }
                     // "2 pi", "3(4+1)": a value right after a value multiplies.
-                    i < s.length && (s[i] == '(' || s[i].isLetter()) -> { v *= power(); worked = true }
+                    i < s.length && (s[i] == '(' || s[i].isLetter()) -> { v *= unary(); worked = true }
                     else -> return v
                 }
             }
         }
 
-        private fun power(): Double {
-            val base = unary()
-            if (eat('^')) { worked = true; return Math.pow(base, power()) }
-            return base
-        }
-
+        // A minus in front applies to the whole power: -2^2 is -(2^2), and 2^-2 still works.
         private fun unary(): Double {
             if (eat('-') || eat('−')) return -unary()
             if (eat('+')) return unary()
-            return postfix()
+            return power()
+        }
+
+        private fun power(): Double {
+            val base = postfix()
+            if (eat('^')) { worked = true; return Math.pow(base, unary()) }
+            return base
         }
 
         private fun postfix(): Double {
@@ -175,6 +176,6 @@ object Calc {
         "sin" to Math::sin, "cos" to Math::cos, "tan" to Math::tan,
         "asin" to Math::asin, "acos" to Math::acos, "atan" to Math::atan,
         "ln" to Math::log, "log" to Math::log10, "exp" to Math::exp,
-        "round" to { x -> Math.rint(x) }, "floor" to Math::floor, "ceil" to Math::ceil,
+        "round" to { x -> floor(x + 0.5) }, "floor" to Math::floor, "ceil" to Math::ceil,
     )
 }

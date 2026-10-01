@@ -43,6 +43,9 @@ class OverlayModel(private val app: BooklightApp, private val scope: CoroutineSc
     var settings by mutableStateOf(app.prefs.now); private set
 
     private var job: Job? = null
+    /** The text [results] was made for: for a moment after a keystroke it is still the old list. */
+    private var resultsFor = ""
+    private var whenReady: ((Result, Action) -> Unit)? = null
 
     init {
         scope.launch { app.prefs.state.collect { settings = it } }
@@ -79,12 +82,15 @@ class OverlayModel(private val app: BooklightApp, private val scope: CoroutineSc
 
     private fun search(text: String) {
         job?.cancel()
-        if (text.isBlank()) { results = emptyList(); selected = 0; return }
+        if (text.isBlank()) { results = emptyList(); selected = 0; resultsFor = text; whenReady = null; return }
         job = scope.launch(Dispatchers.Default) {
             val t0 = System.nanoTime()
             val local = app.engine.search(Query(text), limit)
             val took = (System.nanoTime() - t0) / 1000
-            withContext(Dispatchers.Main.immediate) { results = local; selected = 0; lastSearchMicros = took }
+            withContext(Dispatchers.Main.immediate) {
+                results = local; selected = 0; lastSearchMicros = took; resultsFor = text
+                whenReady?.let { run -> whenReady = null; chosen()?.let { run(it.first, it.second) } }
+            }
             // Suggestions come from the network: after a pause in typing, never holding up the
             // list, and dropped if the text has moved on (this job is cancelled by then).
             if (!settings.suggestions) return@launch
@@ -121,6 +127,15 @@ class OverlayModel(private val app: BooklightApp, private val scope: CoroutineSc
         actionsOf?.let { r -> return r.actions.getOrNull(actionIndex)?.let { r to it } }
         val r = current ?: return null
         return r.actions.firstOrNull()?.let { r to it }
+    }
+
+    /**
+     * Enter. Typing is faster than the list: if Enter arrives before the rows for the current text
+     * have, the first of those rows runs when they land, never a row of the previous text.
+     */
+    fun enter(run: (Result, Action) -> Unit) {
+        if (actionsOf != null || resultsFor == query) chosen()?.let { run(it.first, it.second) }
+        else whenReady = run
     }
 
     /** Remember the pick, so the same text finds it first next time. */

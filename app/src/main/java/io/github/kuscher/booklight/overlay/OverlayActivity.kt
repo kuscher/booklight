@@ -43,7 +43,7 @@ class OverlayActivity : ComponentActivity() {
     lateinit var model: OverlayModel private set
     private var glass by mutableStateOf(false)
     private var leaving by mutableStateOf(false)
-    /** Debug: stay open when focus goes elsewhere (`./bl open stay`). */
+    /** Debug builds only: stay open when focus goes elsewhere (`./bl open stay`). */
     private var stay = false
     private val created = SystemClock.uptimeMillis()
     private val blurListener = Consumer<Boolean> { on -> glass = on }
@@ -60,7 +60,7 @@ class OverlayActivity : ComponentActivity() {
         motion = Motion.of(this)
         val screen = windowManager.maximumWindowMetrics.bounds
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screen.height() / resources.displayMetrics.density))
-        stay = intent.getBooleanExtra(EXTRA_STAY, false)
+        stay = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)
         Look.use(GlassLevel.of(app.prefs.now.glass))
         if (BuildConfig.DEBUG) {   // try other glass values from adb: ./bl open stay tint=0.2 blur=24 dim=0.1
             if (intent.hasExtra("tint")) intent.getFloatExtra("tint", 0f).let { Look.tintLight = it; Look.tintDark = it }
@@ -140,7 +140,7 @@ class OverlayActivity : ComponentActivity() {
     /** The shortcut again while the panel is open: put it away. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.getBooleanExtra(EXTRA_STAY, false)) { stay = true; return }
+        if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)) { stay = true; return }
         close()
     }
 
@@ -159,8 +159,13 @@ class OverlayActivity : ComponentActivity() {
     }
 
     fun run(r: Result, a: Action) {
+        if (leaving) return   // a second Enter or click while the panel is on its way out
         val app = application as BooklightApp
-        if (!app.executor.run(a.effect, this)) { model.flash = getString(R.string.failed); return }
+        if (!app.executor.run(a.effect, this)) {
+            model.flash = getString(R.string.failed)
+            lifecycleScope.launch { delay(1600); model.flash = null }
+            return
+        }
         model.learn(r)
         when {
             a.effect is Effect.CopyText -> {
@@ -173,6 +178,7 @@ class OverlayActivity : ComponentActivity() {
 
     /** A button on the first-run card. Either way the step is done and doesn't come back. */
     private fun card(card: Card, primary: Boolean) {
+        if (leaving) return
         when (card) {
             Card.SHORTCUT -> {
                 model.change { it.copy(shortcutCard = false) }

@@ -28,4 +28,19 @@ class SuggestTest {
         assertFalse(Suggest.worthAsking("github.com/kuscher"))
         assertFalse(Suggest.worthAsking("x".repeat(100)))
     }
+
+    @Test fun neverAsksForSumsBeingTypedAddressesOrAnythingWithoutWords() {
+        // A sum is not yet a sum while it is being typed, and must still stay on the device.
+        for (t in listOf("1500*", "(4+5", "sqrt(", "=12+", "2 p", "12 * 3.", "150 + 20%", "3^", "5!", "10 mod"))
+            assertFalse("sent: $t", Suggest.worthAsking(t))
+        // Addresses of every kind, complete or not.
+        for (t in listOf("192.168.1.1", "10.0.0.5:8080/admin", "alex@gmail.com", "https://exa", "http://", "localhost:3000", "github.com/kuscher", "me@"))
+            assertFalse("sent: $t", Suggest.worthAsking(t))
+        // No letters: nothing to suggest for.
+        for (t in listOf("42", "2026-10-01", "+49 30 1234", "...", "  "))
+            assertFalse("sent: $t", Suggest.worthAsking(t))
+        // Ordinary words, digits included, are fine.
+        for (t in listOf("weather berlin", "iphone 17 review", "c++ tutorial", "top 10 films", "3d printer"))
+            assertTrue("not sent: $t", Suggest.worthAsking(t))
+    }
 }

@@ -22,9 +22,12 @@ to the chosen search engine to get suggested searches.
   Turn them on and what you type is sent to Google to suggest searches. Sums and web addresses are not
   sent." with **Turn on** / **Not now**), or Settings › Web search › Search suggestions. Turned off in
   the same setting at any time.
-- When on: after a 140 ms pause in typing, if the text is 2 to 80 characters and is not a sum, not a web
-  address and not a keyword search, Booklight makes one HTTPS GET request with the typed text as a query
-  parameter to the chosen engine's suggestion address:
+- When on: after a 140 ms pause in typing, if the text is 2 to 80 characters and reads as words, Booklight
+  makes one HTTPS GET request with the typed text as a query parameter to the chosen engine's suggestion
+  address. Never sent, also while still being typed: sums (anything with a digit next to a sign of
+  arithmetic, or starting with =), web and email addresses (anything with `://`, `@`, or digits with dots,
+  colons or slashes), text without letters, and keyword searches (`yt lofi`). The rule is
+  `Suggest.worthAsking` in the core, with tests.
 
   | Engine | Address |
   | --- | --- |
@@ -34,8 +37,8 @@ to the chosen search engine to get suggested searches.
   | Brave Search | `https://search.brave.com/api/suggest?q=<text>` |
   | Ecosia | `https://ac.ecosia.org/autocomplete?type=list&q=<text>` |
 
-- The request carries the typed text, an `Accept: application/json` header and Android's default
-  `User-Agent`. No cookies, no account, no advertising ID, no device identifier, no location. Like any
+- The request carries the typed text, an `Accept: application/json` header and the user agent
+  `Booklight` (not Android's default, which names the device model). No cookies, no account, no advertising ID, no device identifier, no location. Like any
   internet request it reveals the device's IP address to that search engine.
 - The reply (a list of suggested searches) is shown as rows and kept in memory for the session
   (64 entries at most). It is not written to storage.

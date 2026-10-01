@@ -57,4 +57,25 @@ class CalcTest {
     @Test fun leadingEqualsIsAllowed() {
         assertEquals("4", a("=2+2"))
     }
+
+    @Test fun minusBindsLooserThanPower() {
+        assertEquals("-4", a("-2^2"))
+        assertEquals("0.25", a("2^-2"))
+        assertEquals("5", a("3 - -2"))
+    }
+
+    @Test fun roundRoundsHalfUp() {
+        assertEquals("3", a("round(2.5)"))
+        assertEquals("-2", a("round(-2.4)"))
+    }
+
+    @Test fun theSameTextInEveryLanguage() {
+        val before = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.GERMANY)
+            assertEquals("2.5e20", a("2.5 * 10^20"))
+            assertEquals("1e20", a("10^20"))
+            assertEquals("12,345.5", a("12345 + 0.5"))
+        } finally { java.util.Locale.setDefault(before) }
+    }
 }

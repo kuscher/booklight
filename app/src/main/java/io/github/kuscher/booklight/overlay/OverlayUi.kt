@@ -206,7 +206,7 @@ fun Panel(
             Key.DirectionDown -> { model.move(1); true }
             Key.DirectionUp -> { model.move(-1); true }
             Key.Enter, Key.NumPadEnter -> {
-                if (card != null) onCard(card, cardChoice == 0) else model.chosen()?.let { onRun(it.first, it.second) }
+                if (card != null) onCard(card, cardChoice == 0) else model.enter(onRun)
                 true
             }
             Key.Tab -> {
@@ -403,7 +403,7 @@ private fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Ac
                 SlotRow(slot.top, slot.leaving, slot.delay, onGone = { slots.remove(slot) }) {
                     ResultRow(slot.result, icons, selected, hint = slot.result.actions.firstOrNull()?.label,
                         onHover = { if (!slot.leaving) model.select(slot.index) },
-                        onClick = { slot.result.actions.firstOrNull()?.let { onRun(slot.result, it) } })
+                        onClick = { if (!slot.leaving) slot.result.actions.firstOrNull()?.let { onRun(slot.result, it) } })
                 }
             }
         }

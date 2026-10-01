@@ -56,7 +56,8 @@ The system needs the Action key in every shortcut. Action + Alt + Space and Acti
     <string name="set_site_name">Name</string>
     <string name="set_site_url">Address, with %s where the text goes</string>
     <string name="set_site_save">Add</string>
-    <string name="set_site_remove">Remove %1$s</string>
+    <string name="set_site_remove">Remove</string>
+    <string name="set_site_remove_named">Remove %1$s</string>
     <string name="set_results_title">Results</string>
     <string name="set_show_settings">Settings pages</string>
     <string name="set_show_sums">Sums</string>

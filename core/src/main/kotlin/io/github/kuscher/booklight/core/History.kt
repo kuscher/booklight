@@ -14,7 +14,7 @@ import kotlin.math.min
  *  - **Frecency**: things you open often and recently get a smaller lift for every query.
  *    Counts decay with a four-week half-life, so old habits fade.
  *
- * Not thread-safe: the engine owns it and calls it from one place at a time.
+ * Safe to call from any thread: searches read it off the main thread while a pick is recorded on it.
  */
 class History(data: Data = Data()) {
     /** Plain data for saving; the app writes it as JSON. Times are epoch milliseconds. */
@@ -28,8 +28,10 @@ class History(data: Data = Data()) {
     private val items = HashMap(data.items)
     private val latches = HashMap<String, HashMap<String, Entry>>().apply { for ((k, v) in data.latches) put(k, HashMap(v)) }
 
+    @Synchronized
     fun data(): Data = Data(HashMap(items), latches.mapValues { HashMap(it.value) })
 
+    @Synchronized
     fun record(query: String, id: String, now: Long) {
         items[id] = bump(items[id], now)
         val q = Matcher.fold(query)
@@ -40,25 +42,30 @@ class History(data: Data = Data()) {
     }
 
     /** What to add to a result's match score for this query, 0..[LATCH_MAX] + [FRECENCY_MAX]. */
+    @Synchronized
     fun boost(query: String, id: String, now: Long): Double {
         val latch = latches[Matcher.fold(query)]?.get(id)?.let { decayed(it, now) } ?: 0.0
         return LATCH_MAX * saturate(latch, 2.0) + FRECENCY_MAX * saturate(weight(id, now), 6.0)
     }
 
     /** How much an item is used, decayed to now: for ordering the empty-query suggestions. */
+    @Synchronized
     fun weight(id: String, now: Long): Double = items[id]?.let { decayed(it, now) } ?: 0.0
 
     /** The most-used ids, best first. */
+    @Synchronized
     fun top(n: Int, now: Long): List<String> =
         items.entries.map { it.key to decayed(it.value, now) }.filter { it.second > 0.05 }
             .sortedByDescending { it.second }.take(n).map { it.first }
 
+    @Synchronized
     fun forget(id: String) {
         items.remove(id)
         for (m in latches.values) m.remove(id)
         latches.values.removeAll { it.isEmpty() }
     }
 
+    @Synchronized
     fun clear() { items.clear(); latches.clear() }
 
     private fun bump(e: Entry?, now: Long) = Entry((e?.let { decayed(it, now) } ?: 0.0) + 1.0, now)

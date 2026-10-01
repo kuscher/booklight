@@ -54,7 +54,8 @@ Das System verlangt in jedem Kürzel die Aktionstaste. Aktion + Alt + Leertaste 
     <string name="set_site_name">Name</string>
     <string name="set_site_url">Adresse, mit %s an der Stelle des Suchtexts</string>
     <string name="set_site_save">Hinzufügen</string>
-    <string name="set_site_remove">%1$s entfernen</string>
+    <string name="set_site_remove">Entfernen</string>
+    <string name="set_site_remove_named">%1$s entfernen</string>
     <string name="set_results_title">Ergebnisse</string>
     <string name="set_show_settings">Einstellungsseiten</string>
     <string name="set_show_sums">Rechnungen</string>

@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -183,7 +184,8 @@ private fun SiteRow(site: SiteEntry, onRemove: () -> Unit) {
             Text(site.name, style = MaterialTheme.typography.bodyLarge)
             Text(site.url, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1)
         }
-        TextButton(onClick = onRemove) { Text(stringResource(R.string.set_site_remove, "")) }
+        val what = stringResource(R.string.set_site_remove_named, site.name)
+        TextButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = what }) { Text(stringResource(R.string.set_site_remove)) }
     }
 }
 

@@ -9,6 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -24,6 +26,7 @@ class HistoryStore(context: Context, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "history.json")
     private val json = Json { ignoreUnknownKeys = true }
     private var pending: Job? = null
+    private val writing = Mutex()
 
     val history: History = load()
 
@@ -47,9 +50,14 @@ class HistoryStore(context: Context, private val scope: CoroutineScope) {
             delay(500)
             val d = history.data()
             val s = Saved(1, d.items.mapValues { E(it.value.count, it.value.last) }, d.latches.mapValues { m -> m.value.mapValues { E(it.value.count, it.value.last) } })
-            val tmp = File(file.parentFile, file.name + ".tmp")
-            tmp.writeText(json.encodeToString(Saved.serializer(), s))
-            tmp.renameTo(file)
+            // One write at a time, and a full disk loses this save, not the app.
+            writing.withLock {
+                runCatching {
+                    val tmp = File(file.parentFile, file.name + ".tmp")
+                    tmp.writeText(json.encodeToString(Saved.serializer(), s))
+                    tmp.renameTo(file)
+                }.onFailure { Log.w(BooklightApp.TAG, "history not saved", it) }
+            }
         }
     }
 

@@ -17,6 +17,8 @@ import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 
 /**
@@ -47,8 +49,11 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
         }, Handler(Looper.getMainLooper()))
     }
 
+    private var loading: Job? = null
+
     fun reload() {
-        scope.launch(Dispatchers.IO) {
+        loading?.cancel()   // only the newest read of the app list may set the index
+        loading = scope.launch(Dispatchers.IO) {
             val t0 = System.nanoTime()
             val own = context.packageName
             val out = ArrayList<App>()
@@ -59,6 +64,7 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
                     out.add(App(a.label.toString(), a.componentName.packageName, a.componentName.className, serial))
                 }
             }
+            ensureActive()
             index = out.sortedBy { it.label.lowercase() }
             loadedMs = (System.nanoTime() - t0) / 1_000_000
         }

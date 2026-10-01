@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -44,6 +46,7 @@ data class Settings(
 class Prefs(context: Context, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "settings.json")
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val writing = Mutex()
     private val _state = MutableStateFlow(load())
     val state: StateFlow<Settings> = _state
     val now: Settings get() = _state.value
@@ -57,11 +60,15 @@ class Prefs(context: Context, private val scope: CoroutineScope) {
 
     fun update(change: (Settings) -> Settings) {
         _state.update(change)
-        val s = _state.value
         scope.launch(Dispatchers.IO) {
-            val tmp = File(file.parentFile, file.name + ".tmp")
-            tmp.writeText(json.encodeToString(Settings.serializer(), s))
-            tmp.renameTo(file)
+            // One write at a time; each writes the newest state, so the last one to run leaves the newest file.
+            writing.withLock {
+                runCatching {
+                    val tmp = File(file.parentFile, file.name + ".tmp")
+                    tmp.writeText(json.encodeToString(Settings.serializer(), _state.value))
+                    tmp.renameTo(file)
+                }.onFailure { Log.w(BooklightApp.TAG, "settings not saved", it) }
+            }
         }
     }
 }
