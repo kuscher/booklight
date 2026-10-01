@@ -35,7 +35,7 @@ class Motion(val on: Boolean) {
 
     companion object {
         fun of(context: Context) = Motion(Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f)
-        /** How long the panel takes to leave, for the activity to wait before finishing. */
+        /** How long the panel takes to fade away when the opening is turned off (the unfold has its own time: [Arrival.leaveMs]). */
         const val LEAVE_MS = 110L
     }
 }

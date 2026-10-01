@@ -3,6 +3,7 @@ package io.github.kuscher.booklight.overlay
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -80,9 +81,19 @@ import kotlin.math.roundToInt
 
 /** How the panel arrives. [slow] stretches every time in it: 1 = as designed, 2 and 4 for people who want to watch it. */
 data class Arrival(val unfold: Boolean, val slow: Float) {
+    /** How long the panel takes to leave, for the activity to wait before finishing. Folding is unfolding backwards, and takes as long. */
+    val leaveMs: Long get() = if (unfold) ((FOLD_MS + WAIT_MS) * slow).toLong() + 20 else Motion.LEAVE_MS
+
     companion object {
         /** From the setting: `off` is 1.0's small settle and fade; `fast`, `medium` and `slow` unfold. */
         fun of(setting: String, motion: Motion) = Arrival(motion.on && setting != "off", when (setting) { "medium" -> 2f; "slow" -> 4f; else -> 1f })
+
+        /** The unfold's times before [slow]: the seam grows for [SEAM_MS]; the glass starts to open [WAIT_MS] in and first reaches its width [FOLD_MS] later. */
+        const val SEAM_MS = 80
+        const val WAIT_MS = 50
+        const val FOLD_MS = 105
+        /** The last of the seam fades as it goes, so nothing is switched off. */
+        const val GONE_MS = 40
     }
 }
 
@@ -92,6 +103,11 @@ private fun smooth(a: Float, b: Float, x: Float): Float { val t = ((x - a) / (b 
 
 /** The seam the glass opens out of, as a width. */
 private val SEAM = 6.dp
+private val SEAM_GROWS = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+/** [SEAM_GROWS] run backwards. */
+private val SEAM_DRAWS_IN = CubicBezierEasing(1f, 0f, 0.8f, 1f)
+/** The glass closing: the opening spring's way from the seam to full width, backwards (it lands softly on the seam; the bounce is left out). */
+private val FOLDS = CubicBezierEasing(0.45f, 0f, 0.4f, 1f)
 
 @Composable
 fun Panel(
@@ -101,7 +117,7 @@ fun Panel(
     glass: Boolean,
     dark: Boolean,
     arrival: Arrival,
-    /** True once the panel is on its way out: it fades and the activity finishes after [Motion.LEAVE_MS]. */
+    /** True once the panel is on its way out: it folds away (or fades) and the activity finishes after [Arrival.leaveMs]. */
     leaving: Boolean,
     onHeight: (Dp) -> Unit,
     /** How far the room has dimmed and how far the glass has come into focus, each 0 to 1: the window's dim and blur follow. */
@@ -137,18 +153,37 @@ fun Panel(
     val presence = remember { Animatable(if (motion.on && !arrival.unfold) 0f else 1f) }
     val scale = remember { Animatable(if (motion.on && !arrival.unfold) 0.96f else 1f) }
     fun opened() = if (arrival.unfold) ((landed(wide.value) - w0) / (1f - w0)).coerceIn(0f, 1f) else 1f
-    LaunchedEffect(Unit) {
-        if (!arrival.unfold) return@LaunchedEffect
-        launch { high.animateTo(1f, tween((80 * slow).toInt(), easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))) }
-        delay((50 * slow).toLong())
-        wide.animateTo(1f, spring(dampingRatio = 0.72f, stiffness = 1000f / (slow * slow)))
-    }
+    // On the way out the blur and the contents let go early: the glass closes slowly at first, and a
+    // blurred band would stand beside it for those frames.
+    var folding by remember { mutableStateOf(false) }
+    fun focused() = if (folding) smooth(0.75f, 1f, opened()) else smooth(0.5f, 1f, opened())
+    fun shown() = if (folding) smooth(0.55f, 0.95f, opened()) else smooth(0.35f, 0.85f, opened())
     LaunchedEffect(leaving) {
-        launch { presence.animateTo(if (leaving) 0f else 1f, motion.fade(if (leaving) 90 else 170)) }
-        launch { scale.animateTo(if (leaving) 0.975f else 1f, if (leaving) motion.fade(100) else motion.pop()) }
+        if (!arrival.unfold) {
+            launch { presence.animateTo(if (leaving) 0f else 1f, motion.fade(if (leaving) 90 else 170)) }
+            launch { scale.animateTo(if (leaving) 0.975f else 1f, if (leaving) motion.fade(100) else motion.pop()) }
+        } else if (!leaving) {
+            // Also the way back, when the key is pressed again while the panel is leaving: it opens from wherever it had got to.
+            val fromSeam = high.value < 1f
+            launch { presence.animateTo(1f, tween((Arrival.GONE_MS * slow).toInt())) }
+            launch { high.animateTo(1f, tween((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_GROWS)) }
+            if (fromSeam) delay((Arrival.WAIT_MS * slow).toLong())
+            wide.animateTo(1f, spring(dampingRatio = 0.72f, stiffness = 1000f / (slow * slow)))
+            folding = false
+        } else {
+            folding = true
+            // Leaving is arriving backwards: the glass closes to its seam from both sides and covers the contents,
+            // the blur lets go on the way, then the seam draws in and is gone.
+            wide.snapTo(landed(wide.value))
+            launch { wide.animateTo(w0, tween((Arrival.FOLD_MS * slow).toInt(), easing = FOLDS)) }
+            delay(((Arrival.FOLD_MS + Arrival.WAIT_MS - Arrival.SEAM_MS) * slow).toLong())
+            launch { high.animateTo(0.1f, tween((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_DRAWS_IN)) }
+            delay(((Arrival.SEAM_MS - Arrival.GONE_MS) * slow).toLong())
+            presence.animateTo(0f, tween((Arrival.GONE_MS * slow).toInt(), easing = LinearEasing))
+        }
     }
     // The blur covers the whole window, so it waits until the glass is more than half open.
-    LaunchedEffect(Unit) { snapshotFlow { presence.value * opened() to presence.value * smooth(0.5f, 1f, opened()) }.collect { (dim, blur) -> onPresence(dim, blur) } }
+    LaunchedEffect(Unit) { snapshotFlow { presence.value * opened() to presence.value * focused() }.collect { (dim, blur) -> onPresence(dim, blur) } }
 
     // Once the glass is open, one light runs once around the outline.
     val run = remember { Animatable(0f) }
@@ -245,7 +280,7 @@ fun Panel(
                 Column(
                     Modifier.wrapContentSize(Alignment.TopCenter, unbounded = true).requiredWidth(full)
                         .offset { IntOffset(0, -((height.roundToPx() * (1f - landed(high.value))) / 2f).roundToInt()) }
-                        .graphicsLayer { alpha = smooth(0.35f, 0.85f, opened()) },
+                        .graphicsLayer { alpha = shown() },
                 ) {
                     Field(model, field, focus = focus, onChange = { v ->
                         model.type(v.text)

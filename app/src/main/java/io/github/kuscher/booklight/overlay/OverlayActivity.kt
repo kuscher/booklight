@@ -66,6 +66,8 @@ class OverlayActivity : ComponentActivity() {
     private var settled = false
     /** This start was a click on the icon: there is no panel, only a hand-over to the Booklight window. */
     private var handedOver = false
+    private lateinit var arrival: Arrival
+    private var leaveJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +102,7 @@ class OverlayActivity : ComponentActivity() {
         }
         placeWindow()
         take(intent)
-        val arrival = Arrival.of(opening, motion)
+        arrival = Arrival.of(opening, motion)
 
         setContent {
             BooklightTheme(dark, tint = settings.tint) {
@@ -173,6 +175,8 @@ class OverlayActivity : ComponentActivity() {
         super.onNewIntent(intent)
         if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)) { stay = true; return }
         if (fromIcon(intent)) { startActivity(Intent(this, MainActivity::class.java)); close(); return }
+        // The key again while the panel is still leaving: it turns round and opens again (unless it is leaving because something ran).
+        if (leaving) { if (!ran && !isFinishing) { leaveJob?.cancel(); leaving = false; take(intent) }; return }
         if (!take(intent)) close()
     }
 
@@ -265,13 +269,13 @@ class OverlayActivity : ComponentActivity() {
         }
     }
 
-    /** Leaves: the panel fades with its blur, then the activity finishes. */
+    /** Leaves: the panel folds away the way it came (or fades, with the opening turned off), its blur with it, then the activity finishes. */
     fun close() {
         if (leaving || handedOver) return
         if (!ran) model.keep()
         leaving = true
         if (!motion.on) { finishNow(); return }
-        lifecycleScope.launch { delay(Motion.LEAVE_MS); finishNow() }
+        leaveJob = lifecycleScope.launch { delay(arrival.leaveMs); finishNow() }
     }
 
     private fun finishNow() {

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The panel closes the way it opens, backwards: the glass folds to a line from both sides, and the line draws
+  in. At the speed chosen for the opening; with the opening turned off it fades as before.
+- The key pressed again while the panel is closing opens it again from where it had got to.
+
 ## 1.1 (1 October 2026)
 
 Several planned releases in one (Jot, Dials, Recipes, Switches), on a new way of acting on rows.
