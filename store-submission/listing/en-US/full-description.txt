@@ -1,4 +1,4 @@
-Booklight is a keyboard launcher for Googlebooks and other Android laptops and tablets with a keyboard. Press your shortcut and a small glass panel appears over your desktop. Type a few letters and press Enter.
+Booklight is a keyboard launcher for Googlebooks. Press your shortcut and a small glass panel appears over your desktop. Type a few letters and press Enter.
 
 WHAT IT FINDS
 - Apps. Type the start of a name, the start of any word in it, or its initials. A few loose letters are enough.

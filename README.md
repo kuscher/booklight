@@ -20,8 +20,8 @@ few letters, press Enter.
 ## Install
 
 **[Download Booklight.apk](https://github.com/kuscher/booklight/releases/latest/download/Booklight.apk)**,
-open it from Files and, if Android asks, allow Files to install apps. Android 14 or newer; made for
-Googlebooks.
+open it from Files and, if Android asks, allow Files to install apps. Made for Googlebooks (Android 14 or
+newer); on Google Play it is offered to Googlebooks only.
 
 ## Give it a key
 

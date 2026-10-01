@@ -1,4 +1,4 @@
-Booklight ist ein Tastatur-Launcher für Googlebooks und andere Android-Laptops und -Tablets mit Tastatur. Drück dein Tastenkürzel, und ein kleines Glasfenster erscheint über deinem Desktop. Tipp ein paar Buchstaben und drück Enter.
+Booklight ist ein Tastatur-Launcher für Googlebooks. Drück dein Tastenkürzel, und ein kleines Glasfenster erscheint über deinem Desktop. Tipp ein paar Buchstaben und drück Enter.
 
 WAS ES FINDET
 - Apps. Tipp den Anfang eines Namens, den Anfang eines Wortes darin oder die Anfangsbuchstaben. Ein paar lose Buchstaben reichen.
