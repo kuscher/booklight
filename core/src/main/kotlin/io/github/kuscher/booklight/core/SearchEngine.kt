@@ -81,7 +81,7 @@ class SearchEngine(
             else -> Matcher.score(text, s.name) * 0.8
         }
         if (score <= 0) null else Result(
-            id = "scope:${s.key}", provider = "scopes", kind = Kind.SCOPE, title = s.name, subtitle = s.about,
+            id = "scope:${s.key}", provider = "scopes", kind = Kind.SCOPE, title = s.title, subtitle = s.about,
             icon = Icon.Symbol(s.symbol), score = score,
             actions = listOf(Action("enter", enterLabel(s), Effect.EnterScope(s.key), keepOpen = true, symbol = "edit")),
         )

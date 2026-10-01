@@ -41,8 +41,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -58,8 +58,8 @@ import io.github.kuscher.booklight.core.SlotState
 import io.github.kuscher.booklight.ui.Fonts
 import kotlinx.coroutines.launch
 
-val SMALL = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
-private val HINT = TextStyle(fontFamily = Fonts.text, fontSize = 11.5.sp, fontWeight = FontWeight(600), letterSpacing = 0.5.sp)
+val SMALL = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
+private val HINT = TextStyle(fontFamily = Fonts.text, fontSize = 12.sp, fontWeight = FontWeight(600), letterSpacing = 0.5.sp)
 private val VALUE = TextStyle(fontFamily = Fonts.text, fontSize = 17.sp, fontWeight = FontWeight(500))
 
 /**
@@ -70,15 +70,17 @@ private val VALUE = TextStyle(fontFamily = Fonts.text, fontSize = 17.sp, fontWei
  */
 @Composable
 fun RowScope.SlotsBody(b: Body.Slots, ink: Color) {
-    Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+    Column(Modifier.weight(1f).padding(start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         b.caption?.let { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-        Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             b.slots.forEachIndexed { i, s ->
+                // The first slots keep to their share; the last takes what is left, so a growing value never pushes its neighbour away.
                 val last = i == b.slots.lastIndex
-                Row(if (last) Modifier.weight(1f, fill = false) else Modifier.widthIn(max = 240.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.label.uppercase(), color = ink.copy(alpha = ink.alpha * 0.62f), style = HINT, maxLines = 1, modifier = Modifier.padding(end = 7.dp))
-                    if (s.state == SlotState.EMPTY) Box(Modifier.size(20.dp, 2.dp).background(ink.copy(alpha = ink.alpha * 0.30f)))
-                    else Text(s.value, color = ink.copy(alpha = ink.alpha * if (s.state == SlotState.GUESSED) SECOND else 1f), style = VALUE, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(if (last) Modifier.weight(1f, fill = false) else Modifier.widthIn(max = if (i == 0) 240.dp else 170.dp)) {
+                    // Label and value sit on one baseline.
+                    Text(s.label.uppercase(), color = ink.copy(alpha = ink.alpha * SECOND), style = HINT, maxLines = 1, modifier = Modifier.alignByBaseline().padding(end = 7.dp))
+                    if (s.state == SlotState.EMPTY) Text("–", color = ink.copy(alpha = ink.alpha * 0.40f), style = VALUE, modifier = Modifier.alignByBaseline())
+                    else Text(s.value, color = ink.copy(alpha = ink.alpha * if (s.state == SlotState.GUESSED) SECOND else 1f), style = VALUE, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
                 }
             }
         }
@@ -100,10 +102,6 @@ fun LevelTrack(b: Body.Level, ink: Color, modifier: Modifier = Modifier) {
         val h = 6.dp.toPx()
         val y = (size.height - h) / 2
         val r = CornerRadius(h / 2)
-        if (b.locked) {
-            drawRoundRect(ink.copy(alpha = 0.40f), Offset(0f, y), Size(size.width, h), r, style = Stroke(1.5.dp.toPx()))
-            return@Canvas
-        }
         drawRoundRect(ink.copy(alpha = 0.20f), Offset(0f, y), Size(size.width, h), r)
         val gap = 4.dp.toPx()
         val bar = 4.dp.toPx()
@@ -119,14 +117,15 @@ fun LevelTrack(b: Body.Level, ink: Color, modifier: Modifier = Modifier) {
 
 /** A level in words, in a slot that never changes width: "40 %", "Muted". */
 @Composable
-fun LevelNumber(b: Body.Level, ink: Color, modifier: Modifier = Modifier) {
+fun LevelNumber(b: Body.Level, ink: Color, modifier: Modifier = Modifier, end: Boolean = false) {
     val text = when {
         b.locked -> ""
         b.muted -> stringResource(R.string.level_muted)
         else -> stringResource(R.string.level_percent, b.percent)
     }
-    Text(text, color = ink, style = SMALL.copy(fontSize = 14.sp, fontWeight = FontWeight(600), fontFeatureSettings = "tnum"), maxLines = 1,
-        modifier = modifier.width(64.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+    // Beside its track it reads from the left; alone at the row's end (the row isn't selected) it ends where the kind labels end.
+    Text(text, color = ink, style = SMALL.copy(fontFeatureSettings = "tnum"), maxLines = 1,
+        modifier = modifier.width(if (b.muted) 56.dp else 48.dp), textAlign = if (end) TextAlign.End else TextAlign.Start)
 }
 
 /**
@@ -140,8 +139,11 @@ fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, 
     val motion = LocalMotion.current
     val dark = LocalDark.current
     val density = LocalDensity.current
-    val side = with(density) { Metrics.cell.toPx() }
     val cols = b.columns
+    // Fourteen columns from 14 dp to 14 dp from the panel's edges, so the first is centred on the mark column (38 dp).
+    val pitchDp = (Metrics.width - 28.dp) / cols
+    val side = with(density) { Metrics.cell.toPx() }
+    val pitch = with(density) { pitchDp.toPx() }
     val shown = b.cells.take(cols * 5)
     val col = cell % cols
     val line = cell / cols
@@ -168,19 +170,20 @@ fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, 
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
     val count = shown.size
     fun at(o: Offset): Int? {
-        val c = (o.x / side).toInt()
+        val c = (o.x / pitch).toInt()
         val l = (o.y / side).toInt()
         val i = l * cols + c
         return if (c in 0 until cols && i in 0 until count) i else null
     }
     Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.TopCenter) {
         Box(
-            Modifier.size(Metrics.cell * cols, Metrics.cell * Metrics.gridRows(b))
+            Modifier.size(pitchDp * cols, Metrics.cell * Metrics.gridRows(b))
                 .drawBehind {
                     if (!selected || count == 0) return@drawBehind
                     val inset = 2.dp.toPx()
-                    val o = Offset(x0.value * side + inset, y0.value * side + inset)
-                    val s = Size((x1.value - x0.value) * side - 2 * inset, (y1.value - y0.value) * side - 2 * inset)
+                    val across = (pitch - side) / 2 + inset     // the square stays 44 dp, centred in its column
+                    val o = Offset(x0.value * pitch + across, y0.value * side + inset)
+                    val s = Size((x1.value - x0.value) * pitch - 2 * across, (y1.value - y0.value) * side - 2 * inset)
                     val r = CornerRadius(14.dp.toPx())
                     drawRoundRect(fill, o, s, r)
                     drawRoundRect(rim, o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
@@ -199,7 +202,7 @@ fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, 
             shown.forEachIndexed { i, c ->
                 val step = ((i % cols) + (i / cols)) * 0.03f      // a little later for every step down and to the right
                 Box(
-                    Modifier.offset { IntOffset(((i % cols) * side).toInt(), ((i / cols) * side).toInt()) }.size(Metrics.cell)
+                    Modifier.offset { IntOffset(((i % cols) * pitch).toInt(), ((i / cols) * side).toInt()) }.size(pitchDp, Metrics.cell)
                         .graphicsLayer {
                             val t = ((wave.value - step.coerceAtMost(0.5f)) / 0.5f).coerceIn(0f, 1f)
                             alpha = t
@@ -207,7 +210,7 @@ fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, 
                         },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(c.glyph, color = scheme.onSurface, style = TextStyle(fontSize = if (c.glyph.length <= 1) 22.sp else 27.sp), maxLines = 1)
+                    Text(c.glyph, color = scheme.onSurface, style = TextStyle(fontSize = if (c.glyph.length <= 1) 26.sp else 27.sp), maxLines = 1)
                 }
             }
         }
@@ -236,14 +239,19 @@ fun qr(text: String): BitMatrix? = runCatching {
 /** A swatch of one colour, with a hairline so white and black still have an edge. */
 @Composable
 fun Swatch(argb: Int, ink: Color) {
-    val shape = RoundedCornerShape(16.dp)
-    Box(Modifier.size(52.dp).clip(shape).background(Color(argb)).border(with(LocalDensity.current) { 1f.toDp() }, ink.copy(alpha = 0.20f), shape))
+    val shape = RoundedCornerShape(12.dp)
+    Box(Modifier.size(40.dp).clip(shape).background(Color(argb)).border(with(LocalDensity.current) { 1f.toDp() }, ink.copy(alpha = 0.20f), shape))
 }
 
-/** Text in the fixed-width face, as large as fits: a password, a UUID. */
+/**
+ * A password or a UUID, large. In the panel's own face rather than a fixed-width one (the device has no
+ * monospace cut of it, and the system's looks like another app): figures are tabular, the zero is slashed,
+ * and the letters are set a little apart so each can be read off.
+ */
 @Composable
 fun MonoText(text: String, ink: Color) {
-    Text(text, color = ink, style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = if (text.length > 28) 18.sp else 24.sp, fontWeight = FontWeight(500)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Text(text, color = ink, style = TextStyle(fontFamily = Fonts.text, fontSize = if (text.length > 28) 19.sp else 24.sp, fontWeight = FontWeight(500), letterSpacing = 0.8.sp, fontFeatureSettings = "tnum, zero"),
+        maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 /** The row height a body asks for is in [Metrics.rowHeight]; this keeps a tall row's top band the height of an ordinary row. */

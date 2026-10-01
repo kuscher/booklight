@@ -55,10 +55,11 @@ class Answers(private val context: Context) : Provider {
                 id = "answer:color", provider = "answers", kind = Kind.ANSWER, title = c.hex(), icon = Icon.Swatch(c.argb), score = 1.0, learnable = false,
                 answer = c.hex(),
                 actions = listOf(
-                    Action("hex", "$copy HEX", Effect.CopyText(c.hex()), symbol = "t:#"),
-                    Action("rgb", "$copy RGB", Effect.CopyText(c.rgb()), symbol = "t:RGB"),
-                    Action("hsl", "$copy HSL", Effect.CopyText(c.hsl()), symbol = "t:HSL"),
-                    Action("oklch", "$copy OKLCH", Effect.CopyText(c.oklch()), symbol = "t:LCH"),
+                    // The tag says which; the name is the same for all four, so the armed one reads "RGB Copy".
+                    Action("hex", copy, Effect.CopyText(c.hex()), symbol = "t:HEX"),
+                    Action("rgb", copy, Effect.CopyText(c.rgb()), symbol = "t:RGB"),
+                    Action("hsl", copy, Effect.CopyText(c.hsl()), symbol = "t:HSL"),
+                    Action("oklch", copy, Effect.CopyText(c.oklch()), symbol = "t:OKLCH"),
                 ),
             )
         }

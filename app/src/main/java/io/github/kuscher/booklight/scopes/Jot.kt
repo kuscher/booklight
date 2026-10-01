@@ -51,10 +51,18 @@ abstract class JotScope(protected val context: Context, final override val key: 
     private val locale: Locale get() = context.resources.configuration.locales[0]
     protected fun day(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))
     protected fun clock(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern(if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a", locale))
+    /** As [clock], but a full hour on the 12-hour clock is just "3 PM": a range has to fit its slot. */
+    private fun short(t: LocalDateTime): String = if (!DateFormat.is24HourFormat(context) && t.minute == 0) t.format(DateTimeFormatter.ofPattern("h a", locale)) else clock(t)
 
     protected fun span(e: EventDraft): String = when {
         e.allDay -> text(R.string.jot_all_day, day(e.start))
-        else -> "${day(e.start)}, ${clock(e.start)}–${clock(e.end)}"
+        else -> {
+            // "3–4 PM", not "3:00 PM–4:00 PM": the half of the day is said once when both ends share it.
+            val from = short(e.start)
+            val to = short(e.end)
+            val half = to.substringAfterLast(' ', "")
+            "${day(e.start)}, ${if (half.isNotEmpty() && from.endsWith(" $half")) from.removeSuffix(" $half") else from}–$to"
+        }
     }
 
     protected fun insert(e: EventDraft): Effect {
@@ -72,7 +80,7 @@ class MailScope(context: Context) : JotScope(context, "mail", R.string.mail_keys
         return listOf(preview(
             text(R.string.mail_caption), listOf(slot(R.string.slot_to, d.to.joinToString(", ")), slot(R.string.slot_subject, d.subject)), d.body.replace("\n", " ↵ "),
             listOfNotNull(
-                Action("compose", text(R.string.action_compose), Effect.Compose(d.to, d.subject, d.body), symbol = "mail"),
+                Action("compose", text(R.string.action_compose), Effect.Compose(d.to, d.subject, d.body), symbol = "edit"),
                 copy(all).takeIf { all.isNotEmpty() },
             ),
         ))
@@ -118,7 +126,7 @@ class EventScope(context: Context) : JotScope(context, "event", R.string.event_k
  * reminder goes to what rings anyway: "in 20 minutes" is a Clock timer with the text as its
  * label, a time within the next day a Clock alarm, and anything later a calendar event.
  */
-class RemindScope(context: Context) : JotScope(context, "remind", R.string.remind_keys, R.string.remind_name, R.string.remind_hint, R.string.remind_about, "timer") {
+class RemindScope(context: Context) : JotScope(context, "remind", R.string.remind_keys, R.string.remind_name, R.string.remind_hint, R.string.remind_about, "bell") {
     override suspend fun rows(arg: String): List<Result> = listOf(when (val plan = Jot.reminder(arg, LocalDateTime.now())) {
         null -> preview(text(R.string.remind_caption_when), listOf(slot(R.string.slot_when, ""), slot(R.string.slot_note, arg.trim())), null, emptyList())
         is ReminderPlan.Timer -> preview(
@@ -160,13 +168,13 @@ class TimerScope(context: Context) : JotScope(context, "timer", R.string.timer_k
 }
 
 /** `alarm 7:30 gym`: the Clock app sets it. */
-class AlarmScope(context: Context) : JotScope(context, "alarm", R.string.alarm_keys, R.string.alarm_name, R.string.alarm_hint, R.string.alarm_about, "timer") {
+class AlarmScope(context: Context) : JotScope(context, "alarm", R.string.alarm_keys, R.string.alarm_name, R.string.alarm_hint, R.string.alarm_about, "bell") {
     override suspend fun rows(arg: String): List<Result> {
         val now = LocalDateTime.now()
         val spec = Jot.alarm(arg, now)
         val at = spec?.let { s -> now.withHour(s.hour).withMinute(s.minute).withSecond(0).let { if (it.isAfter(now)) it else it.plusDays(1) } }
         return listOf(Result(
-            id = "jot:alarm", provider = key, kind = Kind.OTHER, title = name, icon = Icon.Symbol("timer"), score = 1.0, learnable = false,
+            id = "jot:alarm", provider = key, kind = Kind.OTHER, title = name, icon = Icon.Symbol("bell"), score = 1.0, learnable = false,
             answer = at?.let(::clock) ?: "–:––",
             subtitle = if (spec == null || at == null) text(R.string.alarm_what_time) else listOf(spec.label, day(at)).filter { it.isNotEmpty() }.joinToString(" · "),
             actions = spec?.let { listOf(Action("set", text(R.string.action_set), Effect.SetAlarm(it.hour, it.minute, it.label), symbol = "check", done = text(R.string.done_alarm))) } ?: emptyList(),
@@ -184,7 +192,8 @@ class NewScope(context: Context) : JotScope(context, "new", R.string.new_keys, R
     override suspend fun rows(arg: String): List<Result> {
         if (arg.isBlank()) return NewKind.entries.map { k ->
             Result(
-                id = "jot:new:${k.name}", provider = key, kind = Kind.OTHER, title = kind(k), icon = Icon.Symbol(if (k == NewKind.FOLDER) "folder" else "plus"), score = 1.0, learnable = false,
+                id = "jot:new:${k.name}", provider = key, kind = Kind.OTHER, title = kind(k), score = 1.0, learnable = false,
+                icon = Icon.Symbol(when (k) { NewKind.FOLDER -> "folder"; NewKind.SHEET -> "sheet"; NewKind.SLIDES -> "slides"; else -> "file" }),
                 // Choosing a kind writes its word into the field, ready for the name.
                 actions = listOf(Action("choose", text(R.string.scope_type), Effect.EnterScope(key, kind(k).lowercase() + " "), keepOpen = true, symbol = "edit")),
             )
@@ -202,7 +211,7 @@ class NewScope(context: Context) : JotScope(context, "new", R.string.new_keys, R
             )
         }
         return listOf(preview(
-            text(R.string.new_caption),
+            text(if (online) R.string.new_caption_online else if (spec.kind == NewKind.FOLDER) R.string.new_caption_folder else R.string.new_caption),
             listOf(slot(R.string.slot_kind, kind(spec.kind), guessed = !spec.kindGiven), slot(R.string.slot_name, spec.name), slot(R.string.slot_in, where, guessed = true)),
             null, actions,
         ))
@@ -220,7 +229,7 @@ fun gemini(context: Context, text: String, score: Double): Result = Result(
     id = "web:gemini", provider = "gemini", kind = Kind.WEB, title = context.getString(R.string.gemini_title), subtitle = text,
     icon = Icon.Symbol("spark"), score = score, learnable = false,
     actions = listOf(
-        Action("ask", context.getString(R.string.action_ask), Effect.AskGemini(text), symbol = "spark"),
+        Action("ask", context.getString(R.string.action_ask), Effect.AskGemini(text), symbol = "send"),
         Action("copy", context.getString(R.string.action_copy), Effect.CopyText(text)),
     ),
 )

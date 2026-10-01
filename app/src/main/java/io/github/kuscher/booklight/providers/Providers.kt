@@ -138,7 +138,7 @@ class WebProvider(private val context: Context, private val prefs: Prefs) : Prov
             id = "web:search", provider = id, kind = Kind.WEB, title = context.getString(R.string.web_search_title, engine.name, text),
             icon = Icon.Symbol("search"), score = 0.1, learnable = false,
             actions = listOf(
-                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(engine.search(text))),
+                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(engine.search(text)), symbol = "open"),
                 Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(engine.search(text))),
             ),
         )

@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +35,7 @@ import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.ui.Fonts
 import io.github.kuscher.booklight.ui.Symbols
 
-private val HINT = TextStyle(fontFamily = Fonts.text, fontSize = 12.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
+private val HINT = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
 
 /**
  * The line under the list. Left: what just happened ("Copied"), or the name of the grid's cell.
@@ -68,6 +69,11 @@ fun Footer(model: OverlayModel) {
             }
         }
         // (key, what it does) for the selected row; empty key = nothing to say.
+        // In a grid the arrows are taken; say what Enter does too.
+        if (grid != null && !model.confirming) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 6.dp)) {
+            Keycap("⏎")
+            Text(stringResource(R.string.action_copy), color = ink, style = HINT, modifier = Modifier.padding(end = 10.dp))
+        }
         val first: Pair<String, String> = when {
             model.confirming -> "" to ""
             grid != null -> "↑↓←→" to stringResource(R.string.hint_move)
@@ -93,10 +99,18 @@ fun Footer(model: OverlayModel) {
     }
 }
 
+/** A key, as on the keyboard. Arrows, Enter and Backspace are drawn as marks: as font glyphs they are hairlines. */
 @Composable
 fun Keycap(label: String) {
     val scheme = MaterialTheme.colorScheme
+    val ink = scheme.onSurface.copy(alpha = SECOND)
     Box(Modifier.height(22.dp).clip(RoundedCornerShape(7.dp)).background(scheme.onSurface.copy(alpha = if (LocalDark.current) 0.14f else 0.10f)).padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
-        Text(label, color = scheme.onSurface.copy(alpha = SECOND), style = HINT)
+        val marks = label.filter { it != ' ' }
+        if (marks.isNotEmpty() && marks.all { it in MARKS }) Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+            for (c in marks) Icon(Symbols.of(if (c == '⏎') "enter" else if (c == '⌫') "backspace" else "arrow"), null, Modifier.size(13.dp).rotate(MARKS.getValue(c)), tint = ink)
+        } else Text(label, color = ink, style = HINT)
     }
 }
+
+/** The marks a key cap can show, and how far the one drawing (an arrow pointing left) is turned for each. */
+private val MARKS = mapOf('←' to 0f, '↑' to 90f, '→' to 180f, '↓' to 270f, '⏎' to 0f, '⌫' to 0f)

@@ -109,7 +109,7 @@ fun PageRow(
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val selected = page.selected == key
-    val ink by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface, motion.fade(120), label = "ink")
+    val ink = scheme.onSurface
     val enter by rememberUpdatedState(onEnter)
     val step by rememberUpdatedState(onStep)
     val entry = remember(key) { Page.Entry() }

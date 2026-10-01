@@ -94,7 +94,7 @@ fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue)
                 AnimatedContent(model.chip?.hint ?: stringResource(R.string.search_hint), transitionSpec = {
                     (fadeIn(motion.fade(140, 60)) + slideInHorizontally(motion.place()) { it / 40 }) togetherWith fadeOut(motion.fade(60))
                 }, contentAlignment = Alignment.CenterStart, label = "hint") { hint ->
-                    Text(hint, style = style.copy(color = scheme.onSurface.copy(alpha = THIRD), fontWeight = FontWeight(400)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(hint, style = style.copy(color = scheme.onSurface.copy(alpha = THIRD), fontWeight = FontWeight(400)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 2.dp))
                 }
             }
             // The rest of the top hit's name, grey, after the cursor: drawn with the text so it sits on the same line.

@@ -64,7 +64,7 @@
     <string name="scope_type">Type…</string>
     <string name="scope_site_hint">Search %1$s</string>
     <string name="level_muted">Muted</string>
-    <string name="level_percent">%1$d %%</string>
+    <string name="level_percent">%1$d %%</string>
     <string name="confirm_again">Press again to delete</string>
     <string name="hint_move">Move</string>
     <string name="hint_adjust">Adjust</string>
@@ -83,8 +83,8 @@
     <string name="dial_media_words">media,pause,play,resume,next,previous,skip,music,playback,track</string>
     <string name="dial_next_words">next,skip,forward</string>
     <string name="dial_previous_words">previous,prev,back,last</string>
-    <string name="dial_needs_grant">Allow it in Settings first</string>
-    <string name="action_set_level">Set to %1$d %%</string>
+    <string name="dial_needs_grant">Needs one switch in Settings, once</string>
+    <string name="action_set_level">Set to %1$d %%</string>
     <string name="action_mute">Mute</string>
     <string name="action_unmute">Unmute</string>
     <string name="action_sound_settings">Sound settings</string>
@@ -100,7 +100,7 @@
     <string name="scope_level_hint">0 to 100</string>
     <string name="scope_play_keys">play</string>
     <string name="scope_play">Play</string>
-    <string name="scope_play_hint">A song, an artist, an album</string>
+    <string name="scope_play_hint">Song, artist or album</string>
     <string name="scope_play_about">Music, by name</string>
     <string name="play_title">Play “%1$s”</string>
     <string name="action_new_window">New window</string>

@@ -206,7 +206,7 @@ fun Pill(top: Dp, height: Dp, visible: Boolean) {
 }
 
 @Composable
-private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List<Action>, onHover: () -> Unit, onClick: () -> Unit, onAction: (Int) -> Unit, content: @Composable RowScope.() -> Unit) {
+private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List<Action>, bare: Boolean, onHover: () -> Unit, onClick: () -> Unit, onAction: (Int) -> Unit, content: @Composable RowScope.() -> Unit) {
     val hover by rememberUpdatedState(onHover)
     val act by rememberUpdatedState(onAction)
     Row(
@@ -223,7 +223,7 @@ private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List
                 this.selected = selected; role = Role.Button; contentDescription = label
                 if (actions.size > 1) customActions = actions.drop(1).mapIndexed { i, a -> CustomAccessibilityAction(a.label) { act(i + 1); true } }
             }
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = if (bare) 0.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         content = content,
     )
@@ -236,15 +236,19 @@ fun ResultRow(
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
-    val on by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface, motion.fade(120), label = "on")
-    val dim by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface.copy(alpha = SECOND), motion.fade(120), label = "dim")
+    // One ink for the whole panel, `onSurface`. On the selection everything is at full strength: the row that
+    // matters most must never be the faintest one (the scheme's own on-container ink can be a mid-tone).
+    val on = scheme.onSurface
+    val dim by animateColorAsState(scheme.onSurface.copy(alpha = if (selected) 1f else SECOND), motion.fade(120), label = "dim")
     val pop by animateFloatAsState(if (selected) 1.06f else 1f, motion.pop(), label = "icon")
     val kind = if (r.provider == "gemini") "Gemini" else kindLabel(r.kind)
     val body = r.body
     val described = stringResource(R.string.a11y_selected, r.title, r.actions.getOrNull(armed)?.label ?: kind)
-    RowFrame(Metrics.rowHeight(r), selected, described, r.actions, onHover, onClick, onAction) {
+    RowFrame(Metrics.rowHeight(r), selected, described, r.actions, bare = body is Body.Grid, onHover, onClick, onAction) {
         if (body is Body.Grid) { GridBody(body, cell.coerceAtLeast(0), selected, onCell, onPick); return@RowFrame }
-        if (body is Body.Code) QrPlate(body.text)
+        if (body is Body.Code) QrPlate(body.text, Modifier.padding(start = 4.dp))
+        // A swatch is a sample, not a mark: it doesn't swell with the selection.
+        else if (r.icon is RowIcon.Swatch) RowPicture(r.icon, icons, dim)
         else Box(Modifier.graphicsLayer { scaleX = pop; scaleY = pop }) { RowPicture(r.icon, icons, dim) }
 
         when {
@@ -253,7 +257,7 @@ fun ResultRow(
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 3, overflow = TextOverflow.Ellipsis)
                 r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = 1, modifier = Modifier.padding(top = 4.dp)) }
             }
-            else -> Column(Modifier.weight(1f).padding(start = 16.dp)) {
+            else -> Column(Modifier.weight(1f).padding(start = 16.dp, end = 12.dp, top = if (r.answer != null && body == null && r.icon !is RowIcon.Swatch) 3.dp else 0.dp)) {
                 // A row whose actions copy different forms of one value (a colour) shows the armed form large.
                 val big = if (body is Body.Mono) body.text else if (r.icon is RowIcon.Swatch) (r.actions.getOrNull(armed)?.effect as? Effect.CopyText)?.text ?: r.answer else r.answer
                 if (big != null) {
@@ -275,9 +279,10 @@ fun ResultRow(
         // A level: the number keeps its place whether the row is selected or not; the track joins it when it is.
         if (body is Body.Level) {
             val track by animateFloatAsState(if (selected) 1f else 0f, motion.fade(110), label = "track")
-            if (selected || track > 0f) LevelTrack(body, on, Modifier.padding(end = 12.dp).graphicsLayer { alpha = track })
-            if (!body.locked) LevelNumber(body, if (selected) on else scheme.onSurface.copy(alpha = SECOND))
-            Spacer(Modifier.width(if (selected) 8.dp else 0.dp))
+            // The number belongs to the track: close after it, and a clear step before the actions.
+            if (!body.locked && (selected || track > 0f)) LevelTrack(body, on, Modifier.padding(end = 12.dp).graphicsLayer { alpha = track })
+            if (!body.locked) LevelNumber(body, if (selected) on else scheme.onSurface.copy(alpha = SECOND), end = !selected)
+            Spacer(Modifier.width(if (selected && !body.locked) 16.dp else 0.dp))
         }
 
         // What the row can do arrives on the selected row; the others say what kind of thing they are.
@@ -308,7 +313,7 @@ private fun RowPicture(icon: RowIcon, icons: AppIcons, tinted: Color) {
         is RowIcon.Symbol -> Box(Modifier.size(size).clip(CircleShape).background(tinted.copy(alpha = if (LocalDark.current) 0.12f else 0.08f)), contentAlignment = Alignment.Center) {
             Icon(Symbols.of(icon.name), null, Modifier.size(20.dp), tint = tinted)
         }
-        is RowIcon.Swatch -> Swatch(icon.argb, tinted)
+        is RowIcon.Swatch -> Box(Modifier.size(size), contentAlignment = Alignment.Center) { Swatch(icon.argb, tinted) }
         is RowIcon.Glyph -> Box(Modifier.size(size).clip(CircleShape).background(tinted.copy(alpha = if (LocalDark.current) 0.12f else 0.08f)), contentAlignment = Alignment.Center) {
             Text(icon.text, color = tinted, style = TextStyle(fontFamily = Fonts.round, fontSize = if (icon.text.length > 2) 12.sp else 17.sp, fontWeight = FontWeight(600)), maxLines = 1)
         }

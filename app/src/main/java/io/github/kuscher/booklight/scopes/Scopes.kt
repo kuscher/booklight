@@ -63,6 +63,7 @@ class SiteScope(private val context: Context, private val site: Site) : Scope {
     override val name = site.name
     override val symbol = "search"
     override val hint: String = context.getString(R.string.scope_site_hint, site.name)
+    override val title: String = hint
 
     override suspend fun rows(arg: String): List<Result> {
         val text = arg.trim()
@@ -73,7 +74,7 @@ class SiteScope(private val context: Context, private val site: Site) : Scope {
             title = context.getString(R.string.web_search_title, site.name, text),
             icon = Icon.Symbol("search"), score = 1.0, learnable = false,
             actions = listOf(
-                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(url)),
+                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(url), symbol = "open"),
                 Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(url)),
             ),
         )

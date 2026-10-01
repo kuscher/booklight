@@ -2,6 +2,7 @@ package io.github.kuscher.booklight.overlay
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -57,6 +58,9 @@ import kotlin.math.roundToInt
 private class Slots(n: Int) {
     val x = IntArray(n)
     val w = IntArray(n)
+    /** Where the highlight would begin and end if it were wholly on this slot (inside any air the slot keeps around itself). */
+    val p0 = IntArray(n)
+    val p1 = IntArray(n)
 
     fun at(px: Float): Int {
         for (k in x.indices) if (px < x[k] + w[k]) return k
@@ -67,10 +71,12 @@ private class Slots(n: Int) {
 /** How much of slot [k] the highlight is on, when the highlight is at [a]: 1 on it, 0 a whole slot away. */
 private fun on(a: Float, k: Int) = (1f - abs(a - k)).coerceIn(0f, 1f)
 
-private val LABEL = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
+private val LABEL = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
 private val SLOT = 32.dp
 private val EDGE = 9.dp
 private val GAP = 7.dp
+/** The space the armed slot keeps between its pane and a neighbouring icon. */
+private val AIR = 6.dp
 
 /**
  * What the selected row can do: every action as an icon, in a row. One is armed and Enter runs it;
@@ -109,11 +115,11 @@ fun ActionStrip(
     val run by rememberUpdatedState(onRun)
 
     // The pane: a small sheet of the panel's own veil, lighter than the selection in light theme and
-    // darker in dark, so it lifts the name's contrast in both and adds no colour of its own.
+    // darker in dark, so it lifts the name's contrast in both and adds no colour of its own. One white
+    // rim, like the selection's: a second ring would make a button of it.
     val pane = scheme.surfaceContainerLowest.copy(alpha = if (dark) 0.36f else 0.62f)
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
-    val hair = scheme.onSecondaryContainer.copy(alpha = 0.20f)
-    val alarm = scheme.errorContainer
+    val alarm = scheme.errorContainer.copy(alpha = if (dark) 0.70f else 0.85f)
     val drain = scheme.onErrorContainer
 
     Layout(
@@ -125,11 +131,11 @@ fun ActionStrip(
                 val k0 = at.toInt()
                 val k1 = minOf(n - 1, k0 + 1)
                 val f = at - k0
-                val x0 = slots.x[k0] + (slots.x[k1] - slots.x[k0]) * f
-                val x1 = slots.x[k0] + slots.w[k0] + (slots.x[k1] + slots.w[k1] - slots.x[k0] - slots.w[k0]) * f
+                val x0 = slots.p0[k0] + (slots.p0[k1] - slots.p0[k0]) * f
+                val x1 = slots.p1[k0] + (slots.p1[k1] - slots.p1[k0]) * f
                 var danger = 0f
                 for (k in 0 until n) if (actions[k].danger) danger += on(at, k)
-                pane(x0, x1, lerp(pane, alarm, danger.coerceIn(0f, 1f)), rim.copy(alpha = rim.alpha * (1f - danger)), hair.copy(alpha = hair.alpha * (1f - danger)))
+                pane(x0, x1, lerp(pane, alarm, danger.coerceIn(0f, 1f)), rim)
                 if (confirming && left.value > 0f) {
                     val inset = 14.dp.toPx()
                     val y = size.height - 5.dp.toPx()
@@ -148,8 +154,10 @@ fun ActionStrip(
             },
         content = {
             actions.forEachIndexed { k, act ->
-                val ink = if (act.danger) scheme.error else scheme.onSecondaryContainer
-                if (act.symbol.startsWith("t:")) Text(act.symbol.substring(2), color = ink, style = LABEL.copy(fontSize = 11.sp, fontWeight = FontWeight(700), letterSpacing = 0.sp), maxLines = 1, softWrap = false)
+                // On the selection the ink is the panel's own, at full strength. What removes something is red at
+                // rest and takes its container's ink once the pane is on it.
+                val ink by animateColorAsState(if (!act.danger) scheme.onSurface else if (k == armed) scheme.onErrorContainer else scheme.error, motion.fade(120), label = "ink")
+                if (act.symbol.startsWith("t:")) Text(act.symbol.substring(2), color = ink, style = LABEL.copy(fontSize = 12.sp, fontWeight = FontWeight(600), letterSpacing = 0.2.sp), maxLines = 1, softWrap = false)
                 else Icon(Symbols.of(act.symbol), null, Modifier.size(18.dp), tint = ink)
                 // Its name and the Enter mark: always laid out at full width, shown as far as the pane is on it.
                 Row(
@@ -163,10 +171,10 @@ fun ActionStrip(
                         transitionSpec = { (fadeIn(motion.fade(110, 40)) togetherWith fadeOut(motion.fade(60))).using(SizeTransform(clip = false) { _, _ -> motion.lead() }) },
                         contentAlignment = Alignment.CenterEnd, label = "name",
                     ) { sure ->
-                        Text(if (sure) confirmLabel else act.label, color = if (sure) scheme.onErrorContainer else ink, style = LABEL, maxLines = 1, softWrap = false)
+                        Text(if (sure) confirmLabel else act.label, color = ink, style = LABEL, maxLines = 1, softWrap = false)
                     }
                     Spacer(Modifier.width(6.dp))
-                    Icon(Symbols.enter, null, Modifier.size(14.dp), tint = if (act.danger) scheme.onErrorContainer else ink)
+                    Icon(Symbols.enter, null, Modifier.size(14.dp), tint = ink)
                 }
             }
         },
@@ -174,18 +182,25 @@ fun ActionStrip(
         val h = SLOT.roundToPx()
         val edge = EDGE.roundToPx()
         val gap = GAP.roundToPx()
+        val air = AIR.roundToPx()
         val icons = List(n) { measurables[2 * it].measure(Constraints()) }
         val tails = List(n) { measurables[2 * it + 1].measure(Constraints(maxHeight = h)) }
         val at = a.value.coerceIn(0f, (n - 1).coerceAtLeast(0).toFloat())
         var x = 0
         for (k in 0 until n) {
+            val shown = on(at, k)
+            // The armed slot keeps its neighbours at arm's length: a little air on each side that has one.
+            val before = if (k > 0) (air * shown).roundToInt() else 0
+            val after = if (k < n - 1) (air * shown).roundToInt() else 0
             slots.x[k] = x
-            slots.w[k] = edge + icons[k].width + (on(at, k) * (gap + tails[k].width)).roundToInt() + edge
+            slots.p0[k] = x + before
+            slots.w[k] = before + edge + icons[k].width + (shown * (gap + tails[k].width)).roundToInt() + edge + after
+            slots.p1[k] = x + slots.w[k] - after
             x += slots.w[k]
         }
         layout(x.coerceAtMost(constraints.maxWidth), h) {
             for (k in 0 until n) {
-                val left = slots.x[k] + edge
+                val left = slots.p0[k] + edge
                 icons[k].place(left, (h - icons[k].height) / 2)
                 tails[k].place(left + icons[k].width + gap, (h - tails[k].height) / 2)
             }
@@ -193,13 +208,11 @@ fun ActionStrip(
     }
 }
 
-/** The pane and its two rings, from [x0] to [x1], the height of the strip. */
-private fun DrawScope.pane(x0: Float, x1: Float, fill: Color, rim: Color, hair: Color) {
+/** The pane and its one rim, from [x0] to [x1], the height of the strip. */
+private fun DrawScope.pane(x0: Float, x1: Float, fill: Color, rim: Color) {
     val r = CornerRadius(size.height / 2)
-    val px = 1f
-    drawRoundRect(hair, Offset(x0 - px, -px), Size(x1 - x0 + 2 * px, size.height + 2 * px), CornerRadius(size.height / 2 + px), style = Stroke(px))
     drawRoundRect(fill, Offset(x0, 0f), Size(x1 - x0, size.height), r)
-    drawRoundRect(rim, Offset(x0 + px / 2, px / 2), Size(x1 - x0 - px, size.height - px), r, style = Stroke(px))
+    drawRoundRect(rim, Offset(x0 + 0.5f, 0.5f), Size(x1 - x0 - 1f, size.height - 1f), r, style = Stroke(1f))
 }
 
 /**
@@ -236,7 +249,7 @@ fun OptionStrip(
     val run by rememberUpdatedState(onRun)
     val fill = if (quiet) scheme.surfaceContainerLowest.copy(alpha = if (dark) 0.36f else 0.62f) else scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f)
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
-    val hair = (ink ?: scheme.onSurface).copy(alpha = if (quiet) 0.20f else 0f)
+    val hair = if (!quiet) Color.Transparent else if (dark) Color.Black.copy(alpha = 0.28f) else scheme.onSurface.copy(alpha = 0.20f)
     LaunchedEffect(chosen) { a.animateTo(chosen.toFloat(), motion.arm()) }
 
     Layout(
@@ -251,7 +264,7 @@ fun OptionStrip(
                 val r = CornerRadius(SLOT.toPx() / 2)
                 val o = if (vertical) Offset(0f, lo) else Offset(lo, 0f)
                 val s = if (vertical) Size(across, hi - lo) else Size(hi - lo, across)
-                if (hair.alpha > 0f) drawRoundRect(hair, o - Offset(1f, 1f), Size(s.width + 2f, s.height + 2f), CornerRadius(r.x + 1f), style = Stroke(1f))
+                if (hair.alpha > 0f) drawRoundRect(hair, o - Offset(0.5f, 0.5f), Size(s.width + 1f, s.height + 1f), CornerRadius(r.x + 0.5f), style = Stroke(1f))
                 drawRoundRect(fill, o, s, r)
                 drawRoundRect(rim, o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
             }
@@ -268,7 +281,7 @@ fun OptionStrip(
             options.forEachIndexed { k, label ->
                 Text(label, color = ink ?: scheme.onSurface, style = LABEL.copy(fontSize = 14.sp, fontWeight = FontWeight(600)), maxLines = 1, softWrap = false,
                     modifier = Modifier.graphicsLayer { alpha = SECOND + (1f - SECOND) * on(a.value, k) })
-                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) }, tint = ink ?: scheme.onSecondaryContainer)
+                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) }, tint = ink ?: scheme.onSurface)
             }
         },
     ) { measurables, _ ->

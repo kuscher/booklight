@@ -180,8 +180,10 @@ interface Provider {
 interface Scope {
     val key: String
     val keywords: List<String>
-    /** On the chip and on its row: "YouTube", "Mail". */
+    /** On the chip: "YouTube", "Mail". */
     val name: String
+    /** On its row in the ordinary list, where an app may have the same name: "Search YouTube". */
+    val title: String get() = name
     val symbol: String
     /** The field's placeholder inside the scope: what to type. */
     val hint: String

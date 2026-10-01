@@ -62,7 +62,7 @@
     <string name="scope_type">Eingeben …</string>
     <string name="scope_site_hint">%1$s durchsuchen</string>
     <string name="level_muted">Stumm</string>
-    <string name="level_percent">%1$d %%</string>
+    <string name="level_percent">%1$d %%</string>
     <string name="confirm_again">Zum Löschen nochmal drücken</string>
     <string name="hint_move">Bewegen</string>
     <string name="hint_adjust">Ändern</string>
@@ -81,8 +81,8 @@
     <string name="dial_media_words">medien,pause,wiedergabe,weiter,nächster,vorheriger,musik,titel,abspielen,play,next,previous</string>
     <string name="dial_next_words">weiter,nächster,nächstes,next,skip</string>
     <string name="dial_previous_words">vorheriger,vorheriges,zurück,previous,prev</string>
-    <string name="dial_needs_grant">Erst in den Einstellungen erlauben</string>
-    <string name="action_set_level">Auf %1$d %% stellen</string>
+    <string name="dial_needs_grant">Braucht einmal einen Schalter in den Einstellungen</string>
+    <string name="action_set_level">Auf %1$d %% stellen</string>
     <string name="action_mute">Stumm</string>
     <string name="action_unmute">Ton an</string>
     <string name="action_sound_settings">Toneinstellungen</string>
@@ -98,7 +98,7 @@
     <string name="scope_level_hint">0 bis 100</string>
     <string name="scope_play_keys">play,spiele</string>
     <string name="scope_play">Abspielen</string>
-    <string name="scope_play_hint">Ein Lied, eine Band, ein Album</string>
+    <string name="scope_play_hint">Lied, Band oder Album</string>
     <string name="scope_play_about">Musik nach Namen</string>
     <string name="play_title">„%1$s“ abspielen</string>
     <string name="action_new_window">Neues Fenster</string>
