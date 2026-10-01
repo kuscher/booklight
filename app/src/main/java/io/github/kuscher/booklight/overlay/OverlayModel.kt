@@ -120,6 +120,8 @@ class OverlayModel(
 
     val current: Result? get() = results.getOrNull(selected)
 
+    /** The glass has opened far enough for what is under the field to come (`Motion.GATE`): set by the panel. */
+    var arrived by mutableStateOf(false)
     /** The panel was opened to have an example typed into it (a row of the window's Commands page): no card and no tip come first. */
     var guided by mutableStateOf(false)
 

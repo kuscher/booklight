@@ -264,11 +264,10 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                     Box(Modifier.fillMaxWidth().verticalScroll(scrolls.getValue(p)).onGloballyPositioned { if (live) page.root = it }) {
                         // The page's one selection, behind the rows: the coloured pill is where the keys are, so it is
                         // only there while the keys are in the page.
-                        if (live) {
-                            page.placed
-                            val on = page.selected?.let { page.rows[it] }
-                            with(density) { Pill((on?.top ?: 0f).toDp(), (on?.height ?: 0f).toDp(), visible = on != null && !inColumn) }
-                        }
+                        // (A page that is going keeps its pill until it has faded with it: it fades where it stands.)
+                        page.placed
+                        val on = if (live) page.selected?.let { page.rows[it] } else null
+                        with(density) { Pill((on?.top ?: 0f).toDp(), (on?.height ?: 0f).toDp(), visible = on != null && !inColumn) }
                         Column(Modifier.fillMaxWidth().padding(bottom = 64.dp)) {
                             Rise(arrive, 0, from) { PageTitle(stringResource(if (p == Part.START) R.string.app_name else p.title), lead(p)) }
                             when (p) {
@@ -385,8 +384,12 @@ private fun CommandsPage(page: Page, app: BooklightApp) {
     val motion = LocalMotion.current
     val activity = LocalActivity.current as ComponentActivity
     val entries = remember { app.guide.entries() }
+    // Some thirty rows: a few in the frame the page comes in, the rest over the next frames, so the column's pane, which
+    // is still travelling, does not lose frames to them. (Rows further down are below the window's edge at first anyway.)
+    var count by remember { mutableIntStateOf(SLICE) }
+    LaunchedEffect(Unit) { while (count < entries.size) { androidx.compose.runtime.withFrameNanos { }; count += SLICE } }
     Column {
-        for ((group, rows) in entries.groupBy { it.group }) {
+        for ((group, rows) in entries.take(count).groupBy { it.group }) {
             GroupLabel(app.guide.group(group))
             for (e in rows) {
                 val key = "guide:${e.id}"
@@ -515,6 +518,9 @@ private fun AboutPage(page: Page, app: BooklightApp) {
         }
     }
 }
+
+/** How many rows of a long page are composed per frame. */
+private const val SLICE = 8
 
 /** A page's blocks rise 12 dp and fade in, one after the other, once: [i] is the block's place in that order, [from] the side they come from (1 below, -1 above). */
 @Composable

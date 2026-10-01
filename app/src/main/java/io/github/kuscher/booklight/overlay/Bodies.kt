@@ -8,9 +8,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -113,7 +116,8 @@ fun RowScope.StreamBody(b: Body.Stream, ink: Color, onGrow: () -> Unit) {
     val motion = LocalMotion.current
     val line = Metrics.streamLine
     val style = VALUE.copy(lineHeight = with(LocalDensity.current) { line.toSp() })
-    val room by animateDpAsState(line * if (b.tall) 4 else 2, motion.place(), label = "room")
+    // Two lines of room, or four: read where it is drawn, so a row growing lays nothing out again frame by frame.
+    val room = animateDpAsState(line * if (b.tall) 4 else 2, motion.place(), label = "room")
     // The question and the answer are two texts in one place: the one that goes keeps its own words while it fades.
     var own by remember { mutableStateOf("") }
     var said by remember { mutableStateOf("") }
@@ -123,13 +127,19 @@ fun RowScope.StreamBody(b: Body.Stream, ink: Color, onGrow: () -> Unit) {
         AnimatedContent(b.caption, transitionSpec = { motion.roll() }, contentAlignment = Alignment.CenterStart, label = "caption") { c ->
             Text(c, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        Box(Modifier.padding(top = 3.dp).fillMaxWidth().height(room).clipToBounds()) {
+        Box(Modifier.padding(top = 3.dp).fillMaxWidth().height(line * if (b.tall) 4 else 2).drawWithContent { clipRect(bottom = room.value.toPx()) { this@drawWithContent.drawContent() } }) {
             if (answer < 1f) Text(own, color = ink, style = style, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.graphicsLayer { alpha = 1f - answer })
             if (b.answer || answer > 0f) Written(said, ink, style, Modifier.graphicsLayer { alpha = answer }, onGrow)
         }
     }
 }
 
+/**
+ * The answer, written in: laid out once for each text that arrives, and uncovered in the draw phase
+ * behind a head that follows what arrives. Lines above the head's line show; the head's line shows
+ * up to the head, its last [SOFT] letters coming into view; nothing after it. No frame of the
+ * writing lays text out again.
+ */
 @Composable
 private fun Written(text: String, ink: Color, style: TextStyle, modifier: Modifier, onGrow: () -> Unit) {
     val motion = LocalMotion.current
@@ -139,23 +149,40 @@ private fun Written(text: String, ink: Color, style: TextStyle, modifier: Modifi
         if (head.value > to) head.snapTo(0f)       // another answer: written from its start
         if (motion.on) head.animateTo(to, motion.fade(240, easing = LinearEasing)) else head.snapTo(to)
     }
-    val h = head.value
-    val shown = buildAnnotatedString {
-        append(text)
-        val n = text.length
-        var i = (h - SOFT).toInt().coerceIn(0, n)
-        while (i < n) {
-            val a = ((h - i) / SOFT).coerceIn(0f, 1f)
-            if (a <= 0f) { addStyle(SpanStyle(color = Color.Transparent), i, n); break }
-            if (a < 1f) addStyle(SpanStyle(color = ink.copy(alpha = ink.alpha * a)), i, i + 1)
-            i++
-        }
-    }
+    var laid by remember { mutableStateOf<TextLayoutResult?>(null) }
     var lines by remember { mutableIntStateOf(0) }
     LaunchedEffect(lines > 2) { if (lines > 2) onGrow() }
     // Laid out at its four lines whatever room the row has yet: the room is what uncovers it.
-    Text(shown, color = ink, style = style, maxLines = 4, overflow = TextOverflow.Ellipsis, onTextLayout = { lines = it.lineCount },
-        modifier = modifier.wrapContentHeight(Alignment.Top, unbounded = true))
+    Text(text, color = ink, style = style, maxLines = 4, overflow = TextOverflow.Ellipsis, onTextLayout = { laid = it; lines = it.lineCount },
+        modifier = modifier.wrapContentHeight(Alignment.Top, unbounded = true)
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val l = laid ?: return@drawWithContent
+                val h = head.value
+                val n = l.layoutInput.text.length
+                if (h >= n + SOFT) return@drawWithContent
+                // How much of letter [c] shows: all of it SOFT letters behind the head, none at the head.
+                fun shows(c: Float) = ((h - c) / SOFT).coerceIn(0f, 1f)
+                fun x(c: Float): Float {
+                    val a = c.toInt().coerceIn(0, n)
+                    return l.getHorizontalPosition(a, true)
+                }
+                for (line in 0 until l.lineCount) {
+                    val start = l.getLineStart(line)
+                    val end = l.getLineEnd(line, true)
+                    val top = l.getLineTop(line); val bottom = l.getLineBottom(line)
+                    if (end <= h - SOFT) continue                                                             // all of it shows
+                    if (start >= h) { drawRect(Color.Black, Offset(0f, top), Size(size.width, bottom - top), blendMode = BlendMode.Clear); continue }
+                    val c0 = maxOf(h - SOFT, start.toFloat()); val c1 = minOf(h, end.toFloat())
+                    val x0 = x(c0); val x1 = if (c1 >= end) l.getLineRight(line) else x(c1)
+                    if (x1 > x0) drawRect(
+                        Brush.horizontalGradient(listOf(Color.Black.copy(alpha = shows(c0)), Color.Black.copy(alpha = shows(c1))), startX = x0, endX = x1),
+                        Offset(x0, top), Size(x1 - x0, bottom - top), blendMode = BlendMode.DstIn,
+                    )
+                    if (x1 < size.width) drawRect(Color.Black, Offset(x1, top), Size(size.width - x1, bottom - top), blendMode = BlendMode.Clear)
+                }
+            })
 }
 
 /**

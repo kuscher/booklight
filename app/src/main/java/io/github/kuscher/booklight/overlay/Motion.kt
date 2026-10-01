@@ -3,6 +3,7 @@ package io.github.kuscher.booklight.overlay
 import android.content.Context
 import android.provider.Settings
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -51,7 +52,11 @@ class Motion(val on: Boolean, val slow: Float = 1f) {
 
     /** A changed value rolling up into place, like a counter: half a line of travel. */
     fun roll(): ContentTransform =
-        (slideInVertically(place()) { it / 2 } + fadeIn(fade(120))) togetherWith (slideOutVertically(place()) { -it / 2 } + fadeOut(fade(70)))
+        ContentTransform(
+            slideInVertically(place()) { it / 2 } + fadeIn(fade(120)), slideOutVertically(place()) { -it / 2 } + fadeOut(fade(70)),
+            // Its room goes to the new text's on a spring of ours and without a clip: a longer line is not cut while it rolls in.
+            sizeTransform = SizeTransform(clip = false) { _, _ -> place() },
+        )
 
     /** How long a row waits before rising in, so a new list arrives as a quick cascade. */
     fun stagger(index: Int): Int = if (on) (index * 22 * slow).toInt() else 0

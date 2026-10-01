@@ -145,14 +145,29 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     // covers them again. They are laid out once and never move. The rows that were opened are kept while they close.
     val block = remember { Animatable(0f) }
     var held by remember { mutableStateOf<Pair<String, List<Result>>?>(null) }
+    /** The text the list was opened under. */
+    var heldText by remember { mutableStateOf("") }
     val open = model.opened
-    if (open != null) model.results.filter { it.kind == Kind.ACTION }.let { if (held?.first != open || held?.second != it) held = open to it }
+    if (open != null) {
+        model.results.filter { it.kind == Kind.ACTION }.let { if (held?.first != open || held?.second != it) held = open to it }
+        if (heldText != model.query) heldText = model.query
+    }
+    // Closed by typing: typing is never held up. The list fades where it stands, quickly, and the rows for the new text
+    // come at once. Closed by Left, the arrow or Enter: the edge covers it again, and what comes back waits for the edge.
+    val typedAway = open == null && held != null && model.query != heldText
     LaunchedEffect(open) {
-        if (open != null) { delay(motion.hold(30)); block.animateTo(1f, motion.place()) }     // the other rows are fading in these first frames
-        else { block.animateTo(0f, motion.place()); held = null }
+        // The other rows are fading in these first frames. Opened again while it was still closing, it turns round at once.
+        if (open != null) { if (block.value == 0f) delay(motion.hold(30)); block.animateTo(1f, motion.place()) }
+        else { block.animateTo(0f, if (typedAway) motion.fade(80) else motion.place()); held = null }
     }
 
-    Box(Modifier.padding(horizontal = Metrics.pad).padding(top = Metrics.pad).fillMaxWidth().height(Metrics.listHeight(model.results))) {
+    // The list that is closing: where its row stands in the list that is coming back, and how tall it was.
+    val closing = held?.takeIf { open == null }?.let { h -> rows.firstOrNull { !it.leaving && it.result.id == h.first }?.let { Closing(it.top, Metrics.listHeight(h.second)) } }
+
+    // As tall as its rows, the ones that are leaving included: the body fades this out when the list empties, and a fade
+    // cuts what it fades to its own bounds. At no height the rows would be gone in one frame instead of fading.
+    val tall = maxOf(Metrics.listHeight(model.results), rows.maxOfOrNull { it.top + Metrics.rowHeight(it.result) } ?: 0.dp)
+    Box(Modifier.padding(horizontal = Metrics.pad).padding(top = Metrics.pad).fillMaxWidth().height(tall)) {
         val danger = picked?.kind == Kind.ACTION && picked.actions.firstOrNull()?.danger == true
         // A grid has its own highlight, the square on its cells: one highlight per level.
         Pill(tops.getOrElse(model.selected) { 0.dp }, picked?.let(Metrics::rowHeight) ?: Metrics.row, visible = picked != null && picked.body !is Body.Grid, danger = danger)
@@ -160,8 +175,17 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
             val selected = !slot.leaving && slot.index == model.selected
             val r = slot.result
             val mine = held?.takeIf { it.first == r.id }
-            // Rows that come back when a list closes wait until it has closed: nothing arrives under an edge that is still moving.
-            SlotRow(slot.top, slot.leaving, slot.delay, wait = { open == null && held != null && mine == null && block.value > 0.04f }, onGone = { slots.remove(slot) }) {
+            // Rows that come back when a list closes: nothing arrives under the list. A row below the one that was opened
+            // comes as the closing edge passes it, so the list is taken off them from the last row up; a row above it waits
+            // until the list has closed, as its row is on its way back down through them.
+            val under = closing != null && mine == null && slot.top > closing.top
+            SlotRow(slot.top, slot.leaving, if (under) 0 else slot.delay, onGone = { slots.remove(slot) }, wait = {
+                when {
+                    typedAway || open != null || held == null || mine != null -> false
+                    under -> closing!!.top + Metrics.row + closing.height * block.value > slot.top + Metrics.row / 2
+                    else -> block.value > 0.04f
+                }
+            }) {
                 ResultRow(
                     r, icons, selected,
                     armed = if (selected) model.armed else r.armed, confirming = selected && model.confirming, cell = if (selected) model.cell else -1,
@@ -176,7 +200,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                     onGrow = { model.grow(r.id) },
                 )
                 if (mine != null) ActionBlock(
-                    mine.second, shown = { block.value.coerceIn(0f, 1f) },
+                    mine.second, shown = { block.value.coerceIn(0f, 1f) }, fading = typedAway,
                     // Which of them the pill is on: they follow their row in the list.
                     selected = if (open == r.id) model.selected - slot.index - 1 else -1,
                     onHover = { i -> if (open == r.id) model.select(slot.index + 1 + i) },
@@ -187,9 +211,11 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     }
 }
 
+private class Closing(val top: Dp, val height: Dp)
+
 /** Places a row, moves it when its slot changes, and plays its arrival and departure. */
 @Composable
-private fun SlotRow(top: Dp, leaving: Boolean, delayMs: Int, wait: () -> Boolean, onGone: () -> Unit, content: @Composable () -> Unit) {
+private fun SlotRow(top: Dp, leaving: Boolean, delayMs: Int, onGone: () -> Unit, wait: () -> Boolean, content: @Composable () -> Unit) {
     val motion = LocalMotion.current
     val y by animateDpAsState(top, motion.place(), label = "row")
     val here = remember { Animatable(if (motion.on) 0f else 1f) }
@@ -226,12 +252,18 @@ fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false) {
     val motion = LocalMotion.current
     val upper = remember { Animatable(top, Dp.VectorConverter) }
     val lower = remember { Animatable(top + height, Dp.VectorConverter) }
-    LaunchedEffect(top, height) {
+    val shown by animateFloatAsState(if (visible) 1f else 0f, motion.fade(120), label = "pill")
+    LaunchedEffect(top, height, visible) {
+        // Going: it fades where it stands. Coming from nothing: it is where it belongs, it does not fly in from where it
+        // last was (or from the top of a page that had no selection yet).
+        if (!visible) return@LaunchedEffect
+        if (shown == 0f) { upper.snapTo(top); lower.snapTo(top + height); return@LaunchedEffect }
+        // Its row only grew (an answer needing more lines): the lower edge goes with the row's own growth, on the same spring.
+        if (top == upper.targetValue) { lower.animateTo(top + height, motion.place()); return@LaunchedEffect }
         val down = top + height / 2 > (upper.targetValue + lower.targetValue) / 2
         launch { upper.animateTo(top, if (down) motion.trail() else motion.lead()) }
         launch { lower.animateTo(top + height, if (down) motion.lead() else motion.trail()) }
     }
-    val shown by animateFloatAsState(if (visible) 1f else 0f, motion.fade(120), label = "pill")
     val shape = RoundedCornerShape(24.dp)   // the panel's 32 less the 8 it is inset by: concentric
     val dark = LocalDark.current
     // The only coloured surface, and the densest: that is what says "selected". Flat, with the panel's white outline.
@@ -257,14 +289,14 @@ fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false) {
  * top down and covers them again.
  */
 @Composable
-private fun ActionBlock(rows: List<Result>, shown: () -> Float, selected: Int, onHover: (Int) -> Unit, onClick: (Int) -> Unit) {
+private fun ActionBlock(rows: List<Result>, shown: () -> Float, /** Going because the text changed: all of it fades, no edge travels. */ fading: Boolean, selected: Int, onHover: (Int) -> Unit, onClick: (Int) -> Unit) {
     val tops = Metrics.tops(rows)
     val soft = with(LocalDensity.current) { 20.dp.toPx() }
     Box(
         Modifier.offset(y = Metrics.row).fillMaxWidth().height(Metrics.listHeight(rows))
-            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen; alpha = if (fading) shown() else 1f }
             .drawWithContent {
-                val edge = size.height * shown()
+                val edge = if (fading) size.height else size.height * shown()
                 if (edge <= 0f) return@drawWithContent
                 clipRect(bottom = edge) { this@drawWithContent.drawContent() }
                 // The uncovering edge is soft: a row appears over its first lines, not at a cut.
@@ -410,19 +442,26 @@ fun ResultRow(
         // after them, and the kind label and the strip trade places inside it.
         if (body is Body.Keys) { KeyCaps(body.keys, dim); Spacer(Modifier.width(16.dp)) }
         Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = (Metrics.tall - 32.dp) / 2).height(32.dp) else Modifier, contentAlignment = Alignment.CenterEnd) {
-        AnimatedContent(when { selected && r.actions.isNotEmpty() -> 2; opened -> 1; else -> 0 }, transitionSpec = {
-            if (targetState == 2) (slideInHorizontally(motion.place()) { it / 4 } + fadeIn(motion.fade(110, 60))) togetherWith fadeOut(motion.fade(60))
-            else fadeIn(motion.fade(110)) togetherWith fadeOut(motion.fade(60))
-        }, contentAlignment = Alignment.CenterEnd, label = "trail") { state ->
+        val mode = when { selected && r.actions.isNotEmpty() -> 2; opened -> 1; else -> 0 }
+        // The arrow turns over when the row's list opens: one turn, whichever of the two arrows is showing.
+        val turn = animateFloatAsState(if (opened) 180f else 0f, motion.pop(), label = "turn")
+        AnimatedContent(Trail(mode, if (mode == 2) shown else emptyList()), transitionSpec = {
+            // The strip slides in when the row is selected. When only what the row can do changed (an answer landed: Ask became
+            // Copy, Pin…), the old strip fades and the new one comes in its place. The room changes at once: no size animation
+            // of the container's own, which would wipe the strip and lay the title out again every frame.
+            (if (targetState.mode == 2 && initialState.mode != 2) (slideInHorizontally(motion.place()) { it / 4 } + fadeIn(motion.fade(110, 60))) togetherWith fadeOut(motion.fade(60))
+            else fadeIn(motion.fade(110)) togetherWith fadeOut(motion.fade(60))).using(null)
+        }, contentKey = { it.key }, contentAlignment = Alignment.CenterEnd, label = "trail") { trail ->
+            val state = trail.mode
             when {
                 // (While this is on its way out the row may already have lost its actions: an empty range must not be coerced into.)
-                state == 2 -> ActionStrip(shown, slot, confirming, confirmLabel = stringResource(R.string.confirm_again),
+                state == 2 -> ActionStrip(trail.actions, slot.coerceAtMost(trail.actions.size), confirming, confirmLabel = stringResource(R.string.confirm_again),
                     onArm = { onArm(full(it)) }, onRun = { if (more && tenth == null && it == shown.size) onToggle() else onAction(full(it)) },
                     more = more, tenth = tenth, opened = opened,
-                    moreLabel = stringResource(R.string.action_more), lessLabel = stringResource(R.string.action_less))
+                    moreLabel = stringResource(R.string.action_more), lessLabel = stringResource(R.string.action_less), turn = { turn.value })
                 // Its list is open and the pill is on one of its actions: the row keeps only its arrow, turned over, in its place.
                 state == 1 -> Box(Modifier.size(32.dp).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onToggle), contentAlignment = Alignment.Center) {
-                    Icon(Symbols.of("more"), null, Modifier.size(18.dp).graphicsLayer { rotationZ = 180f }, tint = scheme.onSurface.copy(alpha = SECOND))
+                    Icon(Symbols.of("more"), null, Modifier.size(18.dp).graphicsLayer { rotationZ = turn.value }, tint = scheme.onSurface.copy(alpha = SECOND))
                 }
                 body is Body.Level -> Spacer(Modifier.width(0.dp))
                 r.kind == Kind.SCOPE -> Keycap("tab")
@@ -431,6 +470,11 @@ fun ResultRow(
         }
         }
     }
+}
+
+/** What stands at a row's right end: its kind (0), the arrow of its open list (1), or the strip of what it can do (2), which is another strip when those are other actions. */
+private class Trail(val mode: Int, val actions: List<Action>) {
+    val key: Any = mode to actions.map { it.id }
 }
 
 /** The room a row of key caps keeps free at its right for its strip ("All shortcuts", Copy), so the caps never move. */

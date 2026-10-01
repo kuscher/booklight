@@ -1,6 +1,5 @@
 package io.github.kuscher.booklight.pin
 
-import android.animation.ValueAnimator
 import android.app.ActivityManager
 import android.app.PictureInPictureUiState
 import android.app.PictureInPictureParams
@@ -127,6 +126,8 @@ class PinActivity : ComponentActivity() {
     var size: Pair<Int, Int> = 0 to 0; private set
     private var pip by mutableStateOf(false)
     private var landed = false
+    /** The content shows: once the window has landed on top (or never went there). */
+    private var shown by mutableStateOf(false)
     /** When something was last copied from here, for the word that says so. */
     private var copied by mutableLongStateOf(0L)
     private var entered = false
@@ -138,9 +139,10 @@ class PinActivity : ComponentActivity() {
         current = WeakReference(this)
         pip = isInPictureInPictureMode
         // The window is an ordinary one for a moment before the system takes it on top, and the system shows that
-        // step its own way (the window goes, a card with the app's mark lands). Nothing of ours is shown until it has
-        // landed; then the content comes, once, as a fade. One arrival, not two.
-        if (savedInstanceState == null && !pip) reveal(0f)
+        // step its own way (the window goes, a card with the app's mark lands). Until it has landed the window is its
+        // plain ground; then the content comes, once, as a fade. One arrival, not two. The window itself is never
+        // made see-through: that left the system's shadow standing alone.
+        shown = savedInstanceState != null || pip
         size = p.size(this)
         show(p)
         val app = application as BooklightApp
@@ -150,7 +152,7 @@ class PinActivity : ComponentActivity() {
             val dark = isDark(s.theme)
             BooklightTheme(dark, tint = s.tint) {
                 CompositionLocalProvider(LocalMotion provides motion, LocalDark provides dark) {
-                    pinned?.let { PinWindow(it, pip, copied, onCopy = ::copy, onClose = ::finishAndRemoveTask) }
+                    pinned?.let { PinWindow(it, pip, shown, copied, onCopy = ::copy, onClose = ::finishAndRemoveTask) }
                 }
             }
         }
@@ -177,7 +179,7 @@ class PinActivity : ComponentActivity() {
         entered = true
         // Refused (the user turned picture-in-picture off for Booklight): it stays an ordinary small window.
         val ok = runCatching { enterPictureInPictureMode(params(p)) }.getOrDefault(false)
-        if (!ok) { Log.i(BooklightApp.TAG, "pin: not on top (picture-in-picture is off for Booklight)"); landed = true; reveal(1f) }
+        if (!ok) { Log.i(BooklightApp.TAG, "pin: not on top (picture-in-picture is off for Booklight)"); landed = true; shown = true }
         // Shown once it has landed; if the system never says that it has, shown anyway.
         else window.decorView.postDelayed({ arrive() }, 1200)
     }
@@ -185,7 +187,7 @@ class PinActivity : ComponentActivity() {
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         pip = isInPictureInPictureMode
-        if (isInPictureInPictureMode) landed = true else reveal(1f)      // opened out by the user: an ordinary window, there at once
+        if (isInPictureInPictureMode) landed = true else shown = true      // opened out by the user: an ordinary window, there at once
     }
 
     /** The system says when the window has landed on top: then its content is shown. */
@@ -194,20 +196,7 @@ class PinActivity : ComponentActivity() {
         if (isInPictureInPictureMode && (Build.VERSION.SDK_INT < 35 || !state.isTransitioningToPip)) arrive()
     }
 
-    private var arrived = false
-    private fun arrive() {
-        if (arrived || isFinishing) return
-        arrived = true
-        if (!Motion.of(this).on) { reveal(1f); return }
-        ValueAnimator.ofFloat(0f, 1f).apply { duration = 140; addUpdateListener { reveal(it.animatedValue as Float) }; start() }
-    }
-
-    private fun reveal(alpha: Float) {
-        val lp = window.attributes
-        if (lp.alpha == alpha) return
-        lp.alpha = alpha
-        window.attributes = lp
-    }
+    private fun arrive() { shown = true }
 
     private fun params(p: Pinned): PictureInPictureParams {
         val (w, h) = p.size(this)
@@ -246,7 +235,7 @@ private val FIGURE = TextStyle(fontFamily = Fonts.round, fontSize = 34.sp, fontW
 private val WORD = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(600))
 
 @Composable
-private fun PinWindow(p: Pinned, pip: Boolean, copied: Long, onCopy: () -> Unit, onClose: () -> Unit) {
+private fun PinWindow(p: Pinned, pip: Boolean, shown: Boolean, copied: Long, onCopy: () -> Unit, onClose: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val context = LocalContext.current
@@ -270,10 +259,11 @@ private fun PinWindow(p: Pinned, pip: Boolean, copied: Long, onCopy: () -> Unit,
             },
         contentAlignment = Alignment.Center,
     ) {
+        val there by animateFloatAsState(if (shown) 1f else 0f, motion.fade(140), label = "there")
         // Drawn at its own size and made larger with the window, as one piece: a pin the user drags larger is the same pin, larger.
         AnimatedContent(p, transitionSpec = {
             (fadeIn(motion.fade(140)) + slideInVertically(motion.place()) { it / 8 }) togetherWith fadeOut(motion.fade(70))
-        }, contentAlignment = Alignment.Center, label = "pin") { now ->
+        }, contentAlignment = Alignment.Center, modifier = Modifier.graphicsLayer { alpha = there }, label = "pin") { now ->
             val (w, h) = remember(now) { now.size(context) }
             val scale = minOf(maxWidth / w.dp, maxHeight / h.dp)
             Box(Modifier.requiredSize(w.dp, h.dp).graphicsLayer { scaleX = scale; scaleY = scale }) {

@@ -116,6 +116,8 @@ fun ActionStrip(
     opened: Boolean = false,
     moreLabel: String = "",
     lessLabel: String = "",
+    /** How far the arrow is turned over, in degrees: the row's own value, so the arrow it keeps while its list is open is this one. */
+    turn: () -> Float = { 0f },
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -137,8 +139,6 @@ fun ActionStrip(
     val arm by rememberUpdatedState(onArm)
     val run by rememberUpdatedState(onRun)
     fun danger(k: Int) = if (k < actions.size) actions[k].danger else tenth?.danger == true
-    // The arrow turns over when the row's list opens.
-    val turn by animateFloatAsState(if (opened) 180f else 0f, motion.pop(), label = "turn")
 
     // The pane: a small sheet of the panel's own veil, lighter than the selection in light theme and
     // darker in dark, so it lifts the name's contrast in both and adds no colour of its own. One white
@@ -186,7 +186,7 @@ fun ActionStrip(
                 val symbol = act?.symbol ?: "more"
                 AnimatedContent(symbol, transitionSpec = { fadeIn(motion.fade(80)) togetherWith fadeOut(motion.fade(80)) using SizeTransform(clip = false) { _, _ -> motion.arm() } }, label = "icon") { sym ->
                     if (sym.startsWith("t:")) Text(sym.substring(2), color = ink, style = LABEL.copy(fontSize = 12.sp, fontWeight = FontWeight(600), letterSpacing = 0.2.sp), maxLines = 1, softWrap = false)
-                    else Icon(Symbols.of(sym), null, Modifier.size(18.dp).graphicsLayer { if (sym == "more") rotationZ = turn }, tint = ink)
+                    else Icon(Symbols.of(sym), null, Modifier.size(18.dp).graphicsLayer { if (sym == "more") rotationZ = turn() }, tint = ink)
                 }
                 // Its name and the Enter mark: always laid out at full width, shown as far as the slot is armed.
                 Row(

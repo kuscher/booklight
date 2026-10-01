@@ -30,6 +30,7 @@ import io.github.kuscher.booklight.ui.BooklightTheme
 import io.github.kuscher.booklight.window.MainActivity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.function.Consumer
@@ -126,7 +127,11 @@ class OverlayActivity : ComponentActivity() {
             }
         }
         // A row of the window's Commands page: Booklight types its example, once the panel has opened.
-        app.example?.let { text -> app.example = null; model.guided = true; lifecycleScope.launch { delay(motion.hold(TYPE_AFTER_MS)); if (!leaving) model.typeOut(text) } }
+        app.example?.let { text ->
+            app.example = null; model.guided = true
+            // Once the panel has opened, whatever speed it opens at; then a beat, then the letters.
+            lifecycleScope.launch { androidx.compose.runtime.snapshotFlow { model.arrived }.first { it }; delay(motion.hold(TYPE_AFTER_MS)); if (!leaving) model.typeOut(text) }
+        }
         window.decorView.post {
             Log.i(BooklightApp.TAG, "panel shown ${SystemClock.uptimeMillis() - created} ms after onCreate, ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
         }
@@ -357,7 +362,7 @@ class OverlayActivity : ComponentActivity() {
         const val EXTRA_DARK = "dark"
         /** Who starts the launcher activity with a button of their own that says "Open". */
         private val NOT_A_KEY = setOf("com.android.vending", "com.google.android.packageinstaller", "com.android.packageinstaller", "com.android.settings", "com.android.shell")
-        private const val TYPE_AFTER_MS = 320L
+        private const val TYPE_AFTER_MS = 160L
         /** Asked for by name (the widget, the tile): the panel, whoever started it. */
         const val ACTION_PANEL = "io.github.kuscher.booklight.PANEL"
         private const val EARLY_MS = 600L

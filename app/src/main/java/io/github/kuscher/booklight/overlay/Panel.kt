@@ -162,6 +162,7 @@ fun Panel(
     val scale = remember { Animatable(if (motion.on && !arrival.unfold) 0.96f else 1f) }
     fun opened() = if (arrival.unfold) ((landed(wide.value) - w0) / (1f - w0)).coerceIn(0f, 1f) else 1f
     LaunchedEffect(Unit) { if (!gate) { snapshotFlow { opened() >= Motion.GATE }.first { it }; gate = true } }
+    LaunchedEffect(gate) { if (gate) model.arrived = true }
     // A tip comes only after the opening, and only if nothing has been typed for a moment: the opening is the same every time.
     LaunchedEffect(gate) { if (gate) { delay(TIP_AFTER_MS); model.offerTip() } }
     // The seam the glass grows out of, and draws back into, lies on the field's centre line whatever the panel's height.
@@ -218,7 +219,7 @@ fun Panel(
             if (run.value >= 1.15f) run.snapTo(0f)
             run.animateTo(1.15f, motion.fade((2400 * left()).toInt().coerceAtLeast(1), easing = LinearEasing))
         } else if (run.value > 0f && run.value < 1.15f) {
-            run.animateTo(1.15f, motion.fade((700 * left()).toInt().coerceAtLeast(1), easing = CubicBezierEasing(0.2f, 0f, 0.2f, 1f)))
+            run.animateTo(1.15f, motion.fade((700 * left()).toInt().coerceAtLeast(1), easing = CubicBezierEasing(0.2f, 0.058f, 0.2f, 1f)))
         }
     }
 
@@ -292,29 +293,24 @@ fun Panel(
     val radiusPx = with(density) { Metrics.radius.toPx() }
     BoxWithConstraints(Modifier.fillMaxSize().onPreviewKeyEvent(::keys)) {
         val full = maxWidth
-        val fullPx = constraints.maxWidth
-        // The same arithmetic as the glass's own layout below: its shadow is cast from where it is drawn.
-        LaunchedEffect(fullPx) {
-            snapshotFlow {
-                val h = with(density) { height.roundToPx() }
-                val w = (fullPx * landed(wide.value)).roundToInt().coerceIn(1, fullPx.coerceAtLeast(1))
-                val u = unrolled()
-                val hh = (h * u + seamPx * (1f - u)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
-                val top = glassTop().coerceAtMost((h - hh).coerceAtLeast(0))
-                listOf((fullPx - w) / 2, top, (fullPx - w) / 2 + w, top + hh, (presence.value * opened() * 1000).roundToInt())
-            }.collect { (l, t, r, b, a) -> onGlass(l, t, r, b, a / 1000f) }
-        }
+        // The window as it stands in this frame. It follows the height's spring a frame behind (a window is resized through
+        // the system), and its blur is the whole of it: so the glass and what is in it are sized from the window, never from
+        // the spring, or a list that shrinks would leave a strip of blur with no glass on it under the panel.
+        val windowPx = constraints.maxHeight
         Box(
             Modifier
                 // The glass: as wide and as high as the arrival has opened it, centred on the seam.
                 .layout { measurable, constraints ->
                     val full = constraints.maxWidth
-                    val h = height.roundToPx().coerceAtMost(constraints.maxHeight)
+                    val h = constraints.maxHeight
                     val w = (full * landed(wide.value)).roundToInt().coerceIn(1, full.coerceAtLeast(1))
                     val u = unrolled()
                     val hh = (h * u + seamPx * (1f - u)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
                     val p = measurable.measure(Constraints.fixed(w, hh))
-                    layout(full, constraints.maxHeight) { p.place((full - w) / 2, glassTop().coerceAtMost((h - hh).coerceAtLeast(0))) }
+                    val top = glassTop().coerceAtMost((h - hh).coerceAtLeast(0))
+                    // Its shadow is cast from exactly this rectangle, in the frame that places it there.
+                    val cast = presence.value * opened()
+                    layout(full, constraints.maxHeight) { p.place((full - w) / 2, top); onGlass((full - w) / 2, top, (full - w) / 2 + w, top + hh, cast) }
                 }
                 .graphicsLayer { scaleX = scale.value; scaleY = scale.value; alpha = presence.value }
                 .glass(
@@ -347,12 +343,14 @@ fun Panel(
                     }
                     val rows = body == "results"
                     val footerPx = with(density) { (Metrics.footer + Metrics.pad).roundToPx() }
+                    // The footer comes and goes as a fade, and keeps its band at the window's lower edge for as long as any of it shows.
+                    val foot = androidx.compose.animation.core.animateFloatAsState(if (rows) 1f else 0f, motion.fade(if (rows) 140 else 70), label = "footer")
                     // What is under the field shows as far as the window has grown; the footer rides the window's bottom
                     // edge, so it is never left behind by a list that grows and never lies over a row.
                     Box(
                         Modifier.fillMaxWidth().clipToBounds().layout { measurable, constraints ->
                             val p = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
-                            val room = (height.roundToPx() - fieldPx.roundToInt() - if (rows) footerPx else 0).coerceAtLeast(0)
+                            val room = (windowPx - fieldPx.roundToInt() - if (rows || foot.value > 0f) footerPx else 0).coerceAtLeast(0)
                             layout(p.width, room) { p.place(0, 0) }
                         },
                     ) {
@@ -370,7 +368,7 @@ fun Panel(
                             }
                         }
                     }
-                    AnimatedVisibility(rows, enter = fadeIn(motion.fade(140)), exit = fadeOut(motion.fade(70))) { Footer(model) }
+                    if (rows || foot.value > 0f) Box(Modifier.graphicsLayer { alpha = foot.value }) { Footer(model) }
                 }
             }
         }
