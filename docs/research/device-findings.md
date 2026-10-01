@@ -149,3 +149,33 @@ Tried with a throwaway build (local branch `spike/unfold`), recorded and stepped
 - The Debian VM (Terminal app) is off limits: no launch, no force-stop, no reboot, no adbd changes.
 - `./bl screen` crops a real screenshot, so it shows whatever is behind the panel: never publish
   one. `./bl shot` (PixelCopy of Booklight's own window) is the one for docs.
+
+## The on-device model (Lenovo Googlebook 15, 1 October 2026)
+
+Checked with a throwaway debug build (`com.google.mlkit:genai-prompt:1.0.0-beta4`), from Booklight's own process,
+on the user build (`ruby`, `release-keys`).
+
+- **AICore serves an ordinary app.** `Generation.getClient().checkStatus()` said 1 (downloadable), then 3
+  (available) once the system's service had fetched the model. Base model `nano-v3`, token limit 8,192. Structured
+  output, system prompt and thinking mode report unavailable; the FAST and PREVIEW variants report unavailable.
+  Features on the device: `android.hardware.npu`, `com.google.android.feature.AICORE_INTEL`, `…AICORE_INTEL_PTL`,
+  `com.google.desktop.AICORE_CROS_GPU`. AICore `0.release.intel.prod_aicore_20260820.00_RC08`.
+- **Speed.** `warmup()` about 2 s the first time, tens of ms after. First word after about 0.3 s once loaded; 70 to
+  100 characters a second. Translation both ways, a grammar fix, a rewrite, a two-sentence explanation and a JSON
+  extraction took 0.7 to 3.7 s and were right; a summary turned "Googlebooks" into "Google Books".
+- **Only from the app in front.** Asked from a broadcast receiver the download call never answered and the receiver
+  ended in an "isn't responding" dialog; asked from an activity in front everything worked. The model download
+  itself (about 1.5 GB by the disk's free space) is AICore's and went on in the background.
+- **The library's usage reporting can be taken out.** As shipped, the library schedules
+  `com.google.android.datatransport…JobInfoSchedulerService` in Booklight's process and adds `ACCESS_NETWORK_STATE`.
+  With `TransportBackendDiscovery`, `JobInfoSchedulerService` and `AlarmManagerSchedulerBroadcastReceiver` removed
+  in the manifest (`tools:node="remove"`) and that permission removed, the model answered as before, logcat said
+  "Transport backend 'cct' is not registered", and no job was scheduled. The one permission left is
+  `com.google.android.apps.aicore.service.BIND_SERVICE` (normal).
+- **The system's translator is not offered to apps.** `TranslationManager.getOnDeviceTranslationCapabilities` lists
+  552 pairs, but `createOnDeviceTranslator` returns null. **The system's text classifier is**: `detectLanguage`
+  ("de" 0.998) and `generateLinks` (a date and time, a link, a flight number).
+- **Classic ML Kit translation** works on x86_64 (a 60 s pack download, then offline), with visibly worse German
+  than the model ("Das Treffen zog an Donnerstag").
+- The HP is unchecked.
+
