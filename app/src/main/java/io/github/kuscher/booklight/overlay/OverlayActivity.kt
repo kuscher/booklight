@@ -75,7 +75,8 @@ class OverlayActivity : ComponentActivity() {
         current = WeakReference(this)
         val app = application as BooklightApp
         val settings = app.prefs.now
-        motion = Motion.of(this)
+        // `--ef slow 4` (debug): every spring and tween four times as long, to step through a recording.
+        motion = Motion.of(this, if (BuildConfig.DEBUG) intent.getFloatExtra("slow", 1f) else 1f)
         val screen = windowManager.maximumWindowMetrics.bounds
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screen.height() / resources.displayMetrics.density))
         stay = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)
@@ -100,9 +101,9 @@ class OverlayActivity : ComponentActivity() {
             settings.dim -> if (dark) Look.dimDark else Look.dimLight
             else -> 0f
         }
-        placeWindow()
-        take(intent)
         arrival = Arrival.of(opening, motion)
+        take(intent)
+        placeWindow()
 
         setContent {
             BooklightTheme(dark, tint = settings.tint) {
@@ -135,7 +136,8 @@ class OverlayActivity : ComponentActivity() {
         val screen = windowManager.maximumWindowMetrics.bounds
         val lp = window.attributes
         lp.width = minOf(dp(Metrics.width.value).roundToInt(), screen.width() - dp(48f).roundToInt())
-        lp.height = dp(Metrics.height(model).value).roundToInt()
+        // The opening is the field's height; what is under the field arrives after it (Panel's gate).
+        lp.height = dp((if (arrival.unfold) Metrics.field else Metrics.height(model)).value).roundToInt()
         lp.y = (screen.height() * Metrics.TOP).roundToInt()
         window.attributes = lp
         lastHeightPx = lp.height

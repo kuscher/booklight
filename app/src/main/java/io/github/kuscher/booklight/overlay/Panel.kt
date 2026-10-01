@@ -1,6 +1,9 @@
 package io.github.kuscher.booklight.overlay
 
 import androidx.compose.animation.AnimatedContent
+import kotlinx.coroutines.flow.first
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
@@ -138,8 +141,11 @@ fun Panel(
     LaunchedEffect(Unit) { focus.requestFocus() }
     LaunchedEffect(model.card) { cardChoice = 0 }
 
-    // The window follows the panel on a spring: taller as rows arrive, never moving its top edge.
-    val height by animateDpAsState(Metrics.height(model), motion.place(), label = "height")
+    // The window follows the panel on a spring: taller as rows arrive, never moving its top edge. The opening itself is
+    // always the field's height: whatever is under the field (a card, rows for text another app handed over) arrives
+    // once the glass is nearly open, never as part of the opening.
+    var gate by remember { mutableStateOf(!arrival.unfold) }
+    val height by animateDpAsState(if (gate) Metrics.height(model) else Metrics.field, motion.place(), label = "height")
     LaunchedEffect(Unit) { snapshotFlow { height }.collect { onHeight(it) } }
 
     // Arriving. Unfold: a seam of outline grows up and down, then the glass opens out of it to both
@@ -153,6 +159,12 @@ fun Panel(
     val presence = remember { Animatable(if (motion.on && !arrival.unfold) 0f else 1f) }
     val scale = remember { Animatable(if (motion.on && !arrival.unfold) 0.96f else 1f) }
     fun opened() = if (arrival.unfold) ((landed(wide.value) - w0) / (1f - w0)).coerceIn(0f, 1f) else 1f
+    LaunchedEffect(Unit) { if (!gate) { snapshotFlow { opened() >= Motion.GATE }.first { it }; gate = true } }
+    // The seam the glass grows out of, and draws back into, lies on the field's centre line whatever the panel's height.
+    val seamPx = with(density) { Metrics.field.toPx() * 0.1f }
+    val fieldPx = with(density) { Metrics.field.toPx() }
+    fun unrolled() = ((landed(high.value) - 0.1f) / 0.9f).coerceIn(0f, 1f)
+    fun glassTop() = ((fieldPx - seamPx) / 2f * (1f - unrolled())).roundToInt()
     // On the way out the blur and the contents let go early: the glass closes slowly at first, and a
     // blurred band would stand beside it for those frames.
     var folding by remember { mutableStateOf(false) }
@@ -165,21 +177,21 @@ fun Panel(
         } else if (!leaving) {
             // Also the way back, when the key is pressed again while the panel is leaving: it opens from wherever it had got to.
             val fromSeam = high.value < 1f
-            launch { presence.animateTo(1f, tween((Arrival.GONE_MS * slow).toInt())) }
-            launch { high.animateTo(1f, tween((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_GROWS)) }
-            if (fromSeam) delay((Arrival.WAIT_MS * slow).toLong())
-            wide.animateTo(1f, spring(dampingRatio = 0.72f, stiffness = 1000f / (slow * slow)))
+            launch { presence.animateTo(1f, motion.fade((Arrival.GONE_MS * slow).toInt())) }
+            launch { high.animateTo(1f, motion.fade((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_GROWS)) }
+            if (fromSeam) delay(motion.hold((Arrival.WAIT_MS * slow).toLong()))
+            wide.animateTo(1f, motion.open(slow))
             folding = false
         } else {
             folding = true
             // Leaving is arriving backwards: the glass closes to its seam from both sides and covers the contents,
             // the blur lets go on the way, then the seam draws in and is gone.
             wide.snapTo(landed(wide.value))
-            launch { wide.animateTo(w0, tween((Arrival.FOLD_MS * slow).toInt(), easing = FOLDS)) }
-            delay(((Arrival.FOLD_MS + Arrival.WAIT_MS - Arrival.SEAM_MS) * slow).toLong())
-            launch { high.animateTo(0.1f, tween((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_DRAWS_IN)) }
-            delay(((Arrival.SEAM_MS - Arrival.GONE_MS) * slow).toLong())
-            presence.animateTo(0f, tween((Arrival.GONE_MS * slow).toInt(), easing = LinearEasing))
+            launch { wide.animateTo(w0, motion.fade((Arrival.FOLD_MS * slow).toInt(), easing = FOLDS)) }
+            delay(motion.hold(((Arrival.FOLD_MS + Arrival.WAIT_MS - Arrival.SEAM_MS) * slow).toLong()))
+            launch { high.animateTo(0.1f, motion.fade((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_DRAWS_IN)) }
+            delay(motion.hold(((Arrival.SEAM_MS - Arrival.GONE_MS) * slow).toLong()))
+            presence.animateTo(0f, motion.fade((Arrival.GONE_MS * slow).toInt(), easing = LinearEasing))
         }
     }
     // The blur covers the whole window, so it waits until the glass is more than half open.
@@ -189,8 +201,8 @@ fun Panel(
     val run = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         if (!motion.on) return@LaunchedEffect
-        delay(((if (arrival.unfold) 190 else 70) * slow).toLong())
-        run.animateTo(1.15f, tween((1100 * slow).toInt(), easing = CubicBezierEasing(0.3f, 0f, 0.2f, 1f)))
+        delay(motion.hold(((if (arrival.unfold) 190 else 70) * slow).toLong()))
+        run.animateTo(1.15f, motion.fade((1100 * slow).toInt(), easing = CubicBezierEasing(0.3f, 0f, 0.2f, 1f)))
     }
 
     fun go(r: Result, a: Action, stay: Boolean) = onRun(r, a, stay)
@@ -260,9 +272,10 @@ fun Panel(
                     val full = constraints.maxWidth
                     val h = height.roundToPx().coerceAtMost(constraints.maxHeight)
                     val w = (full * landed(wide.value)).roundToInt().coerceIn(1, full.coerceAtLeast(1))
-                    val hh = (h * landed(high.value)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
+                    val u = unrolled()
+                    val hh = (h * u + seamPx * (1f - u)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
                     val p = measurable.measure(Constraints.fixed(w, hh))
-                    layout(full, constraints.maxHeight) { p.place((full - w) / 2, (h - hh) / 2) }
+                    layout(full, constraints.maxHeight) { p.place((full - w) / 2, glassTop().coerceAtMost((h - hh).coerceAtLeast(0))) }
                 }
                 .graphicsLayer { scaleX = scale.value; scaleY = scale.value; alpha = presence.value }
                 .glass(
@@ -279,7 +292,7 @@ fun Panel(
                 // Laid out once at the panel's width and only uncovered: it never moves on screen while the glass grows.
                 Column(
                     Modifier.wrapContentSize(Alignment.TopCenter, unbounded = true).requiredWidth(full)
-                        .offset { IntOffset(0, -((height.roundToPx() * (1f - landed(high.value))) / 2f).roundToInt()) }
+                        .offset { IntOffset(0, -glassTop()) }
                         .graphicsLayer { alpha = shown() },
                 ) {
                     Field(model, field, focus = focus, onChange = { v ->
@@ -292,18 +305,31 @@ fun Panel(
                         model.card != null -> "card:${model.card}"
                         else -> "none"
                     }
-                    AnimatedContent(
-                        targetState = body,
-                        transitionSpec = { (if (motion.on) fadeIn(tween(140)) togetherWith fadeOut(tween(70)) else fadeIn(motion.fade(0)) togetherWith fadeOut(motion.fade(0))).using(null) },
-                        contentAlignment = Alignment.TopStart,
-                        label = "body",
-                    ) { state ->
-                        when {
-                            state == "results" -> ResultsBody(model, icons) { r, a -> go(r, a, false) }
-                            state.startsWith("card") -> model.card?.let { CardBody(it, model, cardChoice, onChoice = { c -> cardChoice = c }, onCard = onCard) }
-                            else -> Spacer(Modifier.fillMaxWidth())
+                    val rows = body == "results"
+                    val footerPx = with(density) { (Metrics.footer + Metrics.pad).roundToPx() }
+                    // What is under the field shows as far as the window has grown; the footer rides the window's bottom
+                    // edge, so it is never left behind by a list that grows and never lies over a row.
+                    Box(
+                        Modifier.fillMaxWidth().clipToBounds().layout { measurable, constraints ->
+                            val p = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+                            val room = (height.roundToPx() - fieldPx.roundToInt() - if (rows) footerPx else 0).coerceAtLeast(0)
+                            layout(p.width, room) { p.place(0, 0) }
+                        },
+                    ) {
+                        AnimatedContent(
+                            targetState = body,
+                            transitionSpec = { (fadeIn(motion.fade(140)) togetherWith fadeOut(motion.fade(70))).using(null) },
+                            contentAlignment = Alignment.TopStart,
+                            label = "body",
+                        ) { state ->
+                            when {
+                                state == "results" -> ResultsBody(model, icons) { r, a -> go(r, a, false) }
+                                state.startsWith("card") -> model.card?.let { CardBody(it, model, cardChoice, onChoice = { c -> cardChoice = c }, onCard = onCard) }
+                                else -> Spacer(Modifier.fillMaxWidth())
+                            }
                         }
                     }
+                    AnimatedVisibility(rows, enter = fadeIn(motion.fade(140)), exit = fadeOut(motion.fade(70))) { Footer(model) }
                 }
             }
         }

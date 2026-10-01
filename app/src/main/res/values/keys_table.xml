@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The system's keyboard shortcuts for KeysProvider: four arrays in the same order. Ids and combinations are
+     fixed; names and keywords are translated. Checked on the HP Googlebook 14 (the Welcome repo's device notes). -->
+<resources>
+    <string-array name="keys_ids" translatable="false">
+        <item>snap_left</item>
+        <item>snap_right</item>
+        <item>maximize</item>
+        <item>minimize</item>
+        <item>close</item>
+        <item>peek</item>
+        <item>desk_next</item>
+        <item>desk_prev</item>
+        <item>move_desk_next</item>
+        <item>move_desk_prev</item>
+        <item>split_left</item>
+        <item>split_right</item>
+        <item>fullscreen</item>
+        <item>desktop_windowing</item>
+        <item>next_display</item>
+        <item>screenshot</item>
+        <item>screenshot_part</item>
+        <item>screenshot_overview</item>
+        <item>screenshot_part_overview</item>
+        <item>screenshot_window</item>
+        <item>apps</item>
+        <item>home</item>
+        <item>back</item>
+        <item>recents</item>
+        <item>notifications</item>
+        <item>quick_settings</item>
+        <item>settings</item>
+        <item>lock</item>
+        <item>shortcuts</item>
+        <item>tips</item>
+        <item>gemini</item>
+        <item>circle</item>
+        <item>magic_pointer</item>
+        <item>browser</item>
+        <item>email</item>
+        <item>calendar</item>
+        <item>contacts</item>
+        <item>calculator</item>
+        <item>files</item>
+        <item>notes</item>
+        <item>input_language</item>
+        <item>talkback</item>
+        <item>voice_access</item>
+        <item>select_to_speak</item>
+        <item>magnification</item>
+        <item>color_inversion</item>
+    </string-array>
+    <string-array name="keys_combos" translatable="false">
+        <item>Action+[</item>
+        <item>Action+]</item>
+        <item>Action+=</item>
+        <item>Action+-</item>
+        <item>Action+W</item>
+        <item>Action+V</item>
+        <item>Action+Ctrl+]</item>
+        <item>Action+Ctrl+[</item>
+        <item>Action+Shift+]</item>
+        <item>Action+Shift+[</item>
+        <item>Action+Ctrl+Left</item>
+        <item>Action+Ctrl+Right</item>
+        <item>Action+Ctrl+Up</item>
+        <item>Action+Ctrl+Down</item>
+        <item>Action+Ctrl+D</item>
+        <item>Action+S</item>
+        <item>Action+Ctrl+S</item>
+        <item>Ctrl+Overview</item>
+        <item>Ctrl+Shift+Overview</item>
+        <item>Ctrl+Alt+Overview</item>
+        <item>Action</item>
+        <item>Action+H</item>
+        <item>Action+Esc</item>
+        <item>Action+Tab</item>
+        <item>Action+N</item>
+        <item>Action+Q</item>
+        <item>Action+I</item>
+        <item>Action+L</item>
+        <item>Action+/</item>
+        <item>Action+Shift+/</item>
+        <item>Action+Space</item>
+        <item>Action+A</item>
+        <item>Action+G</item>
+        <item>Action+B</item>
+        <item>Action+E</item>
+        <item>Action+C</item>
+        <item>Action+P</item>
+        <item>Action+U</item>
+        <item>Action+F</item>
+        <item>Action+Ctrl+N</item>
+        <item>Ctrl+Space</item>
+        <item>Action+Alt+T</item>
+        <item>Action+Alt+V</item>
+        <item>Action+Alt+S</item>
+        <item>Action+Alt+M</item>
+        <item>Action+Alt+I</item>
+    </string-array>
+    <string-array name="keys_titles">
+        <item>Snap window to the left</item>
+        <item>Snap window to the right</item>
+        <item>Maximise or restore window</item>
+        <item>Minimise window</item>
+        <item>Close window</item>
+        <item>Peek at the desktop</item>
+        <item>Next desk</item>
+        <item>Previous desk</item>
+        <item>Move window to the next desk</item>
+        <item>Move window to the previous desk</item>
+        <item>Split screen with the app on the left</item>
+        <item>Split screen with the app on the right</item>
+        <item>Use full screen</item>
+        <item>Use desktop windowing</item>
+        <item>Move window to the next display</item>
+        <item>Screenshot</item>
+        <item>Screenshot of a part of the screen</item>
+        <item>Screenshot</item>
+        <item>Screenshot of a part of the screen</item>
+        <item>Screenshot of a window</item>
+        <item>Open the apps list</item>
+        <item>Go to the Home screen</item>
+        <item>Go back</item>
+        <item>Recent apps</item>
+        <item>Notifications</item>
+        <item>Quick Settings</item>
+        <item>Open Settings</item>
+        <item>Lock the screen</item>
+        <item>Keyboard shortcuts</item>
+        <item>Open Tips</item>
+        <item>Open Gemini</item>
+        <item>Circle to Search</item>
+        <item>Magic Pointer</item>
+        <item>Open the browser</item>
+        <item>Open email</item>
+        <item>Open Calendar</item>
+        <item>Open Contacts</item>
+        <item>Open Calculator</item>
+        <item>Open Files</item>
+        <item>Open notes</item>
+        <item>Next input language</item>
+        <item>Turn TalkBack on or off</item>
+        <item>Turn Voice Access on or off</item>
+        <item>Turn Select to Speak on or off</item>
+        <item>Turn magnification on or off</item>
+        <item>Turn colour inversion on or off</item>
+    </string-array>
+    <string-array name="keys_words">
+        <item>tile,dock,half,side,arrange</item>
+        <item>tile,dock,half,side,arrange</item>
+        <item>maximise,maximize,full size,bigger,enlarge</item>
+        <item>minimize,hide,shrink,taskbar</item>
+        <item>quit,exit,shut</item>
+        <item>show desktop,hide windows,wallpaper,unpeek</item>
+        <item>virtual desktop,workspace,switch</item>
+        <item>virtual desktop,workspace,switch</item>
+        <item>send,virtual desktop,workspace</item>
+        <item>send,virtual desktop,workspace</item>
+        <item>side by side,two apps,multitasking,splitscreen</item>
+        <item>side by side,two apps,multitasking,splitscreen</item>
+        <item>fullscreen,whole screen,immersive</item>
+        <item>windowed,freeform,window mode,floating</item>
+        <item>monitor,external screen,second screen,send</item>
+        <item>capture,screen shot,print screen,snapshot,grab</item>
+        <item>partial,area,region,selection,capture,screen shot,print screen,crop</item>
+        <item>capture,screen shot,print screen,snapshot,grab</item>
+        <item>partial,area,region,selection,capture,screen shot,print screen,crop</item>
+        <item>capture,screen shot,print screen,one app</item>
+        <item>all apps,launcher,app drawer,programs,start menu</item>
+        <item>desktop,start,main screen</item>
+        <item>previous,return,last page</item>
+        <item>overview,switch apps,task switcher,open windows,multitasking</item>
+        <item>alerts,shade,panel</item>
+        <item>toggles,control centre,control center,panel</item>
+        <item>preferences,options,configuration</item>
+        <item>lockscreen,away,secure,leave</item>
+        <item>keys,hotkeys,key combinations,cheat sheet,help</item>
+        <item>help,guide,how to,learn,support</item>
+        <item>assistant,digital assistant,ai,ask,chat</item>
+        <item>contextual,lens,look up,find on screen</item>
+        <item>contextual cursor,cursor,ai,mouse pointer</item>
+        <item>chrome,web,internet,surf</item>
+        <item>mail,gmail,inbox,e-mail</item>
+        <item>agenda,schedule,events,dates</item>
+        <item>people,address book,phone book</item>
+        <item>calc,sums,maths,math</item>
+        <item>file manager,documents,downloads,folders,explorer,finder</item>
+        <item>memo,keep,jot,write down</item>
+        <item>keyboard layout,switch layout,ime,locale</item>
+        <item>screen reader,accessibility,spoken feedback,toggle</item>
+        <item>voice control,accessibility,speech,hands-free,toggle</item>
+        <item>read aloud,accessibility,text to speech,tts,toggle</item>
+        <item>zoom,magnifier,accessibility,enlarge,toggle</item>
+        <item>color,invert,accessibility,negative,toggle</item>
+    </string-array>
+</resources>

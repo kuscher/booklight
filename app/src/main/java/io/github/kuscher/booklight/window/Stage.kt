@@ -42,6 +42,7 @@ import io.github.kuscher.booklight.overlay.LocalDark
 import io.github.kuscher.booklight.overlay.LocalMotion
 import io.github.kuscher.booklight.overlay.Metrics
 import io.github.kuscher.booklight.overlay.OverlayModel
+import io.github.kuscher.booklight.overlay.Footer
 import io.github.kuscher.booklight.overlay.ResultsBody
 import io.github.kuscher.booklight.overlay.THIRD
 import io.github.kuscher.booklight.ui.AppIcons
@@ -99,7 +100,7 @@ fun Stage(app: BooklightApp) {
                         Box(Modifier.padding(start = 1.dp).size(2.dp, 28.dp).background(scheme.primary))
                         model.completion?.let { Text(it, color = scheme.onSurface.copy(alpha = THIRD), style = style) }
                     }
-                    if (model.results.isNotEmpty()) ResultsBody(model, icons) { _, _ -> }
+                    if (model.results.isNotEmpty()) { ResultsBody(model, icons) { _, _ -> }; Footer(model) }
                 }
             }
         }

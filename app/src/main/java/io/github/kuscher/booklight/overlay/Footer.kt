@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -49,11 +50,12 @@ fun Footer(model: OverlayModel) {
     val ink = scheme.onSurface.copy(alpha = SECOND)
     val r = model.current
     val grid = r?.body as? Body.Grid
+    val slide = with(LocalDensity.current) { 8.dp.roundToPx() }
     Row(Modifier.fillMaxWidth().height(Metrics.footer + Metrics.pad).padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f)) {
             val word = model.flash
             AnimatedContent(word ?: grid?.cells?.getOrNull(model.cell)?.name?.let { " $it" }, transitionSpec = {
-                (fadeIn(motion.fade(120)) + slideInHorizontally(motion.place()) { -it / 6 }) togetherWith fadeOut(motion.fade(80))
+                (fadeIn(motion.fade(120)) + slideInHorizontally(motion.place()) { -slide }) togetherWith fadeOut(motion.fade(80))
             }, contentAlignment = Alignment.CenterStart, label = "flash") { text ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     when {
@@ -61,7 +63,7 @@ fun Footer(model: OverlayModel) {
                         text.startsWith(" ") -> Text(text.trim(), color = ink, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         else -> {
                             // Strong ink and a mark, not a colour: a mid-tone would vanish over the wrong window.
-                            if (!model.flashBad) Icon(Symbols.check, null, Modifier.size(16.dp), tint = scheme.onSurface)
+                            if (!model.flashBad) DrawnCheck(true, scheme.onSurface, Modifier.size(16.dp))
                             Text(text, color = scheme.onSurface, style = HINT.copy(fontSize = 14.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }

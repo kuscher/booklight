@@ -126,7 +126,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     slots.removed   // read, so a row that has finished fading out is dropped from the composition
     val rows = slots.sync(model.results, motion)
     val picked = model.results.getOrNull(model.selected)
-    Column {
+    run {
         Box(Modifier.padding(horizontal = Metrics.pad).padding(top = Metrics.pad).fillMaxWidth().height(Metrics.listHeight(model.results))) {
             val top = model.results.take(model.selected).fold(0.dp) { h, r -> h + Metrics.rowHeight(r) }
             // A grid has its own highlight, the square on its cells: one highlight per level.
@@ -148,7 +148,6 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                 }
             }
         }
-        Footer(model)
     }
 }
 
@@ -270,7 +269,11 @@ fun ResultRow(
                         Text(a, color = on, style = TextStyle(fontFamily = Fonts.round, fontSize = if (a.length > 22) 26.sp else 34.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 } else {
-                    Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Laid out once at its own width and covered by a fade where the strip takes its room: a name unrolling
+                    // beside it never makes the title swap letters for an ellipsis.
+                    Box(Modifier.fillMaxWidth().fadeEnd()) {
+                        Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                    }
                     r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = if (Metrics.rowHeight(r) > Metrics.row) 2 else 1, overflow = TextOverflow.Ellipsis) }
                 }
             }

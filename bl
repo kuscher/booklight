@@ -60,7 +60,7 @@ install() {
 }
 open() { # open [stay] [tint=0.2] [blur=24] [dim=0.1]  (the glass values are for debug builds)
   local extra=() a
-  for a in "$@"; do case "$a" in stay) extra+=(--ez stay true) ;; tint=*|blur=*|dim=*) extra+=(--ef "${a%%=*}" "${a#*=}") ;; opening=*) extra+=(--es opening "${a#*=}") ;; esac; done
+  for a in "$@"; do case "$a" in stay) extra+=(--ez stay true) ;; tint=*|blur=*|dim=*|slow=*) extra+=(--ef "${a%%=*}" "${a#*=}") ;; opening=*) extra+=(--es opening "${a#*=}") ;; esac; done
   A shell am start --user current -n "$PANEL" ${extra[@]+"${extra[@]}"} ${DARK:+--ez dark "$DARK"} >/dev/null
 }
 

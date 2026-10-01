@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="keys_titles">
+        <item>Fenster links andocken</item>
+        <item>Fenster rechts andocken</item>
+        <item>Fenster maximieren oder wiederherstellen</item>
+        <item>Fenster minimieren</item>
+        <item>Fenster schließen</item>
+        <item>Desktop anzeigen</item>
+        <item>Nächster Desktop</item>
+        <item>Vorheriger Desktop</item>
+        <item>Fenster auf den nächsten Desktop verschieben</item>
+        <item>Fenster auf den vorherigen Desktop verschieben</item>
+        <item>Splitscreen mit der App links</item>
+        <item>Splitscreen mit der App rechts</item>
+        <item>Vollbildmodus verwenden</item>
+        <item>Desktop-Fenstermodus verwenden</item>
+        <item>Fenster auf das nächste Display verschieben</item>
+        <item>Screenshot</item>
+        <item>Screenshot eines Bildschirmausschnitts</item>
+        <item>Screenshot</item>
+        <item>Screenshot eines Bildschirmausschnitts</item>
+        <item>Screenshot eines Fensters</item>
+        <item>Liste der Apps öffnen</item>
+        <item>Zum Startbildschirm</item>
+        <item>Zurück</item>
+        <item>Letzte Apps</item>
+        <item>Benachrichtigungen</item>
+        <item>Schnelleinstellungen</item>
+        <item>Einstellungen öffnen</item>
+        <item>Bildschirm sperren</item>
+        <item>Tastenkürzel</item>
+        <item>Tipps öffnen</item>
+        <item>Gemini öffnen</item>
+        <item>Circle to Search</item>
+        <item>Magic Pointer</item>
+        <item>Browser öffnen</item>
+        <item>E-Mail öffnen</item>
+        <item>Kalender öffnen</item>
+        <item>Kontakte öffnen</item>
+        <item>Rechner öffnen</item>
+        <item>Files öffnen</item>
+        <item>Notizen öffnen</item>
+        <item>Nächste Eingabesprache</item>
+        <item>TalkBack ein- oder ausschalten</item>
+        <item>Voice Access ein- oder ausschalten</item>
+        <item>Vorlesen ein- oder ausschalten</item>
+        <item>Vergrößerung ein- oder ausschalten</item>
+        <item>Farbumkehr ein- oder ausschalten</item>
+    </string-array>
+    <string-array name="keys_words">
+        <item>anordnen,kachel,hälfte,seite,snap left,tile,dock,half,side,arrange</item>
+        <item>anordnen,kachel,hälfte,seite,snap right,tile,dock,half,side,arrange</item>
+        <item>vergrößern,volle größe,groß,restore,maximise,maximize,full size,bigger,enlarge</item>
+        <item>verkleinern,ausblenden,taskleiste,minimise,minimize,hide,shrink,taskbar</item>
+        <item>beenden,zumachen,verlassen,close window,quit,exit,shut</item>
+        <item>blick auf den desktop,fenster ausblenden,hintergrund,schreibtisch,peek,show desktop,hide windows,wallpaper,unpeek</item>
+        <item>virtueller desktop,arbeitsbereich,wechseln,next desk,virtual desktop,workspace,switch</item>
+        <item>virtueller desktop,arbeitsbereich,wechseln,previous desk,virtual desktop,workspace,switch</item>
+        <item>senden,virtueller desktop,arbeitsbereich,move to next desk,send,virtual desktop,workspace</item>
+        <item>senden,virtueller desktop,arbeitsbereich,move to previous desk,send,virtual desktop,workspace</item>
+        <item>geteilter bildschirm,bildschirm teilen,nebeneinander,zwei apps,split screen left,side by side,two apps,multitasking</item>
+        <item>geteilter bildschirm,bildschirm teilen,nebeneinander,zwei apps,split screen right,side by side,two apps,multitasking</item>
+        <item>ganzer bildschirm,bildschirmfüllend,full screen,fullscreen,whole screen,immersive</item>
+        <item>fenstermodus,freiform,schwebend,desktop windowing,windowed,freeform,window mode,floating</item>
+        <item>monitor,externer bildschirm,zweiter bildschirm,senden,move to next display,external screen,second screen,send</item>
+        <item>bildschirmfoto,bildschirmaufnahme,aufnehmen,druck,capture,screen shot,print screen,snapshot,grab</item>
+        <item>bildschirmfoto,ausschnitt,bereich,teil,auswahl,partial,area,region,selection,capture,screen shot,print screen,crop</item>
+        <item>bildschirmfoto,bildschirmaufnahme,aufnehmen,druck,capture,screen shot,print screen,snapshot,grab</item>
+        <item>bildschirmfoto,ausschnitt,bereich,teil,auswahl,partial,area,region,selection,capture,screen shot,print screen,crop</item>
+        <item>bildschirmfoto,aufnehmen,einzelnes fenster,window,capture,screen shot,print screen,one app</item>
+        <item>alle apps,programme,startmenü,app-liste,apps list,all apps,launcher,app drawer,programs,start menu</item>
+        <item>home,startseite,desktop,start,main screen</item>
+        <item>vorherige seite,rückwärts,go back,previous,return,last page</item>
+        <item>übersicht,zuletzt verwendet,apps wechseln,offene fenster,recent apps,overview,switch apps,task switcher,open windows,multitasking</item>
+        <item>mitteilungen,hinweise,leiste,notifications,alerts,shade,panel</item>
+        <item>schalter,kontrollzentrum,leiste,quick settings,toggles,control centre,control center,panel</item>
+        <item>optionen,präferenzen,konfiguration,settings,preferences,options,configuration</item>
+        <item>sperrbildschirm,abwesend,sichern,lock screen,lockscreen,away,secure,leave</item>
+        <item>tastenkombinationen,kurzbefehle,spickzettel,hilfe,keyboard shortcuts,keys,hotkeys,key combinations,cheat sheet,help</item>
+        <item>hilfe,anleitung,lernen,tips,help,guide,how to,learn,support</item>
+        <item>assistent,ki,fragen,assistant,digital assistant,ai,ask,chat</item>
+        <item>kontextsuche,einkreisen,suchen,bildschirmsuche,contextual,lens,look up,find on screen</item>
+        <item>zeiger,mauszeiger,ki,contextual cursor,cursor,ai,mouse pointer</item>
+        <item>chrome,web,internet,surfen,surf</item>
+        <item>mail,gmail,posteingang,email,inbox</item>
+        <item>termine,terminplan,agenda,calendar,schedule,events,dates</item>
+        <item>personen,adressbuch,telefonbuch,contacts,people,address book,phone book</item>
+        <item>taschenrechner,mathe,calculator,calc,sums,maths,math</item>
+        <item>dateien,dateimanager,dokumente,ordner,file manager,documents,downloads,folders,explorer,finder</item>
+        <item>memo,aufschreiben,merken,notes,keep,jot,write down</item>
+        <item>tastaturlayout,sprache wechseln,layout wechseln,next input language,keyboard layout,switch layout,ime,locale</item>
+        <item>screenreader,sprachausgabe,bedienungshilfen,barrierefreiheit,umschalten,screen reader,accessibility,spoken feedback,toggle</item>
+        <item>sprachsteuerung,sprachbefehle,bedienungshilfen,barrierefreiheit,umschalten,voice control,accessibility,speech,hands-free,toggle</item>
+        <item>select to speak,text vorlesen,bedienungshilfen,barrierefreiheit,umschalten,read aloud,accessibility,text to speech,tts,toggle</item>
+        <item>zoom,lupe,vergrößern,bedienungshilfen,barrierefreiheit,umschalten,magnification,magnifier,accessibility,enlarge,toggle</item>
+        <item>farben umkehren,invertieren,negativ,bedienungshilfen,barrierefreiheit,umschalten,colour inversion,color,invert,accessibility,negative,toggle</item>
+    </string-array>
+</resources>
