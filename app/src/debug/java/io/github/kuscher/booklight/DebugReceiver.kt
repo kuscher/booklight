@@ -72,10 +72,11 @@ class DebugReceiver : BroadcastReceiver() {
                 when (arg) {
                     "down" -> if (!m.moveCell(0, 1)) m.move(1)
                     "up" -> if (!m.moveCell(0, -1) && !m.restoreLast()) m.move(-1)
-                    "right" -> if (!m.moveCell(1, 0) && !m.nudge(1)) m.arm(1, wrap = false)
-                    "left" -> if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
-                    "tab" -> if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else m.arm(1, wrap = true)
-                    "backtab" -> m.arm(-1, wrap = true)
+                    "right" -> if (!m.moveCell(1, 0) && !m.nudge(1) && m.opened == null) { if (m.onMore) m.open() else m.arm(1, wrap = false) }
+                    "left" -> if (m.opened != null) m.close() else if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
+                    "tab" -> if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
+                    "backtab" -> if (m.opened != null) m.step(-1) else m.arm(-1, wrap = true)
+                    "more" -> { m.current?.let { m.armAt(it.actions.size) } }
                     "back" -> m.leaveScope()
                     "esc" -> if (!m.cancelConfirm()) act.close()
                     "enter" -> m.enter { r, a -> act.run(r, a) }
@@ -88,7 +89,7 @@ class DebugReceiver : BroadcastReceiver() {
                 val m = act?.model ?: return@post out("no panel")
                 val d = act.window.decorView
                 val loc = IntArray(2).also { d.getLocationOnScreen(it) }
-                out("chip=${m.chip?.key} query='${m.query}' selected=${m.selected} armed=${m.chosen()?.second?.id}${if (m.confirming) "?" else ""} cell=${m.cell} flash=${m.flash} " +
+                out("chip=${m.chip?.key} query='${m.query}' selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
                     "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
             }
@@ -122,7 +123,7 @@ class DebugReceiver : BroadcastReceiver() {
             is io.github.kuscher.booklight.core.Body.Task -> if (b.done) " {done}" else " {open}"
             is io.github.kuscher.booklight.core.Body.Stream -> " {${b.caption}: ${b.text}${if (b.busy) "…" else ""}}"
         }
-        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id }.joinToString(",")
+        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (a.more) "+" else "") }.joinToString(",")
         return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.label ?: r.kind}]$body <$acts>"
     }
 }

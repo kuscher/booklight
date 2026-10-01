@@ -129,8 +129,8 @@
     <string name="verb_open">open,launch,start,run</string>
     <string name="verb_window">new window,window</string>
     <string name="verb_info">info,app info,details</string>
-    <string name="verb_left">left</string>
-    <string name="verb_right">right</string>
+    <string name="verb_left">left,left half</string>
+    <string name="verb_right">right,right half</string>
     <string name="verb_uninstall">uninstall,remove,delete</string>
     <string name="win_lead">Press a key, type a few letters, press Enter. Booklight opens apps, finds settings, searches the web, and does small things at once: a sum, a timer, a note, an emoji.</string>
     <string name="win_key_title">Your key</string>

@@ -3,6 +3,7 @@ package io.github.kuscher.booklight.overlay
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -61,6 +62,8 @@ private class Slots(n: Int) {
     /** Where the highlight would begin and end if it were wholly on this slot (inside any air the slot keeps around itself). */
     val p0 = IntArray(n)
     val p1 = IntArray(n)
+    /** Where the slot's icon is drawn. */
+    val icon = IntArray(n)
 
     fun at(px: Float): Int {
         for (k in x.indices) if (px < x[k] + w[k]) return k
@@ -71,24 +74,35 @@ private class Slots(n: Int) {
 /** How much of slot [k] the highlight is on, when the highlight is at [a]: 1 on it, 0 a whole slot away. */
 private fun on(a: Float, k: Int) = (1f - abs(a - k)).coerceIn(0f, 1f)
 
-private val LABEL = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
+internal val LABEL = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
 private val SLOT = 32.dp
+/** Inside the pane, before the icon and after the mark. */
 private val EDGE = 9.dp
+/** A slot at rest: its 18 dp icon and this on either side make the 32 dp pitch that lets ten of them stand beside a name. */
+private val REST = 7.dp
 private val GAP = 7.dp
 /** The space the armed slot keeps between its pane and a neighbouring icon. */
-private val AIR = 6.dp
+private val AIR = 4.dp
 
 /**
- * What the selected row can do: every action as an icon, in a row. One is armed and Enter runs it;
- * it is unrolled to its name and the Enter mark, on a small pane of the panel's own glass.
+ * What the selected row can do: its actions as icons, in a row, ten at most. One is armed and
+ * Enter runs it; it is unrolled to its name and the Enter mark, on a small pane of the panel's own
+ * glass.
  *
- * The arming is one number on a spring. Each action shows as much of its name as that number is
- * on it, and the pane is drawn around wherever the number is, so the name unrolling, the
- * neighbours making room and the pane travelling are one movement that cannot fall out of step.
+ * A row with more than its icons show keeps the rest behind the last slot, an arrow ([more]): armed,
+ * it reads More, and Enter opens them as a list under the row ([opened]: the arrow is turned over
+ * and reads Less). When a typed verb names one of the others ("chrome top left"), the arrow's slot
+ * is that action instead ([tenth]): never an eleventh slot.
+ *
+ * Each slot shows as much of its name as it is armed, a number of its own on one spring. The pane
+ * is drawn around the weighted middle of the slots that are part-shown, so a step to the next slot
+ * is one movement, and a jump (a typed verb arming the last slot) goes straight there without
+ * unrolling every name on the way.
  */
 @Composable
 fun ActionStrip(
     actions: List<Action>,
+    /** Which slot is armed: an index into [actions], or `actions.size` for the last slot (the arrow, or [tenth]). */
     armed: Int,
     /** The armed action is waiting for its second Enter. */
     confirming: Boolean,
@@ -97,14 +111,23 @@ fun ActionStrip(
     onArm: (Int) -> Unit,
     onRun: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    more: Boolean = false,
+    tenth: Action? = null,
+    opened: Boolean = false,
+    moreLabel: String = "",
+    lessLabel: String = "",
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val dark = LocalDark.current
-    val n = actions.size
+    val last = more || tenth != null
+    val n = actions.size + if (last) 1 else 0
     val slots = remember(n) { Slots(n) }
-    val a = remember { Animatable(armed.toFloat()) }
-    LaunchedEffect(armed) { a.animateTo(armed.toFloat(), motion.arm()) }
+    val at = armed.coerceIn(0, (n - 1).coerceAtLeast(0))
+    // How far each slot is armed, 0 to 1.
+    val amount = remember(n) { List(n) { Animatable(if (it == at) 1f else 0f) } }
+    LaunchedEffect(at, n) { amount.forEachIndexed { k, a -> launch { a.animateTo(if (k == at) 1f else 0f, motion.arm()) } } }
+    fun on(k: Int) = amount[k].value.coerceIn(0f, 1f)
     // The line that drains while a confirmation waits.
     val left = remember { Animatable(1f) }
     LaunchedEffect(confirming) {
@@ -113,6 +136,9 @@ fun ActionStrip(
     }
     val arm by rememberUpdatedState(onArm)
     val run by rememberUpdatedState(onRun)
+    fun danger(k: Int) = if (k < actions.size) actions[k].danger else tenth?.danger == true
+    // The arrow turns over when the row's list opens.
+    val turn by animateFloatAsState(if (opened) 180f else 0f, motion.pop(), label = "turn")
 
     // The pane: a small sheet of the panel's own veil, lighter than the selection in light theme and
     // darker in dark, so it lifts the name's contrast in both and adds no colour of its own. One white
@@ -127,15 +153,12 @@ fun ActionStrip(
             .clearAndSetSemantics {}   // the row speaks for its actions (custom accessibility actions)
             .drawBehind {
                 if (n == 0) return@drawBehind
-                val at = a.value.coerceIn(0f, (n - 1).toFloat())
-                val k0 = at.toInt()
-                val k1 = minOf(n - 1, k0 + 1)
-                val f = at - k0
-                val x0 = slots.p0[k0] + (slots.p0[k1] - slots.p0[k0]) * f
-                val x1 = slots.p1[k0] + (slots.p1[k1] - slots.p1[k0]) * f
-                var danger = 0f
-                for (k in 0 until n) if (actions[k].danger) danger += on(at, k)
-                pane(x0, x1, lerp(pane, alarm, danger.coerceIn(0f, 1f)), rim)
+                // Where the pane is: the middle of the slots it is on, each weighing as much as it is armed.
+                var sum = 0f; var x0 = 0f; var x1 = 0f; var red = 0f
+                for (k in 0 until n) { val w = on(k); sum += w; x0 += slots.p0[k] * w; x1 += slots.p1[k] * w; if (danger(k)) red += w }
+                if (sum <= 0f) return@drawBehind
+                x0 /= sum; x1 /= sum
+                pane(x0, x1, lerp(pane, alarm, (red / sum).coerceIn(0f, 1f)), rim)
                 if (confirming && left.value > 0f) {
                     val inset = 14.dp.toPx()
                     val y = size.height - 5.dp.toPx()
@@ -153,25 +176,32 @@ fun ActionStrip(
                 }
             },
         content = {
-            actions.forEachIndexed { k, act ->
+            for (k in 0 until n) {
+                val act = if (k < actions.size) actions[k] else tenth
+                val bad = act?.danger == true
                 // On the selection the ink is the panel's own, at full strength. What removes something is red at
                 // rest and takes its container's ink once the pane is on it.
-                val ink by animateColorAsState(if (!act.danger) scheme.onSurface else if (k == armed) scheme.onErrorContainer else scheme.error, motion.fade(120), label = "ink")
-                if (act.symbol.startsWith("t:")) Text(act.symbol.substring(2), color = ink, style = LABEL.copy(fontSize = 12.sp, fontWeight = FontWeight(600), letterSpacing = 0.2.sp), maxLines = 1, softWrap = false)
-                else Icon(Symbols.of(act.symbol), null, Modifier.size(18.dp), tint = ink)
-                // Its name and the Enter mark: always laid out at full width, shown as far as the pane is on it.
+                val ink by animateColorAsState(if (!bad) scheme.onSurface else if (k == at) scheme.onErrorContainer else scheme.error, motion.fade(120), label = "ink")
+                // The slot's icon. In the last slot the arrow and a typed action trade places on one centre.
+                val symbol = act?.symbol ?: "more"
+                AnimatedContent(symbol, transitionSpec = { fadeIn(motion.fade(80)) togetherWith fadeOut(motion.fade(80)) using SizeTransform(clip = false) { _, _ -> motion.arm() } }, label = "icon") { sym ->
+                    if (sym.startsWith("t:")) Text(sym.substring(2), color = ink, style = LABEL.copy(fontSize = 12.sp, fontWeight = FontWeight(600), letterSpacing = 0.2.sp), maxLines = 1, softWrap = false)
+                    else Icon(Symbols.of(sym), null, Modifier.size(18.dp).graphicsLayer { if (sym == "more") rotationZ = turn }, tint = ink)
+                }
+                // Its name and the Enter mark: always laid out at full width, shown as far as the slot is armed.
                 Row(
                     Modifier
-                        .graphicsLayer { alpha = (on(a.value, k) * 1.6f).coerceAtMost(1f) }
-                        .drawWithContent { clipRect(right = size.width * on(a.value, k)) { this@drawWithContent.drawContent() } },
+                        .graphicsLayer { alpha = (on(k) * 1.6f).coerceAtMost(1f) }
+                        .drawWithContent { clipRect(right = size.width * on(k)) { this@drawWithContent.drawContent() } },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val name = act?.label ?: if (opened) lessLabel else moreLabel
                     AnimatedContent(
-                        confirming && k == armed,
+                        if (confirming && k == at) confirmLabel else name,
                         transitionSpec = { (fadeIn(motion.fade(110, 40)) togetherWith fadeOut(motion.fade(60))).using(SizeTransform(clip = false) { _, _ -> motion.lead() }) },
                         contentAlignment = Alignment.CenterEnd, label = "name",
-                    ) { sure ->
-                        Text(if (sure) confirmLabel else act.label, color = ink, style = LABEL, maxLines = 1, softWrap = false)
+                    ) { text ->
+                        Text(text, color = ink, style = LABEL, maxLines = 1, softWrap = false)
                     }
                     Spacer(Modifier.width(6.dp))
                     Icon(Symbols.enter, null, Modifier.size(14.dp), tint = ink)
@@ -181,28 +211,30 @@ fun ActionStrip(
     ) { measurables, constraints ->
         val h = SLOT.roundToPx()
         val edge = EDGE.roundToPx()
+        val rest = REST.roundToPx()
         val gap = GAP.roundToPx()
         val air = AIR.roundToPx()
         val icons = List(n) { measurables[2 * it].measure(Constraints()) }
         val tails = List(n) { measurables[2 * it + 1].measure(Constraints(maxHeight = h)) }
-        val at = a.value.coerceIn(0f, (n - 1).coerceAtLeast(0).toFloat())
         var x = 0
         for (k in 0 until n) {
-            val shown = on(at, k)
+            val shown = on(k)
             // The armed slot keeps its neighbours at arm's length: a little air on each side that has one.
             val before = if (k > 0) (air * shown).roundToInt() else 0
             val after = if (k < n - 1) (air * shown).roundToInt() else 0
+            // At rest the icon has 7 dp on either side; armed, the pane's own 9.
+            val side = rest + ((edge - rest) * shown).roundToInt()
             slots.x[k] = x
             slots.p0[k] = x + before
-            slots.w[k] = before + edge + icons[k].width + (shown * (gap + tails[k].width)).roundToInt() + edge + after
+            slots.w[k] = before + side + icons[k].width + (shown * (gap + tails[k].width)).roundToInt() + side + after
             slots.p1[k] = x + slots.w[k] - after
+            slots.icon[k] = slots.p0[k] + side
             x += slots.w[k]
         }
         layout(x.coerceAtMost(constraints.maxWidth), h) {
             for (k in 0 until n) {
-                val left = slots.p0[k] + edge
-                icons[k].place(left, (h - icons[k].height) / 2)
-                tails[k].place(left + icons[k].width + gap, (h - tails[k].height) / 2)
+                icons[k].place(slots.icon[k], (h - icons[k].height) / 2)
+                tails[k].place(slots.icon[k] + icons[k].width + gap, (h - tails[k].height) / 2)
             }
         }
     }

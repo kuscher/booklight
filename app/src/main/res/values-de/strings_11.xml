@@ -129,8 +129,8 @@
     <string name="verb_open">open,launch,start,öffnen,oeffnen,starten</string>
     <string name="verb_window">new window,window,neues fenster,fenster</string>
     <string name="verb_info">info,app info,details,app-info</string>
-    <string name="verb_left">left,links</string>
-    <string name="verb_right">right,rechts</string>
+    <string name="verb_left">left,left half,links,linke hälfte</string>
+    <string name="verb_right">right,right half,rechts,rechte hälfte</string>
     <string name="verb_uninstall">uninstall,remove,delete,deinstallieren,entfernen,löschen,loeschen</string>
     <string name="win_lead">Taste drücken, ein paar Buchstaben tippen, Enter. Booklight öffnet Apps, findet Einstellungen, sucht im Web und erledigt Kleinigkeiten sofort: eine Rechnung, einen Timer, eine Notiz, ein Emoji.</string>
     <string name="win_key_title">Deine Taste</string>

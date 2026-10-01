@@ -84,24 +84,56 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
         }
     }
 
-    /** The words that arm an action when typed with an app's name ("chrome uninstall"); English ones work in every language. */
+    /** The places an app's window can be asked to open in, as the id of the action, its place, its name and its typed words; in the order they are offered. */
+    private class Spot(val id: String, val place: Place, val label: Int, val words: Int, val more: Boolean)
+
+    private val spots = listOf(
+        Spot("left", Place.LEFT, R.string.action_left_half, R.string.verb_left, false),
+        Spot("right", Place.RIGHT, R.string.action_right_half, R.string.verb_right, false),
+        Spot("full", Place.FULL, R.string.place_full, R.string.verb_full, false),
+        Spot("p3l", Place.LEFT_THIRD, R.string.place_p3l, R.string.verb_p3l, false),
+        Spot("p3m", Place.MIDDLE_THIRD, R.string.place_p3m, R.string.verb_p3m, false),
+        Spot("p3r", Place.RIGHT_THIRD, R.string.place_p3r, R.string.verb_p3r, false),
+        // The rest wait behind the row's arrow; typed, they are there at once.
+        Spot("p23l", Place.LEFT_TWO_THIRDS, R.string.place_p23l, R.string.verb_p23l, true),
+        Spot("p23r", Place.RIGHT_TWO_THIRDS, R.string.place_p23r, R.string.verb_p23r, true),
+        Spot("ptl", Place.TOP_LEFT, R.string.place_ptl, R.string.verb_ptl, true),
+        Spot("ptr", Place.TOP_RIGHT, R.string.place_ptr, R.string.verb_ptr, true),
+        Spot("pbl", Place.BOTTOM_LEFT, R.string.place_pbl, R.string.verb_pbl, true),
+        Spot("pbr", Place.BOTTOM_RIGHT, R.string.place_pbr, R.string.verb_pbr, true),
+        Spot("pc", Place.CENTER, R.string.place_pc, R.string.verb_pc, true),
+    )
+
+    /** The words that arm an action when typed with an app's name ("chrome uninstall", "chrome top left"); English ones work in every language. */
     private val verbs: List<Verb> by lazy {
         fun words(id: Int) = context.getString(id).split(',').filter(String::isNotBlank)
         listOf(
             Verb("open", words(R.string.verb_open)),
             Verb("window", words(R.string.verb_window), atStart = false),      // "new window" at the start is the New scope
             Verb("info", words(R.string.verb_info)),
-            Verb("left", words(R.string.verb_left), atStart = false),
-            Verb("right", words(R.string.verb_right), atStart = false),
-            Verb("uninstall", words(R.string.verb_uninstall), min = 3),
-        )
+        ) + spots.map { Verb(it.id, words(it.words), atStart = false) } + Verb("uninstall", words(R.string.verb_uninstall), min = 3)
     }
 
+    /** "… on display 2" at the end of the text: the words before the number, and how many screens there are. */
+    private val displayWords: Regex by lazy {
+        val on = context.getString(R.string.verb_display_on).split(',').joinToString("|") { Regex.escape(it.trim()) }
+        val what = context.getString(R.string.verb_display).split(',').joinToString("|") { Regex.escape(it.trim()) }
+        Regex("""\s+(?:(?:$on)\s+)?(?:$what)\s+(\d)\s*$""", RegexOption.IGNORE_CASE)
+    }
+    private val displays get() = context.getSystemService(android.hardware.display.DisplayManager::class.java).displays.size
+
     override suspend fun query(q: Query): List<Result> {
+        // A screen that is there is asked for by its number; with one screen the words are ordinary text.
+        val shown = displayWords.find(q.text)?.takeIf { it.groupValues[1].toInt() in 1..displays && displays > 1 }
+        val display = shown?.groupValues?.get(1)?.toInt() ?: 0
+        val text = if (shown != null) q.text.substring(0, shown.range.first) else q.text
         val apps = index
-        val plain = DoubleArray(apps.size) { Matcher.score(q.text, apps[it].label) }
+        val plain = DoubleArray(apps.size) { Matcher.score(text, apps[it].label) }
         // The whole text is a name first: if an app matches it from the start of a word, there is no verb ("play store", "open table").
-        val readings = if (plain.any { it >= Matcher.WORD_PREFIX }) emptyList() else Verbs.readings(q.text, verbs)
+        val named = plain.any { it >= Matcher.WORD_PREFIX }
+        val readings = if (named) emptyList() else Verbs.readings(text, verbs)
+        // "chrome t", one letter into "top left": not a verb yet, but the row stays where it was.
+        val dangling = if (named || readings.isNotEmpty()) null else Verbs.dangling(text, verbs)
         val out = ArrayList<Result>()
         for (i in apps.indices) {
             var best = plain[i]
@@ -110,30 +142,31 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
                 val s = Matcher.score(r.rest, apps[i].label)
                 if (s >= Matcher.WORD_PREFIX && s * VERB > best) { best = s * VERB; verb = r.action }
             }
+            if (best <= 0 && dangling != null) Matcher.score(dangling, apps[i].label).let { if (it >= Matcher.WORD_PREFIX) best = it * VERB }
             if (best <= 0) continue
-            val row = result(apps[i], best)
+            val row = result(apps[i], best, display)
             // The verb arms its action on the app's own row. An app without that action (it came with the device: no Uninstall) has no such reading.
             val armed = verb?.let { v -> row.actions.indexOfFirst { it.id == v } }
-            if (armed == null) out += row else if (armed >= 0) out += row.copy(armed = armed) else if (plain[i] > 0) out += result(apps[i], plain[i])
+            if (armed == null) out += row else if (armed >= 0) out += row.copy(armed = armed) else if (plain[i] > 0) out += result(apps[i], plain[i], display)
         }
         return out
     }
 
     /** Every app with score 0: the engine keeps only the ones you have used. */
-    override suspend fun zeroState(): List<Result> = index.map { result(it, 0.0) }
+    override suspend fun zeroState(): List<Result> = index.map { result(it, 0.0, 0) }
 
-    private fun result(a: App, score: Double) = Result(
+    private fun result(a: App, score: Double, display: Int) = Result(
         id = "app:${a.pkg}/${a.cls}" + if (a.user != 0L) "#${a.user}" else "",
         provider = id, kind = Kind.APP, title = a.label,
+        subtitle = if (display > 0) context.getString(R.string.place_on_display, display) else null,
         icon = Icon.App(a.pkg, a.cls, a.user), score = score,
-        // A fixed order, never rearranged by use; what removes the app is last and never armed unless asked for by name.
+        // A fixed order, never rearranged by use: 1.1's first five, then the places. Nine are icons on the row; the
+        // rest wait behind its arrow. What removes the app is last and never armed unless asked for by name.
         actions = listOfNotNull(
-            Action("open", context.getString(R.string.action_open), Effect.LaunchApp(a.pkg, a.cls, a.user)),
-            Action("window", context.getString(R.string.action_new_window), Effect.LaunchApp(a.pkg, a.cls, a.user, newWindow = true)).takeIf { a.user == me },
+            Action("open", context.getString(R.string.action_open), Effect.LaunchApp(a.pkg, a.cls, a.user, display = display)),
+            Action("window", context.getString(R.string.action_new_window), Effect.LaunchApp(a.pkg, a.cls, a.user, newWindow = true, display = display)).takeIf { a.user == me },
             Action("info", context.getString(R.string.action_app_info), Effect.AppInfo(a.pkg, a.cls, a.user)),
-            Action("left", context.getString(R.string.action_left_half), Effect.LaunchApp(a.pkg, a.cls, a.user, place = Place.LEFT)),
-            Action("right", context.getString(R.string.action_right_half), Effect.LaunchApp(a.pkg, a.cls, a.user, place = Place.RIGHT)),
-            Action("uninstall", context.getString(R.string.action_uninstall), Effect.Uninstall(a.pkg, a.user), symbol = "trash", danger = true).takeIf { !a.system },
-        ),
+        ) + spots.map { Action(it.id, context.getString(it.label), Effect.LaunchApp(a.pkg, a.cls, a.user, place = it.place, display = display), more = it.more) } +
+            listOfNotNull(Action("uninstall", context.getString(R.string.action_uninstall), Effect.Uninstall(a.pkg, a.user), symbol = "trash", danger = true, more = true).takeIf { !a.system }),
     )
 }

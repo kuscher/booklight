@@ -4,6 +4,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.kuscher.booklight.core.Body
+import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Result
 
 /** Text on glass is one ink, `onSurface`, at three strengths: an alpha ink follows whatever shows through, a fixed grey would vanish on grey glass. */
@@ -28,17 +29,29 @@ object Metrics {
     /** Where the panel's top edge sits, as a share of the screen's height: the field stays put while the list grows down. */
     const val TOP = 0.2f
 
+    /** One of an opened row's other actions: the strip's slot as a line of its own. */
+    val action = 40.dp
+
     fun rowHeight(r: Result): Dp = when (val b = r.body) {
         is Body.Grid -> cell * gridRows(b) + 16.dp
         is Body.Code -> picture
-        is Body.Slots, is Body.Mono -> tall
-        else -> if (r.answer != null) tall else row
+        is Body.Slots, is Body.Mono, is Body.Stream -> tall
+        else -> if (r.kind == Kind.ACTION) action else if (r.answer != null) tall else row
+    }
+
+    /** The space above a row: what removes something stands a little apart from the actions before it. */
+    fun gap(r: Result): Dp = if (r.kind == Kind.ACTION && r.actions.firstOrNull()?.danger == true) 8.dp else 0.dp
+
+    /** Where each row's top edge is in the list. */
+    fun tops(rows: List<Result>): List<Dp> {
+        var y = 0.dp
+        return rows.map { r -> y += gap(r); val top = y; y += rowHeight(r); top }
     }
 
     /** How many lines of cells a grid shows: what it has, five at most. */
     fun gridRows(g: Body.Grid): Int = ((g.cells.size + g.columns - 1) / g.columns).coerceIn(1, 5)
 
-    fun listHeight(rows: List<Result>): Dp = rows.fold(0.dp) { h, r -> h + rowHeight(r) }
+    fun listHeight(rows: List<Result>): Dp = rows.fold(0.dp) { h, r -> h + gap(r) + rowHeight(r) }
 
     /** The panel's height for what the model is showing. Must match what [Panel] draws. */
     fun height(m: OverlayModel): Dp = field + when {

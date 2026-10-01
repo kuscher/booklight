@@ -78,6 +78,7 @@ fun Footer(model: OverlayModel) {
         }
         val first: Pair<String, String> = when {
             model.confirming -> "" to ""
+            model.opened != null -> "←" to stringResource(R.string.hint_less)
             grid != null -> "↑↓←→" to stringResource(R.string.hint_move)
             r?.body is Body.Level -> if ((r.body as Body.Level).locked) "" to "" else "← →" to stringResource(R.string.hint_adjust)
             r?.nudge != null -> "← →" to stringResource(R.string.hint_skip)

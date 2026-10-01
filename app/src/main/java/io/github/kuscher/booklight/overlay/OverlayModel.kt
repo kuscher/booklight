@@ -54,6 +54,10 @@ class OverlayModel(
     /** How long the last local search took, for `./bl debug dump`. */
     var lastSearchMicros by mutableLongStateOf(0); private set
     var settings by mutableStateOf(app.prefs.now); private set
+    /** The row whose other actions are listed under it, by its id; null = none. While it is, [results] is that row and its actions. */
+    var opened by mutableStateOf<String?>(null); private set
+    /** The list as it was before a row was opened: closing brings it back. */
+    private var closed: List<Result> = emptyList()
 
     /** The word that was typed to make the chip ("meeting" for the event scope); null if its row was used. */
     private var word: String? = null
@@ -93,6 +97,7 @@ class OverlayModel(
 
     fun type(text: String) {
         if (text == query) return
+        shut()                              // typing closes an opened row in the same frame
         foreign = false                     // edited: it is the user's own text now
         if (chip == null) {
             if (text.isEmpty()) held = null
@@ -130,20 +135,31 @@ class OverlayModel(
     private fun search(keep: Boolean = false) {
         job?.cancel()
         cancelConfirm()
+        if (!keep) shut()
         val text = query
         val key = chip?.key
-        if (key == null && text.isBlank()) { results = emptyList(); selected = 0; armed = 0; cell = 0; resultsFor = null to text; whenReady = null; return }
+        if (key == null && text.isBlank()) { shut(); results = emptyList(); selected = 0; armed = 0; cell = 0; resultsFor = null to text; whenReady = null; return }
         job = scope.launch(Dispatchers.Default) {
             val t0 = System.nanoTime()
             val local = app.engine.search(Query(text, key, word), limit)
             val took = (System.nanoTime() - t0) / 1000
             withContext(Dispatchers.Main.immediate) {
                 val was = current?.id
-                results = local; lastSearchMicros = took; resultsFor = key to text
+                lastSearchMicros = took; resultsFor = key to text
+                // A row that is open stays open over a refresh (something ran with Shift held), if it is still there.
+                val parent = if (keep) local.firstOrNull { it.id == opened } else null
+                if (parent != null) {
+                    closed = local
+                    results = listOf(parent) + actionRows(parent)
+                    selected = selected.coerceIn(0, results.lastIndex)
+                    return@withContext
+                }
+                opened = null; closed = emptyList()
+                results = local
                 val same = if (keep) local.indexOfFirst { it.id == was } else -1
                 if (same >= 0) {
                     selected = same
-                    armed = armed.coerceIn(0, (local[same].actions.size - 1).coerceAtLeast(0))
+                    if (armed !in stops(local[same])) armed = local[same].armed
                     cell = cell.coerceIn(0, (((local[same].body as? Body.Grid)?.cells?.size ?: 1) - 1).coerceAtLeast(0))
                 } else { selected = 0; armed = local.firstOrNull()?.armed ?: 0; cell = 0 }
                 // An Enter that came before these rows did: now it runs, by the same rules as any Enter (a scope's row enters it, a delete waits).
@@ -174,24 +190,98 @@ class OverlayModel(
         if (index !in results.indices || index == selected) return
         cancelConfirm()
         selected = index
-        armed = results[index].armed      // another row: its own default again
+        // Another row: its own default again. Back on a row whose actions are listed: its arrow, which now closes them.
+        armed = if (opened != null && index == 0) results[0].actions.size else results[index].armed
         cell = 0
     }
 
-    /** Tab and the arrows along the selected row's actions. False when there is nowhere to go. */
+    /**
+     * What the arming can rest on, on [r], in the order it is drawn: the actions shown as icons, then
+     * one more stop if the row keeps others behind its arrow. That stop is the arrow itself (More:
+     * the number of actions, an index no action has), unless a typed verb named one of the others
+     * ("chrome top left"): then it is that action, and the arrow's place shows it.
+     */
+    fun stops(r: Result): List<Int> {
+        val shown = r.actions.indices.filter { !r.actions[it].more }
+        if (r.actions.none { it.more }) return shown
+        val typed = r.armed.takeIf { r.actions.getOrNull(it)?.more == true && opened != r.id }
+        return shown + (typed ?: r.actions.size)
+    }
+
+    /** The arming is on the row's arrow. */
+    val onMore: Boolean get() = current?.let { armed == it.actions.size && it.actions.any { a -> a.more } } ?: false
+
+    /** Tab and the arrows along the selected row's stops. False when there is nowhere to go. Moving the arming never opens anything. */
     fun arm(by: Int, wrap: Boolean): Boolean {
-        val n = current?.actions?.size ?: return false
+        val st = stops(current ?: return false)
+        val n = st.size
         if (n < 2) return false
-        val to = if (wrap) (armed + by + n) % n else (armed + by).coerceIn(0, n - 1)
-        if (to == armed) return false
+        val at = st.indexOf(armed).coerceAtLeast(0)
+        val to = if (wrap) (at + by + n) % n else (at + by).coerceIn(0, n - 1)
+        if (st[to] == armed) return false
         cancelConfirm()
-        armed = to
+        armed = st[to]
         return true
     }
 
     fun armAt(index: Int) {
-        val n = current?.actions?.size ?: return
-        if (index in 0 until n && index != armed) { cancelConfirm(); armed = index }
+        val r = current ?: return
+        if (index in stops(r) && index != armed) { cancelConfirm(); armed = index }
+    }
+
+    private fun actionRows(r: Result): List<Result> = r.actions.filter { it.more }.map { a ->
+        Result(
+            id = "act:${r.id}:${a.id}", provider = r.provider, kind = Kind.ACTION, title = a.label, icon = io.github.kuscher.booklight.core.Icon.Symbol(a.symbol),
+            score = 1.0, actions = listOf(a.copy(more = false)), learnable = false,
+        )
+    }
+
+    /**
+     * Opens the selected row: its other actions become rows of their own under it, and while they
+     * are there the list is that row and those rows. Only for the list on screen.
+     */
+    fun open(): Boolean {
+        val r = current ?: return false
+        if (opened != null || r.actions.none { it.more } || resultsFor != (chip?.key to query)) return false
+        cancelConfirm()
+        val rows = actionRows(r)
+        // A typed place that was shown on the row goes back into the list: the pill lands on its row there.
+        val typed = r.actions.getOrNull(r.armed)?.takeIf { it.more }?.let { a -> rows.indexOfFirst { it.actions[0].id == a.id } } ?: -1
+        closed = results
+        opened = r.id
+        results = listOf(r) + rows
+        selected = 1 + typed.coerceAtLeast(0); armed = 0; cell = 0
+        return true
+    }
+
+    /** Closes the opened row: the list is back as it was, the pill on the row, its arrow armed. */
+    fun close(): Boolean {
+        val id = opened ?: return false
+        cancelConfirm()
+        val back = closed
+        shut()
+        selected = back.indexOfFirst { it.id == id }.coerceAtLeast(0)
+        armed = back.getOrNull(selected)?.actions?.size ?: 0
+        return true
+    }
+
+    /** The opened row is no longer open, whatever happens to the list next. */
+    private fun shut() {
+        if (opened == null) return
+        opened = null
+        results = closed
+        closed = emptyList()
+        selected = selected.coerceIn(0, (results.size - 1).coerceAtLeast(0))
+    }
+
+    /** Tab and Shift + Tab while a row is open: down and up through its actions, wrapping inside them. */
+    fun step(by: Int) {
+        val n = results.size - 1
+        if (opened == null || n < 1) return
+        cancelConfirm()
+        val at = (selected - 1).coerceAtLeast(if (by > 0) -1 else n)
+        selected = 1 + ((at + by) % n + n) % n
+        armed = 0
     }
 
     /** The arrows inside the selected row's grid. False when the row has no grid. */
@@ -226,6 +316,8 @@ class OverlayModel(
      */
     fun enter(run: (Result, Action) -> Unit) {
         if (resultsFor != (chip?.key to query)) { whenReady = run; return }
+        // On the row's arrow: Enter opens its other actions, or closes them again.
+        if (onMore) { if (opened == null) open() else close(); return }
         val (r, a) = chosen() ?: return
         if (a.confirm) {
             val now = SystemClock.uptimeMillis()

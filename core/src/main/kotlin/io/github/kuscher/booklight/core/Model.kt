@@ -15,7 +15,11 @@ data class Query(
 }
 
 /** What a result is. Drives the row's label and how the ranker weighs it. */
-enum class Kind { APP, ANSWER, SETTING, COMMAND, WEB, SUGGESTION, SCOPE, CONTROL, OTHER }
+enum class Kind {
+    APP, ANSWER, SETTING, COMMAND, WEB, SUGGESTION, SCOPE, CONTROL, OTHER,
+    /** One of an opened row's other actions, shown as a row of its own under it. */
+    ACTION,
+}
 
 /**
  * A picture for a row, as data: the core has no drawables. The app turns it into pixels
@@ -148,6 +152,8 @@ data class Action(
     val confirm: Boolean = false,
     /** What the footer says once it is done ("Added to Notes"); null = nothing to say. */
     val done: String? = null,
+    /** Kept behind the row's arrow: a row shows nine actions as icons and opens the rest as a list under it. */
+    val more: Boolean = false,
 )
 
 /** What a row shows besides, or instead of, its title. */

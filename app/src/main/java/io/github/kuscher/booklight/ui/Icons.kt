@@ -32,6 +32,9 @@ object Symbols {
     val app = icon("app", "M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z")
     val check = icon("check", "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z")
 
+    /** A window's outline: the frame every place symbol is cut out of. */
+    private const val WINDOW = "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
+
     // What a row can do: one icon per action.
     private val more = mapOf(
         "open" to "M14 3h7v7h-2V6.41l-8.3 8.3-1.4-1.42L17.58 5H14zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
@@ -68,7 +71,23 @@ object Symbols {
         "clip" to "M16 3h-2.200a2 2 0 0 0-3.600 0H8a2 2 0 0 0-2 2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1a2 2 0 0 0-2-2zM8 5h8v3H8zM5 7h1v3h12V7h1v12H5z",
         "bolt" to "M11 21h-1l1-7H7.500c-.600 0-.600-.300-.400-.700L13 3h1l-1 7h3.500c.500 0 .600.300.400.700z",
         "text" to "M5 4h14v3h-2V6h-4v12h2v2H9v-2h2V6H7v1H5z",
-        "full" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+        "full" to WINDOW,
+        // Places: a window with the part filled where the app's window goes. Halves split it at 12; thirds are drawn as
+        // three columns (two divisions), so at 18 dp a third is a different shape from a half, not a slightly narrower one.
+        "p3l" to WINDOW + "M8.5 6v12h5V6zM15.5 6v12H20V6z",
+        "p3m" to WINDOW + "M4 6v12h4.5V6zM15.5 6v12H20V6z",
+        "p3r" to WINDOW + "M4 6v12h4.5V6zM10.5 6v12h5V6z",
+        "p23l" to WINDOW + "M15.5 6v12H20V6z",
+        "p23r" to WINDOW + "M4 6v12h4.5V6z",
+        "ptl" to WINDOW + "M12 6v6H4v6h16V6z",
+        "ptr" to WINDOW + "M4 6v12h16v-6h-8V6z",
+        "pbl" to WINDOW + "M4 6v6h8v6h8V6z",
+        "pbr" to WINDOW + "M4 6v12h8v-6h8V6z",
+        "pc" to WINDOW + "M4 6v12h16V6zM8 9h8v6H8z",
+        "more" to "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z",
+        "pin" to "M16 3v2h-1v6l2 3v2h-4v5l-1 1-1-1v-5H7v-2l2-3V5H8V3z",
+        "list" to "M4 5h3v3H4zm5 0h11v3H9zM4 10.5h3v3H4zm5 0h11v3H9zM4 16h3v3H4zm5 0h11v3H9z",
+        "user" to "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z",
         "folder" to "M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8zM4 8h16v10H4z",
         "music" to "M12 3v10.550A4 4 0 1 0 14 17V7h4V3z",
         "file" to "M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v16h12V9h-5V4z",

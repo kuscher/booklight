@@ -230,6 +230,9 @@ fun Panel(
                 when {
                     card != null -> if (!again) cardChoice = 1 - cardChoice
                     entersScope && !e.isShiftPressed -> if (!again) model.fill()
+                    // A row is open: Tab is the next of its actions, wrapping inside them.
+                    model.opened != null -> model.step(if (e.isShiftPressed) -1 else 1)
+                    // Along the row's stops, wrapping. It stops on the arrow like on any other; only Enter opens it.
                     else -> model.arm(if (e.isShiftPressed) -1 else 1, wrap = true)
                 }
                 true
@@ -241,10 +244,14 @@ fun Panel(
                 r?.body is Body.Grid -> model.moveCell(1, 0)
                 model.nudge(1) -> true
                 entersScope -> { if (!again) model.fill(); true }
+                model.opened != null -> true                                  // nowhere to go from an action's row
+                // On the arrow, Right again opens the row (a press of its own: a held key stops on the arrow).
+                model.onMore -> { if (!again) model.open(); true }
                 else -> model.arm(1, wrap = false)
             }
             Key.DirectionLeft -> when {
                 !bare -> false
+                model.opened != null -> { if (!again) model.close(); true }   // Left closes an opened row
                 r?.body is Body.Grid -> atEnd && model.moveCell(-1, 0)
                 atEnd && model.nudge(-1) -> true
                 else -> model.arm(-1, wrap = false)     // on the first action Left is the caret's again

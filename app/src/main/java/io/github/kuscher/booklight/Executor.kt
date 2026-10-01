@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.graphics.Rect
+import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.PersistableBundle
 import android.os.UserManager
@@ -20,12 +21,15 @@ import android.provider.CalendarContract
 import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
+import android.view.Display
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.core.net.toUri
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.MediaKey
+import io.github.kuscher.booklight.core.Box
 import io.github.kuscher.booklight.core.Place
+import io.github.kuscher.booklight.core.Places
 import io.github.kuscher.booklight.data.SnippetEntry
 import io.github.kuscher.booklight.device.Audio
 import io.github.kuscher.booklight.device.Files
@@ -142,11 +146,16 @@ class Executor(private val context: Context) {
         return true
     }
 
-    /** Opens an app: as the launcher would, or in a place on the screen, or as another window of it. */
+    /** Opens an app: as the launcher would, or in a place on a screen, or as another window of it. */
     private fun launch(e: Effect.LaunchApp, ctx: Context) {
         val component = ComponentName(e.packageName, e.className)
-        val bounds = place(e.place)
-        val options = bounds?.let { ActivityOptions.makeBasic().setLaunchBounds(it).toBundle() }
+        // The screen that was asked for by its number ("… on display 2"), if it is still there.
+        val display = if (e.display > 0) context.getSystemService(DisplayManager::class.java).displays.getOrNull(e.display - 1) else null
+        val bounds = place(e.place, display)
+        val options = if (bounds == null && display == null) null else ActivityOptions.makeBasic().apply {
+            bounds?.let { setLaunchBounds(it) }
+            display?.let { launchDisplayId = it.displayId }
+        }.toBundle()
         if (!e.newWindow || e.user != me) {
             // Through LauncherApps, so apps of a work profile open too.
             launcher.startMainActivity(component, user(e.user), null, options)
@@ -158,17 +167,15 @@ class Executor(private val context: Context) {
         ctx.startActivity(intent, options)
     }
 
-    /** The half or the whole of the screen that is left beside the system's bars. */
-    private fun place(p: Place): Rect? {
+    /** Where [p] is on a screen: the part of it the system's bars leave free, divided by [Places]. */
+    private fun place(p: Place, display: Display?): Rect? {
         if (p == Place.NONE) return null
-        val wm = context.getSystemService(WindowManager::class.java)
-        val metrics = wm.maximumWindowMetrics
+        val on = if (display == null) context else context.createWindowContext(display, WindowManager.LayoutParams.TYPE_APPLICATION, null)
+        val metrics = on.getSystemService(WindowManager::class.java).maximumWindowMetrics
         val bars = metrics.windowInsets.getInsetsIgnoringVisibility(android.view.WindowInsets.Type.systemBars())
-        val r = Rect(metrics.bounds).apply { left += bars.left; top += bars.top; right -= bars.right; bottom -= bars.bottom }
-        return when (p) {
-            Place.LEFT -> Rect(r.left, r.top, r.centerX(), r.bottom)
-            else -> Rect(r.centerX(), r.top, r.right, r.bottom)
-        }
+        val b = metrics.bounds
+        val r = Places.bounds(p, Box(b.left + bars.left, b.top + bars.top, b.right - bars.right, b.bottom - bars.bottom)) ?: return null
+        return Rect(r.left, r.top, r.right, r.bottom)
     }
 
     private fun copy(text: String, sensitive: Boolean) {

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Booklight 2.0. Keyword lists are comma-separated; the German lists keep the English keywords. -->
+<resources>
+    <!-- Places. Names are short (12 characters at most): the armed one is unrolled beside nine icons. -->
+    <string name="place_full">Full</string>
+    <string name="place_p3l">Left third</string>
+    <string name="place_p3m">Middle third</string>
+    <string name="place_p3r">Right third</string>
+    <string name="place_p23l">Left ⅔</string>
+    <string name="place_p23r">Right ⅔</string>
+    <string name="place_ptl">Top left</string>
+    <string name="place_ptr">Top right</string>
+    <string name="place_pbl">Bottom left</string>
+    <string name="place_pbr">Bottom right</string>
+    <string name="place_pc">Centre</string>
+    <string name="verb_full">full,maximize,maximise,max,whole screen</string>
+    <string name="verb_p3l">left third,left 1/3</string>
+    <string name="verb_p3m">middle third,center third,centre third</string>
+    <string name="verb_p3r">right third,right 1/3</string>
+    <string name="verb_p23l">left two thirds,left 2/3</string>
+    <string name="verb_p23r">right two thirds,right 2/3</string>
+    <string name="verb_ptl">top left</string>
+    <string name="verb_ptr">top right</string>
+    <string name="verb_pbl">bottom left</string>
+    <string name="verb_pbr">bottom right</string>
+    <string name="verb_pc">center,centre,middle</string>
+    <!-- "chrome on display 2": the words before the number. -->
+    <string name="verb_display">display,screen,monitor</string>
+    <string name="verb_display_on">on</string>
+    <string name="place_on_display">Display %1$d</string>
+    <string name="action_more">More</string>
+    <string name="action_less">Less</string>
+    <string name="hint_less">Less</string>
+</resources>

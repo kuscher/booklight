@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="place_full">Voll</string>
+    <string name="place_p3l">Links ⅓</string>
+    <string name="place_p3m">Mitte ⅓</string>
+    <string name="place_p3r">Rechts ⅓</string>
+    <string name="place_p23l">Links ⅔</string>
+    <string name="place_p23r">Rechts ⅔</string>
+    <string name="place_ptl">Oben links</string>
+    <string name="place_ptr">Oben rechts</string>
+    <string name="place_pbl">Unten links</string>
+    <string name="place_pbr">Unten rechts</string>
+    <string name="place_pc">Mitte</string>
+    <string name="verb_full">full,maximize,maximise,max,voll,vollbild,maximieren,ganzer bildschirm</string>
+    <string name="verb_p3l">left third,left 1/3,linkes drittel,links drittel,links 1/3</string>
+    <string name="verb_p3m">middle third,center third,centre third,mittleres drittel,drittel mitte</string>
+    <string name="verb_p3r">right third,right 1/3,rechtes drittel,rechts drittel,rechts 1/3</string>
+    <string name="verb_p23l">left two thirds,left 2/3,linke zwei drittel,links zwei drittel,links 2/3</string>
+    <string name="verb_p23r">right two thirds,right 2/3,rechte zwei drittel,rechts zwei drittel,rechts 2/3</string>
+    <string name="verb_ptl">top left,oben links</string>
+    <string name="verb_ptr">top right,oben rechts</string>
+    <string name="verb_pbl">bottom left,unten links</string>
+    <string name="verb_pbr">bottom right,unten rechts</string>
+    <string name="verb_pc">center,centre,middle,mitte,zentriert,zentrum</string>
+    <string name="verb_display">display,screen,monitor,bildschirm,anzeige</string>
+    <string name="verb_display_on">on,auf</string>
+    <string name="place_on_display">Display %1$d</string>
+    <string name="action_more">Mehr</string>
+    <string name="action_less">Weniger</string>
+    <string name="hint_less">Weniger</string>
+</resources>
