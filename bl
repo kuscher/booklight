@@ -63,7 +63,7 @@ case "$cmd" in
   install) install "${1:-}" ;;
   open) open "${1:-}" ;;
   stop) A shell am force-stop --user current "$PKG" ;;
-  uninstall) A shell pm uninstall --user current "$PKG" || true ;;
+  uninstall) A uninstall "$PKG" || true ;;   # every Android user (apps live in user 0 and 10)
   app) build && install && open ;;
   debug) dbg "$@" ;;
   shot)

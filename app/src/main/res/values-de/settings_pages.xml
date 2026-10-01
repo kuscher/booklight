@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="settings_titles">
+        <item>Einstellungen</item>
+        <item>WLAN</item>
+        <item>Bluetooth</item>
+        <item>Display</item>
+        <item>Dunkles Design</item>
+        <item>Nachtlicht</item>
+        <item>Ton</item>
+        <item>Akku</item>
+        <item>Speicher</item>
+        <item>Apps</item>
+        <item>Standard-Apps</item>
+        <item>Benachrichtigungen</item>
+        <item>Modi und „Bitte nicht stören“</item>
+        <item>Physische Tastatur</item>
+        <item>Sprachen</item>
+        <item>Bildschirmtastatur</item>
+        <item>Datum und Uhrzeit</item>
+        <item>Bedienungshilfen</item>
+        <item>Datenschutz</item>
+        <item>Sicherheit</item>
+        <item>Standort</item>
+        <item>Netzwerk und Internet</item>
+        <item>VPN</item>
+        <item>Flugmodus</item>
+        <item>Hotspot und Tethering</item>
+        <item>Datennutzung</item>
+        <item>Streamen</item>
+        <item>Drucken</item>
+        <item>Konten</item>
+        <item>Hintergrund</item>
+        <item>Systemupdate</item>
+        <item>Über dieses Gerät</item>
+        <item>Entwickleroptionen</item>
+    </string-array>
+    <string-array name="settings_words">
+        <item>optionen,präferenzen</item>
+        <item>wifi,wi-fi,netzwerk,internet</item>
+        <item>koppeln,kopfhörer,geräte</item>
+        <item>helligkeit,bildschirm,auflösung,anzeige</item>
+        <item>dunkelmodus,dark mode,nacht,darstellung</item>
+        <item>blaulicht,warm</item>
+        <item>lautstärke,audio,lautsprecher,klingelton</item>
+        <item>strom,laden,energiesparmodus,batterie</item>
+        <item>speicherplatz,festplatte</item>
+        <item>installiert,deinstallieren,anwendungen</item>
+        <item>browser,assistent,standard</item>
+        <item>mitteilungen,hinweise</item>
+        <item>nicht stören,fokus,ruhe</item>
+        <item>tastatur,tasten,tastenkürzel,layout</item>
+        <item>sprache,region</item>
+        <item>gboard,eingabemethode,tippen</item>
+        <item>uhr,zeitzone,zeit</item>
+        <item>talkback,vergrößerung,untertitel,barrierefreiheit</item>
+        <item>berechtigungen,kamera,mikrofon</item>
+        <item>sperre,passwort,fingerabdruck,pin</item>
+        <item>gps,ort</item>
+        <item>ethernet,mobil,verbindung</item>
+        <item></item>
+        <item>flugzeugmodus,offline</item>
+        <item>internet teilen</item>
+        <item>datenverbrauch</item>
+        <item>cast,bildschirm spiegeln,chromecast,übertragen</item>
+        <item>drucker</item>
+        <item>google-konto,synchronisierung,passwörter</item>
+        <item>hintergrundbild,stil,design</item>
+        <item>softwareupdate,aktualisierung,version</item>
+        <item>modell,seriennummer,build-nummer,version</item>
+        <item>adb,debugging,usb-debugging</item>
+    </string-array>
+</resources>

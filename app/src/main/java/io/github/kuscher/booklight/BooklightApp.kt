@@ -4,10 +4,12 @@ import android.app.Application
 import io.github.kuscher.booklight.core.Provider
 import io.github.kuscher.booklight.core.SearchEngine
 import io.github.kuscher.booklight.data.HistoryStore
+import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.providers.AppsProvider
 import io.github.kuscher.booklight.providers.CalcProvider
 import io.github.kuscher.booklight.providers.CommandsProvider
 import io.github.kuscher.booklight.providers.SettingsProvider
+import io.github.kuscher.booklight.providers.SuggestProvider
 import io.github.kuscher.booklight.providers.WebProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +22,9 @@ import kotlinx.coroutines.SupervisorJob
 class BooklightApp : Application() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     lateinit var historyStore: HistoryStore private set
+    lateinit var prefs: Prefs private set
+    /** The one source that uses the network; asked after the local rows are shown, and only if switched on. */
+    lateinit var suggest: SuggestProvider private set
     lateinit var apps: AppsProvider private set
     lateinit var engine: SearchEngine private set
     lateinit var executor: Executor private set
@@ -33,8 +38,10 @@ class BooklightApp : Application() {
         super.onCreate()
         instance = this
         historyStore = HistoryStore(this, scope)
+        prefs = Prefs(this, scope)
+        suggest = SuggestProvider(this, prefs)
         apps = AppsProvider(this, scope)
-        providers = listOf(apps, CalcProvider(this), SettingsProvider(this), CommandsProvider(this), WebProvider(this))
+        providers = listOf(apps, CalcProvider(this, prefs), SettingsProvider(this, prefs), CommandsProvider(this), WebProvider(this, prefs))
         engine = SearchEngine(providers, historyStore.history)
         executor = Executor(this)
     }

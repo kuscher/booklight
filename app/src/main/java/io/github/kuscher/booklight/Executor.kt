@@ -1,6 +1,7 @@
 package io.github.kuscher.booklight
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
@@ -27,8 +28,11 @@ class Executor(private val context: Context) {
             is Effect.LaunchApp -> launcher.startMainActivity(ComponentName(effect.packageName, effect.className), user(effect.user), null, null)
             is Effect.AppInfo -> launcher.startAppDetailsActivity(ComponentName(effect.packageName, effect.className), user(effect.user), null, null)
             is Effect.OpenUrl -> ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            is Effect.WebSearch -> ctx.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse(SEARCH_URL + Uri.encode(effect.query))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            is Effect.StorePage -> try {
+                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${effect.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (_: ActivityNotFoundException) {
+                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${effect.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
             is Effect.CopyText -> context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Booklight", effect.text))
             is Effect.OpenSettings -> ctx.startActivity(Intent(effect.action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             is Effect.Internal -> when (effect.command) {
@@ -45,9 +49,4 @@ class Executor(private val context: Context) {
     }
 
     private fun user(serial: Long) = users.getUserForSerialNumber(serial) ?: android.os.Process.myUserHandle()
-
-    companion object {
-        // 0.1: one fixed engine, opened in the default browser. Choosing the engine is on the plan.
-        const val SEARCH_URL = "https://www.google.com/search?q="
-    }
 }

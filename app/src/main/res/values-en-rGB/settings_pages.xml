@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- British English: only the names that differ (the array has to be whole). -->
+<resources>
+    <string-array name="settings_titles">
+        <item>Settings</item>
+        <item>Wi-Fi</item>
+        <item>Bluetooth</item>
+        <item>Display</item>
+        <item>Dark theme</item>
+        <item>Night Light</item>
+        <item>Sound</item>
+        <item>Battery</item>
+        <item>Storage</item>
+        <item>Apps</item>
+        <item>Default apps</item>
+        <item>Notifications</item>
+        <item>Modes and Do Not Disturb</item>
+        <item>Physical keyboard</item>
+        <item>Languages</item>
+        <item>On-screen keyboard</item>
+        <item>Date and time</item>
+        <item>Accessibility</item>
+        <item>Privacy</item>
+        <item>Security</item>
+        <item>Location</item>
+        <item>Network and internet</item>
+        <item>VPN</item>
+        <item>Aeroplane mode</item>
+        <item>Hotspot and tethering</item>
+        <item>Data usage</item>
+        <item>Cast</item>
+        <item>Printing</item>
+        <item>Accounts</item>
+        <item>Wallpaper</item>
+        <item>System update</item>
+        <item>About this device</item>
+        <item>Developer options</item>
+    </string-array>
+</resources>

@@ -1,24 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Booklight</string>
+    <string name="app_name" translatable="false">Booklight</string>
     <string name="settings_title">Booklight settings</string>
     <string name="search_hint">Search apps, settings and the web</string>
     <string name="kind_app">App</string>
     <string name="kind_setting">Settings</string>
-    <string name="kind_command">Booklight</string>
+    <string name="kind_command" translatable="false">Booklight</string>
     <string name="kind_web">Web</string>
     <string name="kind_answer">Answer</string>
+    <string name="kind_suggestion">Suggestion</string>
     <string name="action_open">Open</string>
     <string name="action_app_info">App info</string>
+    <string name="action_store_page">Store page</string>
     <string name="action_copy">Copy</string>
-    <string name="action_search_web">Search the web</string>
     <string name="action_open_link">Open link</string>
-    <string name="web_search_title">Search the web for “%1$s”</string>
+    <string name="action_search_engine">Search %1$s</string>
+    <string name="web_search_title">Search %1$s for “%2$s”</string>
     <string name="hint_actions">Actions</string>
     <string name="hint_close">Close</string>
     <string name="hint_back">Back</string>
     <string name="copied">Copied</string>
+    <string name="failed">Couldn’t open that</string>
     <string name="cmd_settings">Booklight settings</string>
+    <string name="cmd_settings_words">booklight,preferences,options,about</string>
     <string name="cmd_shortcut">Set up the keyboard shortcut</string>
     <string name="cmd_shortcut_sub">Open Keyboard shortcuts</string>
+    <string name="cmd_shortcut_words">booklight,hotkey,key,shortcut</string>
+    <string name="card_shortcut_title">Give Booklight a key</string>
+    <string name="card_shortcut_text">In Keyboard shortcuts, choose App shortcuts, then Add shortcut. Action + Alt + Space works well.</string>
+    <string name="card_shortcut_action">Open Keyboard shortcuts</string>
+    <string name="card_done">Done</string>
+    <string name="card_suggest_title">Search suggestions are off</string>
+    <string name="card_suggest_text">Turn them on and what you type is sent to %1$s to suggest searches. Sums and web addresses are not sent.</string>
+    <string name="card_suggest_on">Turn on</string>
+    <string name="card_not_now">Not now</string>
+    <string name="a11y_search_field">Search</string>
+    <string name="a11y_selected">%1$s, %2$s</string>
+    <string name="set_shortcut_title">Keyboard shortcut</string>
+    <string name="set_shortcut_text">Booklight opens whenever you start it, so a keyboard shortcut for the app is all it needs.
+
+1. Open Keyboard shortcuts (Action + /).
+2. Choose App shortcuts, then Add shortcut.
+3. Find Booklight, choose +, press your keys, then Set shortcut.
+
+The system needs the Action key in every shortcut. Action + Alt + Space and Action + K are both free. The same keys close Booklight again.</string>
+    <string name="set_shortcut_button">Open Keyboard shortcuts</string>
+    <string name="set_search_title">Web search</string>
+    <string name="set_engine">Search engine</string>
+    <string name="set_suggestions">Search suggestions</string>
+    <string name="set_suggestions_text">While you type, your text is sent to %1$s (%2$s) to suggest searches. Sums and web addresses are not sent. When this is off, nothing you type leaves this device until you choose a web row.</string>
+    <string name="set_sites_title">Keyword searches</string>
+    <string name="set_sites_text">Type a keyword, a space and what to look for: “yt lofi”.</string>
+    <string name="set_site_add">Add a keyword search</string>
+    <string name="set_site_keyword">Keyword</string>
+    <string name="set_site_name">Name</string>
+    <string name="set_site_url">Address, with %s where the text goes</string>
+    <string name="set_site_save">Add</string>
+    <string name="set_site_remove">Remove %1$s</string>
+    <string name="set_results_title">Results</string>
+    <string name="set_show_settings">Settings pages</string>
+    <string name="set_show_sums">Sums</string>
+    <string name="set_privacy_title">What Booklight keeps</string>
+    <string name="set_privacy_text">Booklight remembers what you pick for the text you type, so your usual choice comes first. It stays on this device.</string>
+    <string name="set_forget">Forget everything</string>
+    <string name="set_forgotten">Forgotten</string>
+    <string name="set_version">Version %1$s</string>
+    <string name="set_about_text">A personal hobby project by Alexander Kuscher. Not affiliated with Google.</string>
 </resources>

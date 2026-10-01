@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- System settings pages for SettingsProvider: four arrays in the same order. Keys and actions are fixed;
+     names and keywords are translated. -->
+<resources>
+    <string-array name="settings_keys" translatable="false">
+        <item>home</item>
+        <item>wifi</item>
+        <item>bluetooth</item>
+        <item>display</item>
+        <item>dark</item>
+        <item>nightlight</item>
+        <item>sound</item>
+        <item>battery</item>
+        <item>storage</item>
+        <item>apps</item>
+        <item>defaults</item>
+        <item>notifications</item>
+        <item>modes</item>
+        <item>keyboard</item>
+        <item>language</item>
+        <item>ime</item>
+        <item>date</item>
+        <item>accessibility</item>
+        <item>privacy</item>
+        <item>security</item>
+        <item>location</item>
+        <item>network</item>
+        <item>vpn</item>
+        <item>airplane</item>
+        <item>hotspot</item>
+        <item>data</item>
+        <item>cast</item>
+        <item>print</item>
+        <item>accounts</item>
+        <item>wallpaper</item>
+        <item>update</item>
+        <item>about</item>
+        <item>developer</item>
+    </string-array>
+    <string-array name="settings_actions" translatable="false">
+        <item>android.settings.SETTINGS</item>
+        <item>android.settings.WIFI_SETTINGS</item>
+        <item>android.settings.BLUETOOTH_SETTINGS</item>
+        <item>android.settings.DISPLAY_SETTINGS</item>
+        <item>android.settings.DARK_THEME_SETTINGS</item>
+        <item>android.settings.NIGHT_DISPLAY_SETTINGS</item>
+        <item>android.settings.SOUND_SETTINGS</item>
+        <item>android.intent.action.POWER_USAGE_SUMMARY</item>
+        <item>android.settings.INTERNAL_STORAGE_SETTINGS</item>
+        <item>android.settings.MANAGE_APPLICATIONS_SETTINGS</item>
+        <item>android.settings.MANAGE_DEFAULT_APPS_SETTINGS</item>
+        <item>android.settings.NOTIFICATION_SETTINGS</item>
+        <item>android.settings.ZEN_MODE_SETTINGS</item>
+        <item>android.settings.HARD_KEYBOARD_SETTINGS</item>
+        <item>android.settings.LOCALE_SETTINGS</item>
+        <item>android.settings.INPUT_METHOD_SETTINGS</item>
+        <item>android.settings.DATE_SETTINGS</item>
+        <item>android.settings.ACCESSIBILITY_SETTINGS</item>
+        <item>android.settings.PRIVACY_SETTINGS</item>
+        <item>android.settings.SECURITY_SETTINGS</item>
+        <item>android.settings.LOCATION_SOURCE_SETTINGS</item>
+        <item>android.settings.WIRELESS_SETTINGS</item>
+        <item>android.settings.VPN_SETTINGS</item>
+        <item>android.settings.AIRPLANE_MODE_SETTINGS</item>
+        <item>android.settings.TETHER_SETTINGS</item>
+        <item>android.settings.DATA_USAGE_SETTINGS</item>
+        <item>android.settings.CAST_SETTINGS</item>
+        <item>android.settings.ACTION_PRINT_SETTINGS</item>
+        <item>android.settings.SYNC_SETTINGS</item>
+        <item>android.intent.action.SET_WALLPAPER</item>
+        <item>android.settings.SYSTEM_UPDATE_SETTINGS</item>
+        <item>android.settings.DEVICE_INFO_SETTINGS</item>
+        <item>android.settings.APPLICATION_DEVELOPMENT_SETTINGS</item>
+    </string-array>
+    <string-array name="settings_titles">
+        <item>Settings</item>
+        <item>Wi-Fi</item>
+        <item>Bluetooth</item>
+        <item>Display</item>
+        <item>Dark theme</item>
+        <item>Night Light</item>
+        <item>Sound</item>
+        <item>Battery</item>
+        <item>Storage</item>
+        <item>Apps</item>
+        <item>Default apps</item>
+        <item>Notifications</item>
+        <item>Modes and Do Not Disturb</item>
+        <item>Physical keyboard</item>
+        <item>Languages</item>
+        <item>On-screen keyboard</item>
+        <item>Date and time</item>
+        <item>Accessibility</item>
+        <item>Privacy</item>
+        <item>Security</item>
+        <item>Location</item>
+        <item>Network and internet</item>
+        <item>VPN</item>
+        <item>Airplane mode</item>
+        <item>Hotspot and tethering</item>
+        <item>Data usage</item>
+        <item>Cast</item>
+        <item>Printing</item>
+        <item>Accounts</item>
+        <item>Wallpaper</item>
+        <item>System update</item>
+        <item>About this device</item>
+        <item>Developer options</item>
+    </string-array>
+    <string-array name="settings_words">
+        <item>preferences,options</item>
+        <item>wifi,wlan,network,internet</item>
+        <item>pair,headphones,devices</item>
+        <item>brightness,screen,resolution,scaling</item>
+        <item>dark mode,night,appearance</item>
+        <item>blue light,warm</item>
+        <item>volume,audio,speaker,ringtone</item>
+        <item>power,charge,saver</item>
+        <item>disk,space,free up</item>
+        <item>installed,uninstall,applications</item>
+        <item>browser,assistant,default</item>
+        <item>alerts</item>
+        <item>dnd,focus,quiet</item>
+        <item>keyboard,keys,shortcuts,layout,modifier</item>
+        <item>locale,region,language</item>
+        <item>gboard,input method,typing</item>
+        <item>clock,time zone,timezone</item>
+        <item>talkback,magnification,captions</item>
+        <item>permissions,camera,microphone</item>
+        <item>lock,password,fingerprint,pin</item>
+        <item>gps</item>
+        <item>ethernet,mobile,connection</item>
+        <item></item>
+        <item>flight mode,offline</item>
+        <item>share internet</item>
+        <item>traffic</item>
+        <item>screen mirroring,chromecast,wireless display</item>
+        <item>printer</item>
+        <item>google account,sync,passwords</item>
+        <item>background,style,theme</item>
+        <item>software update,os version</item>
+        <item>model,serial,build number,version</item>
+        <item>adb,debugging,usb debugging</item>
+    </string-array>
+</resources>

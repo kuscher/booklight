@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Booklight-Einstellungen</string>
+    <string name="search_hint">Apps, Einstellungen und das Web durchsuchen</string>
+    <string name="kind_app">App</string>
+    <string name="kind_setting">Einstellungen</string>
+    <string name="kind_web">Web</string>
+    <string name="kind_answer">Ergebnis</string>
+    <string name="kind_suggestion">Vorschlag</string>
+    <string name="action_open">Öffnen</string>
+    <string name="action_app_info">App-Info</string>
+    <string name="action_store_page">Im Store ansehen</string>
+    <string name="action_copy">Kopieren</string>
+    <string name="action_open_link">Link öffnen</string>
+    <string name="action_search_engine">Mit %1$s suchen</string>
+    <string name="web_search_title">Mit %1$s nach „%2$s“ suchen</string>
+    <string name="hint_actions">Aktionen</string>
+    <string name="hint_close">Schließen</string>
+    <string name="hint_back">Zurück</string>
+    <string name="copied">Kopiert</string>
+    <string name="failed">Das ließ sich nicht öffnen</string>
+    <string name="cmd_settings">Booklight-Einstellungen</string>
+    <string name="cmd_settings_words">booklight,optionen,präferenzen,info</string>
+    <string name="cmd_shortcut">Tastenkürzel einrichten</string>
+    <string name="cmd_shortcut_sub">Tastenkürzel öffnen</string>
+    <string name="cmd_shortcut_words">booklight,hotkey,taste,tastenkürzel,kürzel</string>
+    <string name="card_shortcut_title">Booklight eine Taste geben</string>
+    <string name="card_shortcut_text">Unter „Tastenkürzel“ erst „App-Verknüpfungen“, dann „Tastenkürzel hinzufügen“ wählen. Aktion + Alt + Leertaste passt gut.</string>
+    <string name="card_shortcut_action">Tastenkürzel öffnen</string>
+    <string name="card_done">Fertig</string>
+    <string name="card_suggest_title">Suchvorschläge sind aus</string>
+    <string name="card_suggest_text">Wenn sie an sind, wird dein Text an %1$s gesendet, um Suchen vorzuschlagen. Rechnungen und Webadressen werden nicht gesendet.</string>
+    <string name="card_suggest_on">Einschalten</string>
+    <string name="card_not_now">Nicht jetzt</string>
+    <string name="a11y_search_field">Suchen</string>
+    <string name="a11y_selected">%1$s, %2$s</string>
+    <string name="set_shortcut_title">Tastenkürzel</string>
+    <string name="set_shortcut_text">Booklight öffnet sich, sobald du es startest. Ein Tastenkürzel für die App genügt also.
+
+1. „Tastenkürzel“ öffnen (Aktion + /).
+2. „App-Verknüpfungen“ wählen, dann „Tastenkürzel hinzufügen“.
+3. Booklight suchen, + wählen, die Tasten drücken, dann „Tastenkürzel festlegen“.
+
+Das System verlangt in jedem Kürzel die Aktionstaste. Aktion + Alt + Leertaste und Aktion + K sind beide frei. Dieselben Tasten schließen Booklight wieder.</string>
+    <string name="set_shortcut_button">Tastenkürzel öffnen</string>
+    <string name="set_search_title">Websuche</string>
+    <string name="set_engine">Suchmaschine</string>
+    <string name="set_suggestions">Suchvorschläge</string>
+    <string name="set_suggestions_text">Während du tippst, wird dein Text an %1$s (%2$s) gesendet, um Suchen vorzuschlagen. Rechnungen und Webadressen werden nicht gesendet. Ist das aus, verlässt nichts, was du tippst, dieses Gerät, bis du eine Web-Zeile wählst.</string>
+    <string name="set_sites_title">Suchen mit Kürzel</string>
+    <string name="set_sites_text">Kürzel, Leerzeichen und Suchtext eingeben: „yt lofi“.</string>
+    <string name="set_site_add">Suche mit Kürzel hinzufügen</string>
+    <string name="set_site_keyword">Kürzel</string>
+    <string name="set_site_name">Name</string>
+    <string name="set_site_url">Adresse, mit %s an der Stelle des Suchtexts</string>
+    <string name="set_site_save">Hinzufügen</string>
+    <string name="set_site_remove">%1$s entfernen</string>
+    <string name="set_results_title">Ergebnisse</string>
+    <string name="set_show_settings">Einstellungsseiten</string>
+    <string name="set_show_sums">Rechnungen</string>
+    <string name="set_privacy_title">Was Booklight speichert</string>
+    <string name="set_privacy_text">Booklight merkt sich, was du zu deinem Text auswählst, damit deine übliche Wahl zuerst erscheint. Das bleibt auf diesem Gerät.</string>
+    <string name="set_forget">Alles vergessen</string>
+    <string name="set_forgotten">Vergessen</string>
+    <string name="set_version">Version %1$s</string>
+    <string name="set_about_text">Ein privates Hobbyprojekt von Alexander Kuscher. Keine Verbindung zu Google.</string>
+</resources>

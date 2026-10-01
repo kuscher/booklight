@@ -79,6 +79,7 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
         actions = listOf(
             Action("open", context.getString(R.string.action_open), Effect.LaunchApp(a.pkg, a.cls, a.user)),
             Action("info", context.getString(R.string.action_app_info), Effect.AppInfo(a.pkg, a.cls, a.user)),
+            Action("store", context.getString(R.string.action_store_page), Effect.StorePage(a.pkg)),
         ),
     )
 }
