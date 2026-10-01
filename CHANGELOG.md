@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 (1 October 2026)
 
 - The panel closes the way it opens, backwards: the glass folds to a line from both sides, and the line draws
   in. At the speed chosen for the opening; with the opening turned off it fades as before.

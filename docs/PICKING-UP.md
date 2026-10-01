@@ -2,9 +2,15 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (late): 1.1.1 released to testers
+
+Alex asked the Play session to cut 1.1.1 with the close animation: versionCode 3, tag `v1.1.1`, release notes in
+English and German, closed testing on Play. 1.1 had been approved at 12:12 PDT (live to testers, with the new
+title). Nothing else is in 1.1.1.
+
 ## 2026-10-01 (late): after 1.1
 
-- **Closing is the opening backwards** (Alex's request; on `main`, not released: it goes into 1.1.1). `Panel`'s
+- **Closing is the opening backwards** (Alex's request; released in 1.1.1). `Panel`'s
   one `LaunchedEffect(leaving)` runs both ways; `Arrival.leaveMs` is how long the activity waits. Stepped
   through frame by frame on the Lenovo at fast and slow, with the key pressed again mid-close, and with the
   opening off. design-system.md §4 has the times.
