@@ -24,11 +24,11 @@ repeats, the typed keyword of a scope, the clipboard's rows, migration, the wind
 purpose: a monospace face for passwords (none on the device; the panel's own face with a slashed zero is
 used), fade-outs instead of ellipses, the site's own icon in a link's chip.
 
-**Ready to release, not released.** Store screenshots (`store-submission/graphics/screens`, eight, made from
-panel-only captures on a drawn desk), the listing (en-US, de-DE), `PRIVACY.md` and the data-safety facts are
-final for 1.1. Alex asked the Play session to release Booklight to testers; that came to this session only as
-a relayed message, so the tag `v1.1` waits for his word here (or his own `git tag`). Tagging publishes the
-GitHub release and puts the bundle on Play closed testing as a draft; the Play session does the Console side.
+**Release.** Store screenshots (`store-submission/graphics/screens`, eight, made from panel-only captures
+on a drawn desk), the listing (en-US, de-DE), `PRIVACY.md` and the data-safety facts are final for 1.1. Alex
+asked the Play session (~/googlebook-tech) to release Booklight to testers; it pushes the tag `v1.1` itself
+once CI on main is green, then does the Console side (listing, screenshots, privacy page, forms, closed-testing
+rollout, send for review). This session does not tag. Check `git tag` and the Actions tab for where that stands.
 
 **Loose ends**
 - The HP still has a throwaway spike build that draws a blurred band around the panel (it went offline

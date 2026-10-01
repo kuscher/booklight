@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1 (not yet released)
+## 1.1 (1 October 2026)
 
 Several planned releases in one (Jot, Dials, Recipes, Switches), on a new way of acting on rows.
 
