@@ -85,7 +85,8 @@ class KeysScope(private val context: Context, private val keys: KeysProvider, pr
     override val hint: String = context.getString(R.string.keys_hint)
     override val about: String = context.getString(R.string.keys_about)
 
-    override suspend fun rows(arg: String): List<Result> = keys.find(arg.trim()).map { it.copy(learnable = false) } + Result(
+    // The list does not scroll: the way to all of them keeps its place under what fits.
+    override suspend fun rows(arg: String): List<Result> = keys.find(arg.trim()).take(if (arg.isBlank()) 7 else 6).map { it.copy(learnable = false) } + Result(
         id = "${SearchEngine.HANDOVER}keys", provider = key, kind = Kind.COMMAND, title = context.getString(R.string.keys_all), subtitle = context.getString(R.string.keys_all_sub),
         icon = Icon.Symbol("open"), score = 1.0, learnable = false, label = "",
         actions = listOf(Action("all", context.getString(R.string.action_open), Effect.Internal("shortcuts"), symbol = "open")),
@@ -103,7 +104,8 @@ class SettingsScope(private val context: Context, private val pages: SettingsPro
     override val hint: String = context.getString(R.string.settings_hint)
     override val about: String = context.getString(R.string.settings_about)
 
-    override suspend fun rows(arg: String): List<Result> = pages.find(arg.trim()).map { it.copy(learnable = false) } + Result(
+    // The list does not scroll: the way to every setting keeps its place under what fits.
+    override suspend fun rows(arg: String): List<Result> = pages.find(arg.trim()).take(if (arg.isBlank()) 7 else 6).map { it.copy(learnable = false) } + Result(
         id = "${SearchEngine.HANDOVER}settings", provider = key, kind = Kind.COMMAND, title = context.getString(R.string.settings_search), subtitle = context.getString(R.string.settings_search_sub),
         icon = Icon.Symbol("open"), score = 1.0, learnable = false, label = "",
         actions = listOf(Action("search", context.getString(R.string.action_open), Effect.OpenSettings(SEARCH), symbol = "open")),
