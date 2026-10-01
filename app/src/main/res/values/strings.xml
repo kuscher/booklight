@@ -124,4 +124,7 @@ The system needs the Action key in every shortcut. Action + Alt + Space and Acti
     <string name="action_right_half">Right half</string>
     <string name="action_uninstall">Uninstall</string>
     <string name="hint_skip">Previous, next</string>
+    <string name="widget_label">Search</string>
+    <string name="widget_name">Booklight search</string>
+    <string name="widget_about">A search pill that opens Booklight</string>
 </resources>

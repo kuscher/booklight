@@ -250,6 +250,8 @@ class OverlayActivity : ComponentActivity() {
     companion object {
         const val EXTRA_STAY = "stay"
         const val EXTRA_DARK = "dark"
+        /** Asked for by name (the widget, the tile): the panel, whoever started it. */
+        const val ACTION_PANEL = "io.github.kuscher.booklight.PANEL"
         private const val EARLY_MS = 600L
         var current: WeakReference<OverlayActivity> = WeakReference(null)
     }

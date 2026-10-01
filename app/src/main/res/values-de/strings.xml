@@ -122,4 +122,7 @@ Das System verlangt in jedem Kürzel die Aktionstaste. Aktion + Alt + Leertaste 
     <string name="action_right_half">Rechte Hälfte</string>
     <string name="action_uninstall">Deinstallieren</string>
     <string name="hint_skip">Zurück, weiter</string>
+    <string name="widget_label">Suchen</string>
+    <string name="widget_name">Booklight-Suche</string>
+    <string name="widget_about">Ein Suchfeld, das Booklight öffnet</string>
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget takes the device's own colours (from the wallpaper), light or dark with the system. -->
+<resources>
+    <color name="widget_ground">@android:color/system_neutral1_50</color>
+    <color name="widget_ink">@android:color/system_neutral1_900</color>
+</resources>

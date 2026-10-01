@@ -64,7 +64,45 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Lets the user choose Booklight as the digital assistant in Settings, so the assistant key opens the panel.
+                 Booklight never asks for this; one row in its window says it is possible. -->
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <!-- "Booklight" in the text-selection menu and in the share sheet for plain text: the panel opens with
+                 the text as a chip, and the rows are what to do with it. The text stays on the device. -->
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
+
+        <!-- A search pill for the home screen: a click opens the panel. -->
+        <receiver android:name=".entry.SearchWidget" android:exported="false" android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_search" />
+        </receiver>
+
+        <!-- A Quick Settings tile that opens the panel. The system binds it; nothing else can. -->
+        <service
+            android:name=".entry.PanelTile"
+            android:exported="true"
+            android:icon="@drawable/ic_booklight"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <!-- Settings and first-run help: an ordinary window, opened from the panel. -->
         <activity
