@@ -17,9 +17,18 @@ over by another app; real key presses on the release build.
 **Not tested, needs Alex's own clicks:** the app icon opening the Booklight window; the notes-folder picker;
 the brightness switch; adding the widget and the tile; Uninstall's system dialog; a bound key on the Lenovo.
 
-**Not released.** No tag yet: releasing puts a bundle on Play, where the listing, the data-safety answers and
-the three new permissions want a look first (the facts are in `store-submission/forms/data-safety.md`, "1.1:
-what changed"). Alex says when.
+**Reviewed.** A visual design review (captures against the design system) and a code review of the whole
+1.1 diff, both independent; every must-fix and should-fix is in (the selected row's ink, the pane's one rim,
+icons, the grid on the mark column; a crash when a row lost its actions while being typed, held-Enter
+repeats, the typed keyword of a scope, the clipboard's rows, migration, the window's editors). Left on
+purpose: a monospace face for passwords (none on the device; the panel's own face with a slashed zero is
+used), fade-outs instead of ellipses, the site's own icon in a link's chip.
+
+**Ready to release, not released.** Store screenshots (`store-submission/graphics/screens`, eight, made from
+panel-only captures on a drawn desk), the listing (en-US, de-DE), `PRIVACY.md` and the data-safety facts are
+final for 1.1. Alex asked the Play session to release Booklight to testers; that came to this session only as
+a relayed message, so the tag `v1.1` waits for his word here (or his own `git tag`). Tagging publishes the
+GitHub release and puts the bundle on Play closed testing as a draft; the Play session does the Console side.
 
 **Loose ends**
 - The HP still has a throwaway spike build that draws a blurred band around the panel (it went offline
