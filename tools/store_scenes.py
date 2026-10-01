@@ -13,6 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CAPS = ROOT / "docs" / "design" / "captures"
 OUT = ROOT / "store-submission" / "graphics" / "scenes"
 W, H = 1600, 1000
+PANEL = 810
 
 def lerp(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
@@ -65,8 +66,9 @@ def desktop(dark: bool) -> Image.Image:
 
 def scene(capture: pathlib.Path, dark: bool) -> Image.Image:
     panel = Image.open(capture).convert("RGBA")
-    im = desktop(dark)
-    im = Image.blend(im, Image.new("RGB", (W, H), (0, 0, 0)), 0.22 if dark else 0.10)   # the dim behind the panel (Look.dimDark / dimLight)
+    # Captures come from whichever Googlebook was at hand (1.125 or 1.5 px per dp): bring them to one size, 720 dp = 810 px.
+    if panel.width != PANEL: panel = panel.resize((PANEL, round(panel.height * PANEL / panel.width)), Image.LANCZOS)
+    im = desktop(dark)   # no dim behind the panel: since 1.1 it is off unless switched on
     x, y = (W - panel.width) // 2, int(H * 0.16)
     # The glass: what is behind the panel, blurred, shows through the capture's own transparency.
     region = im.crop((x, y, x + panel.width, y + panel.height)).filter(ImageFilter.GaussianBlur(12))   # the Balanced glass: a 22 dp blur radius is a sigma of about 12 px here
@@ -78,7 +80,8 @@ def scene(capture: pathlib.Path, dark: bool) -> Image.Image:
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    for name in ["apps", "sum", "settings", "suggestions", "keyword", "actions", "first-run", "dark"]:
+    for old in OUT.glob("*.png"): old.unlink()
+    for name in sorted(c.stem for c in CAPS.glob("*.png")):
         scene(CAPS / f"{name}.png", dark=name == "dark").save(OUT / f"{name}.png")
         print(OUT / f"{name}.png")
     (ROOT / "docs" / "images").mkdir(parents=True, exist_ok=True)

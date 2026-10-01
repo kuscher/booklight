@@ -1,17 +1,43 @@
 {
   "name": "Booklight",
-  "tagline": "Press a key, type a few letters, Enter.",
+  "tagline": "Press a key, type, Enter.",
   "color": "#232845",
   "ink": "#ffffff",
   "icon": "icon-512.png",
   "feature": 0,
   "featureHeight": 420,
   "shots": [
-    { "src": "scenes/apps.png", "caption": "Press your key, type a few letters, press Enter" },
-    { "src": "scenes/sum.png", "caption": "Sums are answered as you type" },
-    { "src": "scenes/settings.png", "caption": "Settings pages by name or by what they do" },
-    { "src": "scenes/keyword.png", "caption": "A keyword searches one site" },
-    { "src": "scenes/actions.png", "caption": "Tab shows what else a row can do" },
-    { "src": "scenes/dark.png", "caption": "Your wallpaper's colors, light or dark" }
+    {
+      "src": "scenes/apps.png",
+      "caption": "Press your key, type a few letters, press Enter"
+    },
+    {
+      "src": "scenes/actions.png",
+      "caption": "A row shows what it can do; Tab moves along"
+    },
+    {
+      "src": "scenes/mail.png",
+      "caption": "A mail, a note, an event: one line"
+    },
+    {
+      "src": "scenes/timer.png",
+      "caption": "Timers, alarms and reminders"
+    },
+    {
+      "src": "scenes/emoji.png",
+      "caption": "Emoji, symbols, colours, QR codes"
+    },
+    {
+      "src": "scenes/volume.png",
+      "caption": "Volume and brightness with the arrow keys"
+    },
+    {
+      "src": "scenes/keyword.png",
+      "caption": "A keyword searches one site"
+    },
+    {
+      "src": "scenes/dark.png",
+      "caption": "Your wallpaper's colors, light or dark"
+    }
   ]
 }
