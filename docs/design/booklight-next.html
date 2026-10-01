@@ -122,15 +122,15 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
 .ic.sym svg { width: 20px; height: 20px; fill: currentColor }
 
 /* the option strip: chips never change size; one highlight glides between them; Enter has a fixed home */
-.strip { position: relative; flex: none; display: flex; align-items: center; height: 28px }
-.row > .arm { position: absolute; height: 28px; border-radius: 14px; background: rgb(var(--veil) / var(--pane)); border: 1px solid rgb(255 255 255 / .55); box-shadow: 0 0 0 1px rgb(var(--on) / .2); pointer-events: none }
+.strip { position: relative; flex: none; display: flex; align-items: center; height: 32px }
+.row > .arm { position: absolute; height: 32px; border-radius: 16px; background: rgb(var(--veil) / var(--pane)); border: 1px solid rgb(255 255 255 / .55); box-shadow: 0 0 0 1px rgb(var(--on) / .2); pointer-events: none }
 .row > .arm.danger { background: var(--errc); border-color: transparent; box-shadow: none }
-.chipx { position: relative; height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px 0 12px; border-radius: 14px; font-size: 13px; font-weight: 500; letter-spacing: .1px; color: var(--onsel); white-space: nowrap; cursor: pointer; background: none; border: 0; font-family: inherit }
-/* the Enter mark has a home in every chip; only the armed one shows it, so no chip ever changes width */
-.chipx .mk { width: 14px; height: 14px; opacity: 0 } .chipx .mk svg { display: block; width: 14px; height: 14px; fill: currentColor }
-.chipx.armed .mk { opacity: 1; transition: opacity .12s .08s }
+.chipx { position: relative; height: 32px; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 16px; font-size: 13px; font-weight: 500; letter-spacing: .1px; color: var(--onsel); white-space: nowrap; cursor: pointer; background: none; border: 0; font-family: inherit }
+.chipx .ci { flex: none; width: 18px; height: 18px; display: grid; place-items: center; font-size: 10px; font-weight: 700; letter-spacing: 0 } .chipx .ci svg { width: 18px; height: 18px; fill: currentColor; fill-rule: evenodd }
+/* every chip holds its name and the Enter mark; how much of them shows follows the highlight, so nothing pops */
+.chipx .lb { display: block; overflow: hidden; width: 0 } .chipx .lbi { display: inline-flex; align-items: center; gap: 6px; padding-left: 7px; height: 32px }
+.chipx .mk { width: 14px; height: 14px } .chipx .mk svg { display: block; width: 14px; height: 14px; fill: currentColor }
 .chipx.danger { color: var(--err) } .chipx.danger.armed { color: var(--onerrc) }
-.chipx.more { opacity: .8; padding: 0 12px }
 .enter { flex: none; display: inline-grid; place-items: center; width: 26px; height: 22px; border-radius: 7px; background: color-mix(in srgb, var(--onsel) 12%, transparent); color: var(--onsel) }
 .enter svg { width: 14px; height: 14px; fill: currentColor }
 .row .line2 { width: 100%; display: flex; justify-content: flex-end; align-items: center; padding: 0 0 12px 0; height: 40px }
@@ -200,7 +200,7 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
 .answers textarea { width: 100%; min-height: 9rem; font-family: var(--mono); font-size: 0.82rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 0.7rem; padding: 0.7rem 0.8rem; resize: vertical }
 .btn { align-self: flex-start; font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 0.55rem 1.2rem; cursor: pointer }
 @media (prefers-reduced-motion: reduce) { .dim, .toast { transition: none } .confirm::after { animation: none } }
-@media (max-width: 46rem) { .stage { height: 42rem } .typing { font-size: 20px } .strip .chipx:not(.armed):not(.more) { display: none } .grid { grid-template-columns: repeat(7, 44px) } .grid .cell, .grid .gh { width: 44px; height: 44px } .track { width: 110px } .qr { width: 132px; height: 132px } }
+@media (max-width: 46rem) { .stage { height: 42rem } .typing { font-size: 20px } .chipx { padding: 0 6px } .grid { grid-template-columns: repeat(7, 44px) } .grid .cell, .grid .gh { width: 44px; height: 44px } .track { width: 110px } .qr { width: 132px; height: 132px } }
 </style>
 
 <main>
@@ -209,8 +209,8 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
     <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="17" fill="#1B1D2E"/><path d="M24 30h16l9 21H15z" fill="#FFC94D" opacity=".38"/><rect x="18" y="17" width="28" height="13" rx="6.5" fill="#FFC94D"/><circle cx="26" cy="23.5" r="2.6" fill="#1B1D2E"/></svg>
     <h1>Booklight Next</h1>
   </div>
-  <p class="lede">The plan for 1.1, 1.2, 1.3 and 2.2, and the new way of acting on a row. Try the model below, then answer the questions at the end. Nothing here is built into the app yet.</p>
-  <div class="meta"><span>Proposal, 1 October 2026</span><span>1.0 is in review on Google Play</span><span><a href="https://github.com/kuscher/booklight">kuscher/booklight</a></span></div>
+  <p class="lede">The plan for the next Booklight and the new way of acting on a row. Decided on 1 October; everything here is being built as one release, 1.1.</p>
+  <div class="meta"><span>Decided 1 October 2026</span><span>1.0 is in review on Google Play</span><span><a href="https://github.com/kuscher/booklight">kuscher/booklight</a></span></div>
 </header>
 
 <section id="try">
@@ -220,7 +220,7 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
     <div class="controls">
       <span class="lbl">Opening</span>
       <span class="seg" role="group" aria-label="Opening"><button data-o="opening" data-v="unfold" aria-pressed="true">Unfold</button><button data-o="opening" data-v="bloom" aria-pressed="false">Bloom</button><button data-o="opening" data-v="bounce" aria-pressed="false">Bigger bounce</button><button data-o="opening" data-v="v1" aria-pressed="false">As in 1.0</button></span>
-      <span class="seg" role="group" aria-label="Edge light"><button data-o="gleam" data-v="slow" aria-pressed="true">Edge light: slow</button><button data-o="gleam" data-v="quick" aria-pressed="false">As in 1.0</button><button data-o="gleam" data-v="around" aria-pressed="false">Runs around</button><button data-o="gleam" data-v="off" aria-pressed="false">Off</button></span>
+      <span class="seg" role="group" aria-label="Edge light"><button data-o="gleam" data-v="slow" aria-pressed="false">Edge light: slow</button><button data-o="gleam" data-v="quick" aria-pressed="false">As in 1.0</button><button data-o="gleam" data-v="around" aria-pressed="true">Once around</button><button data-o="gleam" data-v="off" aria-pressed="false">Off</button></span>
       <span class="seg" role="group" aria-label="Speed"><button data-o="speed" data-v="1" aria-pressed="true">Real speed</button><button data-o="speed" data-v="4" aria-pressed="false">Quarter speed</button></span>
       <button class="replay" id="replay">Replay</button>
     </div>
@@ -270,8 +270,8 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
   <h2>The model in seven rules</h2>
   <ol class="rules">
     <li><b>One field over one list.</b> The field holds at most one chip, then text. Row one is selected.</li>
-    <li><b>A row shows what it can do.</b> The selected row carries its actions as chips at its right end. One is armed and shows the Enter mark; Enter runs it.</li>
-    <li><b>Tab moves to the next thing the row offers.</b> Its next action, or, if the row takes text, typing into it. <kbd>→</kbd> at the end of the text does the same.</li>
+    <li><b>A row shows what it can do.</b> The selected row carries all its actions as a row of icons at its right end. One is armed: it unrolls to show its name and the Enter mark, and Enter runs it.</li>
+    <li><b>Tab moves to the next thing the row offers.</b> Its next action (the highlight glides there and the name unrolls), or, if the row takes text, typing into it. <kbd>→</kbd> at the end of the text does the same.</li>
     <li><b>A typed verb arms an action.</b> "chrome uninstall" and "uninstall chrome" are the Chrome row with Uninstall armed. Never a second row.</li>
     <li><b>A scope is a row that takes text.</b> Entering it turns its keyword into a chip where the G is. Backspace on an empty field turns it back.</li>
     <li><b>A control is a row with a state.</b> <kbd>←</kbd> <kbd>→</kbd> change it live and the panel stays; Enter commits and closes.</li>
@@ -282,20 +282,20 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
 
 <section id="releases">
   <h2>What gets built</h2>
-  <p class="prose">Everything below uses the same four kinds of row, so the interaction work is done once and each feature is a provider. "Checked" means verified on your HP today.</p>
+  <p class="prose">One release, 1.1. Everything below uses the same four kinds of row, so the interaction work is done once and each feature is a provider.</p>
   <div class="tablewrap"><table>
-    <tr><th>Release</th><th>Features</th><th>How</th><th>Needs</th></tr>
-    <tr><td class="n"><b>Foundation</b></td><td>Actions in the row, typed verbs, scopes as chips, previews, controls, grids, Enter-again confirmation, the unfold opening, the icon-launch fix, the Booklight window</td><td>Engine and panel work; no new access</td><td><span class="tag ok">nothing</span></td></tr>
-    <tr><td class="n"><b>1.1 Jot</b></td><td>Mail, note, event, reminder, timer, new file / folder / Doc, Ask Gemini, Uninstall on app rows</td><td>Gmail compose opens filled in <span class="tag ok">checked</span>. Notes file in Documents/Booklight <span class="tag ok">checked</span>, or Keep. Calendar and Clock intents <span class="tag ok">checked</span>. Gemini opens with the text filled in, not sent <span class="tag ok">checked</span></td><td>Two install-time permissions, no prompt: set alarm, request uninstall</td></tr>
-    <tr><td class="n"><b>1.2 Dials</b></td><td>Volume, play / pause / next, settings panels, emoji and symbols, colour values, QR, passwords and UUIDs, GitHub jump, localhost ports</td><td>Audio and media-key APIs (volume must change while the panel is visible on Android 17). Emoji data from Unicode</td><td><span class="tag ok">nothing</span></td></tr>
-    <tr><td class="n"><b>1.3 Recipes</b></td><td>Quicklinks with placeholders, snippets, multi-step commands, open an app in a place or a new window, clipboard transforms, actions on text sent from other apps, a search-pill widget and a Quick Settings tile</td><td>An editor window for your own commands. Launch bounds and new-window flags (to be checked per app on the HP)</td><td><span class="tag ok">nothing</span></td></tr>
-    <tr><td class="n"><b>2.2 Switches</b></td><td>Do Not Disturb, brightness, keep awake, reminders at an exact time, the assistant role</td><td>Each row shows "Allow…" until you flip its switch in Settings once</td><td>Settings switches <span class="tag warn">see below</span></td></tr>
+    <tr><th>Part</th><th>Features</th><th>How</th><th>Needs</th></tr>
+    <tr><td class="n"><b>Foundation</b></td><td>Actions as a row of icons, typed verbs, scopes as chips, previews, controls, grids, Enter-again confirmation, the unfold opening, the icon-launch fix, the Booklight window</td><td>Engine and panel work; no new access</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td class="n"><b>Jot</b></td><td>Mail, note, event, reminder, timer, alarm, new file / folder / Doc, Ask Gemini, Uninstall on app rows</td><td>Gmail compose opens filled in. Notes go to Notes.md in a folder you pick once. Calendar and Clock intents. Gemini opens with the text filled in, not sent</td><td>Two install-time permissions, no prompt: set alarm, request uninstall</td></tr>
+    <tr><td class="n"><b>Dials</b></td><td>Volume, play / pause / next, play music by name, settings panels, emoji and symbols, colour values, QR, passwords and UUIDs, GitHub jump, localhost ports</td><td>Audio and media-key APIs. Emoji names from Unicode, in English and German</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td class="n"><b>Recipes</b></td><td>Quicklinks with placeholders, snippets, multi-step commands, open an app in a place or a new window, clipboard transforms, actions on text sent from other apps, a search-pill widget and a Quick Settings tile</td><td>An editor in the Booklight window for your own commands. Launch bounds and new-window flags</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td class="n"><b>Switches</b></td><td>Brightness, the assistant role. Do Not Disturb is a row that opens the Modes panel. Keep awake stays with BentoBar</td><td>The brightness row shows "Allow…" until you flip its switch in Settings once</td><td>Modify system settings (a switch in Settings)</td></tr>
   </table></div>
   <div class="notice prose">
-    <h3>Three limits the research found</h3>
-    <p><b>Do Not Disturb</b> is narrower than it sounds: an app built for Android 15 or later can only switch its own mode on and off. It cannot switch off Do Not Disturb that you or another app turned on.</p>
-    <p><b>Notes in a plain file</b> don't survive a reinstall: Android stops treating the old file as Booklight's. A folder you grant once avoids that.</p>
-    <p><b>Keep awake</b> without a background service (which Play reviews with a video) means raising the screen timeout while it is on, using the same Settings switch as brightness.</p>
+    <h3>Limits the research found, and what was decided</h3>
+    <p><b>Do Not Disturb:</b> an app can only switch its own mode on and off, so Booklight asks for no access and opens the Modes panel instead.</p>
+    <p><b>Notes in a plain file</b> would not survive a reinstall, so notes go to a folder you pick once.</p>
+    <p><b>Keep awake</b> stays with BentoBar.</p>
   </div>
 </section>
 
@@ -326,24 +326,10 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
   </div>
 </section>
 
-<section id="order">
-  <h2>Build order</h2>
-  <div class="tablewrap"><table>
-    <tr><th>Step</th><th>What</th><th>Ships as</th></tr>
-    <tr><td class="n">1</td><td>Foundation: the option strip (which also fixes the janky first-run buttons), verbs, scopes, previews, controls, grids, confirmation, unfold, the icon fix, the Booklight window, the privacy link</td><td class="n">1.1</td></tr>
-    <tr><td class="n">2</td><td>Jot, with Uninstall and Ask Gemini</td><td class="n">1.1</td></tr>
-    <tr><td class="n">3</td><td>Dials</td><td class="n">1.2</td></tr>
-    <tr><td class="n">4</td><td>Recipes and the editor window</td><td class="n">1.3</td></tr>
-    <tr><td class="n">5</td><td>Switches</td><td class="n">1.4 (the plan's "2.2", renumbered because 2.0 and 2.1 come later)</td></tr>
-  </table></div>
-  <p class="prose">Each step is tested on the HP, reviewed by the design and code reviewers as 1.0 was, and released by tag. The design system and motion specification the build follows are in the repo: <code>docs/design/design-system.md</code> (tokens, every component and state, a 20-line motion table, and the rules that keep things from jumping).</p>
-</section>
-
-<section id="questions">
-  <h2>Questions</h2>
-  <p class="prose">Each has a recommendation, already selected. Change what you want, then copy the answers into the session, or reply "Default".</p>
-  <div class="qs" id="qs"></div>
-  <div class="answers"><button class="btn" id="copy">Copy answers</button><textarea id="answers" readonly aria-label="Your answers"></textarea></div>
+<section id="decided">
+  <h2>Decided</h2>
+  <p class="prose">Your answers of 1 October. The spec and the build follow these.</p>
+  <div class="tablewrap"><table id="decisions"><tr><th>#</th><th>Question</th><th>Decision</th></tr></table></div>
 </section>
 </main>
 
@@ -389,7 +375,28 @@ const SYM = {
   play: 'M8 5v14l11-7z', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m7 9h-3a15 15 0 0 0-1.4-5.5A8 8 0 0 1 19 11M12 4c1 1.4 1.8 3.8 2 7h-4c.2-3.2 1-5.600 2-7M5 13h3c.1 2 .6 3.900 1.400 5.500A8 8 0 0 1 5 13m3-2H5a8 8 0 0 1 4.400-5.500A15 15 0 0 0 8 11m4 9c-1-1.400-1.800-3.800-2-7h4c-.2 3.200-1 5.600-2 7m2.600-1.500c.8-1.600 1.300-3.500 1.400-5.500h3a8 8 0 0 1-4.400 5.500',
   key: 'M12.65 10A6 6 0 1 0 12.65 14H17v4h4v-4h2v-4zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4', calc: 'M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2M6.3 7.700h5v1.500h-5zM11.500 16h-2v2H8v-2H6v-1.500h2v-2h1.500v2h2zm6.500 1.300h-5v-1.500h5zm0-2.500h-5v-1.500h5zM14 9.900l1.400-1.400L14 7.100 15.100 6l1.400 1.400L17.900 6 19 7.100l-1.400 1.400L19 9.900 17.900 11l-1.400-1.400L15.100 11z',
 };
+Object.assign(SYM, {
+  open: 'M14 3h7v7h-2V6.41l-8.3 8.3-1.4-1.42L17.58 5H14zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2',
+  window: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2m0 4v10h16V8zm7 2h2v2h2v2h-2v2h-2v-2H9v-2h2z',
+  info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16',
+  left: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2m8 2v12h8V6z',
+  right: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2m0 2v12h8V6z',
+  bag: 'M6 7V6a6 6 0 0 1 12 0v1h3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm2 0h8V6a4 4 0 0 0-8 0z',
+  trash: 'M9 3h6l1 1h4v2H4V4h4zM6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm3.5 2.500v8.500H11v-8.500zm3.500 0v8.500h1.500v-8.500z',
+  copy: 'M8 3h10a2 2 0 0 1 2 2v12h-2V5H8zM5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2m0 2v10h10V9z',
+  edit: 'M3 17.250V21h3.750L17.810 9.940l-3.750-3.750zM20.710 7.040a1 1 0 0 0 0-1.410l-2.340-2.340a1 1 0 0 0-1.410 0l-1.830 1.830 3.750 3.750z',
+  share: 'M18 16a3 3 0 0 0-2.400 1.200L8.900 13.300a3 3 0 0 0 0-2.600l6.700-3.900A3 3 0 1 0 15 5q0 .400.100.700L8.400 9.600a3 3 0 1 0 0 4.800l6.700 3.900q-.100.300-.100.700a3 3 0 1 0 3-3',
+  save: 'M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z',
+  again: 'M17.650 6.350A8 8 0 1 0 19.730 14h-2.080A6 6 0 1 1 12 6c1.660 0 3.140.690 4.220 1.780L13 11h7V4z',
+  check: 'M9 16.200 4.800 12l-1.400 1.400L9 19 21 7l-1.400-1.400z',
+  link: 'M3.900 12a3.100 3.100 0 0 1 3.100-3.100h4V7H7a5 5 0 0 0 0 10h4v-1.900H7A3.100 3.100 0 0 1 3.900 12M8 13h8v-2H8zm9-6h-4v1.900h4a3.100 3.100 0 0 1 0 6.200h-4V17h4a5 5 0 0 0 0-10',
+  pause: 'M6 5h4v14H6zm8 0h4v14h-4z', lock: 'M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5m-3 8V7a3 3 0 0 1 6 0v3z',
+});
 const svg = n => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${SYM[n]}"/></svg>`;
+const ICON = { 'Open': 'open', 'New window': 'window', 'App info': 'info', 'Left half': 'left', 'Right half': 'right', 'Store page': 'bag', 'Uninstall': 'trash', 'Delete': 'trash', 'Copy': 'copy', 'Copy text': 'copy', 'Copy link': 'link', 'Copy name': 'copy', 'Copy image': 'copy', 'Copy with the sum': 'calc',
+  'Search': 'search', 'Search…': 'search', 'Type…': 'edit', 'Ask': 'spark', 'Compose': 'mail', 'Add': 'check', 'Keep': 'note', 'Start': 'play', 'Create': 'plus', 'Create in…': 'open', 'Save': 'save', 'Share': 'share', 'New one': 'again', 'Edit…': 'edit', 'Save as quicklink…': 'link',
+  'Mute': 'vol', 'Unmute': 'vol', 'Sound settings': 'gear', 'Display settings': 'gear', 'Modes settings': 'gear', 'Done': 'check', 'Allow…': 'lock', 'Turn on': 'check', 'Turn off': 'check', 'Pause': 'pause', 'Play': 'play' };
+const iconOf = a => ICON[a.label] ? svg(ICON[a.label]) : `<b>${esc(a.label.slice(0, 3).toUpperCase())}</b>`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---------------------------------------------------------------- matching (as in the app's core)
@@ -422,7 +429,7 @@ function verbReading(t) {
 // ---------------------------------------------------------------- state
 const $ = id => document.getElementById(id);
 const stage = $('stage'), panel = $('panel'), input = $('q'), body = $('body'), ghost = $('ghost'), toast = $('toast'), field = $('field');
-const opts = { inline: true, space: true, opening: 'unfold', gleam: 'slow' };
+const opts = { inline: true, space: true, opening: 'unfold', gleam: 'around' };
 const st = { scope: null, rows: [], sel: 0, arm: 0, open: false, confirm: 0, cell: 0, listOf: null, flash: '', vol: 40, muted: false, dnd: false, awake: false, bright: 60, granted: false, playing: true, last: null };
 const prev = new Map();          // where things were, so they move instead of jumping
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -516,13 +523,29 @@ function scopeRows(s, t) {
 const ENTER = `<span class="enter">${svg('enter')}</span>`;
 function pic(r) { if (r.swatch) return `<span class="swatch" style="background:${r.swatch}"></span>`; return r.icon ? `<span class="ic" style="--c:${r.icon.c}">${r.icon.g}</span>` : `<span class="ic sym">${svg(r.sym || 'search')}</span>`; }
 const MK = `<span class="mk">${svg('enter')}</span>`;
-function chipHTML(a, i) { const on = i === st.arm, sure = st.confirm && on; return `<button class="chipx${on ? ' armed' : ''}${a.danger ? ' danger' : ''}${sure ? ' confirm' : ''}" data-act="${i}" tabindex="-1"${a.danger ? ' style="margin-left:12px"' : ''}>${sure ? 'Press again to ' + a.label.toLowerCase() : esc(a.label)}${MK}</button>`; }
-function visible(r) { const n = r.actions.length; return n <= 3 ? n : 3; }
-function strip(r) {
-  const n = visible(r), more = r.actions.length - n;
-  return `<span class="strip">${r.actions.slice(0, n).map((a, i) => chipHTML(a, i)).join('')}${more > 0 ? `<button class="chipx more" data-more="1" tabindex="-1">⋯ ${more}</button>` : ''}</span>`;
+function chipHTML(a, i) { const on = i === st.arm, sure = st.confirm && on; return `<button class="chipx${on ? ' armed' : ''}${a.danger ? ' danger' : ''}${sure ? ' confirm' : ''}" data-act="${i}" tabindex="-1" title="${esc(a.label)}"><span class="ci">${iconOf(a)}</span><span class="lb"><span class="lbi">${sure ? 'Press again to ' + a.label.toLowerCase() : esc(a.label)}${MK}</span></span></button>`; }
+function visible(r) { return r.actions.length; }
+function strip(r) { return `<span class="strip">${r.actions.map(chipHTML).join('')}</span>`; }
+function line2(r) { return ''; }
+// The armed action is one number that moves on a spring, from chip to chip. Each chip shows as much of its
+// name as the highlight is on it, and the highlight is drawn around wherever that number is: one motion.
+const armS = { a: 0, v: 0, id: null, raf: 0, t: 0 };
+function layoutStrip(row) {
+  const chips = [...row.querySelectorAll('.chipx[data-act]')], arm = row.querySelector(':scope > .arm'); if (!chips.length || !arm) return;
+  const a = Math.max(0, Math.min(chips.length - 1, armS.a));
+  chips.forEach((c, k) => { const lb = c.querySelector('.lb'), rv = Math.max(0, 1 - Math.abs(a - k)); lb.style.width = (lb.firstElementChild.offsetWidth * rv) + 'px'; lb.style.opacity = Math.min(1, rv * 1.6); });
+  const k0 = Math.floor(a), k1 = Math.min(chips.length - 1, k0 + 1), f = a - k0, L = c => c.offsetParent.offsetLeft + c.offsetLeft, R = c => L(c) + c.offsetWidth;
+  const left = L(chips[k0]) * (1 - f) + L(chips[k1]) * f, right = R(chips[k0]) * (1 - f) + R(chips[k1]) * f;
+  arm.style.display = ''; arm.style.left = left + 'px'; arm.style.width = (right - left) + 'px'; arm.style.top = (chips[k0].offsetParent.offsetTop + chips[k0].offsetTop) + 'px';
+  const near = chips[Math.round(a)]; arm.classList.toggle('danger', near.classList.contains('danger') && Math.abs(a - Math.round(a)) < .35);
 }
-function line2(r) { const n = visible(r); return `<div class="line2"><span class="strip">${r.actions.slice(n).map((a, j) => chipHTML(a, n + j)).join('')}</span></div>`; }
+function stepArm(now) {
+  armS.raf = 0; const on = body.querySelector('.row.on'); if (!on || on.dataset.id !== armS.id) return;
+  const dt = Math.min(.034, (now - armS.t) / 1000) / speed; armS.t = now; const K = 560, C = 2 * .78 * Math.sqrt(K);
+  for (let i = 0; i < 4; i++) { armS.v += (-K * (armS.a - st.arm) - C * armS.v) * dt / 4; armS.a += armS.v * dt / 4; }
+  if (Math.abs(armS.a - st.arm) < .002 && Math.abs(armS.v) < .02) { armS.a = st.arm; armS.v = 0; } else armS.raf = requestAnimationFrame(stepArm);
+  layoutStrip(on);
+}
 function controlHTML(r) {
   if (r.control === 'vol' || r.control === 'bright') { const v = r.control === 'vol' ? (st.muted ? 0 : st.vol) : st.bright; const mark = r.target != null ? `<span class="knob" style="left:${r.target}%;opacity:.5"></span>` : '';
     return `<span class="track${r.need ? ' need' : ''}" data-k="track"><span class="fill" data-k="fill" style="width:${v}%"></span>${mark}</span><span class="val" data-k="val">${r.need ? '' : (r.control === 'vol' && st.muted ? 'Muted' : v + ' %')}</span>`; }
@@ -579,18 +602,13 @@ function place() {
       const was = prev.get('hl'); prev.set('hl', { top, end });
       if (was && !reduce) edges(hl, 'hl', 'top', 'bottom', was.top, top, H - was.end, H - end, top > was.top || (top === was.top && end > was.end));
     } else { hl.style.display = 'none'; prev.delete('hl'); } }
-  // the armed action: one highlight per row, gliding between chips, and down to the second line when the row opens
-  const arm = on && on.querySelector(':scope > .arm'), chip = on && on.querySelector('.chipx.armed');
-  if (arm && chip) { const sp = chip.offsetParent, left = sp.offsetLeft + chip.offsetLeft, top = sp.offsetTop + chip.offsetTop, end = left + chip.offsetWidth, W = on.offsetWidth, id = on.dataset.id;
-    arm.style.left = left + 'px'; arm.style.right = (W - end) + 'px'; arm.style.top = top + 'px';
-    arm.classList.toggle('danger', chip.classList.contains('danger') || chip.classList.contains('confirm'));
-    const was = prev.get('arm'); prev.set('arm', { id, left, end, top });
-    if (reduce) {} else if (!was || was.id !== id) anim(arm, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 });
-    else { edges(arm, 'arm', 'left', 'right', was.left, left, W - was.end, W - end, left > was.left); if (was.top !== top) anim(arm, { top: [was.top + 'px', top + 'px'] }, PLACE); }
-  } else { if (arm) arm.style.display = 'none'; prev.delete('arm'); }
-  const l2 = body.querySelector('.line2'), openId = l2 ? on.dataset.id : null;
-  if (l2 && prev.get('open') !== openId && !reduce) anim(l2, [{ opacity: 0, transform: 'translateY(-10px)' }, { opacity: 1, transform: 'none' }], PLACE);
-  prev.set('open', openId);
+  // the armed action: one highlight per row, and the row of icons it travels along
+  const arm = on && on.querySelector(':scope > .arm');
+  if (arm && on.querySelector('.chipx[data-act]')) { const id = on.dataset.id;
+    if (armS.id !== id || reduce) { const fresh = armS.id !== id; armS.id = id; armS.a = st.arm; armS.v = 0;
+      if (fresh && !reduce) { anim(arm, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: 40, fill: 'backwards' }); anim(on.querySelector('.strip'), [{ opacity: 0, transform: 'translateX(14px)' }, { opacity: 1, transform: 'none' }], PLACE); } }
+    layoutStrip(on); if (armS.a !== st.arm && !armS.raf) { armS.t = performance.now(); armS.raf = requestAnimationFrame(stepArm); }
+  } else { if (arm) arm.style.display = 'none'; armS.id = null; }
   glide(body.querySelector('[data-k="fill"]'), 'fill', ['width']);
   glide(body.querySelector('[data-k="th"]'), 'th', ['left'], LEADS);
   const g = body.querySelector('#grid'); if (g) { const c = g.querySelector(`[data-cell="${st.cell}"]`), gh = g.querySelector('.gh'); if (c) { gh.style.left = c.offsetLeft + 'px'; gh.style.top = c.offsetTop + 'px'; glide(gh, 'gh', ['left', 'top'], LEADS); } else gh.style.display = 'none'; }
@@ -617,7 +635,7 @@ function fieldDraw() {
 }
 function compute() { const t = input.value; st.rows = st.scope ? scopeRows(st.scope, t.trim()) : t.trim() ? plainRows(t.trim()) : []; }
 function draw(keep) {
-  if (!keep) { compute(); st.sel = 0; st.arm = 0; st.open = false; st.confirm = 0; st.cell = 0; st.listOf = null; const r = st.rows[0]; if (r && r.armLabel) { st.arm = r.actions.findIndex(a => a.label === r.armLabel); if (st.arm >= visible(r)) st.open = true; } }
+  if (!keep) { compute(); st.sel = 0; st.arm = 0; st.open = false; st.confirm = 0; st.cell = 0; st.listOf = null; const r = st.rows[0]; if (r && r.armLabel) { st.arm = r.actions.findIndex(a => a.label === r.armLabel); } }
   else { const id = st.rows[st.sel] && st.rows[st.sel].id; compute(); const j = st.rows.findIndex(r => r.id === id); if (j >= 0) st.sel = j; else st.sel = Math.min(st.sel, Math.max(0, st.rows.length - 1)); }
   body.innerHTML = bodyHTML(); fieldDraw(); place();
 }
@@ -660,7 +678,7 @@ function arrive() {
   else { g.dataset.kind = 'sweep'; anim(g, [{ backgroundPosition: '-280px 0', opacity: 1 }, { backgroundPosition: (w + 40) + 'px 0', opacity: 1 }], { duration: m === 'slow' ? 1150 : 560, delay: light, easing: 'cubic-bezier(.3,0,.2,1)' }); }
 }
 function measure() { panel.style.setProperty('--pw', (Math.min(720, stage.clientWidth - 24) - 2.5) + 'px'); }
-measure(); addEventListener('resize', measure);
+measure(); addEventListener('resize', () => { measure(); if (stage.classList.contains('open')) place(); });
 function replay() { stage.classList.remove('open'); open(true); }
 
 // ---------------------------------------------------------------- scopes
@@ -693,8 +711,7 @@ function tab(dir) {
   if (r.scope) return enterScope(r.scope);
   if (!opts.inline) { if (r.actions.length > 1) { st.listOf = r; st.arm = 0; body.innerHTML = bodyHTML(); place(); } return; }
   const n = r.actions.length; if (n < 2) return; st.confirm = 0;
-  st.arm = (st.arm + dir + n) % n; st.open = st.arm >= visible(r) || (st.open && dir < 0 && st.arm >= visible(r));
-  if (st.arm < visible(r) && dir > 0) st.open = false;
+  st.arm = (st.arm + dir + n) % n;
   body.innerHTML = bodyHTML(); fieldDraw(); place();
 }
 
@@ -726,12 +743,12 @@ input.addEventListener('keydown', e => {
 });
 body.addEventListener('mousemove', e => { const row = e.target.closest('.row[data-i]'); if (!row || st.listOf) return; const i = +row.dataset.i; const cell = e.target.closest('[data-cell]');
   if (cell && +cell.dataset.cell !== st.cell) { st.cell = +cell.dataset.cell; body.innerHTML = bodyHTML(); place(); return; }
-  if (i !== st.sel) { st.sel = i; st.arm = 0; st.open = false; st.confirm = 0; body.innerHTML = bodyHTML(); fieldDraw(); place(); } });
+  if (i !== st.sel) { st.sel = i; st.arm = 0; st.open = false; st.confirm = 0; body.innerHTML = bodyHTML(); fieldDraw(); place(); return; }
+  const chip = e.target.closest('[data-act]'); if (chip && +chip.dataset.act !== st.arm) { st.arm = +chip.dataset.act; st.confirm = 0; body.innerHTML = bodyHTML(); place(); } });
 body.addEventListener('click', e => {
   if (st.listOf) { const la = e.target.closest('[data-la]'); const rr = st.listOf; st.listOf = null; if (la) return run(rr, +la.dataset.la); return draw(true); }
   const row = e.target.closest('.row[data-i]'); if (!row) return; const r = st.rows[+row.dataset.i]; if (!r) return;
   const chip = e.target.closest('[data-act]'), more = e.target.closest('[data-more]'), cell = e.target.closest('[data-cell]');
-  if (more) { st.arm = visible(r); st.open = true; body.innerHTML = bodyHTML(); place(); return; }
   if (cell) { st.cell = +cell.dataset.cell; return run(r, 0); }
   if (chip) { st.arm = +chip.dataset.act; return run(r, st.arm); }
   run(r, 0);
@@ -753,33 +770,18 @@ document.querySelectorAll('.controls button').forEach(b => b.addEventListener('c
 }));
 draw();
 
-// ---------------------------------------------------------------- questions
-const QS = [
-  ['Acting on a row', 'One pattern from first action to last, and no change of view for the common case.', ['Chips in the row; more open in place', 'Chips in the row; more in a list', 'Keep the separate list (1.0)']],
-  ['Entering a scope', 'Chrome does both. Space lets “yt lofi” be typed straight through; Backspace on an empty field undoes it.', ['Tab or Space', 'Tab only']],
-  ['Esc inside a scope', 'You decided Esc always closes. Up on an empty field brings back the last text.', ['Closes', 'First leaves the scope']],
-  ['Controls (volume, brightness, switches)', 'Left and Right act at once and the panel stays; Enter commits and closes.', ['Live on the selected row', 'Tab into the control first']],
-  ['Arguments (mail, event, note)', 'One line with “ / ” between parts and a preview row that shows what was understood.', ['One line', 'A small form, Tab between fields']],
-  ['Uninstall on app rows', 'Needs the install-time permission REQUEST_DELETE_PACKAGES. No prompt; Play asks for nothing; Android confirms each uninstall.', ['Add it', 'Leave it out; App info has the button']],
-  ['What should a typed “chr” + Tab choice teach?', 'Learning actions only from typed verbs keeps plain “chr” + Enter always opening.', ['Only typed verbs teach an action', 'Tab choices teach too']],
-  ['Where the Enter mark sits', 'Inside the armed chip it says which action Enter runs, and no chip ever changes width. The cost: chips sit further apart.', ['Inside the armed chip', 'At the row’s right end']],
-  ['The opening', 'Unfold is your idea: a line, then the glass opens out of it and settles, in about a third of a second. A setting turns it off, whichever you pick.', ['Unfold', 'Bloom', 'Bigger bounce', 'Keep 1.0’s']],
-  ['The edge light', 'You liked it, so it stays. Slower reads better after an unfold. (The design agent would drop it when the panel unfolds; I would not.)', ['Slower, about 1.1 s', 'As in 1.0', 'Once around the outline', 'Off when the panel unfolds']],
-  ['The app icon', 'The shortcut opens the panel. The icon opens a Booklight window: what it is, the key, settings.', ['Icon opens the Booklight window', 'Icon opens the panel; settings stay behind a command', 'A setting chooses']],
-  ['Ask Gemini', 'First row for long or question-like text, otherwise one row under “Search Google”. Opens Gemini with the text filled in.', ['As described', 'Always a late row, never first', 'Only through “ask”']],
-  ['Quick notes go to', 'A plain file needs nothing but stops being writable after a reinstall. A folder you grant once avoids that; Keep opens a window.', ['Notes.md in a folder I grant once', 'Documents/Booklight/Notes.md, no grant', 'Keep']],
-  ['Reminders at a time', 'Through the Clock app’s alarm with your text as its label: no switch needed. Booklight’s own notification needs a Settings switch and a prompt.', ['Clock alarm with a label', 'Booklight’s own reminder notification', 'Both']],
-  ['Do Not Disturb', 'Android only lets an app switch its own mode on and off; it can’t switch off Do Not Disturb you turned on elsewhere.', ['Build it with that limit, and say so', 'Leave it out', 'Just open the Modes panel']],
-  ['Keep awake', 'Raising the screen timeout while it is on uses the same Settings switch as brightness and avoids Play’s service review.', ['Screen timeout, restored afterwards', 'Leave it to BentoBar’s keep-awake']],
-  ['The “play” keyword', '“play” searches the Play Store today, and would also be the natural word for “play some music”.', ['“play” plays music; “store” searches the Play Store', 'Keep “play” for the Play Store']],
-  ['Release steps', 'Four tagged releases, each reviewed and sent to Play as it is ready.', ['1.1, 1.2, 1.3, 1.4 in turn', 'One big 1.1 with everything', 'Build all, release when I say']],
+// ---------------------------------------------------------------- decisions
+const DECIDED = [
+  ['Acting on a row', 'A row of icons, one per action; the armed one unrolls its name and the Enter mark; Tab and the arrows glide it along'],
+  ['Entering a scope', 'Tab or Space'], ['Esc inside a scope', 'Closes'], ['Controls', 'Left and Right act live on the selected row'],
+  ['Arguments (mail, event, note)', 'One line, parts separated by “ / ”'], ['Uninstall on app rows', 'Yes, with the install-time permission'],
+  ['What teaches an action', 'Only typed verbs'], ['Enter mark', 'Inside the armed chip'], ['The opening', 'Unfold, with a setting to turn it off'],
+  ['The edge light', 'Once around the outline'], ['The app icon', 'Opens the Booklight window; the key opens the panel'],
+  ['Ask Gemini', 'First row for long or question-like text, otherwise below “Search”; “ask” as a scope'],
+  ['Quick notes', 'Notes.md in a folder you grant once'], ['Reminders', 'A Clock alarm with your text as its label'],
+  ['Do Not Disturb', 'A row that opens the Modes panel; no access asked for'], ['Keep awake', 'Left to BentoBar'],
+  ['The “play” keyword', '“play” plays music; “store” searches the Play Store'], ['Releases', 'One 1.1 with everything'],
 ];
-const qs = $('qs'), answers = $('answers');
-QS.forEach(([t, why, o], i) => { const n = i + 1, el = document.createElement('div'); el.className = 'q';
-  el.innerHTML = `<span class="num">${n}</span><div><h3>${t}</h3><div class="opts" role="radiogroup" aria-label="${esc(t)}">${o.map((x, j) => `<label class="${j === 0 ? 'def' : ''}"><input type="radio" name="q${n}" id="q${n}o${j}" value="${esc(x)}"${j === 0 ? ' checked' : ''}>${esc(x)}</label>`).join('')}</div><p class="why">${why}</p></div>`; qs.appendChild(el); });
-function writeAnswers() { answers.value = QS.map(([t, , o], i) => { const v = (document.querySelector(`input[name="q${i + 1}"]:checked`) || {}).value; return `${i + 1}. ${t}: ${v}${v === o[0] ? ' (recommended)' : ''}`; }).join('\n'); }
-qs.addEventListener('change', writeAnswers); writeAnswers();
-$('copy').addEventListener('click', e => { const done = () => { e.target.textContent = 'Copied'; setTimeout(() => e.target.textContent = 'Copy answers', 1500); };
-  navigator.clipboard.writeText(answers.value).then(done).catch(() => { answers.focus(); answers.select(); }); });
+const tb = $('decisions'); DECIDED.forEach(([q, d], i) => { const tr = document.createElement('tr'); tr.innerHTML = `<td class="n">${i + 1}</td><td>${esc(q)}</td><td>${esc(d)}</td>`; tb.appendChild(tr); });
 })();
 </script>
