@@ -1,0 +1,1 @@
+The first release of Booklight: a keyboard launcher for Googlebooks. Press your shortcut, type a few letters, press Enter. Apps, settings pages, sums and web search in one small glass panel. It learns what you pick. Search suggestions are off until you turn them on.

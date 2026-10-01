@@ -1,0 +1,26 @@
+Booklight is a keyboard launcher for Googlebooks and other Android laptops and tablets with a keyboard. Press your shortcut and a small glass panel appears over your desktop. Type a few letters and press Enter.
+
+WHAT IT FINDS
+- Apps. Type the start of a name, the start of any word in it, or its initials. A few loose letters are enough.
+- Settings pages, by name or by what they are for: "dark", "pair", "printer".
+- Sums. 150 + 20%, 12 * 3.5, sqrt(2). Enter copies the answer.
+- The web. A typed address opens in your browser, and anything you type can be searched for. A keyword in front searches one site directly.
+
+IT LEARNS YOUR SHORTHAND
+What you pick for the text you typed comes first the next time you type it. One letter can mean one app for you and another for someone else.
+
+MADE FOR THE KEYBOARD
+Up and Down move through the rows. Enter runs the selected row. Tab shows what else a row can do. Ctrl with a number runs that row. Esc, a click outside, or your shortcut again closes the panel.
+
+YOUR SHORTCUT
+Booklight opens whenever you start it, so a keyboard shortcut for the app is all it needs. In Keyboard shortcuts, choose App shortcuts, then Add shortcut, pick Booklight and press your keys. The first time you open Booklight it shows you where.
+
+HOW IT LOOKS
+One panel in the upper middle of the screen, in the colors of your wallpaper, light or dark with the system. The selection glides from row to row and lists arrive in a quick cascade. If your system has animations turned off, Booklight cuts instead.
+
+PRIVACY
+No account, no ads, no analytics. What Booklight learns is kept on your device, and you can clear it in settings.
+Search suggestions are off until you turn them on. If you do, the text you type is sent to the search engine you chose (Google, DuckDuckGo, Bing, Brave Search or Ecosia) to suggest searches. Sums and web addresses are not sent. You can turn suggestions off again at any time.
+Booklight has no accessibility service and asks for no permission prompts.
+
+Booklight is a personal hobby project by Alexander Kuscher. It is not affiliated with or endorsed by Google.

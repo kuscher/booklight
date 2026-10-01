@@ -6,7 +6,8 @@
 #   ./bl test                core tests on this machine (JUnit, no device)
 #   ./bl app                 build, install and open the panel
 #   ./bl install [APK] | open [stay] | stop | uninstall
-#                            `open stay` keeps the panel up when it loses focus (for pictures)
+#                            `open stay` keeps the panel up when it loses focus (for pictures);
+#                            DARK=true|false ./bl open stay shows it in that theme whatever the system's is
 #   ./bl debug CMD...        test hooks (DebugReceiver.kt): ping, apps, find TEXT, type TEXT,
 #                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
@@ -54,7 +55,7 @@ install() {
   A install -r "${1:-$APK}" || { A shell settings put global verifier_verify_adb_installs 1; exit 1; }
   A shell settings put global verifier_verify_adb_installs 1
 }
-open() { A shell am start --user current -n "$PANEL" ${1:+--ez stay true} >/dev/null; }
+open() { A shell am start --user current -n "$PANEL" ${1:+--ez stay true} ${DARK:+--ez dark "$DARK"} >/dev/null; }
 
 cmd=${1:-help}; shift || true
 case "$cmd" in

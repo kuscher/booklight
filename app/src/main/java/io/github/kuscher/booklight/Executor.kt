@@ -8,7 +8,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.UserManager
 import android.util.Log
 import io.github.kuscher.booklight.core.Effect
@@ -27,11 +27,11 @@ class Executor(private val context: Context) {
         when (effect) {
             is Effect.LaunchApp -> launcher.startMainActivity(ComponentName(effect.packageName, effect.className), user(effect.user), null, null)
             is Effect.AppInfo -> launcher.startAppDetailsActivity(ComponentName(effect.packageName, effect.className), user(effect.user), null, null)
-            is Effect.OpenUrl -> ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            is Effect.OpenUrl -> ctx.startActivity(Intent(Intent.ACTION_VIEW, effect.url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             is Effect.StorePage -> try {
-                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${effect.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                ctx.startActivity(Intent(Intent.ACTION_VIEW, "market://details?id=${effect.packageName}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } catch (_: ActivityNotFoundException) {
-                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${effect.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                ctx.startActivity(Intent(Intent.ACTION_VIEW, "https://play.google.com/store/apps/details?id=${effect.packageName}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
             is Effect.CopyText -> context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Booklight", effect.text))
             is Effect.OpenSettings -> ctx.startActivity(Intent(effect.action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

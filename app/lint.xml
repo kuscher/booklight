@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- British English holds only what differs from the US English defaults, so "not translated in en"
+         is expected. German is still checked in full. -->
+    <issue id="MissingTranslation">
+        <ignore regexp="is not translated in &quot;en&quot;" />
+    </issue>
+    <!-- Adaptive icons conventionally live in mipmap-anydpi-v26; aapt didn't find the icon without the qualifier. -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+</lint>

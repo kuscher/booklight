@@ -1,0 +1,26 @@
+Booklight ist ein Tastatur-Launcher für Googlebooks und andere Android-Laptops und -Tablets mit Tastatur. Drück dein Tastenkürzel, und ein kleines Glasfenster erscheint über deinem Desktop. Tipp ein paar Buchstaben und drück Enter.
+
+WAS ES FINDET
+- Apps. Tipp den Anfang eines Namens, den Anfang eines Wortes darin oder die Anfangsbuchstaben. Ein paar lose Buchstaben reichen.
+- Einstellungsseiten, nach Namen oder nach Zweck: „dunkel“, „koppeln“, „drucker“.
+- Rechnungen. 150 + 20%, 12 * 3.5, sqrt(2). Enter kopiert das Ergebnis.
+- Das Web. Eine getippte Adresse öffnet sich im Browser, und nach allem, was du tippst, lässt sich suchen. Ein Kürzel davor durchsucht direkt eine Website.
+
+ES LERNT DEINE KÜRZEL
+Was du zu deinem Text auswählst, steht beim nächsten Mal zuerst. Ein Buchstabe kann für dich eine App bedeuten und für jemand anderen eine andere.
+
+FÜR DIE TASTATUR GEMACHT
+Pfeil auf und ab wandern durch die Zeilen. Enter führt die gewählte Zeile aus. Tab zeigt, was eine Zeile sonst noch kann. Strg mit einer Ziffer führt diese Zeile aus. Esc, ein Klick daneben oder dein Tastenkürzel schließt das Fenster.
+
+DEIN TASTENKÜRZEL
+Booklight öffnet sich, sobald du es startest. Ein Tastenkürzel für die App genügt also. Unter „Tastenkürzel“ erst „App-Verknüpfungen“, dann „Tastenkürzel hinzufügen“ wählen, Booklight aussuchen und die Tasten drücken. Beim ersten Öffnen zeigt Booklight, wo das geht.
+
+SO SIEHT ES AUS
+Ein Fenster in der oberen Bildschirmmitte, in den Farben deines Hintergrunds, hell oder dunkel wie das System. Die Auswahl gleitet von Zeile zu Zeile, und Listen kommen in einer schnellen Kaskade. Sind Animationen im System ausgeschaltet, verzichtet Booklight darauf.
+
+DATENSCHUTZ
+Kein Konto, keine Werbung, keine Analyse. Was Booklight lernt, bleibt auf deinem Gerät und lässt sich in den Einstellungen löschen.
+Suchvorschläge sind aus, bis du sie einschaltest. Dann wird dein Text an die gewählte Suchmaschine gesendet (Google, DuckDuckGo, Bing, Brave Search oder Ecosia), um Suchen vorzuschlagen. Rechnungen und Webadressen werden nicht gesendet. Du kannst die Vorschläge jederzeit wieder ausschalten.
+Booklight hat keinen Bedienungshilfen-Dienst und fragt nach keinen Berechtigungen.
+
+Booklight ist ein privates Hobbyprojekt von Alexander Kuscher. Es steht in keiner Verbindung zu Google.

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import androidx.core.graphics.createBitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -74,7 +75,7 @@ class DebugReceiver : BroadcastReceiver() {
                 val a = act ?: return@post out("no panel")
                 val v = a.window.decorView
                 if (v.width == 0) return@post out("no window")
-                val bmp = Bitmap.createBitmap(v.width, v.height, Bitmap.Config.ARGB_8888)
+                val bmp = createBitmap(v.width, v.height)
                 PixelCopy.request(a.window, bmp, { r ->
                     if (r == PixelCopy.SUCCESS) {
                         val f = File(context.cacheDir, "${arg.ifEmpty { "shot" }}.png")

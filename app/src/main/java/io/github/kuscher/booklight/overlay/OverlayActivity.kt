@@ -59,7 +59,9 @@ class OverlayActivity : ComponentActivity() {
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screen.height() / resources.displayMetrics.density))
         stay = intent.getBooleanExtra(EXTRA_STAY, false)
         val icons = app.icons ?: AppIcons(app).also { app.icons = it }
-        val dark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        // `--ez dark true|false` (debug, for pictures) overrides the system's theme for this panel only.
+        val dark = if (intent.hasExtra(EXTRA_DARK)) intent.getBooleanExtra(EXTRA_DARK, false)
+            else resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         placeWindow()
 
         setContent {
@@ -198,6 +200,7 @@ class OverlayActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_STAY = "stay"
+        const val EXTRA_DARK = "dark"
         const val DIM = 0.14f
         const val BLUR_DP = 64f
         var current: WeakReference<OverlayActivity> = WeakReference(null)

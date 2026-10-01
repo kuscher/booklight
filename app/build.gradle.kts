@@ -13,7 +13,7 @@ android {
         minSdk = 34
         targetSdk = 37
         versionCode = 1
-        versionName = "0.1"
+        versionName = "1.0"
     }
 
     // Release signing from ~/.config/booklight (never committed). Absent -> unsigned release build.
@@ -52,6 +52,10 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    // Only Booklight's own languages; the libraries bring dozens more.
+    androidResources {
+        localeFilters += listOf("en", "en-rGB", "de")
     }
     packaging {
         resources.excludes += setOf("META-INF/*.version", "DebugProbesKt.bin", "kotlin-tooling-metadata.json")
