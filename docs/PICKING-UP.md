@@ -2,7 +2,7 @@
 
 *Living status. Newest first.*
 
-## 2026-10-01 (later): 1.0 built, reviewed, tagged
+## 2026-10-01 (later): 1.0 released
 
 **Where it stands.** Booklight 1.0 (versionCode 1) is built, signed with the Booklight release key and
 installed on the HP (release build; Action + K is bound to it). The Play app exists (id
@@ -21,10 +21,13 @@ Reviews: a design pass and an independent visual review of device captures (glas
 outline), and a code review (the privacy rule for suggestions, double-run and stale-result Enter, a
 locale bug in the calculator, debug flags, file writes). All findings marked must or should were fixed.
 
+**Released.** `v1.0` (commit 2a6c40d) went through the tag workflow: the GitHub release "Booklight 1.0" has
+`Booklight.apk`, and Play's closed testing track has the bundle as a draft. The repo is public. On Play the app
+requires `android.hardware.type.pc`, so it is offered to Googlebooks only (PLAN.md §11.11). The privacy page is
+live at googlebook.studio/privacy/booklight.
+
 **Next**
-1. After the tag's workflow is green: tell the Play session (it files the listing and forms from
-   `store-submission/` and sends for review), make the repo public (it then appears as a draft on
-   googlebook.studio), and check the README's download link.
+1. The Play session uploads the listing, files the forms and sends 1.0 for review; it reports to Alex.
 2. **1.1 "Jot"** (PLAN.md §4): quick email (`mail …` → Gmail compose filled in), quick note, calendar
    event, timer, new file and folder. Alex asked for quick email and notes by name. Needs a spec and plan
    first; `docs/research/use-cases.md` has the intents and what to verify on the HP.
