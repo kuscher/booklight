@@ -218,6 +218,10 @@ fun OptionStrip(
     /** One under the other, all as wide as the widest (the card); else side by side. */
     vertical: Boolean = false,
     mark: ImageVector = Symbols.enter,
+    /** On a row that may itself be selected (the Booklight window): the highlight is a pane of glass, not the selection's colour. */
+    quiet: Boolean = false,
+    /** The text's colour, when the strip sits on something other than the panel's glass. */
+    ink: Color? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -230,8 +234,9 @@ fun OptionStrip(
     val a = remember { Animatable(chosen.toFloat()) }
     val choose by rememberUpdatedState(onChoose)
     val run by rememberUpdatedState(onRun)
-    val fill = scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f)
+    val fill = if (quiet) scheme.surfaceContainerLowest.copy(alpha = if (dark) 0.36f else 0.62f) else scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f)
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
+    val hair = (ink ?: scheme.onSurface).copy(alpha = if (quiet) 0.20f else 0f)
     LaunchedEffect(chosen) { a.animateTo(chosen.toFloat(), motion.arm()) }
 
     Layout(
@@ -246,6 +251,7 @@ fun OptionStrip(
                 val r = CornerRadius(SLOT.toPx() / 2)
                 val o = if (vertical) Offset(0f, lo) else Offset(lo, 0f)
                 val s = if (vertical) Size(across, hi - lo) else Size(hi - lo, across)
+                if (hair.alpha > 0f) drawRoundRect(hair, o - Offset(1f, 1f), Size(s.width + 2f, s.height + 2f), CornerRadius(r.x + 1f), style = Stroke(1f))
                 drawRoundRect(fill, o, s, r)
                 drawRoundRect(rim, o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
             }
@@ -260,9 +266,9 @@ fun OptionStrip(
             },
         content = {
             options.forEachIndexed { k, label ->
-                Text(label, color = scheme.onSurface, style = LABEL.copy(fontSize = 14.sp, fontWeight = FontWeight(600)), maxLines = 1, softWrap = false,
+                Text(label, color = ink ?: scheme.onSurface, style = LABEL.copy(fontSize = 14.sp, fontWeight = FontWeight(600)), maxLines = 1, softWrap = false,
                     modifier = Modifier.graphicsLayer { alpha = SECOND + (1f - SECOND) * on(a.value, k) })
-                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) }, tint = scheme.onSecondaryContainer)
+                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) }, tint = ink ?: scheme.onSecondaryContainer)
             }
         },
     ) { measurables, _ ->

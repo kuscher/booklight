@@ -32,7 +32,7 @@ import io.github.kuscher.booklight.device.Files
 import io.github.kuscher.booklight.device.QrImages
 import io.github.kuscher.booklight.device.Screen
 import io.github.kuscher.booklight.entry.PickFolderActivity
-import io.github.kuscher.booklight.settings.SettingsActivity
+import io.github.kuscher.booklight.window.MainActivity
 
 /**
  * Performs effects: the one place where a result's action touches Android. Returns false when it
@@ -76,7 +76,7 @@ class Executor(private val context: Context) {
             is Effect.ShareText -> start(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, effect.text), null))
             is Effect.OpenSettings -> start(Intent(effect.action))
             is Effect.Internal -> when (effect.command) {
-                "settings", "window" -> start(Intent(context, SettingsActivity::class.java))
+                "settings", "window" -> start(Intent(context, MainActivity::class.java))
                 // The system's Keyboard shortcuts window, where Customize adds an app shortcut.
                 "shortcuts" -> from?.requestShowKeyboardShortcuts() ?: return false
                 "done", "again" -> {}     // nothing to do here: the level was set as it was moved; a new password comes with the next list
@@ -137,7 +137,7 @@ class Executor(private val context: Context) {
                     else -> it
                 }
             }
-            is Effect.Edit -> start(Intent(context, SettingsActivity::class.java).putExtra("edit", effect.kind).putExtra("id", effect.id))
+            is Effect.Edit -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_EDIT, effect.kind).putExtra(MainActivity.EXTRA_ID, effect.id))
             // A recipe: each step in turn; it stops at the first that can't be done.
             is Effect.Steps -> return effect.steps.all { perform(it, from) }
             is Effect.EnterScope -> return false     // the panel does this itself

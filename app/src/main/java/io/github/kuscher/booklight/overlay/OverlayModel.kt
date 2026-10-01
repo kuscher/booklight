@@ -32,7 +32,11 @@ enum class Card { SHORTCUT, SUGGESTIONS }
  * row is selected and which of its actions is armed, the cell of a grid, and a confirmation that
  * is waiting. The UI only draws this; keys and clicks call in here.
  */
-class OverlayModel(private val app: BooklightApp, private val scope: CoroutineScope, private val limit: Int = 8) {
+class OverlayModel(
+    private val app: BooklightApp, private val scope: CoroutineScope, private val limit: Int = 8,
+    /** The list in the Booklight window that shows what the panel does: it never asks the network and learns nothing. */
+    private val demo: Boolean = false,
+) {
     /** The scope the text is an argument for: the chip in the field. Null = ordinary search. */
     var chip by mutableStateOf<Scope?>(null); private set
     var query by mutableStateOf(""); private set
@@ -67,7 +71,7 @@ class OverlayModel(private val app: BooklightApp, private val scope: CoroutineSc
     /** The first-run step to show, if any is left and nothing is typed. */
     val card: Card? by derivedStateOf {
         when {
-            query.isNotEmpty() || chip != null -> null
+            demo || query.isNotEmpty() || chip != null -> null
             settings.shortcutCard -> Card.SHORTCUT
             settings.suggestionsCard && !settings.suggestions -> Card.SUGGESTIONS
             else -> null
@@ -127,7 +131,7 @@ class OverlayModel(private val app: BooklightApp, private val scope: CoroutineSc
             }
             // Suggestions come from the network: after a pause in typing, never holding up the
             // list, and dropped if the text has moved on (this job is cancelled by then).
-            if (key != null || !settings.suggestions) return@launch
+            if (demo || key != null || !settings.suggestions) return@launch
             delay(SUGGEST_PAUSE_MS)
             val more = app.suggest.fetch(text)
             if (more.isEmpty()) return@launch

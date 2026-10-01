@@ -27,6 +27,11 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
+        <!-- Which app is the home screen: a start from there (its icon) opens the Booklight window, any other start the panel. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
     </queries>
 
     <!-- Keyboard and trackpad are enough: laptops without a touchscreen can install it. -->
@@ -50,7 +55,8 @@
         android:theme="@style/Theme.Booklight">
 
         <!-- The panel. It IS the launcher activity: the Googlebook's custom keyboard shortcuts start an
-             app's launcher activity, so opening Booklight (shortcut, taskbar, Apps list) shows the panel. -->
+             app's launcher activity. Started by a shortcut it is the panel; started from the app's icon it
+             hands over to the Booklight window. -->
         <activity
             android:name=".overlay.OverlayActivity"
             android:exported="true"
@@ -104,12 +110,15 @@
             </intent-filter>
         </service>
 
-        <!-- Settings and first-run help: an ordinary window, opened from the panel. -->
+        <!-- The Booklight window: what it is, how to give it a key, every setting, the user's own commands.
+             An ordinary window. The app's icon opens it (the panel hands over when it was started from the
+             launcher, the taskbar or the Apps list); so does "Booklight settings" in the panel. -->
         <activity
-            android:name=".settings.SettingsActivity"
+            android:name=".window.MainActivity"
             android:exported="false"
-            android:label="@string/settings_title"
-            android:taskAffinity="io.github.kuscher.booklight.settings"
+            android:label="@string/app_name"
+            android:taskAffinity="io.github.kuscher.booklight.window"
+            android:windowSoftInputMode="adjustResize"
             android:launchMode="singleTask" />
 
         <!-- Asks once where notes go (the system's folder picker). No screen of its own. -->

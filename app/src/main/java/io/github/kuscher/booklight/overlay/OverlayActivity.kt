@@ -1,6 +1,7 @@
 package io.github.kuscher.booklight.overlay
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.SystemClock
@@ -26,6 +27,7 @@ import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.BooklightTheme
+import io.github.kuscher.booklight.window.MainActivity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -60,9 +62,12 @@ class OverlayActivity : ComponentActivity() {
     private var flashJob: Job? = null
     /** Something was run: what was typed need not be kept for next time. */
     private var ran = false
+    /** This start was a click on the icon: there is no panel, only a hand-over to the Booklight window. */
+    private var handedOver = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (fromIcon(intent)) { handOver(); return }
         current = WeakReference(this)
         val app = application as BooklightApp
         val settings = app.prefs.now
@@ -165,7 +170,28 @@ class OverlayActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)) { stay = true; return }
+        if (fromIcon(intent)) { startActivity(Intent(this, MainActivity::class.java)); close(); return }
         if (!take(intent)) close()
+    }
+
+    /**
+     * Was this start a click on the app's icon? Then the Booklight window is wanted, not the panel. The
+     * launcher, the taskbar and the Apps list all belong to the home app, and they say where on screen the
+     * icon was (source bounds). A keyboard shortcut, the assistant key, the widget, the tile and adb do neither.
+     */
+    private fun fromIcon(intent: Intent): Boolean {
+        if (intent.action != Intent.ACTION_MAIN || !intent.hasCategory(Intent.CATEGORY_LAUNCHER)) return false
+        if (intent.sourceBounds != null) return true
+        val home = packageManager.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
+        return home != null && referrer?.host == home
+    }
+
+    /** The icon was clicked: open the Booklight window and leave without ever showing the panel. */
+    private fun handOver() {
+        handedOver = true
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
+        overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0)
     }
 
     /** Text another app handed over (its selection menu, its share sheet) becomes the chip. True if there was any. */
@@ -181,7 +207,7 @@ class OverlayActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus || stay) return
+        if (hasFocus || stay || handedOver) return
         // Whatever started the panel (the taskbar, a widget, the Apps list) may still be closing and
         // take focus for a moment: early on, only close if focus is still gone a little later.
         if (SystemClock.uptimeMillis() - created < EARLY_MS) window.decorView.postDelayed({ if (!hasWindowFocus() && !isFinishing) close() }, 250)
@@ -238,7 +264,7 @@ class OverlayActivity : ComponentActivity() {
 
     /** Leaves: the panel fades with its blur, then the activity finishes. */
     fun close() {
-        if (leaving) return
+        if (leaving || handedOver) return
         if (!ran) model.keep()
         leaving = true
         if (!motion.on) { finishNow(); return }
@@ -253,6 +279,7 @@ class OverlayActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        if (handedOver) return
         // Covered or sent away without a close (a new desk, the lock screen): don't come back half open.
         if (!stay) finishNow()
     }

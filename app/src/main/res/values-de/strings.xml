@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_title">Booklight-Einstellungen</string>
     <string name="search_hint">Apps, Einstellungen und das Web durchsuchen</string>
     <string name="kind_app">App</string>
     <string name="kind_setting">Einstellungen</string>
@@ -16,7 +15,6 @@
     <string name="web_search_title">Mit %1$s nach „%2$s“ suchen</string>
     <string name="hint_actions">Aktionen</string>
     <string name="hint_close">Schließen</string>
-    <string name="hint_back">Zurück</string>
     <string name="copied">Kopiert</string>
     <string name="failed">Das ließ sich nicht öffnen</string>
     <string name="cmd_settings">Booklight-Einstellungen</string>
@@ -34,28 +32,14 @@
     <string name="card_not_now">Nicht jetzt</string>
     <string name="a11y_search_field">Suchen</string>
     <string name="a11y_selected">%1$s, %2$s</string>
-    <string name="set_shortcut_title">Tastenkürzel</string>
-    <string name="set_shortcut_text">Booklight öffnet sich, sobald du es startest. Ein Tastenkürzel für die App genügt also.
-
-1. „Tastenkürzel“ öffnen (Aktion + /).
-2. „App-Verknüpfungen“ wählen, dann „Tastenkürzel hinzufügen“.
-3. Booklight suchen, + wählen, die Tasten drücken, dann „Tastenkürzel festlegen“.
-
-Das System verlangt in jedem Kürzel die Aktionstaste. Aktion + Alt + Leertaste und Aktion + K sind beide frei. Dieselben Tasten schließen Booklight wieder.</string>
     <string name="set_shortcut_button">Tastenkürzel öffnen</string>
     <string name="set_search_title">Websuche</string>
     <string name="set_engine">Suchmaschine</string>
     <string name="set_suggestions">Suchvorschläge</string>
     <string name="set_suggestions_text">Während du tippst, wird dein Text an %1$s (%2$s) gesendet, um Suchen vorzuschlagen. Rechnungen und Webadressen werden nicht gesendet. Ist das aus, verlässt nichts, was du tippst, dieses Gerät, bis du eine Web-Zeile wählst.</string>
-    <string name="set_sites_title">Suchen mit Kürzel</string>
-    <string name="set_sites_text">Kürzel, Leerzeichen und Suchtext eingeben: „yt lofi“.</string>
-    <string name="set_site_add">Suche mit Kürzel hinzufügen</string>
     <string name="set_site_keyword">Kürzel</string>
     <string name="set_site_name">Name</string>
-    <string name="set_site_url">Adresse, mit %s an der Stelle des Suchtexts</string>
-    <string name="set_site_save">Hinzufügen</string>
     <string name="set_site_remove">Entfernen</string>
-    <string name="set_site_remove_named">%1$s entfernen</string>
     <string name="set_results_title">Ergebnisse</string>
     <string name="set_show_settings">Einstellungsseiten</string>
     <string name="set_show_sums">Rechnungen</string>
