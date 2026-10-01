@@ -203,3 +203,29 @@ an extension can only show rows and name intents, and the user chooses what runs
 
 Files, contacts, clipboard history, a window list, live web suggestions, the assistant role, any
 accessibility service, theming beyond the system's colours, phone layouts beyond "it works".
+
+## 8. What changed after Alex's answers (1 October 2026)
+
+This spec was written before he answered. Where it differs, this section and the code win.
+
+- **Nothing typed** shows nothing: no suggestion strip (§2.1, §2.4 state 2). The first-run row became a
+  small card under the field with two steps: the shortcut, then the opt-in for search suggestions.
+- **Glass** (§2.2): flat and visibly see-through. Three levels the user picks from: Clear (tint 0.10,
+  blur 14 dp), Balanced (0.20, 22 dp, the default) and Frosted (0.34, 36 dp); a crisp white outline; no
+  bevel, glow or highlights. Dim 6–10 %. The exact values are in `overlay/Glass.kt`.
+- **Motion** (§2.3) is everywhere, not only the selection: the glass comes into focus on arrival, the
+  window's height follows a spring, rows rise in as a cascade, move to their new places and fade out, the
+  selection pill stretches towards its target, results and actions pass each other sideways, an answer
+  rolls. All specs are in `overlay/Motion.kt`; with the system's animations off, everything cuts.
+- **The field** shows a G in place of the magnifier when Google is the engine.
+- **Web** (§5): the app has the `INTERNET` permission for search suggestions, which are off until the
+  user turns them on. Engines: Google, DuckDuckGo, Bing, Brave Search, Ecosia. Suggestions fill free
+  rows below the web row and never move rows already shown.
+- **Actions** for an app: Open, App info, Store page. No Uninstall action (it would need
+  `REQUEST_DELETE_PACKAGES`; App info has the button).
+- **The key**: the system only accepts shortcuts that include the Action key, one per app. Booklight
+  suggests Action + Alt + Space, or Action + K.
+- **Languages**: US English, British English, German.
+- Results arrive in one step from the local providers (they answer in about 10 ms), then suggestions;
+  the streaming engine in §3.3 was not needed.
+

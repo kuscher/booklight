@@ -20,7 +20,30 @@ over Wi-Fi adb. Each item says how it was checked. Desk research is in
 | `excludeFromRecents` + `singleInstance` + its own `taskAffinity`: a second start while the panel is up arrives as `onNewIntent` ("intent has been delivered to currently running top-most instance"), which Booklight uses as the toggle. | `./bl open` twice |
 | Settings (an ordinary activity started from the panel) opens as a normal freeform desktop window (`mode=freeform`). | `dumpsys activity activities` |
 
-## Speed (debug build, not yet R8)
+## Speed, release build (R8, 1.0, 2.3 MB APK)
+
+| Measure | Result |
+| --- | --- |
+| Cold start, `am start -W` TotalTime | 121 ms |
+| Warm start, `am start -W` TotalTime | 61, 64, 69 ms |
+| Warm start: `onCreate` → first frame | 18–24 ms |
+| A search across all providers | 6–15 ms |
+
+## Glass and motion (1.0)
+
+- The window's height can follow a spring: `window.attributes.height` set on every frame resized the
+  window smoothly at 60 fps, the blur region with it (checked frame by frame in a screen recording).
+- `Window.setBackgroundBlurRadius` and `setDimAmount` can be animated per frame (the glass "comes into
+  focus" over about 170 ms on arrival).
+- An AGSL `RuntimeShader` draws the surface (tint, outline, grain) over the system blur.
+- **See-through needs restraint in both tint and blur.** Tint 0.46 over a 64 dp blur read as an opaque
+  frosted slab (Alex: "I don't think the app is transparent at all"). Tint 0.20 over a 22 dp blur shows
+  recognisable shapes behind and keeps text readable; 0.10 / 14 dp is the clearest that still reads.
+- Apps live in Android users 0 and 10: `pm uninstall --user current` leaves the user-0 copy, and a
+  build signed with another key then fails with INSTALL_FAILED_UPDATE_INCOMPATIBLE. `adb uninstall`
+  removes both.
+
+## Speed (0.1 debug build, not yet R8)
 
 | Measure | Result |
 | --- | --- |
@@ -48,6 +71,14 @@ over Wi-Fi adb. Each item says how it was checked. Desk research is in
   /, -, =, [ ], arrows, Backspace, and several Ctrl/Alt/Shift variants (list: Welcome's
   `device notes` §2.6). Free letters: D J K M O R T X Y Z.
 - Up to 10 custom app shortcuts per user (SystemUI strings; not counted here).
+- **What the capture dialog accepts** (tried in the dialog for another app, then cancelled): Alt + Space
+  and Ctrl + Space alone are ignored (the dialog has a fixed "Action +" in front); Action + Space says
+  "Key combination already in use"; **Action + Alt + Space is accepted**. System actions can get an
+  added shortcut the same way.
+- **One custom shortcut per app**: once Booklight has one, its row shows a bin ("Remove shortcut?"),
+  not a +. So "Alt + Space and also Action + K" is not possible; it is one or the other.
+- The custom shortcut survived uninstalling and reinstalling Booklight (the entry stays in
+  `dumpsys input` and works again once the app is back).
 
 ## Other triggers that need no permission (seen in Settings; not exercised)
 
