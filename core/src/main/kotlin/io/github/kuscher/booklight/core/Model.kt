@@ -187,5 +187,7 @@ interface Scope {
     val hint: String
     /** One line under the row's name outside the scope; null for none. */
     val about: String? get() = null
+    /** False when something else already puts a row for it in the ordinary list (a level is its own row): then only its keyword and a space enter it. */
+    val listed: Boolean get() = true
     suspend fun rows(arg: String): List<Result>
 }

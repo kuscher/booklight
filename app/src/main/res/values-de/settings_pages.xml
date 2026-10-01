@@ -34,6 +34,8 @@
         <item>Systemupdate</item>
         <item>Über dieses Gerät</item>
         <item>Entwickleroptionen</item>
+        <item>Internet-Leiste</item>
+        <item>Lautstärke-Leiste</item>
     </string-array>
     <string-array name="settings_words">
         <item>optionen,präferenzen</item>
@@ -69,5 +71,7 @@
         <item>softwareupdate,aktualisierung,version</item>
         <item>modell,seriennummer,build-nummer,version</item>
         <item>adb,debugging,usb-debugging</item>
+        <item>wlan,netzwerk,verbindung</item>
+        <item>ton,audio,regler</item>
     </string-array>
 </resources>

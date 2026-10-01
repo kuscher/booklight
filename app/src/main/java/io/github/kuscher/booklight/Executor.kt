@@ -78,6 +78,7 @@ class Executor(private val context: Context) {
                 "settings", "window" -> start(Intent(context, SettingsActivity::class.java))
                 // The system's Keyboard shortcuts window, where Customize adds an app shortcut.
                 "shortcuts" -> from?.requestShowKeyboardShortcuts() ?: return false
+                "done" -> {}     // nothing to do: the level was already set as it was moved
                 else -> return false
             }
 

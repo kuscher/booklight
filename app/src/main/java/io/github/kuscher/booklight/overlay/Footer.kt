@@ -71,7 +71,8 @@ fun Footer(model: OverlayModel) {
         val first: Pair<String, String> = when {
             model.confirming -> "" to ""
             grid != null -> "↑↓←→" to stringResource(R.string.hint_move)
-            r?.nudge != null && (r.body as? Body.Level)?.locked != true -> "← →" to stringResource(R.string.hint_adjust)
+            r?.body is Body.Level -> if ((r.body as Body.Level).locked) "" to "" else "← →" to stringResource(R.string.hint_adjust)
+            r?.nudge != null -> "← →" to stringResource(R.string.hint_skip)
             r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope -> "tab" to stringResource(R.string.hint_fill)
             (r?.actions?.size ?: 0) > 1 -> "tab" to stringResource(R.string.hint_actions)
             model.chip != null && model.query.isEmpty() -> "⌫" to stringResource(R.string.hint_leave)

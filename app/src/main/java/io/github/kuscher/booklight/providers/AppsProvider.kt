@@ -1,6 +1,7 @@
 package io.github.kuscher.booklight.providers
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.os.Handler
 import android.os.Looper
@@ -12,6 +13,7 @@ import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Matcher
+import io.github.kuscher.booklight.core.Place
 import io.github.kuscher.booklight.core.Provider
 import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
@@ -29,7 +31,8 @@ import kotlinx.coroutines.launch
 class AppsProvider(private val context: Context, private val scope: CoroutineScope) : Provider {
     override val id = "apps"
 
-    private data class App(val label: String, val pkg: String, val cls: String, val user: Long)
+    /** [system]: came with the device, so it can't be uninstalled. */
+    private data class App(val label: String, val pkg: String, val cls: String, val user: Long, val system: Boolean)
 
     @Volatile private var index: List<App> = emptyList()
     @Volatile var loadedMs: Long = -1; private set
@@ -61,7 +64,9 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
                 val serial = users.getSerialNumberForUser(profile)
                 for (a in launcher.getActivityList(null, profile)) {
                     if (a.componentName.packageName == own) continue   // Booklight doesn't list itself
-                    out.add(App(a.label.toString(), a.componentName.packageName, a.componentName.className, serial))
+                    val flags = a.applicationInfo.flags
+                    val system = flags and ApplicationInfo.FLAG_SYSTEM != 0 && flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP == 0
+                    out.add(App(a.label.toString(), a.componentName.packageName, a.componentName.className, serial, system))
                 }
             }
             ensureActive()
@@ -82,10 +87,15 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
         id = "app:${a.pkg}/${a.cls}" + if (a.user != 0L) "#${a.user}" else "",
         provider = id, kind = Kind.APP, title = a.label,
         icon = Icon.App(a.pkg, a.cls, a.user), score = score,
-        actions = listOf(
+        // A fixed order, never rearranged by use; what removes the app is last and never armed unless asked for by name.
+        actions = listOfNotNull(
             Action("open", context.getString(R.string.action_open), Effect.LaunchApp(a.pkg, a.cls, a.user)),
+            Action("window", context.getString(R.string.action_new_window), Effect.LaunchApp(a.pkg, a.cls, a.user, newWindow = true)).takeIf { a.user == 0L },
             Action("info", context.getString(R.string.action_app_info), Effect.AppInfo(a.pkg, a.cls, a.user)),
+            Action("left", context.getString(R.string.action_left_half), Effect.LaunchApp(a.pkg, a.cls, a.user, place = Place.LEFT)),
+            Action("right", context.getString(R.string.action_right_half), Effect.LaunchApp(a.pkg, a.cls, a.user, place = Place.RIGHT)),
             Action("store", context.getString(R.string.action_store_page), Effect.StorePage(a.pkg)),
+            Action("uninstall", context.getString(R.string.action_uninstall), Effect.Uninstall(a.pkg, a.user), symbol = "trash", danger = true).takeIf { !a.system },
         ),
     )
 }

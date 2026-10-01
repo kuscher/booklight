@@ -11,13 +11,18 @@ import io.github.kuscher.booklight.core.Scope
 import io.github.kuscher.booklight.core.Site
 import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.data.SiteEntry
+import io.github.kuscher.booklight.providers.Dials
+import io.github.kuscher.booklight.providers.LevelScope
+import io.github.kuscher.booklight.providers.PlayScope
 
 /**
  * Every scope there is: the built-in ones, and one for each of the user's keyword searches.
  * **A new scope is one more line in [fixed].**
  */
-class Scopes(private val context: Context, private val prefs: Prefs) {
-    private val fixed: List<Scope> = listOf()
+class Scopes(private val context: Context, private val prefs: Prefs, dials: Dials) {
+    private val fixed: List<Scope> = listOf(
+        LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),
+    )
 
     // The user's keyword searches change rarely: made again only when the saved list is another one.
     private var sitesFor: List<SiteEntry>? = null

@@ -36,6 +36,8 @@
         <item>update</item>
         <item>about</item>
         <item>developer</item>
+        <item>panel_internet</item>
+        <item>panel_volume</item>
     </string-array>
     <string-array name="settings_actions" translatable="false">
         <item>android.settings.SETTINGS</item>
@@ -71,6 +73,8 @@
         <item>android.settings.SYSTEM_UPDATE_SETTINGS</item>
         <item>android.settings.DEVICE_INFO_SETTINGS</item>
         <item>android.settings.APPLICATION_DEVELOPMENT_SETTINGS</item>
+        <item>android.settings.panel.action.INTERNET_CONNECTIVITY</item>
+        <item>android.settings.panel.action.VOLUME</item>
     </string-array>
     <string-array name="settings_titles">
         <item>Settings</item>
@@ -106,6 +110,8 @@
         <item>System update</item>
         <item>About this device</item>
         <item>Developer options</item>
+        <item>Internet panel</item>
+        <item>Volume panel</item>
     </string-array>
     <string-array name="settings_words">
         <item>preferences,options</item>
@@ -141,5 +147,7 @@
         <item>software update,os version</item>
         <item>model,serial,build number,version</item>
         <item>adb,debugging,usb debugging</item>
+        <item>wifi,network,connection,quick</item>
+        <item>sound,audio,sliders</item>
     </string-array>
 </resources>

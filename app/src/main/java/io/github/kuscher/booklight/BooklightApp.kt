@@ -9,6 +9,7 @@ import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.providers.AppsProvider
 import io.github.kuscher.booklight.providers.CalcProvider
 import io.github.kuscher.booklight.providers.CommandsProvider
+import io.github.kuscher.booklight.providers.Dials
 import io.github.kuscher.booklight.providers.SettingsProvider
 import io.github.kuscher.booklight.providers.SuggestProvider
 import io.github.kuscher.booklight.providers.WebProvider
@@ -49,15 +50,16 @@ class BooklightApp : Application() {
         apps = AppsProvider(this, scope)
         notes = Notes(this, prefs)
         val web = WebProvider(this, prefs)
-        scopes = Scopes(this, prefs)
-        providers = listOf(apps, CalcProvider(this, prefs), SettingsProvider(this, prefs), CommandsProvider(this), web)
+        executor = Executor(this)
+        val dials = Dials(this, executor)
+        scopes = Scopes(this, prefs, dials)
+        providers = listOf(apps, CalcProvider(this, prefs), SettingsProvider(this, prefs), CommandsProvider(this), dials, web)
         engine = SearchEngine(
             providers, historyStore.history,
             scopes = { scopes.all() },
             enterLabel = { getString(if (it.symbol == "search") R.string.scope_search else R.string.scope_type) },
             fallback = { listOf(web.search(it)) },
         )
-        executor = Executor(this)
     }
 
     companion object {

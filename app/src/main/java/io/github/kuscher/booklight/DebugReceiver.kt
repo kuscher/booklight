@@ -57,7 +57,7 @@ class DebugReceiver : BroadcastReceiver() {
                 val r = if (scoped != null) app.engine.search(Query(scoped.second, scoped.first.key)) else app.engine.search(Query(arg))
                 out("${(System.nanoTime() - t0) / 1000} us | " + r.joinToString(" | ") { describe(it) })
             }
-            "type" -> main.post { act?.model?.type(arg); out(if (act != null) "ok" else "no panel") }
+            "type" -> main.post { act?.model?.let { m -> while (m.leaveScope()) {}; m.type(arg) }; out(if (act != null) "ok" else "no panel") }
             "key" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
                 when (arg) {

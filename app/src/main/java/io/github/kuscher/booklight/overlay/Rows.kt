@@ -276,7 +276,7 @@ fun ResultRow(
         if (body is Body.Level) {
             val track by animateFloatAsState(if (selected) 1f else 0f, motion.fade(110), label = "track")
             if (selected || track > 0f) LevelTrack(body, on, Modifier.padding(end = 12.dp).graphicsLayer { alpha = track })
-            LevelNumber(body, if (selected) on else scheme.onSurface.copy(alpha = SECOND))
+            if (!body.locked) LevelNumber(body, if (selected) on else scheme.onSurface.copy(alpha = SECOND))
             Spacer(Modifier.width(if (selected) 8.dp else 0.dp))
         }
 

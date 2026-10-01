@@ -67,7 +67,7 @@ class SearchEngine(
     }
 
     /** Scopes as rows of the ordinary list: found by a keyword or by name, entered with Tab or Enter. */
-    private fun scopeRows(text: String): List<Result> = scopes().mapNotNull { s ->
+    private fun scopeRows(text: String): List<Result> = scopes().filter { it.listed }.mapNotNull { s ->
         val t = text.lowercase()
         val score = when {
             s.keywords.any { it.equals(text, ignoreCase = true) } -> 1.0
