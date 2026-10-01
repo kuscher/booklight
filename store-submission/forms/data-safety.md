@@ -11,9 +11,13 @@ to the chosen search engine to get suggested searches.
 - `files/history.json`: for results the user picked, the result's id (for an app: its package and
   activity name), the text that was typed when it was picked, a count and a time. Used to put the usual
   choice first. Cleared by Settings › What Booklight keeps › Forget everything, and by uninstalling.
-- `files/settings.json`: the chosen search engine, whether suggestions are on, the keyword searches,
-  which result kinds show, which first-run cards were seen.
-- Both are included in the user's own Android backup and device-to-device transfer. Booklight has no
+- `files/settings.json`: the chosen search engine, whether suggestions are on, the look, which result kinds
+  show, which first-run cards were seen, and (1.1) what the user made: links, snippets, recipes, the emoji
+  picked lately, and the address of the notes folder the user granted.
+- (1.1) `Notes.md` in a folder the user chose with the system's folder picker: the notes typed with `note …`.
+  Outside the app's storage, in the user's own files; Booklight holds a write grant for that folder only.
+- (1.1) Files made with `new file …` go to the shared Documents folder; QR codes saved go to Downloads.
+- The two files in the app's storage are included in the user's own Android backup and device-to-device transfer. Booklight has no
   server and no account.
 
 ## What leaves the device, and when
@@ -65,3 +69,21 @@ though the developer receives nothing. Optional (users choose); not marked as pr
 (Booklight can't vouch for what a search engine keeps); purpose App functionality for both; encrypted in
 transit; no account. The optional deletion-request question is left unanswered: the developer holds nothing.
 Don't "correct" the form to "not collected".
+
+## 1.1: what changed for the form
+
+Nothing new leaves the device through Booklight. New in 1.1, all on the device or handed to an app the
+user sees open:
+
+- **Permissions:** `REQUEST_DELETE_PACKAGES` (the Uninstall action; Android shows its own confirmation),
+  `com.android.alarm.permission.SET_ALARM` (timers and alarms through the Clock app), `WRITE_SETTINGS`
+  (brightness; inert until the user turns on "Modify system settings" for Booklight). None has a Play
+  declaration form. No runtime permission, no accessibility service, no foreground service.
+- **Handed to other apps by the user's Enter:** a mail draft (`mailto:`), a calendar event (`INSERT`), a
+  note for Keep (`CREATE_NOTE`), a timer or alarm (`SET_TIMER`, `SET_ALARM`), text for Gemini (`SEND` to the
+  Gemini app, shown in its prompt, not sent), "play this" (`MEDIA_PLAY_FROM_SEARCH`). These are ordinary
+  Android hand-overs, not collection or sharing by Booklight.
+- **Received from other apps:** selected or shared plain text (`PROCESS_TEXT`, `SEND`). Shown in the panel,
+  not stored, not sent.
+- **The clipboard:** read only on the user's request (`clip`, or a link with `{clipboard}`).
+- **Suggestions:** unchanged, and still off by default. Text typed after a keyword (inside a chip) is never sent.
