@@ -152,7 +152,7 @@ class Executor(private val context: Context) {
         val options = bounds?.let { ActivityOptions.makeBasic().setLaunchBounds(it).toBundle() }
         if (!e.newWindow || e.user != me) {
             // Through LauncherApps, so apps of a work profile open too.
-            launcher.startMainActivity(component, user(e.user), bounds, options)
+            launcher.startMainActivity(component, user(e.user), null, options)
             return
         }
         // Another window of the same app: a new task beside the ones it has. Apps that allow only one ignore this.

@@ -247,7 +247,8 @@ class OverlayModel(
 
     /** The panel is closing without having run anything: keep what was typed for [restoreLast]. */
     fun keep() {
-        if (query.isNotBlank()) app.lastText = chip?.key to query
+        // Text another app handed over is never kept: its chip has no keyword to come back by.
+        if (query.isNotBlank() && chip?.keywords?.isEmpty() != true) app.lastText = chip?.key to query
     }
 
     /** Remember the pick, so the same text finds it first next time. */

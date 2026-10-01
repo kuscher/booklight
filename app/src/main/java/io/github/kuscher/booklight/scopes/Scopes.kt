@@ -38,6 +38,9 @@ class Scopes(private val context: Context, private val prefs: Prefs, dials: Dial
 
     fun receive(text: String): Scope = TextScope(context, text, web).also { incoming = it }
 
+    /** The panel closed: someone else's text is not kept. */
+    fun forget() { incoming = null }
+
     // The user's links change rarely: their scopes are made again only when the saved list is another one.
     private var sitesFor: List<SiteEntry>? = null
     private var sites: List<Scope> = emptyList()

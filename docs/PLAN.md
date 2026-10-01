@@ -80,6 +80,17 @@ all verified on the device with 0.1:
 
 Not in 1.0 on purpose: files, contacts, clipboard history, window list, live web suggestions.
 
+### 1.1: what was built (1 October 2026)
+
+Alex asked for 1.1 Jot, 1.2 Dials, 1.3 Recipes and 2.2 Switches as **one release, 1.1**, on a new way of
+acting on rows, and decided the open points the same day (the spec's §12:
+`superpowers/specs/2026-10-01-booklight-1.1-design.md`). What differs from the table below: reminders go to
+the Clock app (no exact-alarm switch); Do Not Disturb is a row that opens the Modes panel (an app can only
+switch its own mode); keep awake stays with BentoBar; notes go to a folder granted once, not to
+`Documents/Booklight`; `play` plays music and `store` searches the Play Store. Permissions added:
+`REQUEST_DELETE_PACKAGES`, `SET_ALARM`, `WRITE_SETTINGS` (§6). Next in line: 2.0 Extensions, then 2.1 Reach
+(the Gmail relay is explicitly not built yet).
+
 ### After 1.0: plenty before any permission that makes review harder
 
 From [research/use-cases.md](research/use-cases.md): of 63 ideas, 39 need no permission, 6 an
@@ -125,6 +136,8 @@ In short:
 | Tier | What the user grants | What it adds | Play friction |
 | --- | --- | --- | --- |
 | 0 (1.0) | Nothing | Everything in 1.0, extensions, app shortcuts, intent actions, emoji, snippets, quick links | None |
+| 0 (1.1) | Nothing at install: `REQUEST_DELETE_PACKAGES` and `SET_ALARM` are granted without a prompt | Uninstall (Android confirms each one), timers, alarms, reminders through the Clock app | None: no form, no declaration |
+| 1 (1.1) | A notes folder (system picker), once; "Modify system settings" (a switch in Settings) | Notes.md in that folder; brightness | No form; the switch must be the user's own clear choice and easy to undo |
 | 1 | A folder (system picker); contacts (runtime prompt) | Files in that folder; people | Standard data-safety answers |
 | 2 | Digital assistant role (Settings) | Action + Space, Assistant key, status-bar assistant chip | None found; user must pick it |
 | 3 | Accessibility service; usage access | Window list, clipboard history, system commands, any hotkey, system-wide ranking | Accessibility declaration, prominent disclosure, video; blocked under Android 17 Advanced Protection |

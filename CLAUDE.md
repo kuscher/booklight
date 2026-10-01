@@ -2,48 +2,61 @@
 
 A Spotlight / Alfred-style launcher for Googlebooks (Googlebook OS = Android 17 desktop): a key
 opens a small glass panel over the desktop; type, Enter. Plain APK, Kotlin + Jetpack Compose,
-Material 3 Expressive (material3 1.5.0-alpha, pinned). **One permission, `INTERNET`, for search
-suggestions that are off until the user turns them on.** No runtime permissions, no accessibility
-service (the user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §4/§6).
+Material 3 Expressive (material3 1.5.0-alpha, pinned). Since 1.1 it also does things: mail, notes,
+events, timers, volume, emoji, the user's own links and recipes.
+
+**Permissions:** `INTERNET` (suggestions, off until the user turns them on), `REQUEST_DELETE_PACKAGES`
+(Uninstall; Android confirms), `SET_ALARM` (Clock), `WRITE_SETTINGS` (brightness; inert until the user
+flips the switch). No runtime permissions, no accessibility service, nothing in the background (the
+user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §4/§6).
 
 ## Read first
-- Plan, decisions and roadmap: `docs/PLAN.md`. Design for 1.0: `docs/superpowers/specs/2026-10-01-booklight-design.md`
-  (its §8 lists what changed after Alex's answers). What was built: `docs/superpowers/plans/2026-10-01-booklight-1.0.md`.
-- Visual contract: `docs/design/booklight-plan.html`, the plan page with a working prototype of the panel
-  (online: https://claude.ai/artifact/NtWaN2v56XwLLPXtqNtYbW). Edit `booklight-plan.src.html`, then
-  `tools/plan_page.py` inlines the device captures (`--preview` writes a copy that opens locally).
-- Facts: `docs/research/device-findings.md` (checked on the HP; wins over the desk research),
-  `android-platform.md`, `launchers.md`, `use-cases.md` (what comes after 1.0, by permission tier).
+- Plan, decisions and roadmap: `docs/PLAN.md`. Design: `docs/superpowers/specs/2026-10-01-booklight-1.1-design.md`
+  (1.1; its §12 are Alex's decisions) on top of `…-booklight-design.md` (1.0). How 1.1 was built:
+  `docs/superpowers/plans/2026-10-01-booklight-1.1.md`.
+- How it should behave and look: `docs/design/ux-model.md` (keys, scopes, verbs), `docs/design/design-system.md`
+  (tokens, components, the motion table; §4 carries a note on what the devices changed), and the prototype
+  `docs/design/booklight-next.html` (https://claude.ai/artifact/Nc98FHZosXidEaHqMpU1me; publish the same file
+  to update it). The 1.0 page: `docs/design/booklight-plan.html`.
+- Facts: `docs/research/device-findings.md` (checked on the devices; wins over the desk research),
+  `permissions.md`, `android-platform.md`, `launchers.md`, `use-cases.md`.
 - Status: `docs/PICKING-UP.md`.
 
 ## Layout
 - `core/` — pure Kotlin (no `android.*`), tested with JUnit on the Mac. `./bl test`.
-  - `Model.kt` Query, Result, Action, Effect (what an action does, as data), Icon, Provider.
-  - `Matcher.kt` scores typed text against a name (start, later word, initials, inside, scattered).
-  - `History.kt` what was picked for which typed text (latching) and how often (frecency, 4-week half-life).
-  - `SearchEngine.kt` asks every provider, merges, ranks, learns; `merge` adds late suggestions below.
-  - `Calc.kt` sums. `Web.kt` address detection. `Sites.kt` search engines and keyword searches.
-    `Suggest.kt` reads an engine's suggestion reply and decides when to ask.
+  - `Model.kt` Query (text + the scope it is for), Result, Action, Effect (what an action does, as data),
+    Body (what a row shows: slots, a level, a grid, a code), Icon, Provider, Scope.
+  - `SearchEngine.kt` asks every provider, merges, ranks, learns; inside a scope asks only that scope.
+  - `Matcher.kt`, `History.kt`, `Calc.kt`, `Web.kt`, `Sites.kt`, `Suggest.kt`: as in 1.0.
+  - Parsers, each with its tests: `Verbs.kt` ("chrome uninstall"), `When.kt` + `WhenParts.kt` + `Durations.kt`
+    (dates and times, English and German), `Jot.kt` (mail, event, reminder, timer, new), `Colors.kt`,
+    `Templates.kt` (link placeholders), `Clip.kt`, `Secrets.kt`, `Emoji.kt`, `Jumps.kt`, `Ask.kt`.
 - `app/` — Compose app, package `io.github.kuscher.booklight`.
-  - `BooklightApp` the process: providers, engine, history store, icon cache. **Register a new provider here.**
-  - `overlay/OverlayActivity` the panel's window (the launcher activity), `OverlayModel` its state,
-    `OverlayUi` the Compose panel and `Metrics` (sizes; the window is sized from these),
-    `Glass.kt` the surface (an AGSL shader over the window blur) and the three glass levels,
-    `Motion.kt` every animation spec (cuts when the system's animations are off).
-  - `providers/` `AppsProvider` (LauncherApps index), `Providers.kt` (sums, settings pages, commands, web),
-    `SuggestProvider` (the only network code: the engine's suggestions, only when switched on).
-  - `data/Prefs` the settings as `files/settings.json` (engine, suggestions, keyword searches, glass,
-    first-run cards).
-  - `Executor.kt` performs effects: the only place that starts activities or writes the clipboard.
-  - `data/HistoryStore` history as `files/history.json`. `settings/SettingsActivity`. `ui/` theme, symbols, app icons.
+  - `BooklightApp` the process: providers, scopes, engine, stores. **Register a new provider here.**
+  - `providers/` apps (with typed verbs), sums, settings pages, commands, web (addresses, ports, Gemini),
+    `Dials.kt` (volume, brightness, media), `Answers.kt` (colour, password, UUID), `User.kt` (the user's
+    links and recipes), `SuggestProvider` (the only network code).
+  - `scopes/` rows that take text: `Scopes.kt` (the registry: **a new scope is one line there**; links that
+    take text), `Jot.kt` (mail, note, event, remind, timer, alarm, new, ask), `Picks.kt` (emoji, symbols,
+    QR, colour, snippets, clipboard, text from another app).
+  - `Executor.kt` performs effects: the only place that starts activities, writes the clipboard or changes
+    a system value. Helpers in `device/` (audio, screen, files, QR images) and `data/Notes.kt`.
+  - `overlay/` the panel: `OverlayActivity` (window, icon-or-shortcut routing, text from other apps),
+    `OverlayModel` (chip, text, rows, selection, arming, grid cell, confirmation), `Panel` (keys, the unfold
+    arrival), `Field` (the scope chip), `Rows`, `Strip` (the action row and the option strip), `Bodies`
+    (slots, level, grid, QR), `Footer`, `Metrics`, `Glass` (shader, edge light), `Motion`.
+  - `window/` the Booklight window the icon opens: `MainActivity` (page, settings), `Page` (rows and the one
+    pill), `Stage` (the live demo), `Commands` (editors for links, snippets, recipes).
+  - `entry/` the widget, the tile, the notes-folder picker. `data/` settings (`Prefs`), history, notes, recipes.
   - `DebugReceiver.kt` adb hooks (DUMP-guarded).
+- `app/src/main/assets/emoji.tsv` is generated by `tools/emoji.py` (Unicode data; see `NOTICE`).
 - `bl` — the helper script (its header lists every command).
 
 ## Dev loop
 - `./bl app` builds, installs and opens the panel on the Googlebook. `./bl test` runs the core tests.
-- `./bl debug type TEXT | key up|down|tab|esc|enter | dump | find TEXT | apps | close | forget | pref …`
-  drives the panel without injecting input. `./bl shot NAME` = PNG of the panel's own window (debug builds).
-  `./bl open stay tint=0.2 blur=24 dim=0.1` tries glass values; `DARK=true ./bl open stay` the dark theme.
+- `./bl debug type TEXT | key up|down|left|right|tab|backtab|back|enter|stay|esc | dump | find TEXT | apps | close | forget | pref …`
+  drives the panel without injecting input (`dump` shows the chip, each row's body and actions, and which is armed). `./bl shot NAME` = PNG of the panel's own window (debug builds).
+  `./bl open stay tint=0.2 blur=24 dim=0.1 opening=slow` tries glass values and the arrival; `DARK=true ./bl open stay` the dark theme.
 - Pictures: captures in `docs/design/captures/` → `tools/store_scenes.py` (a drawn desktop behind them) →
   `store-submission/graphics/` (see its README) and `docs/images/`. `tools/logo.py` draws the icon PNGs.
 - Motion can only be judged in motion: `adb shell screenrecord`, then step through the frames
@@ -57,7 +70,9 @@ service (the user's rule: adding a permission needs his say-so and a place in do
 - Release: a `v*` tag (docs/RELEASING.md). Play app id 4972005003444967962; the Play Console work is done by
   the session in ~/googlebook-tech.
 
-## Device rules (Alex's HP Googlebook 14)
+## Device rules (Alex's HP Googlebook 14; the Lenovo Googlebook 15 is the test device)
+- Two Googlebooks may be attached: set `ANDROID_SERIAL` (HP `adb-HP-SERIAL-…`, Lenovo `adb-LENOVO-SERIAL-…`). The HP's
+  transport drops when its lid closes. The Lenovo is for tests; what is said below for the HP is the safe default there too.
 - **Never touch the Debian VM**: don't launch or force-stop the Terminal app, no `vm` commands, no
   reboot, no adbd or Wireless-debugging changes.
 - **Never run `uiautomator dump`**: it suspends every accessibility service and crashed BentoBar
@@ -70,14 +85,19 @@ service (the user's rule: adding a permission needs his say-so and a place in do
   The system accepts only shortcuts with the Action key, and one per app (docs/research/device-findings.md).
 
 ## Design rules
-- One panel, one ranked list, row one selected. Enter runs it. No groups, no tabs, no toolbars.
+- One panel, one ranked list, row one selected. Enter runs its armed action. No groups, no tabs, no toolbars.
+- A row shows all it can do as icons; the armed one is unrolled. One highlight per level (the list's pill,
+  the row's pane, the grid's square), and it travels; never two, never a fade between two places.
 - Flat glass: visibly see-through, blurred, a thin tint, a crisp white outline. No bevels, glows or
   sculpted highlights (Alex: "not too 3D esp the highlights. I do like the white outline").
-- Motion everywhere, all from `Motion.kt`: highlights move, lists cascade in, nothing pops. Never hold up typing.
+- Motion everywhere, all from `Motion.kt`: highlights move, lists cascade in, names unroll, nothing pops.
+  Sizes are known before anything moves; typed text changes in the same frame. Never hold up typing.
 - Nothing typed = nothing shown (after the two first-run cards).
-- The window is exactly the panel: never WRAP_CONTENT, never bigger than what is drawn (the blur
-  region and the click-outside test are the window's bounds).
-- Every user-facing string is a resource. Copy is plain: "Open", "Copy", "Search the web".
+- The window is exactly the panel: never WRAP_CONTENT, never bigger than what is drawn. **The blur is always
+  the whole window** (device-findings.md), so the arrival grows the glass inside a window that stays put, and
+  nothing may be drawn outside the panel's final rectangle.
+- Destructive actions are last, in the error colour, never first, and never run by an arrow or Ctrl + digit.
+- Every user-facing string is a resource, English and German. Copy is plain: "Open", "Copy", "Search".
 
 ## Gotchas
 - Panel sizes live in `Metrics`; `Metrics.height(model)` must match what `Panel` draws, or the
@@ -86,4 +106,8 @@ service (the user's rule: adding a permission needs his say-so and a place in do
 - A constant alone is not a sum (`e`, `pi`): otherwise typing "e" shows 2.718 instead of apps.
 - `LauncherApps.startMainActivity` is used for every launch so work-profile apps open too.
 - The app list skips Booklight itself.
+- User serial numbers are not 0 on these devices (the main user is 10): compare with the own user's serial, never with 0.
+- A scope's keyword and a space becomes a chip as soon as it is typed (`OverlayModel.type`); a debug `type` leaves any scope first.
+- Inside a scope the engine also offers an app whose name starts with the keyword and the text ("play store").
+- `am start -n …OverlayActivity` is the panel; an icon click (source bounds, or the home app as referrer) is the window.
 - Gradle needs the memory settings in `gradle.properties` (Compose + material3 alpha).

@@ -285,7 +285,7 @@ class OverlayActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (current.get() === this) current = WeakReference(null)
+        if (current.get() === this) { current = WeakReference(null); (application as BooklightApp).scopes.forget() }
         super.onDestroy()
     }
 
