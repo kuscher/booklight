@@ -157,7 +157,8 @@ internal object Times {
         var start = (hour24(a, if (borrowed) b.mark else a.mark) ?: return null) * 60 + a.minute
         var end = (hour24(b, b.mark) ?: return null) * 60 + b.minute
         if (borrowed && start >= end) ((start + 720) % 1440).let { if (it < end) start = it }
-        if (afternoon && a.mark == ' ' && !borrowed && start in 60 until 480) start += 720
+        // A span that starts at 1 to 7 with no am, pm or Uhr is a meeting after lunch, not at night: "2-3" is 14:00 to 15:00.
+        if (a.mark == ' ' && !borrowed && start in 60 until 480) start += 720
         if (end <= start) end += if (b.mark == ' ' && end < 720 && end + 720 > start) 720 else 1440
         return Clock(LocalTime.of(start / 60, start % 60), end)
     }

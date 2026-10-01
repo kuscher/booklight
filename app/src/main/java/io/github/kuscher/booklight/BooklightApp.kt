@@ -6,7 +6,10 @@ import io.github.kuscher.booklight.core.SearchEngine
 import io.github.kuscher.booklight.data.HistoryStore
 import io.github.kuscher.booklight.data.Notes
 import io.github.kuscher.booklight.data.Prefs
+import io.github.kuscher.booklight.data.Recipes
+import io.github.kuscher.booklight.providers.Answers
 import io.github.kuscher.booklight.providers.AppsProvider
+import io.github.kuscher.booklight.providers.User
 import io.github.kuscher.booklight.providers.CalcProvider
 import io.github.kuscher.booklight.providers.CommandsProvider
 import io.github.kuscher.booklight.providers.Dials
@@ -49,11 +52,12 @@ class BooklightApp : Application() {
         suggest = SuggestProvider(this, prefs)
         apps = AppsProvider(this, scope)
         notes = Notes(this, prefs)
+        Recipes.me = getSystemService(android.os.UserManager::class.java).getSerialNumberForUser(android.os.Process.myUserHandle())
         val web = WebProvider(this, prefs)
         executor = Executor(this)
         val dials = Dials(this, executor)
-        scopes = Scopes(this, prefs, dials)
-        providers = listOf(apps, CalcProvider(this, prefs), SettingsProvider(this, prefs), CommandsProvider(this), dials, web)
+        scopes = Scopes(this, prefs, dials, notes) { web.search(it) }
+        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), SettingsProvider(this, prefs), CommandsProvider(this), dials, User(this, prefs), web)
         engine = SearchEngine(
             providers, historyStore.history,
             scopes = { scopes.all() },

@@ -47,8 +47,14 @@ class SearchEngine(
         val s = scope(q.scope ?: return emptyList()) ?: return emptyList()
         val rows = withTimeoutOrNull(budgetMs) { runCatching { s.rows(q.text) }.getOrElse { emptyList() } } ?: emptyList()
         // An ordinary word that happened to be a keyword ("new york weather") is one row away.
-        val out = if (q.isEmpty) emptyList() else fallback("${s.keywords.firstOrNull() ?: s.key} ${q.text}").take(1)
-        return (rows.take(limit - out.size) + out).distinctBy { it.id }
+        if (q.isEmpty || s.keywords.isEmpty()) return rows.take(limit)
+        val whole = "${s.keywords.first()} ${q.text}"
+        val out = fallback(whole).take(1)
+        // The keyword may have been the first word of an app's name ("play store"): such an app comes first.
+        val now = clock()
+        val apps = ask { it.query(Query(whole)) }.filter { it.kind == Kind.APP && it.score >= Matcher.PREFIX }
+            .sortedByDescending { rank(it, whole, now) }.take(2)
+        return (apps + rows).take(limit - out.size).plus(out).distinctBy { it.id }
     }
 
     fun scope(key: String): Scope? = scopes().firstOrNull { it.key == key }
@@ -81,7 +87,7 @@ class SearchEngine(
         )
     }
 
-    private fun isFallback(r: Result) = r.kind == Kind.WEB && r.score < URL_SCORE
+    private fun isFallback(r: Result) = r.kind == Kind.WEB && r.score < FALLBACK_BELOW
 
     /**
      * Adds a search engine's suggestions, which arrive after the local rows are on screen, below
@@ -114,7 +120,7 @@ class SearchEngine(
         val base = r.score * weight(r.kind)
         return when (r.kind) {
             Kind.ANSWER -> 10 + base                 // an answer to what you typed is always first
-            Kind.WEB -> if (r.score >= URL_SCORE) base else -1 + base   // "search the web" is the last row; a typed address isn't
+            Kind.WEB -> if (r.score >= FALLBACK_BELOW) base else -1 + base   // "search the web" is the last row; a typed address, or Gemini for a question, isn't
             else -> base + if (r.learnable) history.boost(text, r.id, now) else 0.0
         }
     }
@@ -140,5 +146,7 @@ class SearchEngine(
         const val URL_SCORE = 0.9
         const val MAX_SUGGESTIONS = 3
         const val MAX_FALLBACKS = 2
+        /** A web row scoring less than this is a way out, kept for the end of the list. */
+        const val FALLBACK_BELOW = 0.5
     }
 }

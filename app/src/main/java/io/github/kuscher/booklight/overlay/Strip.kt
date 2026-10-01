@@ -149,7 +149,8 @@ fun ActionStrip(
         content = {
             actions.forEachIndexed { k, act ->
                 val ink = if (act.danger) scheme.error else scheme.onSecondaryContainer
-                Icon(Symbols.of(act.symbol), null, Modifier.size(18.dp), tint = ink)
+                if (act.symbol.startsWith("t:")) Text(act.symbol.substring(2), color = ink, style = LABEL.copy(fontSize = 11.sp, fontWeight = FontWeight(700), letterSpacing = 0.sp), maxLines = 1, softWrap = false)
+                else Icon(Symbols.of(act.symbol), null, Modifier.size(18.dp), tint = ink)
                 // Its name and the Enter mark: always laid out at full width, shown as far as the pane is on it.
                 Row(
                     Modifier

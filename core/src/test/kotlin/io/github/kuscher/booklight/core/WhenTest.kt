@@ -222,9 +222,28 @@ class WhenTest {
     }
 
     @Test fun theLongerReadingWinsThenTheStart() {
-        assertEquals(Moment(at(1, 13), null, false, false, true, "tomorrow lunch"), p("tomorrow lunch at 1pm"))
         assertEquals(Moment(at(2), null, true, true, false, "call friday"), p("tomorrow call friday"))
         assertNull(p("call tomorrow about it"))                    // the middle is not read
+    }
+
+    @Test fun aDayAtOneEndAndATimeAtTheOther() {
+        assertEquals(Moment(at(2, 13), null, false, true, true, "lunch"), p("tomorrow lunch at 1pm"))
+        assertEquals(Moment(at(2, 15), null, false, true, true, "Dentist"), p("Friday Dentist 3pm"))
+        assertEquals(Moment(at(2, 15), null, false, true, true, "Dentist"), p("3pm Dentist tomorrow"))
+        assertEquals(Moment(at(2, 9), at(2, 9, 30), false, true, true, "Standup"), p("9-9:30 Standup tomorrow"))
+    }
+
+    @Test fun aSpanAfterLunch() {
+        assertEquals(Moment(at(2, 14), at(2, 15), false, true, true, "Review"), p("Fri 2-3 Review"))
+        assertEquals(Moment(at(1, 15), at(1, 16), false, false, true, "Sprint"), p("Sprint 3-4"))
+        assertEquals(at(2, 9), start("tomorrow 9-10"))             // mornings stay mornings
+        assertEquals(at(2, 3), start("tomorrow 3am-4am"))          // said outright
+    }
+
+    @Test fun nextFriday() {
+        assertEquals(Moment(at(2), null, true, true, false, "Dentist"), p("Dentist next Friday"))
+        assertEquals(Moment(at(2), null, true, true, false, "Dentist"), p("next friday Dentist"))
+        assertEquals(Moment(at(2), null, true, true, false, "Zahnarzt"), p("Zahnarzt nächsten Freitag"))
     }
 
     @Test fun theLongestExpression() {
@@ -258,7 +277,7 @@ class WhenTest {
             Jot.event(text, now); Jot.reminder(text, now); Jot.timer(text); Jot.alarm(text, now)
         }
         val long = "tomorrow " + "word ".repeat(50_000) + "3pm"
-        assertEquals(at(2), start(long))
+        assertEquals(at(2, 15), start(long))                       // a day at one end, a time at the other
         assertEquals(at(1, 15), start("word ".repeat(50_000) + "at 3pm"))
         assertNull(p("9".repeat(100_000)))
     }

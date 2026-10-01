@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.Intent
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.Ask
 import io.github.kuscher.booklight.core.Calc
+import io.github.kuscher.booklight.core.Jumps
+import io.github.kuscher.booklight.scopes.gemini
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Kind
@@ -96,6 +99,8 @@ class CommandsProvider(private val context: Context) : Provider {
  */
 class WebProvider(private val context: Context, private val prefs: Prefs) : Provider {
     override val id = "web"
+    /** Under a local row that matches from the start of a word (0.8), over anything weaker. */
+    private val GEMINI_FIRST = 0.79
 
     override suspend fun query(q: Query): List<Result> {
         val t = q.text
@@ -110,7 +115,19 @@ class WebProvider(private val context: Context, private val prefs: Prefs) : Prov
                 ),
             ))
         }
+        Jumps.port(t)?.let { u ->
+            out.add(Result(
+                id = "web:port", provider = id, kind = Kind.WEB, title = u.removePrefix("http://"), subtitle = context.getString(R.string.action_open_link),
+                icon = Icon.Symbol("globe"), score = SearchEngine.URL_SCORE + 0.05, learnable = false,
+                actions = listOf(
+                    Action("open", context.getString(R.string.action_open_link), Effect.OpenUrl(u)),
+                    Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(u)),
+                ),
+            ))
+        }
         out.add(search(t))
+        // Gemini: first for something that reads like a question (unless a local row matches well), else a quiet row after the search.
+        if (prefs.now.showGemini && Ask.offered(t)) out.add(gemini(context, t, if (Ask.first(t)) GEMINI_FIRST else 0.09))
         return out
     }
 

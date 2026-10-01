@@ -30,7 +30,7 @@ data class SnippetEntry(val key: String, val text: String)
 
 /** One step of a recipe, as saved: [kind] says which effect, the rest are its values (`data/Recipes.kt`). */
 @Serializable
-data class StepEntry(val kind: String, val a: String = "", val b: String = "", val n: Int = 0)
+data class StepEntry(val kind: String, val a: String = "", val b: String = "", val n: Int = 0, val label: String = "")
 
 /** Several things done in order under one name. */
 @Serializable

@@ -137,6 +137,9 @@ class SearchEngineTest {
         assertEquals(listOf("first lofi", "second lofi", "Search for yt lofi"), r.map { it.title })
         assertTrue(scoped().search(Query("", scope = "yt")).isEmpty())          // nothing typed: no way out needed yet
         assertTrue(scoped().search(Query("x", scope = "gone")).isEmpty())
+        // The keyword was the start of an app's name: the app comes first.
+        val named = SearchEngine(listOf(Names(listOf("YT Music"), ::app)), History(), clock = { 1000 }, scopes = { listOf(yt) })
+        assertEquals(listOf("app:YT Music", "yt:first", "yt:second"), named.search(Query("mus", scope = "yt")).map { it.id })
     }
 
     @Test fun scopesAreRowsOfTheOrdinaryList() = runTest {

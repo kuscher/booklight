@@ -21,6 +21,7 @@ import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.BuildConfig
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.ui.AppIcons
@@ -91,6 +92,7 @@ class OverlayActivity : ComponentActivity() {
             else -> 0f
         }
         placeWindow()
+        take(intent)
         val arrival = Arrival.of(opening, motion)
 
         setContent {
@@ -163,7 +165,18 @@ class OverlayActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)) { stay = true; return }
-        close()
+        if (!take(intent)) close()
+    }
+
+    /** Text another app handed over (its selection menu, its share sheet) becomes the chip. True if there was any. */
+    private fun take(intent: Intent): Boolean {
+        val text = when (intent.action) {
+            Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)
+            Intent.ACTION_SEND -> intent.getCharSequenceExtra(Intent.EXTRA_TEXT)
+            else -> null
+        }?.toString()?.takeIf { it.isNotBlank() } ?: return false
+        model.enterScope((application as BooklightApp).scopes.receive(text.take(MAX_TEXT)))
+        return true
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -191,6 +204,8 @@ class OverlayActivity : ComponentActivity() {
         if (!app.executor.run(a.effect, this)) { say(getString(R.string.failed), bad = true); return }
         ran = true
         model.learn(r)
+        // An emoji that was picked comes first next time.
+        if (r.body is Body.Grid && r.provider == "emoji") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(emojiRecent = (listOf(c.text) + (it.emojiRecent - c.text)).take(14)) } }
         val word = a.done ?: if (a.effect is Effect.CopyText) getString(R.string.copied) else null
         if (word != null) say(word)
         when {
@@ -253,6 +268,8 @@ class OverlayActivity : ComponentActivity() {
         /** Asked for by name (the widget, the tile): the panel, whoever started it. */
         const val ACTION_PANEL = "io.github.kuscher.booklight.PANEL"
         private const val EARLY_MS = 600L
+        /** More than this of someone else's text is cut: a chip and its rows are for a phrase, not a document. */
+        private const val MAX_TEXT = 20_000
         var current: WeakReference<OverlayActivity> = WeakReference(null)
     }
 }

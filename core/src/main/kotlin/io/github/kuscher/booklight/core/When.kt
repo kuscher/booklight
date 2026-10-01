@@ -29,7 +29,10 @@ data class Moment(val start: LocalDateTime, val end: LocalDateTime?, val allDay:
  *   After those two, an hour from 1 to 7 without am, pm or Uhr is the afternoon: "at 3" is 15:00,
  *   "at 3:30" 15:30, "at 8" 08:00.
  * - Spans: 9-9:30, 9am-10am, 9–10. An end that isn't after the start moves 12 hours on when that
- *   helps ("10-2"), else to the next day.
+ *   helps ("10-2"), else to the next day. A span that starts at 1 to 7 with no am or pm is the
+ *   afternoon ("2-3" is 14:00 to 15:00).
+ * - A day at one end and a time at the other also work: "Friday Dentist 3pm".
+ * - "next", "this", "nächsten", "kommenden" in front of a day are read with it and change nothing.
  * - "in 20m", "in 2h", "in 1h 30m": that long from [now].
  * - Only a time: today if it is still ahead, else tomorrow. Only a day: all day.
  * - "at", "on", "um", "am" in front of the expression belong to it ("Dentist at 3pm" leaves
@@ -40,7 +43,7 @@ object When {
     private const val SPAN = 10
     private const val YEAR = 366L * 24 * 3600
     /** Words that lead into a day or a time; the two in [HOUR] make a number alone an hour. */
-    private val LEADING = setOf("at", "on", "um", "am")
+    private val LEADING = setOf("at", "on", "um", "am", "next", "this", "coming", "nächsten", "nächste", "nächster", "kommenden", "diesen", "dieses")
     private val HOUR = setOf("at", "um")
 
     /** What [text] says about when, or null when neither end of it is a day or a time. */
@@ -49,12 +52,24 @@ object When {
         return Moment(hit.start, hit.end, !hit.time, hit.day, hit.time, hit.rest)
     }
 
+    internal fun find(text: String, now: LocalDateTime): Hit? {
+        val one = findOne(text, now) ?: return null
+        if (one.seconds != null || (one.day && one.time)) return one
+        // Only a day, or only a time: the other half may stand at the other end of what is left.
+        val two = findOne(one.rest, now)?.takeIf { it.seconds == null && it.day != one.day && it.time != one.time } ?: return one
+        val day = if (one.day) one else two
+        val time = if (one.time) one else two
+        val start = day.start.toLocalDate().atTime(time.start.toLocalTime())
+        val end = time.end?.let { start.plusSeconds(java.time.Duration.between(time.start, it).seconds) }
+        return Hit(start, end, day = true, time = true).also { it.rest = two.rest }
+    }
+
     /** As [Moment], plus [seconds] when the expression was "in 20m": reminders make a timer of those. */
     internal class Hit(val start: LocalDateTime, val end: LocalDateTime?, val day: Boolean, val time: Boolean, val seconds: Long? = null) {
         var rest = ""
     }
 
-    internal fun find(text: String, now: LocalDateTime): Hit? {
+    private fun findOne(text: String, now: LocalDateTime): Hit? {
         val words = Words.of(text)
         val n = words.size
         val low = words.map { it.text.lowercase().trimEnd(',', ';') }

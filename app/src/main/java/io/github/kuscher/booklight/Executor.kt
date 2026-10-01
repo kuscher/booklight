@@ -47,6 +47,7 @@ class Executor(private val context: Context) {
     private val app get() = context.applicationContext as BooklightApp
     private val launcher = context.getSystemService(LauncherApps::class.java)
     private val users = context.getSystemService(UserManager::class.java)
+    private val me = users.getSerialNumberForUser(android.os.Process.myUserHandle())
     val audio = Audio(context)
     val screen = Screen(context)
 
@@ -78,7 +79,7 @@ class Executor(private val context: Context) {
                 "settings", "window" -> start(Intent(context, SettingsActivity::class.java))
                 // The system's Keyboard shortcuts window, where Customize adds an app shortcut.
                 "shortcuts" -> from?.requestShowKeyboardShortcuts() ?: return false
-                "done" -> {}     // nothing to do: the level was already set as it was moved
+                "done", "again" -> {}     // nothing to do here: the level was set as it was moved; a new password comes with the next list
                 else -> return false
             }
 
@@ -124,7 +125,8 @@ class Executor(private val context: Context) {
             is Effect.Grant -> when (effect.what) {
                 "brightness" -> start(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.fromParts("package", context.packageName, null)))
                 "notes" -> start(Intent(context, PickFolderActivity::class.java))
-                else -> return false
+                // With a note to add once the folder is chosen: "notes", a line break, the note.
+                else -> if (effect.what.startsWith("notes\n")) start(Intent(context, PickFolderActivity::class.java).putExtra(PickFolderActivity.EXTRA_NOTE, effect.what.substringAfter('\n'))) else return false
             }
             is Effect.SaveSnippet -> app.prefs.update { it.copy(snippets = it.snippets.filter { s -> s.key != effect.key } + SnippetEntry(effect.key, effect.text)) }
             is Effect.Delete -> app.prefs.update {
@@ -148,7 +150,7 @@ class Executor(private val context: Context) {
         val component = ComponentName(e.packageName, e.className)
         val bounds = place(e.place)
         val options = bounds?.let { ActivityOptions.makeBasic().setLaunchBounds(it).toBundle() }
-        if (!e.newWindow || e.user != 0L) {
+        if (!e.newWindow || e.user != me) {
             // Through LauncherApps, so apps of a work profile open too.
             launcher.startMainActivity(component, user(e.user), bounds, options)
             return

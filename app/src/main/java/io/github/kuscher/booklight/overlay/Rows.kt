@@ -239,7 +239,7 @@ fun ResultRow(
     val on by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface, motion.fade(120), label = "on")
     val dim by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface.copy(alpha = SECOND), motion.fade(120), label = "dim")
     val pop by animateFloatAsState(if (selected) 1.06f else 1f, motion.pop(), label = "icon")
-    val kind = kindLabel(r.kind)
+    val kind = if (r.provider == "gemini") "Gemini" else kindLabel(r.kind)
     val body = r.body
     val described = stringResource(R.string.a11y_selected, r.title, r.actions.getOrNull(armed)?.label ?: kind)
     RowFrame(Metrics.rowHeight(r), selected, described, r.actions, onHover, onClick, onAction) {
