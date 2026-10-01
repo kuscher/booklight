@@ -129,4 +129,22 @@
     <string name="set_shadow_low">Low</string>
     <string name="set_shadow_medium">Medium</string>
     <string name="set_shadow_high">High</string>
+
+    <!-- The pinned window -->
+    <string name="pin_keys">pin</string>
+    <string name="pin_hint">A line to keep on top</string>
+    <string name="pin_about">A small window that stays on top</string>
+    <string name="pin_none">Nothing is pinned</string>
+    <string name="pin_none_sub">“pin gate B22, 14:05” keeps a line on top of your windows</string>
+    <string name="pin_sub">Stays on top of your windows</string>
+    <string name="pin_replaces">Replaces “%1$s”</string>
+    <string name="action_unpin">Unpin</string>
+    <string name="done_unpinned">Unpinned</string>
+    <string name="action_start_pin">Start and pin</string>
+    <string name="pin_set_for">set for %1$s</string>
+    <string name="pin_kind_text">Note</string>
+    <string name="pin_kind_answer">Answer</string>
+    <string name="pin_kind_color">Color</string>
+    <string name="pin_kind_qr">QR code</string>
+    <string name="pin_kind_timer">Timer</string>
 </resources>

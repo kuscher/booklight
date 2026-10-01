@@ -122,4 +122,22 @@
     <string name="set_shadow_low">Leicht</string>
     <string name="set_shadow_medium">Mittel</string>
     <string name="set_shadow_high">Stark</string>
+
+    <!-- Das angeheftete Fenster -->
+    <string name="pin_keys">pin,anheften</string>
+    <string name="pin_hint">Eine Zeile, die oben bleibt</string>
+    <string name="pin_about">Ein kleines Fenster, das oben bleibt</string>
+    <string name="pin_none">Nichts angeheftet</string>
+    <string name="pin_none_sub">„pin Gate B22, 14:05“ hält eine Zeile über deinen Fenstern</string>
+    <string name="pin_sub">Bleibt über deinen Fenstern</string>
+    <string name="pin_replaces">Ersetzt „%1$s“</string>
+    <string name="action_unpin">Lösen</string>
+    <string name="done_unpinned">Gelöst</string>
+    <string name="action_start_pin">Starten und anheften</string>
+    <string name="pin_set_for">gestellt auf %1$s</string>
+    <string name="pin_kind_text">Notiz</string>
+    <string name="pin_kind_answer">Ergebnis</string>
+    <string name="pin_kind_color">Farbe</string>
+    <string name="pin_kind_qr">QR-Code</string>
+    <string name="pin_kind_timer">Timer</string>
 </resources>

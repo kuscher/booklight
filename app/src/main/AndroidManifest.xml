@@ -14,7 +14,7 @@
     <!-- Brightness. Does nothing until the user switches on "Modify system settings" for Booklight in
          Settings; the brightness row says so and opens that page. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
-    <!-- No runtime permissions, no accessibility service, nothing that runs in the background. -->
+    <!-- No runtime permissions, no accessibility service. -->
 
     <!-- The app list: launchable apps only (no QUERY_ALL_PACKAGES), and the Settings app for its pages. -->
     <queries>
@@ -121,6 +121,19 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|density|uiMode"
             android:launchMode="singleTask" />
 
+        <!-- The pinned window: a picture-in-picture window, the one kind the system keeps on top without ever giving
+             it the keyboard. One at a time. The smallest size named here is the size the system opens it at. -->
+        <activity
+            android:name=".pin.PinActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:theme="@style/Theme.Booklight.Pin"
+            android:taskAffinity="io.github.kuscher.booklight.pin"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|density|uiMode">
+            <layout android:minWidth="280dp" android:minHeight="118dp" />
+        </activity>
         <!-- Asks once where notes go (the system's folder picker). No screen of its own. -->
         <activity
             android:name=".entry.PickFolderActivity"

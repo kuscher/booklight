@@ -36,6 +36,8 @@ import io.github.kuscher.booklight.device.Files
 import io.github.kuscher.booklight.device.QrImages
 import io.github.kuscher.booklight.device.Screen
 import io.github.kuscher.booklight.entry.PickFolderActivity
+import io.github.kuscher.booklight.pin.PinActivity
+import io.github.kuscher.booklight.pin.Pinned
 import io.github.kuscher.booklight.window.MainActivity
 
 /**
@@ -155,7 +157,8 @@ class Executor(private val context: Context) {
             is Effect.Open -> return open(effect, ctx)
             // The app the text came from asked for text back (its selection menu): this is the answer to that.
             is Effect.Replace -> (from ?: return false).setResult(Activity.RESULT_OK, Intent().putExtra(Intent.EXTRA_PROCESS_TEXT, effect.text))
-            is Effect.Pin, is Effect.Unpin -> return false
+            is Effect.Pin -> pin(effect, ctx)
+            is Effect.Unpin -> { PinActivity.current.get()?.finishAndRemoveTask(); app.pinned.value = null }
         }
         return true
     }
@@ -176,6 +179,30 @@ class Executor(private val context: Context) {
         intent.setClassName(a.packageName, a.name)
         ctx.startActivity(intent)
         return true
+    }
+
+    /**
+     * The pinned window. One at a time: a new pin of the shape of the one that is there takes its
+     * window; another shape closes it and opens its own. A new window opens where the system will
+     * put it once it is on top (the lower right corner), at about its size, so that going on top
+     * is a small step and not a flight across the screen.
+     */
+    private fun pin(e: Effect.Pin, ctx: Context) {
+        val p = Pinned(e.kind, e.text, e.value, e.note, if (e.kind == "timer") System.currentTimeMillis() + e.value * 1000 else 0)
+        app.pinned.value = p
+        val (w, h) = p.size(context)
+        PinActivity.current.get()?.takeIf { !it.isFinishing }?.let { if (it.size == (w to h)) { it.show(p); return } else it.finishAndRemoveTask() }
+        val metrics = context.getSystemService(WindowManager::class.java).maximumWindowMetrics
+        val bars = metrics.windowInsets.getInsetsIgnoringVisibility(android.view.WindowInsets.Type.systemBars())
+        val d = context.resources.displayMetrics.density
+        val right = metrics.bounds.right - bars.right - (16 * d).toInt()
+        val bottom = metrics.bounds.bottom - bars.bottom - (16 * d).toInt()
+        // An ordinary window is never lower than 220 dp here, and has the system's caption on top.
+        val bounds = Rect(right - (maxOf(w, Pinned.WIDTH) * d).toInt(), bottom - (maxOf(h + 40, 220) * d).toInt(), right, bottom)
+        // A task of its own, said outright: for a single-task activity the desktop would give the new window the size of
+        // whichever Booklight window is in front (docs/research/device-findings.md).
+        ctx.startActivity(Intent(context, PinActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK).putExtras(p.bundle()),
+            ActivityOptions.makeBasic().setLaunchBounds(bounds).toBundle())
     }
 
     /** Opens an app: as the launcher would, or in a place on a screen, or as another window of it. */

@@ -124,3 +124,43 @@ class TodoScope(private val context: Context, private val notes: Notes) : Scope 
 
     private companion object { const val FIT = 7 }
 }
+
+/**
+ * `pin gate B22, 14:05`: a line in a small window that stays on top. With nothing typed: what is
+ * pinned, with the way to take it away (a keyboard launcher must not make a window only the
+ * pointer can close). A pinned text exists nowhere else, so a new one says what it replaces.
+ */
+class PinScope(private val context: Context, private val pinned: () -> io.github.kuscher.booklight.pin.Pinned?) : Scope {
+    override val key = "pin"
+    override val keywords: List<String> = context.getString(R.string.pin_keys).split(',')
+    override val name: String = context.getString(R.string.action_pin)
+    override val symbol = "pin"
+    override val hint: String = context.getString(R.string.pin_hint)
+    override val about: String = context.getString(R.string.pin_about)
+
+    override suspend fun rows(arg: String): List<Result> {
+        val text = arg.trim()
+        val now = pinned()
+        if (text.isEmpty()) return listOf(
+            if (now == null) Result(
+                id = "pin:none", provider = key, kind = Kind.OTHER, title = context.getString(R.string.pin_none), subtitle = context.getString(R.string.pin_none_sub),
+                icon = Icon.Symbol("pin"), score = 1.0, learnable = false, actions = emptyList(),
+            ) else Result(
+                id = "pin:now", provider = key, kind = Kind.OTHER, title = now.title(context), subtitle = now.label(context), icon = Icon.Symbol("pin"), score = 1.0, learnable = false,
+                actions = listOfNotNull(
+                    Action("unpin", context.getString(R.string.action_unpin), Effect.Unpin, keepOpen = true, symbol = "trash", done = context.getString(R.string.done_unpinned)),
+                    Action("copy", context.getString(R.string.action_copy), Effect.CopyText(now.text)).takeIf { now.kind != "timer" && now.kind != "qr" },
+                ),
+            ),
+        )
+        val old = now?.takeIf { it.kind == "text" }?.title(context)?.let { if (it.length > 24) it.take(23) + "…" else it }
+        return listOf(Result(
+            id = "pin:new", provider = key, kind = Kind.OTHER, title = text, subtitle = old?.let { context.getString(R.string.pin_replaces, it) } ?: context.getString(R.string.pin_sub),
+            icon = Icon.Symbol("pin"), score = 1.0, learnable = false,
+            actions = listOf(
+                Action("pin", context.getString(R.string.action_pin), Effect.Pin("text", text), symbol = "pin"),
+                Action("copy", context.getString(R.string.action_copy), Effect.CopyText(text)),
+            ),
+        ))
+    }
+}

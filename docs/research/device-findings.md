@@ -150,6 +150,36 @@ Tried with a throwaway build (local branch `spike/unfold`), recorded and stepped
 - `./bl screen` crops a real screenshot, so it shows whatever is behind the panel: never publish
   one. `./bl shot` (PixelCopy of Booklight's own window) is the one for docs.
 
+## The pinned window (Lenovo Googlebook 15, 1 October 2026)
+
+The spec asked for a small window in Android 17's pinned layer with the keys staying in the app the user was in,
+and said to check that on a device. What the device does:
+
+- **The pinned layer takes the keys.** `AppTask.requestWindowingLayer(WINDOWING_LAYER_PINNED)` from a focused
+  window answers 0 (granted) with `USE_PINNED_WINDOWING_LAYER`, and the window stays on top. But it is the top
+  task of the desk: it has the keys when it opens, **and it gets them again every time the window in front of
+  it closes**, the panel included (pin a note, click the app, open the panel, Esc: the keys are in the pin).
+  An app cannot hand them back: `FLAG_NOT_FOCUSABLE` on the pin leaves no window focused at all
+  (`mCurrentFocus=null`, the pin still the focused app), and `moveTaskToBack` minimises it.
+- **A picture-in-picture window never takes them.** `enterPictureInPictureMode` from the same activity: the
+  keys are back in the app behind at once and stay there when the panel closes later (`mode=pinned`).
+- **Its size is the app's to say, through the manifest.** By default the system opens it at about a sixth of
+  the screen (645 × 295 dp for a shape of 2.19 to 1). With `<layout android:minWidth="280dp"
+  android:minHeight="118dp">` on the activity it opens at exactly 280 × 118 dp, 280 × 140 for a taller shape,
+  219 × 219 for a square: the smallest size is the opening size.
+- **The system does not reshape it**: `setPictureInPictureParams` with another aspect ratio left the window as
+  it was. A pin of another shape needs a new window.
+- **A tap or the pointer shows the system's controls**: settings, expand, close. The app's own buttons
+  (`setActions`) are shown only on a window some 220 dp high, not on one of 118 or 140.
+- **Getting there:** the activity must be an ordinary window first. `ActivityOptions.makeLaunchIntoPip` from the
+  panel opened an ordinary window. The system then takes it on top its own way (the window goes, a card with
+  the app's icon lands, about 0.5 s); the source rectangle hint did not change that.
+- **Opening an ordinary window of one's own at a size:** a single-task activity started while another Booklight
+  window is the top desktop window is given that window's bounds ("inheriting bounds from existing closing
+  instance" in the log), whatever `setLaunchBounds` says. With `FLAG_ACTIVITY_MULTIPLE_TASK` the bounds are
+  taken. A desktop window is never lower than 220 dp; its caption is 40 dp (48 in the pinned layer).
+- Not checked: the HP; a video already in picture-in-picture (the system keeps one).
+
 ## A shadow around the panel (Lenovo Googlebook 15, 1 October 2026)
 
 Alex asked for a wide, soft shadow around the panel that never lies under the glass. 1.0 had found that the

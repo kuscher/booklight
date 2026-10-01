@@ -35,12 +35,14 @@ class Scopes(
     settings: SettingsProvider, keys: KeysProvider, private val ai: OnDevice,
     /** The keywords other apps declare, given the ones already taken. */
     private val others: (Set<String>) -> List<Scope> = { emptyList() },
+    /** What the pinned window shows, if there is one. */
+    pinned: () -> io.github.kuscher.booklight.pin.Pinned? = { null },
 ) {
     /** The tasks: it remembers what was ticked while the panel is open. */
     val todo = TodoScope(context, notes)
 
     private val fixed: List<Scope> = listOf(
-        MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
+        MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, PinScope(context, pinned), EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context),
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), QrScope(context), ColorScope(context),
         SnipScope(context, prefs), TextScope(context, null, web) { prefs.now.prompts },

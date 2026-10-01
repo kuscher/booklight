@@ -5,6 +5,14 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
+    <!-- The pinned window: no start-up picture, and what the system shows of it before its own first frame is
+         the colour of its ground, not white. -->
+    <style name="Theme.Booklight.Pin">
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowBackground">@color/pin_ground</item>
+        <item name="android:colorBackground">@color/pin_ground</item>
+    </style>
+
     <!-- The panel's window: see-through, no title, no start-up picture, no system animation
          (the panel animates itself, so it can appear in the same frame as the key press). -->
     <style name="Theme.Booklight.Overlay" parent="android:Theme.Material.Light.NoActionBar">

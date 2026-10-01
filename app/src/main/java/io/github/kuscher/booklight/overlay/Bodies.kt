@@ -308,9 +308,9 @@ fun qr(text: String): BitMatrix? = runCatching {
 
 /** A swatch of one colour, with a hairline so white and black still have an edge. */
 @Composable
-fun Swatch(argb: Int, ink: Color) {
-    val shape = RoundedCornerShape(12.dp)
-    Box(Modifier.size(40.dp).clip(shape).background(Color(argb)).border(with(LocalDensity.current) { 1f.toDp() }, ink.copy(alpha = 0.20f), shape))
+fun Swatch(argb: Int, ink: Color, size: androidx.compose.ui.unit.Dp = 40.dp, radius: androidx.compose.ui.unit.Dp = 12.dp) {
+    val shape = RoundedCornerShape(radius)
+    Box(Modifier.size(size).clip(shape).background(Color(argb)).border(with(LocalDensity.current) { 1f.toDp() }, ink.copy(alpha = 0.20f), shape))
 }
 
 /**

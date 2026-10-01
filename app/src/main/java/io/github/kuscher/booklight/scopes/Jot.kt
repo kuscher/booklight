@@ -179,7 +179,11 @@ class TimerScope(context: Context) : JotScope(context, "timer", R.string.timer_k
             id = "jot:timer", provider = key, kind = Kind.OTHER, title = name, icon = Icon.Symbol("timer"), score = 1.0, learnable = false,
             answer = length(spec?.seconds ?: 0),
             subtitle = if (spec == null) text(R.string.timer_how_long) else listOf(spec.label, rings.orEmpty()).filter { it.isNotEmpty() }.joinToString(" · "),
-            actions = spec?.let { listOf(Action("start", text(R.string.action_start), Effect.SetTimer(it.seconds, it.label), symbol = "play", done = text(R.string.done_timer))) } ?: emptyList(),
+            actions = spec?.let { listOf(
+                Action("start", text(R.string.action_start), Effect.SetTimer(it.seconds, it.label), symbol = "play", done = text(R.string.done_timer)),
+                // The Clock app's timer, and its countdown in a small window that stays on top.
+                Action("pin", text(R.string.action_start_pin), Effect.Steps(listOf(Effect.SetTimer(it.seconds, it.label), Effect.Pin("timer", "", it.seconds.toLong(), it.label))), symbol = "pin"),
+            ) } ?: emptyList(),
         ))
     }
 }

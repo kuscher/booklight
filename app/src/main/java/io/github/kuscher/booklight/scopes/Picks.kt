@@ -92,6 +92,7 @@ class QrScope(private val context: Context) : Scope {
                 Action("copy", context.getString(R.string.action_copy_image), Effect.QrImage(text, ImageUse.COPY), done = context.getString(R.string.copied)),
                 Action("save", context.getString(R.string.action_save), Effect.QrImage(text, ImageUse.SAVE), done = context.getString(R.string.done_saved)),
                 Action("share", context.getString(R.string.action_share), Effect.QrImage(text, ImageUse.SHARE)),
+                Action("pin", context.getString(R.string.action_pin), Effect.Pin("qr", text), symbol = "pin"),
             ),
         ))
     }

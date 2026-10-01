@@ -60,6 +60,7 @@ class Answers(private val context: Context) : Provider {
                     Action("rgb", copy, Effect.CopyText(c.rgb()), symbol = "t:RGB"),
                     Action("hsl", copy, Effect.CopyText(c.hsl()), symbol = "t:HSL"),
                     Action("oklch", copy, Effect.CopyText(c.oklch()), symbol = "t:OKLCH"),
+                    Action("pin", context.getString(R.string.action_pin), Effect.Pin("color", c.hex(), value = c.argb.toLong()), symbol = "pin"),
                 ),
             )
         }

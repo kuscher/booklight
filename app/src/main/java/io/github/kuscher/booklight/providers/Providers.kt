@@ -28,7 +28,10 @@ class CalcProvider(private val context: Context, private val prefs: Prefs) : Pro
         return listOf(Result(
             id = "calc", provider = id, kind = Kind.ANSWER, title = a, subtitle = q.text.removePrefix("=").trim(),
             icon = Icon.Symbol("calc"), score = 1.0, answer = a, learnable = false,
-            actions = listOf(Action("copy", context.getString(R.string.action_copy), Effect.CopyText(a.replace(",", "")))),
+            actions = listOf(
+                Action("copy", context.getString(R.string.action_copy), Effect.CopyText(a.replace(",", ""))),
+                Action("pin", context.getString(R.string.action_pin), Effect.Pin("answer", a, note = q.text.removePrefix("=").trim()), symbol = "pin"),
+            ),
         ))
     }
 }

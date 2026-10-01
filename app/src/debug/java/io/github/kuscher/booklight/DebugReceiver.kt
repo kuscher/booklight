@@ -109,6 +109,18 @@ class DebugReceiver : BroadcastReceiver() {
                 }
                 out("${app.onDevice.check()}")
             }
+            // The pinned window, without the panel: `pin text gate B22`, `pin timer 90`, `pin answer 42`, `pin color #3478f6`, `pin qr https://…`, `unpin`.
+            "pin" -> main.post {
+                val (kind, text) = (arg.split(' ', limit = 2) + "").let { it[0] to it[1] }
+                val e = when (kind) {
+                    "timer" -> io.github.kuscher.booklight.core.Effect.Pin("timer", "", text.toLongOrNull() ?: 90, "tea")
+                    "answer" -> io.github.kuscher.booklight.core.Effect.Pin("answer", text, note = "12 × 3.5")
+                    "color" -> io.github.kuscher.booklight.core.Effect.Pin("color", text, value = (io.github.kuscher.booklight.core.Colors.parse(text)?.argb ?: 0).toLong())
+                    else -> io.github.kuscher.booklight.core.Effect.Pin(kind, text)
+                }
+                out("${app.executor.run(e)}")
+            }
+            "unpin" -> main.post { out("${app.executor.run(io.github.kuscher.booklight.core.Effect.Unpin)}") }
             "close" -> main.post { act?.close(); out("ok") }
             "dump" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
