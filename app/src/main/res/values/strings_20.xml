@@ -59,4 +59,34 @@
     <string name="settings_about">Every page Booklight knows</string>
     <string name="settings_search">Search the Settings app</string>
     <string name="settings_search_sub">Every setting, in its own search</string>
+    <!-- Notes -->
+    <string name="notes_keys">notes,find</string>
+    <string name="notes_name">Notes</string>
+    <string name="notes_title">Search your notes</string>
+    <string name="notes_hint">A word to find</string>
+    <string name="notes_about">Lines of Notes.md, newest first</string>
+    <string name="notes_empty">Nothing in Notes.md yet</string>
+    <string name="notes_empty_sub">“note buy milk” adds a line</string>
+    <string name="notes_no_match">No note says that</string>
+    <string name="notes_choose">Choose the notes folder…</string>
+    <string name="notes_choose_sub">Notes.md and Todo.md go to a folder you choose, once</string>
+    <string name="action_open_file">Open file</string>
+    <string name="note_to_file">Add to %1$s</string>
+    <string name="done_note_file">Added to %1$s</string>
+    <string name="action_today">Today’s note</string>
+    <string name="todo_keys">todo,task</string>
+    <string name="todo_name">To-do</string>
+    <string name="todo_hint">A task to add, or nothing to see what is open</string>
+    <string name="todo_about">Tasks in Todo.md</string>
+    <string name="todo_add">Add “%1$s”</string>
+    <string name="todo_add_sub">A task for Todo.md</string>
+    <string name="todo_none">Nothing to do</string>
+    <string name="todo_none_sub">“todo call the bank” adds a task</string>
+    <string name="action_undo">Undo</string>
+    <string name="done_todo">Added to Todo</string>
+    <string name="done_ticked">Done</string>
+    <string name="done_unticked">Open again</string>
+    <string name="day_today">Today</string>
+    <string name="day_yesterday">Yesterday</string>
+    <string name="action_pin">Pin</string>
 </resources>

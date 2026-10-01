@@ -11,6 +11,7 @@ import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Jot
 import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.NewKind
+import io.github.kuscher.booklight.core.NoteText
 import io.github.kuscher.booklight.core.ReminderPlan
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
@@ -87,21 +88,37 @@ class MailScope(context: Context) : JotScope(context, "mail", R.string.mail_keys
     }
 }
 
-/** `note buy milk / and coffee`: a dated line in Notes.md, in the folder the user chose once. */
+/**
+ * `note buy milk / and coffee`: a dated line in Notes.md, in the folder the user chose once. When the
+ * first word is the name of another `.md` file there ("ideas better onboarding"), a second row adds
+ * the rest to that file; the default stays Notes.md. "Today's note" puts the line in the day's own file.
+ */
 class NoteScope(context: Context, private val notes: Notes) : JotScope(context, "note", R.string.note_keys, R.string.note_name, R.string.note_hint, R.string.note_about, "note") {
     override suspend fun rows(arg: String): List<Result> {
         val note = Jot.note(arg)
         val lines = note.lines()
         val ready = notes.ready
         val caption = if (ready) text(R.string.note_caption, notes.where ?: "") else text(R.string.note_caption_first)
-        val actions = if (note.isEmpty()) emptyList() else listOf(
+        val actions = if (note.isEmpty()) emptyList() else listOfNotNull(
             if (ready) Action("add", text(R.string.action_add), Effect.AppendNote(note), symbol = "check", done = text(R.string.done_note))
             // The first note asks where notes should go, then goes there.
             else Action("choose", text(R.string.action_choose_folder), Effect.Grant("notes\n$note"), symbol = "folder"),
+            Action("today", text(R.string.action_today), Effect.AppendNote(note, Effect.AppendNote.TODAY), symbol = "event", done = text(R.string.done_note_file, notes.today())).takeIf { ready },
+            Action("pin", text(R.string.action_pin), Effect.Pin("text", note), symbol = "pin"),
             Action("keep", text(R.string.action_keep), Effect.KeepNote(note), symbol = "note"),
             copy(note),
         )
-        return listOf(preview(caption, listOf(slot(R.string.slot_note, lines.first())), lines.drop(1).joinToString(" ↵ "), actions))
+        val first = preview(caption, listOf(slot(R.string.slot_note, lines.first())), lines.drop(1).joinToString(" ↵ "), actions)
+        // Another file of the folder, named by the first word: offered second, never in place of Notes.md.
+        val other = if (ready) NoteText.target(arg, notes.files())?.let { (file, rest) ->
+            val text = Jot.note(rest)
+            Result(
+                id = "jot:note:file", provider = key, kind = Kind.OTHER, title = text(R.string.note_to_file, file), subtitle = text.replace("\n", " ↵ "),
+                icon = Icon.Symbol("file"), score = 1.0, learnable = false,
+                actions = listOf(Action("add", text(R.string.action_add), Effect.AppendNote(text, file), symbol = "check", done = text(R.string.done_note_file, file))),
+            )
+        } else null
+        return listOfNotNull(first, other)
     }
 }
 

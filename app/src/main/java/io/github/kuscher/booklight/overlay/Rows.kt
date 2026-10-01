@@ -348,7 +348,8 @@ fun ResultRow(
     val described = stringResource(R.string.a11y_selected, r.title, r.actions.getOrNull(armed)?.label ?: kind)
     RowFrame(Metrics.rowHeight(r), selected, described, r.actions, bare = body is Body.Grid, onHover, onClick, onAction) {
         if (body is Body.Grid) { GridBody(body, cell.coerceAtLeast(0), selected, onCell, onPick); return@RowFrame }
-        if (body is Body.Code) QrPlate(body.text, Modifier.padding(start = 4.dp))
+        if (body is Body.Task) TaskBox(body.done, dim)
+        else if (body is Body.Code) QrPlate(body.text, Modifier.padding(start = 4.dp))
         // A swatch is a sample, not a mark: it doesn't swell with the selection.
         else if (r.icon is RowIcon.Swatch) RowPicture(r.icon, icons, dim)
         else Box(Modifier.graphicsLayer { scaleX = pop; scaleY = pop }) { RowPicture(r.icon, icons, dim) }
@@ -373,7 +374,8 @@ fun ResultRow(
                     // Laid out once at its own width and covered by a fade where the strip takes its room: a name unrolling
                     // beside it never makes the title swap letters for an ellipsis.
                     Box(Modifier.fillMaxWidth().fadeEnd()) {
-                        Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                        if (body is Body.Task) TaskTitle(r.title, body.done, on)
+                        else Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
                     }
                     r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = if (Metrics.rowHeight(r) > Metrics.row) 2 else 1, overflow = TextOverflow.Ellipsis) }
                 }
@@ -426,6 +428,41 @@ fun ResultRow(
 
 /** The room a row of key caps keeps free at its right for its strip ("All shortcuts", Copy), so the caps never move. */
 private val KEYS_ROOM = 200.dp
+
+/** A task's box, in the icon column. Ticked, it fills with ink and the check draws itself in the ground's colour. */
+@Composable
+private fun TaskBox(done: Boolean, ink: Color) {
+    val motion = LocalMotion.current
+    val fill by animateFloatAsState(if (done) 1f else 0f, motion.fade(120), label = "box")
+    val ground = MaterialTheme.colorScheme.surfaceContainerLowest
+    Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(20.dp).drawWithContent {
+            val r = androidx.compose.ui.geometry.CornerRadius(7.dp.toPx())
+            val w = 1.5.dp.toPx()
+            if (fill > 0f) drawRoundRect(ink.copy(alpha = ink.alpha * fill), cornerRadius = r)
+            drawRoundRect(ink, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), androidx.compose.ui.geometry.CornerRadius(7.dp.toPx() - w / 2), style = androidx.compose.ui.graphics.drawscope.Stroke(w))
+            drawContent()
+        }, contentAlignment = Alignment.Center) { DrawnCheck(done, ground, Modifier.size(16.dp)) }
+    }
+}
+
+/** A task's words. Ticked, a line strikes them from their start, its leading end first, and the ink steps back. The line is drawn over the text as it was laid out; the text is not laid out again. */
+@Composable
+private fun TaskTitle(title: String, done: Boolean, on: Color) {
+    val motion = LocalMotion.current
+    val struck by animateFloatAsState(if (done) 1f else 0f, motion.lead(), label = "strike")
+    val ink by animateColorAsState(if (done) on.copy(alpha = THIRD) else on, motion.fade(120), label = "task")
+    var width by remember { mutableStateOf(0f) }
+    Text(
+        title, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
+        onTextLayout = { width = it.getLineRight(0) },
+        modifier = Modifier.drawWithContent {
+            drawContent()
+            val s = struck.coerceIn(0f, 1f)
+            if (s > 0f) drawLine(ink, Offset(0f, size.height * 0.56f), Offset(minOf(width, size.width) * s, size.height * 0.56f), 1.5.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        },
+    )
+}
 
 @Composable
 private fun RowPicture(icon: RowIcon, icons: AppIcons, tinted: Color) {

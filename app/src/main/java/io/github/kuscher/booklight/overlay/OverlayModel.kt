@@ -88,6 +88,8 @@ class OverlayModel(
     /** The chip and text [results] was made for: for a moment after a keystroke it is still the old list. */
     private var resultsFor: Pair<String?, String> = null to ""
     private var whenReady: ((Result, Action) -> Unit)? = null
+    /** When Booklight last filled the field itself (entered a scope from its row, typed an example). */
+    private var filledAt = 0L
 
     init {
         scope.launch { app.prefs.state.collect { settings = it } }
@@ -336,6 +338,9 @@ class OverlayModel(
      * An action that deletes waits for a second Enter, a new press a moment later.
      */
     fun enter(run: (Result, Action) -> Unit) {
+        // The field was just filled in for the user (a scope entered from its row, an example typed): the Enter that
+        // did it must not also run what it brought. Only a new press, a moment later, runs.
+        if (SystemClock.uptimeMillis() - filledAt < CONFIRM_GAP_MS) return
         if (resultsFor != (chip?.key to query)) { whenReady = run; return }
         // On the row's arrow: Enter opens its other actions, or closes them again.
         if (onMore) { if (opened == null) open() else close(); return }
@@ -357,6 +362,7 @@ class OverlayModel(
 
     private fun into(e: Effect.EnterScope) {
         val from = chip
+        filledAt = SystemClock.uptimeMillis()
         app.engine.scope(e.key)?.let {
             enterScope(it, e.text); if (from != null && from.keywords.isEmpty()) foreign = true
             // Another app's keyword, entered from its row: from now on its keyword and a Space enters it, like Booklight's own.

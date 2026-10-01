@@ -29,13 +29,16 @@ import io.github.kuscher.booklight.providers.PlayScope
  * **A new scope is one more line in [fixed].**
  */
 class Scopes(
-    private val context: Context, private val prefs: Prefs, dials: Dials, notes: Notes, private val web: (String) -> Result,
+    private val context: Context, private val prefs: Prefs, dials: Dials, private val notes: Notes, private val web: (String) -> Result,
     settings: SettingsProvider, keys: KeysProvider,
     /** The keywords other apps declare, given the ones already taken. */
     private val others: (Set<String>) -> List<Scope> = { emptyList() },
 ) {
+    /** The tasks: it remembers what was ticked while the panel is open. */
+    val todo = TodoScope(context, notes)
+
     private val fixed: List<Scope> = listOf(
-        MailScope(context), NoteScope(context, notes), EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
+        MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context),
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), QrScope(context), ColorScope(context),
         SnipScope(context, prefs), TextScope(context, null, web),
@@ -59,8 +62,8 @@ class Scopes(
 
     fun receive(text: String): Scope = TextScope(context, text, web).also { incoming = it }
 
-    /** The panel closed: someone else's text is not kept. */
-    fun forget() { incoming = null }
+    /** The panel closed: someone else's text is not kept, and neither is what was read of the user's notes. */
+    fun forget() { incoming = null; todo.closed(); notes.forget() }
 
     // The user's links change rarely: their scopes are made again only when the saved list is another one.
     private var sitesFor: List<SiteEntry>? = null

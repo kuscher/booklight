@@ -84,7 +84,16 @@ class Executor(private val context: Context) {
 
             // The mail app's compose window, filled in. The user sends it there, or doesn't.
             is Effect.Compose -> start(Intent(Intent.ACTION_SENDTO, mailto(effect)))
-            is Effect.AppendNote -> return app.notes.append(effect.text)
+            is Effect.AppendNote -> return app.notes.append(effect.text, effect.file)
+            is Effect.AddTodo -> return app.notes.addTodo(effect.text)
+            is Effect.TickTodo -> return app.notes.tick(effect.line, effect.text, effect.done).also { if (it) app.scopes.todo.ticked(effect.line, effect.done) }
+            // Whatever edits text opens the file; Booklight hands over the right to read and write this one file.
+            is Effect.OpenNote -> {
+                val uri = app.notes.uri(effect.file) ?: return false
+                val grant = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                try { start(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "text/markdown").addFlags(grant)) }
+                catch (_: ActivityNotFoundException) { start(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "text/plain").addFlags(grant)) }
+            }
             is Effect.KeepNote -> try {
                 start(Intent("com.google.android.gms.actions.CREATE_NOTE").setType("text/plain").putExtra(Intent.EXTRA_TEXT, effect.text))
             } catch (_: ActivityNotFoundException) {
@@ -142,7 +151,7 @@ class Executor(private val context: Context) {
             is Effect.EnterScope, is Effect.Type -> return false     // the panel does these itself
             // 2.0, each in its own task:
             is Effect.Open -> return open(effect, ctx)
-            is Effect.Pin, is Effect.Unpin, is Effect.Replace, is Effect.AddTodo, is Effect.TickTodo, is Effect.OpenNote -> return false
+            is Effect.Pin, is Effect.Unpin, is Effect.Replace -> return false
         }
         return true
     }
