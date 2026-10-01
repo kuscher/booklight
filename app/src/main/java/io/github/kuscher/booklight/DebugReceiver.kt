@@ -20,7 +20,7 @@ import java.io.FileOutputStream
  * permission, which only the shell (adb) holds, so other apps can't use it.
  *   ping | dump | type TEXT | key up|down|tab|esc|enter | close | shot [NAME]
  *   find TEXT (ranked results without the panel) | apps | forget
- *   pref suggestions on|off | pref engine ID | pref cards (show the first-run cards again)
+ *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted | pref cards (show the first-run cards again)
  */
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -40,6 +40,7 @@ class DebugReceiver : BroadcastReceiver() {
                 when (k) {
                     "suggestions" -> app.prefs.update { it.copy(suggestions = v == "on", suggestionsCard = false) }
                     "engine" -> app.prefs.update { it.copy(engine = v) }
+                    "glass" -> app.prefs.update { it.copy(glass = v) }
                     "cards" -> app.prefs.update { it.copy(shortcutCard = true, suggestionsCard = true, suggestions = false) }
                     "nocards" -> app.prefs.update { it.copy(shortcutCard = false, suggestionsCard = false) }
                 }

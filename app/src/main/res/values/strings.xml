@@ -66,4 +66,10 @@ The system needs the Action key in every shortcut. Action + Alt + Space and Acti
     <string name="set_forgotten">Forgotten</string>
     <string name="set_version">Version %1$s</string>
     <string name="set_about_text">A personal hobby project by Alexander Kuscher. Not affiliated with Google.</string>
+    <string name="set_look_title">Look</string>
+    <string name="set_glass">Glass</string>
+    <string name="set_glass_clear">Clear</string>
+    <string name="set_glass_balanced">Balanced</string>
+    <string name="set_glass_frosted">Frosted</string>
+    <string name="set_glass_text">How much of your desktop shows through the panel. Clear shows the most; Frosted is the easiest to read over busy windows.</string>
 </resources>

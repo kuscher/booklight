@@ -30,6 +30,8 @@ data class Settings(
     val suggestions: Boolean = false,
     val showSettings: Boolean = true,
     val showSums: Boolean = true,
+    /** How see-through the panel is: clear, balanced or frosted (`overlay/Glass.kt`). */
+    val glass: String = "balanced",
     val sites: List<SiteEntry> = Sites.defaults.map { SiteEntry(it.keyword, it.name, it.url) },
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,

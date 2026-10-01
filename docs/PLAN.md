@@ -1,7 +1,7 @@
 # Booklight: product plan
 
-*1 October 2026. Status: proposal for Alex. 0.1 exists and runs on the HP Googlebook 14; nothing
-below is committed until the questions at the end are answered.*
+*1 October 2026. Status: Alex answered the questions the same day (§11) and said to build 1.0 and submit
+it to Play. 1.0 is built; what follows 1.0 is in §4 and comes from [research/use-cases.md](research/use-cases.md).*
 
 Booklight is a keyboard launcher for Googlebooks: press a key, a small glass panel appears in the
 upper middle of the screen, type a few letters, press Enter. Apps first, then settings, sums and
@@ -80,31 +80,29 @@ all verified on the device with 0.1:
 
 Not in 1.0 on purpose: files, contacts, clipboard history, window list, live web suggestions.
 
-### 2.x: more to find and do (no or light permissions)
+### After 1.0: plenty before any permission that makes review harder
 
-- **Extensions.** A small documented contract (a ContentProvider another app exports) so apps can
-  offer results and actions to Booklight. First ones, in Alex's own apps: Summa (units, money with
-  its rates, dates, time zones), BentoBar (start a timer, keep awake), StudioSnap (capture window
-  or area), PDF Toolbox (open a tool), HearOn Link (noise control).
-- **App shortcuts.** The static shortcuts apps declare ("New incognito tab", Summa's "New sheet").
-- **Quick actions through public intents.** "timer 10 min", "event Friday 3pm", "email anna",
-  "navigate to…".
-- **Files** in folders the user grants (Downloads, Documents), recent downloads first.
-- **Contacts** (asks for the contacts permission when first used).
-- **Emoji and symbols, snippets** (copied to the clipboard).
-- **Quick links** of your own; import a bookmarks export.
-- **A desktop search pill widget** and a Quick Settings tile as extra ways in.
+From [research/use-cases.md](research/use-cases.md): of 63 ideas, 39 need no permission, 6 an
+install-time one, 8 one prompt or picker, 3 a Settings switch, and 7 need accessibility, a
+notification listener, all-files access or an adb grant. So the releases are ordered by tier, and
+everything in the last group is switched on together, once.
 
-### 3.x: advanced, each one opt-in
+| Release | Theme | Contents | Needs |
+| --- | --- | --- | --- |
+| **1.1 Jot** | Capture and make | Quick email (`mail …` opens Gmail's compose filled in; closing it leaves a draft). Quick note to `Documents/Booklight/Notes.md`, or to Keep. Calendar event, reminder, timer. New file, new folder, new Doc. Ask Gemini. | `SET_ALARM` (no prompt) |
+| **1.2 Dials** | Media, device, answers | Play, pause, next, volume. Settings panels. Emoji and symbols, colour values, QR, passwords and UUIDs. GitHub jump, localhost ports. | none |
+| **1.3 Recipes** | Your own commands | Quicklinks with placeholders. Multi-step commands ("morning"). Open an app in a place, workspaces, a new window. Snippets, clipboard transforms, actions on selected text. A search pill widget and a Quick Settings tile. | none |
+| **2.0 Extensions** | Other apps join in | The contract; Summa (units, money, dates, time zones), BentoBar (timer, keep awake), StudioSnap (capture), PDF Toolbox, VSCodeBook; static app shortcuts. | none |
+| **2.1 Reach** | Network and one-time grants | Webhooks. Sending mail through the user's own relay, or Gmail once Google has verified the app. Linux commands through a small helper in the VM. Granted folders and file search. Contacts picker. On-device Gemini Nano, once tested. | a folder grant, contacts picker |
+| **2.2 Switches** | Settings switches, each opt-in | Do Not Disturb, brightness, keep awake, exact reminders, the digital assistant role (Action + Space and the Assistant key, replacing Gemini there). | special-access switches |
+| **3.0 Power pack** | Everything that needs the hard permissions, together | One accessibility service: lock, screenshot, notifications, a list of open windows, paste in place, clipboard history, any key combination (plain Alt + Space included). Notification listener: now playing. Optional adb grant: the real toggles. | accessibility declaration, disclosure, video |
 
-- **Digital assistant role**: Action + Space and the Assistant key open Booklight. It replaces
-  Gemini as the default assistant, so it is a clear choice in settings, never a default.
-- **Accessibility tier**: a list of open windows, clipboard history, system commands (lock,
-  screenshot, notifications), pasting a snippet into the focused field, any key combination as the
-  hotkey. Needs Play's accessibility declaration, as BentoBar and StudioSnap did.
-- **Usage access**: rank by what you use system-wide, not only through Booklight.
-- **On-device AI** (Gemini Nano through AICore): typed requests turned into actions without an
-  internet permission. To be explored once extensions exist.
+The power pack costs one declaration, one disclosure screen and one video. It may be better as a
+separate app that plugs in through the 2.0 contract, as BentoBar and StudioSnap already carry their
+own accessibility services: a refused declaration would then never block a Booklight update.
+
+Not planned: Gmail drafts or Drive results through Google's restricted API scopes, all-files access,
+device admin, SMTP, Glowbar control (no public API).
 
 ## 5. Design
 
@@ -191,37 +189,28 @@ Other names checked on GitHub on 1 October 2026 (account, and the best-known rep
 | 1.0 | Ship | googlebook.studio + Play |
 | 2.0 | Extensions | The contract, Summa as the first extension, then BentoBar and StudioSnap |
 
-## 11. Questions for Alex
+## 11. Decisions (Alex, 1 October 2026)
 
-Each has a recommended default; "Default" accepts all of them.
+1. **Name:** Booklight.
+2. **The key:** he wanted the key left of Space plus Space, with Action + K as well if several are
+   possible. Checked on the HP: every custom shortcut must include the Action key (Alt + Space and
+   Ctrl + Space are ignored, Action + Space is Gemini's), and an app gets one custom shortcut. So
+   Booklight suggests **Action + Alt + Space**, with Action + K as the alternative; plain Alt + Space
+   waits for the power pack.
+3. **Nothing typed:** nothing at all, plus a small first-run card under the field.
+4. **Esc:** closes at once.
+5. **Web:** internet for suggestions. Built as **off until turned on** (first-run card or settings),
+   because Play's User Data policy wants typed text that goes to a third party disclosed first.
+6. **Sums:** the small calculator now; Summa as an extension in 2.0.
+7. **Extensions** are the way to grow.
+8. **Advanced tiers** as planned (now: 2.2 and 3.0 above).
+9. **Repo:** private until the first release, then public.
+10. **Signing key:** made on 1 October (`~/.config/booklight`, backup by the Play session).
+11. **Reach:** Android 14+ (minSdk 34).
+12. **Languages:** US English, British English, German.
+13. **Action + K on his HP:** kept.
+14. **BentoBar:** fixed on its `main` (commit 94a952c, unreleased).
 
-1. **Name.** Booklight (default), or Searchbeam, Lamplit, Glowfind, Kvick, or your own. Renaming is
-   cheap until the first release.
-2. **The key Booklight suggests.** Action + K (default: free on the device, and "K" is the command
-   palette key people know from other tools). Free alternatives: D J M O R T X Y Z. Action + Space
-   is Gemini's and only reachable through the assistant role (3.x).
-3. **Nothing typed yet.** A strip of your most-used apps (default), nothing at all (Alfred), or a
-   short list.
-4. **Esc.** Closes at once (default, Alfred), or clears the text first and closes on the second
-   press (Spotlight).
-5. **Web.** No internet permission in 1.0, so no live suggestions; searches open in your browser
-   with Google as the default engine and a setting to change it (default). The alternative is the
-   internet permission for suggestions.
-6. **Sums.** Keep the small calculator in 1.0 and bring units, money, dates and time zones in as a
-   Summa extension in 2.0 (default: one engine, one set of rates, and it shows what extensions are
-   for). The alternative is to copy Summa's engine into Booklight now.
-7. **Extensions as the way to grow.** Other apps offer results through a small ContentProvider
-   contract, starting with your own apps (default), or Booklight keeps everything built in.
-8. **Advanced tiers.** Plan the assistant role for 1.x as an optional switch and the accessibility
-   tier (window list, clipboard history, system commands) for 3.x (default), or sooner, or never.
-9. **Repo.** Private until 0.2 is worth showing, then public (default). A public repo becomes a
-   draft listing on googlebook.studio by itself.
-10. **Signing key.** I make `~/.config/booklight/keystore.jks` and its backup when 0.2 is cut
-    (default), the same way as the other apps.
-11. **Reach.** Any Android 14+ device can install it, described as "made for Googlebook" (default,
-    your usual minSdk 34), or Googlebook only (minSdk 37).
-12. **Languages.** US English with British spellings, like BentoBar (default); German as well?
-13. **Action + K on your HP.** I bound it during testing so you can try 0.1. Keep it (default) or
-    I remove it.
-14. **BentoBar.** My testing found that BentoBar 0.5 crashes whenever its accessibility service is
-    unbound (see device findings). Shall I fix that in kuscher/bentobar?
+Design direction, same day: more transparency and blur; flat glass with a white outline (no 3D
+highlights); motion throughout (a gliding selection, lists that cascade in); a first-run card under
+the field; a G in place of the magnifier when Google is the engine.

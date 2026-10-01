@@ -60,8 +60,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -75,10 +73,8 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -190,11 +186,7 @@ fun Panel(
     val height by animateDpAsState(Metrics.height(model), motion.place(), label = "height")
     LaunchedEffect(Unit) { snapshotFlow { height }.collect { onHeight(it) } }
 
-    // The light: a lamp above the panel by default, and it leans towards the pointer.
-    var size by remember { mutableStateOf(Offset(1f, 1f)) }
-    var pointer by remember { mutableStateOf(Offset.Zero) }
-    var hovering by remember { mutableStateOf(false) }
-    val lightOn by animateFloatAsState(if (hovering) 1f else 0f, motion.fade(if (hovering) 260 else 420), label = "light")
+    // On arrival, a short gleam runs along the outline.
     val sweep = remember { Animatable(-400f) }
     LaunchedEffect(Unit) {
         if (motion.on) sweep.animateTo(with(density) { (Metrics.width * 2f).toPx() }, tween(720, 70, CubicBezierEasing(0.3f, 0f, 0.2f, 1f)))
@@ -232,26 +224,12 @@ fun Panel(
     val radiusPx = with(density) { Metrics.radius.toPx() }
     Box(
         Modifier.fillMaxSize()
-            .onSizeChanged { size = Offset(it.width.toFloat(), it.height.toFloat()) }
             .graphicsLayer { scaleX = scale.value; scaleY = scale.value; alpha = presence.value }
             .glass(
-                tint = scheme.surfaceContainerHigh.copy(alpha = if (!glass) 1f else if (dark) 0.5f else 0.46f),
-                radiusPx = radiusPx,
-                light = { if (lightOn > 0.01f) pointer else Offset(size.x / 2, -80f) },
-                lightOn = { lightOn }, sweep = { sweep.value }, dark = dark, solid = !glass,
+                tint = scheme.surfaceContainerHigh.copy(alpha = if (!glass) 1f else if (dark) Look.tintDark else Look.tintLight),
+                radiusPx = radiusPx, sweep = { sweep.value }, dark = dark, solid = !glass,
             )
             .clip(RoundedCornerShape(Metrics.radius))
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val e = awaitPointerEvent(PointerEventPass.Initial)
-                        when (e.type) {
-                            PointerEventType.Move, PointerEventType.Enter -> { e.changes.firstOrNull()?.let { pointer = it.position }; hovering = true }
-                            PointerEventType.Exit -> hovering = false
-                        }
-                    }
-                }
-            }
             .onPreviewKeyEvent(::keys),
     ) {
         Column(Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true)) {
@@ -467,9 +445,9 @@ private fun Pill(top: Dp, height: Dp, visible: Boolean) {
             .fillMaxWidth().height((lower.value - upper.value).coerceAtLeast(12.dp))
             .graphicsLayer { alpha = shown }
             .clip(shape)
-            .background(scheme.secondaryContainer.copy(alpha = 0.72f))
-            // A lit upper edge and a soft lower one: the pill is a second piece of glass lying on the first.
-            .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.04f), scheme.onSecondaryContainer.copy(alpha = 0.10f))), shape),
+            .background(scheme.secondaryContainer.copy(alpha = 0.62f))
+            // The same white outline as the panel: a second, smaller pane of glass.
+            .border(1.dp, Color.White.copy(alpha = 0.5f), shape),
     )
 }
 

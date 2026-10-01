@@ -92,6 +92,13 @@ class SettingsActivity : ComponentActivity() {
                                 AddSite(taken = s.sites.map { it.keyword.lowercase() }) { new -> app.prefs.update { it.copy(sites = it.sites + new) } }
                             }
 
+                            Section(stringResource(R.string.set_look_title)) {
+                                Label(stringResource(R.string.set_glass))
+                                Chips(listOf("clear" to stringResource(R.string.set_glass_clear), "balanced" to stringResource(R.string.set_glass_balanced),
+                                    "frosted" to stringResource(R.string.set_glass_frosted)), s.glass) { id -> app.prefs.update { it.copy(glass = id) } }
+                                Body(stringResource(R.string.set_glass_text), quiet = true)
+                            }
+
                             Section(stringResource(R.string.set_results_title)) {
                                 Toggle(stringResource(R.string.set_show_settings), s.showSettings) { on -> app.prefs.update { it.copy(showSettings = on) } }
                                 Toggle(stringResource(R.string.set_show_sums), s.showSums) { on -> app.prefs.update { it.copy(showSums = on) } }

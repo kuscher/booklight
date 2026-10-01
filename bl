@@ -5,7 +5,7 @@
 #   ./bl build [release]     assemble the debug (or release) APK
 #   ./bl test                core tests on this machine (JUnit, no device)
 #   ./bl app                 build, install and open the panel
-#   ./bl install [APK] | open [stay] | stop | uninstall
+#   ./bl install [APK] | open [stay] [tint=N] [blur=DP] [dim=N] | stop | uninstall
 #                            `open stay` keeps the panel up when it loses focus (for pictures);
 #                            DARK=true|false ./bl open stay shows it in that theme whatever the system's is
 #   ./bl debug CMD...        test hooks (DebugReceiver.kt): ping, apps, find TEXT, type TEXT,
@@ -55,17 +55,21 @@ install() {
   A install -r "${1:-$APK}" || { A shell settings put global verifier_verify_adb_installs 1; exit 1; }
   A shell settings put global verifier_verify_adb_installs 1
 }
-open() { A shell am start --user current -n "$PANEL" ${1:+--ez stay true} ${DARK:+--ez dark "$DARK"} >/dev/null; }
+open() { # open [stay] [tint=0.2] [blur=24] [dim=0.1]  (the glass values are for debug builds)
+  local extra=() a
+  for a in "$@"; do case "$a" in stay) extra+=(--ez stay true) ;; tint=*|blur=*|dim=*) extra+=(--ef "${a%%=*}" "${a#*=}") ;; esac; done
+  A shell am start --user current -n "$PANEL" ${extra[@]+"${extra[@]}"} ${DARK:+--ez dark "$DARK"} >/dev/null
+}
 
 cmd=${1:-help}; shift || true
 case "$cmd" in
   build) build "${1:-}" ;;
   test) ./gradlew :core:test --console=plain -q ;;
   install) install "${1:-}" ;;
-  open) open "${1:-}" ;;
+  open) open "$@" ;;
   stop) A shell am force-stop --user current "$PKG" ;;
   uninstall) A uninstall "$PKG" || true ;;   # every Android user (apps live in user 0 and 10)
-  app) build && install && open ;;
+  app) build && install && open stay ;;
   debug) dbg "$@" ;;
   shot)
     name=${1:-shot}; out=${2:-$TMP/booklight-$name.png}
