@@ -126,6 +126,7 @@ class OverlayModel(
                 if (same >= 0) {
                     selected = same
                     armed = armed.coerceIn(0, (local[same].actions.size - 1).coerceAtLeast(0))
+                    cell = cell.coerceIn(0, (((local[same].body as? Body.Grid)?.cells?.size ?: 1) - 1).coerceAtLeast(0))
                 } else { selected = 0; armed = local.firstOrNull()?.armed ?: 0; cell = 0 }
                 // An Enter that came before these rows did: now it runs, by the same rules as any Enter (a scope's row enters it, a delete waits).
                 whenReady?.let { run -> whenReady = null; enter(run) }
