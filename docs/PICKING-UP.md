@@ -2,6 +2,20 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (late): after 1.1
+
+- **Closing is the opening backwards** (Alex's request; on `main`, not released: it goes into 1.1.1). `Panel`'s
+  one `LaunchedEffect(leaving)` runs both ways; `Arrival.leaveMs` is how long the activity waits. Stepped
+  through frame by frame on the Lenovo at fast and slow, with the key pressed again mid-close, and with the
+  opening off. design-system.md §4 has the times.
+- **"No key after installing"** (Alex's note) is not an APK matter: no app can give itself a key on a
+  Googlebook; the user sets it in Keyboard shortcuts → App shortcuts, from Play as from an APK
+  (device-findings.md). The HP kept Action + K across reinstalls because the system remembers the entry.
+- **Research for what comes next:** `docs/research/next-features.md` (95 ideas by effort, value, permission
+  tier and how Googlebook-only they are; the extensions contract in three layers; a device checklist; twelve
+  questions for Alex). Not yet decided on.
+- **Play title** is "Booklight: Delightful Launcher" (the Play session, on Alex's request).
+
 ## 2026-10-01 (night): 1.1 released to testers
 
 **Released.** Tag `v1.1` at 7fadfbe (pushed by the Play session in ~/googlebook-tech on Alex's request to it).
