@@ -391,7 +391,7 @@ private fun CommandsPage(page: Page, app: BooklightApp) {
             for (e in rows) {
                 val key = "guide:${e.id}"
                 PageRow(page, key, e.name, e.line.ifEmpty { null }, mark = { Icon(Symbols.of(e.symbol), null, Modifier.size(20.dp), tint = it) },
-                    onEnter = { activity.startActivity(Intent(activity, OverlayActivity::class.java).setAction(OverlayActivity.ACTION_PANEL).putExtra(OverlayActivity.EXTRA_TYPE, e.example)) }) { ink ->
+                    onEnter = { app.example = e.example.take(200); activity.startActivity(Intent(activity, OverlayActivity::class.java).setAction(OverlayActivity.ACTION_PANEL)) }) { ink ->
                     // The example: what would be typed, so in full ink. Its column ends in the same place on every row; the
                     // Enter mark of the selected row has its room after it.
                     Text(e.example.trim(), color = ink, style = SMALL, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 240.dp))

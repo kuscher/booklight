@@ -148,12 +148,12 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
                 when (p.eventType) {
                     XmlPullParser.START_TAG -> when (p.name) {
                         "scope" -> if (key == null && keys.count { it.owner == pkg } < MAX_KEYWORDS) {
-                            key = arrayOf(text(p, res, null, "id").orEmpty(), text(p, res, null, "name").orEmpty().take(MAX_TITLE), text(p, res, null, "hint").orEmpty().take(MAX_TITLE))
+                            key = arrayOf(text(p, res, null, "id").orEmpty().take(MAX_ID), text(p, res, null, "name").orEmpty().take(MAX_TITLE), text(p, res, null, "hint").orEmpty().take(MAX_TITLE))
                             keyWords = words(text(p, res, null, "keywords"), single = true)
                             choices = ArrayList(); template = null
                         }
                         "command" -> if (cmd == null) {
-                            cmd = arrayOf(text(p, res, null, "id").orEmpty(), text(p, res, null, "title").orEmpty().trim().take(MAX_TITLE))
+                            cmd = arrayOf(text(p, res, null, "id").orEmpty().take(MAX_ID), text(p, res, null, "title").orEmpty().trim().take(MAX_TITLE))
                             cmdWords = words(text(p, res, null, "keywords")); cmdIntent = null
                         }
                         "open" -> {
@@ -184,9 +184,9 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
 
     /** An `<open>`: the intent it describes, as an address. With [argument], `{argument}` stays in it for the typed text. */
     private fun open(pkg: String, p: XmlResourceParser, res: Resources, argument: Boolean): String? {
-        val action = text(p, res, null, "action")
-        val cls = text(p, res, null, "class")?.let { if (it.startsWith(".")) pkg + it else it }
-        val data = text(p, res, null, "data")
+        val action = text(p, res, null, "action")?.take(MAX_VALUE)
+        val cls = text(p, res, null, "class")?.take(MAX_VALUE)?.let { if (it.startsWith(".")) pkg + it else it }
+        val data = text(p, res, null, "data")?.take(MAX_DATA)
         val extras = LinkedHashMap<String, String>()
         val depth = p.depth
         // Its extras, up to the tag's end.
@@ -338,5 +338,7 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
         const val MAX_TITLE = 60
         const val MAX_EXTRAS = 8
         const val MAX_VALUE = 512
+        const val MAX_ID = 40
+        const val MAX_DATA = 2048
     }
 }

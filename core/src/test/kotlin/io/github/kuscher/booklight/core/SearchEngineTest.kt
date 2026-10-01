@@ -266,4 +266,19 @@ class SearchEngineTest {
         assertNull(engine.scopeFor("help with taxes"))
         assertNull(engine.keywordScope("help"))
     }
+
+    @Test fun `another app's keyword stays under an exact local match`() = runTest {
+        fun scope(enters: Boolean) = object : Scope {
+            override val key = "ext:wifi"; override val keywords = listOf("wifi"); override val name = "Hotspots"; override val symbol = "app"; override val hint = ""
+            override val spaceEnters = enters
+            override suspend fun rows(arg: String) = emptyList<Result>()
+        }
+        val page = object : Provider {
+            override val id = "settings"
+            override suspend fun query(q: Query) = if (q.text == "wifi") listOf(Result("setting:wifi", id, Kind.SETTING, "Wi-Fi", icon = Icon.Symbol("settings"), score = 1.0, actions = listOf(Action("open", "Open", Effect.OpenSettings("x"))))) else emptyList()
+        }
+        // Not chosen yet: under the settings page. Chosen (entered once from its row): a keyword like Booklight's own.
+        assertEquals("setting:wifi", SearchEngine(listOf(page), History(), scopes = { listOf(scope(false)) }).search(Query("wifi")).first().id)
+        assertEquals("scope:ext:wifi", SearchEngine(listOf(page), History(), scopes = { listOf(scope(true)) }).search(Query("wifi")).first().id)
+    }
 }

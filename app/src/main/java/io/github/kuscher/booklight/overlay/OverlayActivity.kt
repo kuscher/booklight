@@ -108,8 +108,7 @@ class OverlayActivity : ComponentActivity() {
         arrival = Arrival.of(opening, motion)
         // Opened the way a key opens it (a keyboard shortcut starts the launcher activity; the assistant key asks for
         // assistance): Booklight has a key, and need not ask for one.
-        val byKey = intent.action == Intent.ACTION_ASSIST || (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)) || (BuildConfig.DEBUG && intent.getBooleanExtra("key", false))
-        if (byKey && !settings.keySeen) app.prefs.update { it.copy(keySeen = true) }
+        if (!settings.keySeen && byKey(intent)) app.prefs.update { it.copy(keySeen = true) }
         shade = Shade.of(if (BuildConfig.DEBUG) intent.getStringExtra("shade") ?: settings.shadow else settings.shadow)
         take(intent)
         placeWindow()
@@ -127,7 +126,7 @@ class OverlayActivity : ComponentActivity() {
             }
         }
         // A row of the window's Commands page: Booklight types its example, once the panel has opened.
-        intent.getStringExtra(EXTRA_TYPE)?.let { text -> model.guided = true; lifecycleScope.launch { delay(motion.hold(TYPE_AFTER_MS)); if (!leaving) model.typeOut(text) } }
+        app.example?.let { text -> app.example = null; model.guided = true; lifecycleScope.launch { delay(motion.hold(TYPE_AFTER_MS)); if (!leaving) model.typeOut(text) } }
         window.decorView.post {
             Log.i(BooklightApp.TAG, "panel shown ${SystemClock.uptimeMillis() - created} ms after onCreate, ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
         }
@@ -210,7 +209,7 @@ class OverlayActivity : ComponentActivity() {
         if (fromIcon(intent)) { startActivity(Intent(this, MainActivity::class.java)); close(); return }
         // The key again while the panel is still leaving: it turns round and opens again (unless it is leaving because something ran).
         if (leaving) { if (!ran && !isFinishing) { leaveJob?.cancel(); leaving = false; take(intent) }; return }
-        intent.getStringExtra(EXTRA_TYPE)?.let { model.typeOut(it); return }
+        (application as BooklightApp).let { app -> app.example?.let { app.example = null; model.typeOut(it); return } }
         if (!take(intent)) close()
     }
 
@@ -224,6 +223,19 @@ class OverlayActivity : ComponentActivity() {
         if (intent.sourceBounds != null) return true
         val home = packageManager.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
         return home != null && referrer?.host == home
+    }
+
+    /**
+     * Was this start a keyboard shortcut or the assistant key? A shortcut starts the launcher activity, as "Open" in
+     * the store, in the installer and in Settings' App info do: those say who they are, and they are not a key.
+     */
+    private fun byKey(intent: Intent): Boolean {
+        if (BuildConfig.DEBUG && intent.getBooleanExtra("key", false)) return true
+        if (intent.action == Intent.ACTION_ASSIST) return true
+        if (intent.action != Intent.ACTION_MAIN || !intent.hasCategory(Intent.CATEGORY_LAUNCHER)) return false
+        val from = referrer?.host ?: return true
+        val installer = runCatching { packageManager.getInstallSourceInfo(packageName).installingPackageName }.getOrNull()
+        return from != installer && from != packageName && from !in NOT_A_KEY
     }
 
     /** The icon was clicked: open the Booklight window and leave without ever showing the panel. */
@@ -242,7 +254,8 @@ class OverlayActivity : ComponentActivity() {
             else -> null
         }?.toString()?.takeIf { it.isNotBlank() } ?: return false
         // A selection in a field that can be edited comes with the offer to take text back.
-        val editable = intent.action == Intent.ACTION_PROCESS_TEXT && !intent.getBooleanExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false)
+        // (Not for several paragraphs: a prompt is given the text on one line, and its answer would come back as one.)
+        val editable = intent.action == Intent.ACTION_PROCESS_TEXT && !intent.getBooleanExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false) && '\n' !in text.trim()
         model.enterScope((application as BooklightApp).scopes.receive(text.take(MAX_TEXT), editable))
         return true
     }
@@ -342,8 +355,8 @@ class OverlayActivity : ComponentActivity() {
     companion object {
         const val EXTRA_STAY = "stay"
         const val EXTRA_DARK = "dark"
-        /** An example for Booklight to type once the panel is open (the window's Commands page). Nothing is run. */
-        const val EXTRA_TYPE = "type"
+        /** Who starts the launcher activity with a button of their own that says "Open". */
+        private val NOT_A_KEY = setOf("com.android.vending", "com.google.android.packageinstaller", "com.android.packageinstaller", "com.android.settings", "com.android.shell")
         private const val TYPE_AFTER_MS = 320L
         /** Asked for by name (the widget, the tile): the panel, whoever started it. */
         const val ACTION_PANEL = "io.github.kuscher.booklight.PANEL"

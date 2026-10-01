@@ -50,6 +50,8 @@ class BooklightApp : Application() {
     lateinit var commands: AppCommands private set
     /** What was typed when the panel last closed without running anything (the chip's key, the text): Up brings it back. */
     var lastText: Pair<String?, String>? = null
+    /** An example the Booklight window asks the panel to type when it next opens (a row of its Commands page). Booklight's own, in its own process: no other app can put text here. */
+    @Volatile var example: String? = null
     /** App icons, made when the panel first needs them and kept after. */
     var icons: io.github.kuscher.booklight.ui.AppIcons? = null
 

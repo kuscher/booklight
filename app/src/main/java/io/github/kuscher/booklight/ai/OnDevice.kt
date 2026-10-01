@@ -58,6 +58,8 @@ class OnDevice(private val scope: CoroutineScope) {
                 FeatureStatus.DOWNLOADING -> State.DOWNLOADING
                 else -> State.NONE
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e       // the panel closed while the system was being asked: that says nothing about the model
         } catch (e: Throwable) {
             Log.i(BooklightApp.TAG, "on-device model: not here (${e.javaClass.simpleName})", e)
             State.NONE
@@ -98,7 +100,8 @@ class OnDevice(private val scope: CoroutineScope) {
                     }
                 }
             }
-            if (_state.value == State.DOWNLOADING) check()
+            progress.value = null
+            if (_state.value == State.DOWNLOADING) runCatching { check() }
         }
     }
 

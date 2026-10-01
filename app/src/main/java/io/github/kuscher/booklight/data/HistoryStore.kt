@@ -39,7 +39,7 @@ class HistoryStore(context: Context, private val scope: CoroutineScope) {
             ))
         }
     } catch (e: Exception) {
-        Log.w(BooklightApp.TAG, "history unreadable, starting fresh", e)
+        Log.w(BooklightApp.TAG, "history unreadable (${e.javaClass.simpleName}), starting fresh")
         History()
     }
 

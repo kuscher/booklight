@@ -216,10 +216,16 @@ class OverlayModel(
         this.word = word
         query = text
         search()
+        entered(s)
+    }
+
+    /** [s] has just become the chip, by whichever way (typed, its row, Tab, Booklight typing an example). */
+    private fun entered(s: Scope) {
+        if (demo) return
         // The list of everything has been opened: its tip need not come.
-        if (!demo && s.key == "help" && "help" !in settings.used) change { it.copy(used = it.used + "help") }
+        if (s.key == "help" && "help" !in settings.used) change { it.copy(used = it.used + "help") }
         // A prompt: ask the system what it has, and have its model loaded by the time the text is typed.
-        if (s is PromptScope && !demo) scope.launch { if (app.onDevice.check() == OnDevice.State.READY) app.onDevice.warm() }
+        if (s is PromptScope) scope.launch { if (app.onDevice.check() == OnDevice.State.READY) app.onDevice.warm() }
     }
 
     /**
@@ -245,8 +251,8 @@ class OverlayModel(
                 val help = if (chip == null && next.startsWith(HELP)) app.engine.scope("help") else null
                 val s = if (chip == null && help == null) app.engine.scopeFor(next) else null
                 when {
-                    help != null -> { chip = help; word = HELP; query = next.drop(1).trimStart() }
-                    s != null -> { chip = s.scope; word = s.word; query = s.text }
+                    help != null -> { chip = help; word = HELP; query = next.drop(1).trimStart(); entered(help) }
+                    s != null -> { chip = s.scope; word = s.word; query = s.text; entered(s.scope) }
                     else -> query = next
                 }
                 if (step > 0) delay(step)
@@ -265,9 +271,16 @@ class OverlayModel(
     fun leaveScope(withText: Boolean = false): Boolean {
         val s = chip ?: return false
         val w = word ?: s.keywords.firstOrNull()
-        chip = null; word = null; foreign = false
+        // Text another app handed over stays that app's when it comes back into the field: not kept, not sent for suggestions.
+        val others = foreign && withText && query.isNotEmpty()
+        chip = null; word = null; foreign = others
         held = w
-        query = when { w == null -> ""; withText && query.isNotEmpty() -> "$w $query"; else -> w }
+        query = when {
+            // No keyword to go back to: a prompt of the user's keeps what was typed for it; the chip that was another app's text just goes.
+            w == null -> if (withText && s is PromptScope) query else ""
+            withText && query.isNotEmpty() -> "$w $query"
+            else -> w
+        }
         search()
         return true
     }
@@ -310,7 +323,7 @@ class OverlayModel(
             }
             // Suggestions come from the network: after a pause in typing, never holding up the
             // list, and dropped if the text has moved on (this job is cancelled by then).
-            if (demo || key != null || !settings.suggestions) return@launch
+            if (demo || key != null || foreign || !settings.suggestions) return@launch
             delay(SUGGEST_PAUSE_MS)
             val more = app.suggest.fetch(text)
             if (more.isEmpty()) return@launch
@@ -338,10 +351,12 @@ class OverlayModel(
             thinking = true
             val text = StringBuilder()
             try {
-                app.onDevice.ask(q).collect { piece ->
-                    text.append(piece)
-                    thinking = false
-                    put(s.answered(row, text.toString().trimStart(), busy = true))
+                kotlinx.coroutines.withTimeoutOrNull(ANSWER_MS) {
+                    app.onDevice.ask(q).collect { piece ->
+                        text.append(piece)
+                        thinking = false
+                        put(s.answered(row, text.toString().trimStart(), busy = true))
+                    }
                 }
             } finally { thinking = false }
             val all = text.toString().trim()
@@ -480,7 +495,8 @@ class OverlayModel(
         val n = results.size - 1
         if (opened == null || n < 1) return
         cancelConfirm()
-        val at = (selected - 1).coerceAtLeast(if (by > 0) -1 else n)
+        // From the row itself: down to its first action, up to its last. From an action: the next or the one before, wrapping.
+        val at = if (selected == 0) (if (by > 0) -1 else n) else selected - 1
         selected = 1 + ((at + by) % n + n) % n
         armed = 0
     }
@@ -636,6 +652,8 @@ class OverlayModel(
         /** How long typing rests before the device's own model is asked, and how much must be typed for it to be asked unasked. */
         private const val ASK_PAUSE_MS = 500L
         private const val ASK_MIN = 3
+        /** How long an answer may take in all. A model that takes the question and then says nothing is given up on; what has arrived by then stands. */
+        private const val ANSWER_MS = 45_000L
         private const val HELP = "?"
         /** How long "Tips are off…" stands before the card goes. */
         const val TIP_OFF_MS = 1600L

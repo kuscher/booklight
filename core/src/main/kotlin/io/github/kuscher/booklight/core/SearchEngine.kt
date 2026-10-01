@@ -95,7 +95,9 @@ class SearchEngine(
     private fun scopeRows(text: String): List<Result> = scopes().filter { it.listed }.mapNotNull { s ->
         val t = text.lowercase()
         val score = when {
-            s.keywords.any { it.equals(text, ignoreCase = true) } -> 1.0
+            // A keyword the user has not chosen yet (another app's) is a hint like the start of one: an app must not be
+            // able to put its row above the settings page of the same name by declaring "wifi".
+            s.keywords.any { it.equals(text, ignoreCase = true) } -> if (s.spaceEnters) 1.0 else 0.7
             // The start of a keyword is a hint, not a request: under any app or setting whose name starts that way ("st" is Storage before it is the store).
             t.length >= 2 && s.keywords.any { it.lowercase().startsWith(t) } -> 0.7
             t.length >= 2 && s.words.any { it.lowercase().startsWith(t) } -> 0.7

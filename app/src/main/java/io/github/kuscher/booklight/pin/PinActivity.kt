@@ -159,6 +159,7 @@ class PinActivity : ComponentActivity() {
     /** What the window shows: at first, and when a new pin of the same shape takes the window of the one before. */
     fun show(p: Pinned) {
         pinned = p
+        intent.replaceExtras(p.bundle())      // what the window shows if the system makes it again
         (application as BooklightApp).pinned.value = p
         setTaskDescription(ActivityManager.TaskDescription.Builder().setLabel(p.label(this)).build())
         // A window the user had opened out goes back on top.

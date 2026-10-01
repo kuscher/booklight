@@ -67,12 +67,12 @@ class PromptScope(
         val fits = full.length <= MAX
         val here = state == OnDevice.State.READY && fits
         val caption = when {
-            clip != null -> context.getString(R.string.prompt_clip)
             state == OnDevice.State.READY && !fits -> context.getString(R.string.prompt_long)
+            clip != null -> context.getString(R.string.prompt_clip)
             else -> p.name
         }
         // The clipboard may hold pages: the row shows where it starts.
-        val shown = if (clip != null) text.lineSequence().first().let { if (it.length < text.length) "$it …" else it } else text
+        val shown = if (clip != null) text.lineSequence().first().let { if (it.length < text.length || it.length > SHOWN) "${it.take(SHOWN)} …" else it } else text.take(MAX)
         val out = ArrayList<Result>()
         out += Result(
             id = row, provider = key, kind = Kind.OTHER, title = p.name, icon = Icon.Symbol(symbol), score = 1.0, learnable = false,
@@ -87,7 +87,7 @@ class PromptScope(
     }
 
     private fun gemini(full: String, second: Boolean) =
-        Action("gemini", context.getString(if (second) R.string.action_in_gemini else R.string.gemini_title), Effect.AskGemini(full), symbol = "send")
+        Action("gemini", context.getString(if (second) R.string.action_in_gemini else R.string.gemini_title), Effect.AskGemini(full.take(HAND_OVER)), symbol = "send")
 
     /** [r] with the model's [text] in it: so far ([busy]), or all of it. */
     fun answered(r: Result, text: String, busy: Boolean): Result {
@@ -131,6 +131,9 @@ class PromptScope(
         val ASK: Effect = Effect.Internal("answer")
         /** The model reads about 4,000 tokens; a prompt and its text longer than this are for the Gemini app. */
         const val MAX = 8000
+        /** How much of the clipboard's first line a row shows, and how much text is handed to another app at most (an intent holds no more). */
+        private const val SHOWN = 300
+        private const val HAND_OVER = 100_000
         private val SPACES = Regex("[ \\t]{2,}")
         private val BREAKS = Regex("\\n{2,}")
     }

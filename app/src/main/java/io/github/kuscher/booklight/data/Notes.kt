@@ -49,7 +49,8 @@ class Notes(private val context: Context, private val prefs: Prefs) {
         try {
             val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
             resolver.query(children, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)?.use { c ->
-                while (c.moveToNext() && out.size < MAX_FILES) out.add(c.getString(1) to DocumentsContract.buildDocumentUriUsingTree(tree, c.getString(0)))
+                // Every entry is kept for finding a file by its name (Notes.md may be the thousandth); `files()` caps what it offers.
+                while (c.moveToNext() && out.size < MAX_LISTED) out.add(c.getString(1) to DocumentsContract.buildDocumentUriUsingTree(tree, c.getString(0)))
             }
         } catch (e: Exception) { Log.w(BooklightApp.TAG, "notes folder not listed: ${e.javaClass.simpleName}") }
         listed = System.currentTimeMillis() to out
@@ -57,7 +58,7 @@ class Notes(private val context: Context, private val prefs: Prefs) {
     }
 
     /** The `.md` files of the folder, by name. */
-    fun files(): List<String> = if (ready) children().map { it.first }.filter { it.endsWith(".md", ignoreCase = true) } else emptyList()
+    fun files(): List<String> = if (ready) children().asSequence().map { it.first }.filter { it.endsWith(".md", ignoreCase = true) }.take(MAX_FILES).toList() else emptyList()
 
     private fun find(name: String): Uri? = children().firstOrNull { it.first.equals(name, ignoreCase = true) }?.second
 
@@ -114,7 +115,10 @@ class Notes(private val context: Context, private val prefs: Prefs) {
         if (!ready) return false
         return try {
             val file = find(NoteText.TODO) ?: return false
-            val before = resolver.openInputStream(file)?.use { it.readBytes() }?.toString(Charsets.UTF_8) ?: return false
+            val bytes = resolver.openInputStream(file)?.use { it.readBytes() } ?: return false
+            val before = bytes.toString(Charsets.UTF_8)
+            // The whole file is written back: one that does not read as UTF-8 (an old Windows file) would come out damaged. Left alone.
+            if (!before.toByteArray(Charsets.UTF_8).contentEquals(bytes)) return false
             val after = NoteText.tick(before, line, text, done) ?: return false
             resolver.openOutputStream(file, "wt")?.use { it.write(after.toByteArray()) } ?: return false
             synchronized(this) { kept.remove(NoteText.TODO.lowercase()) }
@@ -134,5 +138,7 @@ class Notes(private val context: Context, private val prefs: Prefs) {
         const val KEEP_MS = 4000L
         const val MAX_BYTES = 2 * 1024 * 1024
         const val MAX_FILES = 500
+        /** How many entries of the folder are read at most: enough for a large vault, not without end. */
+        const val MAX_LISTED = 20_000
     }
 }

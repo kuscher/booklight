@@ -94,6 +94,7 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
     // While an editor is open the keys are its own (Tab goes from field to field and to its buttons, Esc closes it);
     // when it closes, the page has them again.
     LaunchedEffect(open) { onTyping(open != null) }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onTyping(false) } }
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
 
     Column {
