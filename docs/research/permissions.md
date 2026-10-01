@@ -222,3 +222,17 @@ Sources:
 1.1 went to closed testing with `REQUEST_DELETE_PACKAGES`, `com.android.alarm.permission.SET_ALARM` and
 `WRITE_SETTINGS` in its manifest. The Console's review step raised no declaration form and no error for any
 of them; App content stayed "all caught up". (Closed testing; production review may look again.)
+
+## 2.0: what the manifest gained (1 October 2026)
+
+- `com.google.android.apps.aicore.service.BIND_SERVICE` (normal) and `android.permission.ACCESS_NETWORK_STATE`
+  (normal): both merged in from `com.google.mlkit:genai-prompt` 1.0.0-beta4. The first lets Booklight bind to
+  the system's on-device AI service; the second is for the library's usage reports (`datatransport`), which
+  also declares three components: `TransportBackendDiscovery`, `JobInfoSchedulerService`,
+  `AlarmManagerSchedulerBroadcastReceiver`. A `<queries>` entry for `com.google.android.aicore`.
+  Alex chose the library as shipped; removing the reporting works on the Lenovo (device-findings.md) and stays
+  an option.
+- **Not added:** `USE_PINNED_WINDOWING_LAYER`. The pin is a picture-in-picture window (no permission); the
+  pinned layer was tried and takes the keyboard (device-findings.md).
+- Play: data safety gains Device or other IDs and Diagnostics (collected, not shared, analytics), and the
+  audience becomes 18 and over. Whether review asks anything about the AICore permission is not known yet.

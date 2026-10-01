@@ -260,3 +260,38 @@ The gliding highlight itself is never cut.
 3. **Unarmed chips at full ink,** not the model's 0.80, to hold 4.5:1? Recommended: yes.
 4. **Long text in the field:** one scrolling line, or a field that grows to three? Recommended: one line.
 5. **Retire the arrival gleam** when unfold is on? Recommended: yes.
+
+## 11. What 2.0 changed (1 October 2026)
+
+The specs for 2.0's components and motion are the three reviews in `reviews-2.0/` (visual §5, motion rows 21 to
+55); this section says where the built app differs from them and from the sections above. `Motion.kt` is the
+source for every spring: `place` 0.86/520, `lead` 0.82/1100, `trail` 0.9/420, `pop` 0.62/700, `arm` 0.78/560,
+`open` 0.72/1000 (not the 0.9/800 of §6), `tick` 160 ms, `type` 480 ms for a whole example at 16 to 40 ms a
+letter. A debug build stretches all of them: `./bl open stay slow=4`.
+
+- **The app row** (replaces §3a "three chips and more"): nine icons at a 32 dp pitch and a tenth stop, the arrow.
+  Enter on the arrow, or Right again, opens the rest as a list under the row: 40 dp lines, uncovered by one edge
+  on `place`, the list's own pill as their highlight. A typed place among the rest takes the arrow's slot.
+  Store page is gone.
+- **The opening** (§4): always at the field's height. What is under the field (a card, a tip, rows for handed
+  text) comes once the glass is 85 % open. The closing draws in to the field's centre line.
+- **The answer row**: a caption, then two lines; the answer is written in behind a head that follows what
+  arrives (14 letters soft), and the row grows once, to four lines, on `place`. The mark and the strip keep
+  the line of the row's first height. While the model has said nothing yet the edge light runs a slow lap
+  (2.4 s) and finishes it when the first word lands.
+- **Key caps in a row**: 24 dp, strong ink, plus signs between; 200 dp kept free at their right for the strip.
+- **A task**: a 20 dp box in the mark column; ticked, the check draws itself (one 140 ms stroke, the same mark
+  as "Copied" and "Your key works") and a line strikes the title from its start.
+- **The tip card**: the first-run card's measure. Nothing armed at rest; a `tab` cap beside the two answers.
+  It comes 320 ms after the gate, never as part of the opening.
+- **The shadow**: the system's window shadow, cast from the glass as it opens, cleared under the glass.
+  Low 72 dp / 0.14, medium 96 dp / 0.24, high 128 dp / 0.36 (height, darkness under the lower edge); darker by
+  1.4 in dark theme. `device-findings.md` has the measurements.
+- **The window** (replaces §5): a column of seven sections (item 48 dp, 200 wide, quiet pane on `lead` and
+  `trail`, 2 dp ring when it has the keys) and a page of 720 dp. The page's pill is only there while the keys
+  are in the page. The page follows the pane by 60 ms; its blocks rise from the side the pane came from.
+  Column width = window width less 808 dp, between 48 and 200: never animated.
+- **The pin**: a picture-in-picture window, 280 × 118 dp and up, the content drawn at its size and scaled as
+  one piece when the user makes the window larger. Its arrival is the system's; the content then fades in once.
+- **Not as specified:** the keyword does not travel into the chip (it grows where the mark was, as in 1.1); the
+  pill returns to a closing row on `lead` and `trail`, not as one rigid piece; a pin has no Copy of its own.

@@ -1,5 +1,57 @@
 # Changelog
 
+## 2.0 (1 October 2026)
+
+What Alex chose from `docs/research/next-features.md`, plus a shadow, tips, `s` and `k`, and answers from the
+device's own model. Spec: `docs/superpowers/specs/2026-10-01-booklight-2.0-design.md`.
+
+**Prompts, answered on this device**
+- A prompt is a name, a keyword and a text. Five to start with (`fix`, `shorter`, `de` or `en`, `sum`,
+  `explain`); your own in the window under Yours. `{text}` says where the text goes.
+- In a prompt's chip the row shows the text, and after a pause in typing the answer of the system's own model
+  (Gemini Nano through AICore, where the device has it) is written into the row; the row grows once, to four
+  lines. Enter asks at once, and again copies. Pin and Open in Gemini beside it; Replace when the text came
+  from a field that can be edited. Nothing typed: what you copied.
+- Without the model the row hands over to the Gemini app; where the system can fetch the model, a row asks it to.
+- The model can be wrong: its rows never run anything.
+
+**Pin**
+- A small window that stays on top: a line of text, a sum's answer, a colour, a QR code, a countdown.
+  `pin TEXT`; Pin on those rows; Start and pin on a timer. `pin` alone shows it, with Unpin and Copy.
+- It is a picture-in-picture window, so it never takes the keyboard (a window in Android 17's pinned layer
+  does, each time the panel closes: `docs/research/device-findings.md`). No permission.
+
+**Finding what Booklight does**
+- `?` first is the list of everything, with an example for each. Enter on a keyword's row makes it the chip;
+  on any other row Booklight types the example, a letter at a time.
+- Tips under the empty field: only after the panel has opened and nothing was typed for a moment. Tab arms
+  Try it, then Turn off tips. One pass.
+- The window's Commands page is the same list; Enter opens the panel and types the example.
+
+**Apps and places**
+- Left, middle and right third, the two thirds, the four quarters, centre and full. "… on display 2".
+- A row shows nine actions; the arrow (More) opens the rest as a list under it. A typed place that is among the
+  rest takes the arrow's slot. Store page is gone.
+- Other apps' commands: their manifest shortcuts and a small file of their own (`docs/EXTENSIONS.md`).
+
+**Keywords**
+- `s`: settings pages (49). `k`: the system's keyboard shortcuts (43), shown as key caps.
+- Tab on a keyword makes it the chip. The row of a one-letter keyword keeps the last local place.
+
+**Notes**
+- `notes TEXT` finds lines; `todo` adds, lists and ticks tasks in Todo.md; `note FILE text` writes to another
+  file of the folder; Today's note.
+
+**The window, and the look**
+- A column of sections and one page. "No key yet" until a key has opened the panel.
+- A shadow around the panel: off, low, medium (the default), high. Never under the glass.
+- The closing draws in to the field's centre line; the footer rides the window's lower edge.
+
+**Under the hood**
+- `com.google.mlkit:genai-prompt` 1.0.0-beta4, as shipped: two install-time permissions and Google's usage
+  reporting (not the text). `PRIVACY.md` and the data-safety note say what.
+- Settings schema 3: prompts are seeded; whoever used 1.1 is taken to have a key.
+
 ## 1.1.1 (1 October 2026)
 
 - The panel closes the way it opens, backwards: the glass folds to a line from both sides, and the line draws

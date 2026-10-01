@@ -215,3 +215,27 @@ Fetched 1 October 2026 unless noted.
 20. LaunchBar, Tab sends an item to a target: https://www.obdev.at/resources/launchbar/help/SendingItems.html · Quicksilver's three panes: https://en.wikipedia.org/wiki/Quicksilver_(software)
 
 Not found: a written source for Quicksilver's Tab between panes (its manual pages returned 404; that part is from memory), Material's own chip guidance (the page did not render; the Compose pages stand in), and anything on Slack beyond its search filters.
+
+## 14. What 2.0 added to the model (1 October 2026)
+
+The table of keys for 2.0 is `reviews-2.0/ux.md` §5. The rules that are new, as built:
+
+- **A row's other actions** (replaces "More" in §2): the arrow is a stop like the others. Moving the arming
+  never opens anything; Enter on the arrow, Right again, or a click opens the list. In the list ↓ ↑ and Tab move,
+  ← closes, Enter runs, typing closes it in the same frame. Uninstall is last there, apart, in the error colour.
+- **Typed places** (§3): `chrome top left`, `files right third`, `code full`, `… on display 2`. The longest
+  verb wins ("top left" before "left"). A last word of one letter that begins a verb leaves the row standing.
+- **Tab on a keyword** (§4): when the text is exactly a keyword and the selection is where typing left it, Tab
+  makes it the chip. Once the selection or the arming was moved by hand, Tab is the row's again.
+- **One-letter keywords** rank under everything local that matched: `s`, Enter opens the app; `s`, Tab is
+  Settings. A link of the user's called `s` or `k` takes the letter; `settings` and `keys` still work.
+- **`?`** as the first character is the list of everything at once. `help` finds its row and is not a keyword.
+- **Whatever fills the field for you** (a scope entered from its row, Try it, a Commands row): the next Enter
+  runs only as a new press 350 ms later, and text Booklight typed is not kept as the last text.
+- **A prompt's row** is answered after a pause of half a second with three letters or more; Enter asks at once;
+  Enter while the answer arrives waits for all of it, then copies. The model's rows never run anything.
+- **A task** stays where it is when ticked; Enter again unticks it. Ticked tasks are gone the next time.
+- **Tips**: nothing armed at rest; Tab, then Enter. Typing puts the card away in the same frame.
+- **The window**: Tab and Shift + Tab go between the column and the page; ← from a row without a control goes
+  to the column; ↑ ↓ in the column change the section at once; → or Enter goes into the page.
+- **The pin never has the keys.** Copy and Unpin are in the panel, on the row `pin` shows.

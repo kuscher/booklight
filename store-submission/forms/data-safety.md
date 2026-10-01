@@ -87,3 +87,35 @@ user sees open:
   not stored, not sent.
 - **The clipboard:** read only on the user's request (`clip`, or a link with `{clipboard}`).
 - **Suggestions:** unchanged, and still off by default. Text typed after a keyword (inside a chip) is never sent.
+
+## 2.0: what changed for the form
+
+**One library now sends data off the device: Google's ML Kit (GenAI Prompt API), shipped as it is.**
+Alex's decision of 1 October 2026 ("In 2.0, library as shipped"). The on-device model's input and output do
+not leave the device; the library's usage metrics do.
+
+- **What it sends, to Google, in the background** (ML Kit's own disclosure, which applies to every ML Kit
+  library: https://developers.google.com/ml-kit/android-data-disclosure): device information (model, OS
+  build), application information (package name, version), a per-installation identifier, performance
+  metrics (latency), sizes of input and output, API configuration, event types, error codes. Not the text
+  that is typed and not the answer.
+- **How:** the library's `datatransport` components (`TransportBackendDiscovery`, `JobInfoSchedulerService`,
+  `AlarmManagerSchedulerBroadcastReceiver`) upload over HTTPS when a job runs. Checked on the Lenovo: the
+  model answers without them, and Booklight could remove them in a later version.
+- **For the form** (what Google's disclosure page tells apps that use ML Kit to declare): **Device or other
+  IDs** and **App info and performance › Diagnostics**: collected, not shared, not optional (a user who never
+  uses a prompt still has the library in the app), purpose Analytics, encrypted in transit, no deletion
+  request mechanism at the developer (Google holds it, per installation, not per account). "No third-party
+  SDKs" above is no longer true: say "one, Google's ML Kit".
+- **New permissions, both from the library, both install-time without a prompt:**
+  `com.google.android.apps.aicore.service.BIND_SERVICE`, `android.permission.ACCESS_NETWORK_STATE`. A
+  `<queries>` entry for `com.google.android.aicore`.
+- **Audience.** Google's terms for the GenAI APIs exclude apps directed at, or likely to be used by, people
+  under 18. The target audience moves from 13 and over to **18 and over** (Alex, 1 October 2026).
+- **The pinned window** is picture-in-picture: no permission (`USE_PINNED_WINDOWING_LAYER` is not requested).
+- **Other apps' commands:** read from installed packages' manifests and resources under the existing
+  `<queries>` for launcher activities; nothing leaves the device.
+- **Notes:** the granted folder is now read as well as written (`notes`, `todo`), on the device.
+- **Suggestions:** unchanged, still off by default; text typed inside a chip (a prompt's included) is never
+  sent to the search engine.
+

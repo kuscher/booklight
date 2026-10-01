@@ -91,6 +91,19 @@ switch its own mode); keep awake stays with BentoBar; notes go to a folder grant
 `REQUEST_DELETE_PACKAGES`, `SET_ALARM`, `WRITE_SETTINGS` (§6). Next in line: 2.0 Extensions, then 2.1 Reach
 (the Gmail relay is explicitly not built yet).
 
+### 2.0: what was built (1 October 2026)
+
+Alex ticked seven things in `research/next-features.md` (other apps' commands as rows, a pinned window, the
+system's shortcuts as answers, more places, `?`, notes that grow, prompts) and added, in his own words: a
+feature and command list and a left navigation in the window, `s` and `k`, tips, nine icons and a list under
+the row, a shadow around the panel, and answers from the model on the device. Spec:
+`superpowers/specs/2026-10-01-booklight-2.0-design.md`; three design reviews in `design/reviews-2.0/`.
+What the devices changed: the pin is a picture-in-picture window, not one in the pinned layer (it never takes
+the keyboard, and needs no permission); the shadow is the system's own, in room the blur does not reach.
+New in the manifest, through Google's ML Kit library and by Alex's decision ("library as shipped"): AICore's
+`BIND_SERVICE`, `ACCESS_NETWORK_STATE`, and the library's usage reporting (§6). The Play audience moves to 18
+and over. Still not built: the Gmail relay; the layer of extensions that answer while you type.
+
 ### After 1.0: plenty before any permission that makes review harder
 
 From [research/use-cases.md](research/use-cases.md): of 63 ideas, 39 need no permission, 6 an
@@ -138,6 +151,7 @@ In short:
 | 0 (1.0) | Nothing | Everything in 1.0, extensions, app shortcuts, intent actions, emoji, snippets, quick links | None |
 | 0 (1.1) | Nothing at install: `REQUEST_DELETE_PACKAGES` and `SET_ALARM` are granted without a prompt | Uninstall (Android confirms each one), timers, alarms, reminders through the Clock app | None: no form, no declaration |
 | 1 (1.1) | A notes folder (system picker), once; "Modify system settings" (a switch in Settings) | Notes.md in that folder; brightness | No form; the switch must be the user's own clear choice and easy to undo |
+| 0 (2.0) | Nothing at install: AICore's `BIND_SERVICE` and `ACCESS_NETWORK_STATE` come with Google's ML Kit library and are granted without a prompt | Prompts answered by the system's own model, on the device | The library reports usage to Google: data-safety entries (device or other IDs, diagnostics), and an audience of 18 and over |
 | 1 | A folder (system picker); contacts (runtime prompt) | Files in that folder; people | Standard data-safety answers |
 | 2 | Digital assistant role (Settings) | Action + Space, Assistant key, status-bar assistant chip | None found; user must pick it |
 | 3 | Accessibility service; usage access | Window list, clipboard history, system commands, any hotkey, system-wide ranking | Accessibility declaration, prominent disclosure, video; blocked under Android 17 Advanced Protection |

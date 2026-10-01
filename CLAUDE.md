@@ -3,19 +3,22 @@
 A Spotlight / Alfred-style launcher for Googlebooks (Googlebook OS = Android 17 desktop): a key
 opens a small glass panel over the desktop; type, Enter. Plain APK, Kotlin + Jetpack Compose,
 Material 3 Expressive (material3 1.5.0-alpha, pinned). Since 1.1 it also does things: mail, notes,
-events, timers, volume, emoji, the user's own links and recipes.
+events, timers, volume, emoji, the user's own links and recipes. Since 2.0: prompts answered by the system's
+own model, a pinned window, other apps' commands, `?`, tips, `s` and `k`, places, a window with sections.
 
 **Permissions:** `INTERNET` (suggestions, off until the user turns them on), `REQUEST_DELETE_PACKAGES`
 (Uninstall; Android confirms), `SET_ALARM` (Clock), `WRITE_SETTINGS` (brightness; inert until the user
-flips the switch). No runtime permissions, no accessibility service, nothing in the background (the
-user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §4/§6).
+flips the switch); since 2.0, merged in from Google's ML Kit GenAI library (shipped as it is, Alex's decision):
+AICore's `BIND_SERVICE` and `ACCESS_NETWORK_STATE`, and the library's usage reporting to Google. No runtime
+permissions, no accessibility service, nothing of Booklight's own in the background (the user's rule: adding a
+permission needs his say-so and a place in docs/PLAN.md §4/§6).
 
 ## Read first
-- Plan, decisions and roadmap: `docs/PLAN.md`. Design: `docs/superpowers/specs/2026-10-01-booklight-1.1-design.md`
-  (1.1; its §12 are Alex's decisions) on top of `…-booklight-design.md` (1.0). How 1.1 was built:
-  `docs/superpowers/plans/2026-10-01-booklight-1.1.md`.
-- How it should behave and look: `docs/design/ux-model.md` (keys, scopes, verbs), `docs/design/design-system.md`
-  (tokens, components, the motion table; §4 carries a note on what the devices changed), and the prototype
+- Plan, decisions and roadmap: `docs/PLAN.md`. Design: `docs/superpowers/specs/2026-10-01-booklight-2.0-design.md`
+  (2.0; §1 and §2 are Alex's decisions, §4 has what the device changed) on top of `…-booklight-1.1-design.md`
+  and `…-booklight-design.md` (1.0). The three design reviews of 2.0: `docs/design/reviews-2.0/`.
+- How it should behave and look: `docs/design/ux-model.md` (keys, scopes, verbs; §14 for 2.0), `docs/design/design-system.md`
+  (tokens, components, the motion table; §4 carries a note on what the devices changed, §11 what 2.0 changed), and the prototype
   `docs/design/booklight-next.html` (https://claude.ai/artifact/Nc98FHZosXidEaHqMpU1me; publish the same file
   to update it). The 1.0 page: `docs/design/booklight-plan.html`.
 - Facts: `docs/research/device-findings.md` (checked on the devices; wins over the desk research),
@@ -30,23 +33,35 @@ user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §
   - `Matcher.kt`, `History.kt`, `Calc.kt`, `Web.kt`, `Sites.kt`, `Suggest.kt`: as in 1.0.
   - Parsers, each with its tests: `Verbs.kt` ("chrome uninstall"), `When.kt` + `WhenParts.kt` + `Durations.kt`
     (dates and times, English and German), `Jot.kt` (mail, event, reminder, timer, new), `Colors.kt`,
-    `Templates.kt` (link placeholders), `Clip.kt`, `Secrets.kt`, `Emoji.kt`, `Jumps.kt`, `Ask.kt`.
+    `Templates.kt` (link placeholders), `Clip.kt`, `Secrets.kt`, `Emoji.kt`, `Jumps.kt`, `Ask.kt`,
+    `Places.kt` (where a window goes), `NoteText.kt` (notes and tasks as lines), `Prompts.kt`.
 - `app/` — Compose app, package `io.github.kuscher.booklight`.
   - `BooklightApp` the process: providers, scopes, engine, stores. **Register a new provider here.**
+  - `Guide.kt` everything Booklight does, as one table in the string resources (`guide`): the list behind `?`,
+    the window's Commands page. **A new keyword gets a line there, in English and German**, and
+    `./bl debug guide` checks that every example works. `Tips.kt` the tips (`tips` in the resources).
+  - `ai/OnDevice.kt` the system's model through ML Kit: status, warm-up, one streamed answer, close.
+  - `pin/` the pinned window (picture-in-picture) and what it shows.
   - `providers/` apps (with typed verbs), sums, settings pages, commands, web (addresses, ports, Gemini),
     `Dials.kt` (volume, brightness, media), `Answers.kt` (colour, password, UUID), `User.kt` (the user's
-    links and recipes), `SuggestProvider` (the only network code).
+    links and recipes), `AppCommands.kt` (what other apps offer: docs/EXTENSIONS.md), `Keys.kt` (the system's
+    shortcuts, and the `s` and `k` scopes), `SuggestProvider` (the only network code of Booklight's own).
   - `scopes/` rows that take text: `Scopes.kt` (the registry: **a new scope is one line there**; links that
-    take text), `Jot.kt` (mail, note, event, remind, timer, alarm, new, ask), `Picks.kt` (emoji, symbols,
-    QR, colour, snippets, clipboard, text from another app).
+    take text, prompts), `Jot.kt` (mail, note, event, remind, timer, alarm, new, ask), `Picks.kt` (emoji, symbols,
+    QR, colour, snippets, clipboard, text from another app), `NotesScopes.kt` (notes, todo, pin),
+    `Prompts.kt` (a prompt's row and its answer), `Help.kt` (`?`).
   - `Executor.kt` performs effects: the only place that starts activities, writes the clipboard or changes
     a system value. Helpers in `device/` (audio, screen, files, QR images) and `data/Notes.kt`.
   - `overlay/` the panel: `OverlayActivity` (window, icon-or-shortcut routing, text from other apps),
-    `OverlayModel` (chip, text, rows, selection, arming, grid cell, confirmation), `Panel` (keys, the unfold
-    arrival), `Field` (the scope chip), `Rows`, `Strip` (the action row and the option strip), `Bodies`
-    (slots, level, grid, QR), `Footer`, `Metrics`, `Glass` (shader, edge light), `Motion`.
-  - `window/` the Booklight window the icon opens: `MainActivity` (page, settings), `Page` (rows and the one
-    pill), `Stage` (the live demo), `Commands` (editors for links, snippets, recipes).
+    `OverlayModel` (chip, text, rows, selection, arming, an opened row, grid cell, confirmation, the answer of
+    the model, tips, Booklight typing), `Panel` (keys, the unfold arrival, the tip card), `Field` (the scope
+    chip), `Rows` (and an opened row's list), `Strip` (the action row and the option strip), `Bodies` (slots,
+    level, grid, QR, the answer being written), `Marks` (the drawn check), `Footer`, `Metrics`, `Glass`
+    (shader, edge light, the shadow's settings), `PanelOutline` (the blur's corners; keeps the shadow off the
+    glass), `Motion`.
+  - `window/` the Booklight window the icon opens: `MainActivity` (the sections' pages, the keys), `Nav` (the
+    column of sections), `Page` (rows and the one pill), `Stage` (the live demo), `Commands` (the Yours page:
+    editors for links, snippets, recipes, prompts).
   - `entry/` the widget, the tile, the notes-folder picker. `data/` settings (`Prefs`), history, notes, recipes.
   - `app/src/debug/…/DebugReceiver.kt` adb hooks (DUMP-guarded, debug builds only: they print what is typed).
 - `app/src/main/assets/emoji.tsv` is generated by `tools/emoji.py` (Unicode data; see `NOTICE`).
@@ -56,6 +71,10 @@ user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §
 - `./bl app` builds, installs and opens the panel on the Googlebook. `./bl test` runs the core tests.
 - `./bl debug type TEXT | key up|down|left|right|tab|backtab|back|enter|stay|esc | dump | find TEXT | apps | close | forget | pref …`
   drives the panel without injecting input (`dump` shows the chip, each row's body and actions, and which is armed).
+  Also: `guide` (every example of the list of everything, run through the engine), `ai none|downloadable|downloading|real`
+  (a prompt's rows on a device in that state), `pin KIND TEXT` and `unpin`, `pref tips again`, `pref key seen|no`,
+  `pref shadow off|low|medium|high`. `./bl open stay slow=4 shade=high key` (every spring four times as long; the shadow; as if a
+  key had opened it). `./bl wshot NAME` = PNG of the Booklight window.
   **`./bl debug keys TEXT` types one character at a time**: use it for anything about typing; `type` sets the whole text at
   once and so never shows a row changing under the selection (a crash hid behind that in 1.1's review). `./bl shot NAME` = PNG of the panel's own window (debug builds).
   `./bl open stay tint=0.2 blur=24 dim=0.1 opening=slow` tries glass values and the arrival; `DARK=true ./bl open stay` the dark theme.
@@ -99,6 +118,9 @@ user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §
   the whole window** (device-findings.md), so the arrival grows the glass inside a window that stays put, and
   nothing may be drawn outside the panel's final rectangle.
 - Destructive actions are last, in the error colour, never first, and never run by an arrow or Ctrl + digit.
+- What the device's model says is only shown, copied, pinned or put back where the text came from: it never
+  runs anything and never outranks a local match.
+- The opening is always the field's height; whatever is under the field comes after it (a tip, a card).
 - Every user-facing string is a resource, English and German. Copy is plain: "Open", "Copy", "Search".
 
 ## Gotchas
@@ -116,3 +138,11 @@ user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §
 - Inside a scope the engine also offers an app whose name starts with the keyword and the text ("play store").
 - `am start -n …OverlayActivity` is the panel; an icon click (source bounds, or the home app as referrer) is the window.
 - Gradle needs the memory settings in `gradle.properties` (Compose + material3 alpha).
+- The system's model answers only the app in front (the panel is). Asked from a receiver it never answers.
+- A scope with no keyword is treated as text another app handed over (not kept, no web row): a prompt whose
+  keyword was taken is one.
+- `PanelOutline` clears the glass's shape before anything is drawn: without it the window's shadow shows
+  through the glass. The shadow's size is the window's elevation, set once the root view exists.
+- Opening an activity of Booklight's own at a size: `FLAG_ACTIVITY_MULTIPLE_TASK`, or the desktop gives it the
+  bounds of whichever Booklight window is in front.
+- A build check must look for `FAILURE` as well as `e:`: a resource error has no `e:` line, and the old APK installs.
