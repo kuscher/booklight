@@ -18,9 +18,10 @@ import java.io.FileOutputStream
 /**
  * Test hooks for driving Booklight from adb (`./bl debug …`). The receiver requires the DUMP
  * permission, which only the shell (adb) holds, so other apps can't use it.
- *   ping | dump | type TEXT | key up|down|tab|esc|enter | close | shot [NAME]
- *   find TEXT (ranked results without the panel) | apps | forget
- *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted | pref cards (show the first-run cards again)
+ *   ping | dump | type TEXT | key up|down|left|right|tab|backtab|esc|enter|stay|back | close | shot [NAME]
+ *   find TEXT (ranked results without the panel; "KEY: TEXT" searches inside a scope) | apps | forget
+ *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted|solid | pref opening off|fast|medium|slow
+ *   pref theme auto|light|dark | pref tint on|off | pref dim on|off | pref cards (show the first-run cards again) | pref nocards
  */
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -41,25 +42,35 @@ class DebugReceiver : BroadcastReceiver() {
                     "suggestions" -> app.prefs.update { it.copy(suggestions = v == "on", suggestionsCard = false) }
                     "engine" -> app.prefs.update { it.copy(engine = v) }
                     "glass" -> app.prefs.update { it.copy(glass = v) }
+                    "opening" -> app.prefs.update { it.copy(opening = v) }
+                    "theme" -> app.prefs.update { it.copy(theme = v) }
+                    "tint" -> app.prefs.update { it.copy(tint = v == "on") }
+                    "dim" -> app.prefs.update { it.copy(dim = v == "on") }
                     "cards" -> app.prefs.update { it.copy(shortcutCard = true, suggestionsCard = true, suggestions = false) }
                     "nocards" -> app.prefs.update { it.copy(shortcutCard = false, suggestionsCard = false) }
                 }
-                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard}" })
+                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim}" })
             }
             "find" -> app.scope.launch {
                 val t0 = System.nanoTime()
-                val r = app.engine.search(Query(arg))
-                out("${(System.nanoTime() - t0) / 1000} us | " + r.joinToString(" | ") { "${it.title} [${it.kind}]" })
+                val scoped = app.engine.scopeFor(arg)
+                val r = if (scoped != null) app.engine.search(Query(scoped.second, scoped.first.key)) else app.engine.search(Query(arg))
+                out("${(System.nanoTime() - t0) / 1000} us | " + r.joinToString(" | ") { describe(it) })
             }
             "type" -> main.post { act?.model?.type(arg); out(if (act != null) "ok" else "no panel") }
             "key" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
                 when (arg) {
-                    "down" -> m.move(1)
-                    "up" -> m.move(-1)
-                    "tab" -> m.openActions()
-                    "esc" -> if (!m.closeActions()) act.close()
-                    "enter" -> m.chosen()?.let { act.run(it.first, it.second) }
+                    "down" -> if (!m.moveCell(0, 1)) m.move(1)
+                    "up" -> if (!m.moveCell(0, -1) && !m.restoreLast()) m.move(-1)
+                    "right" -> if (!m.moveCell(1, 0) && !m.nudge(1)) m.arm(1, wrap = false)
+                    "left" -> if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
+                    "tab" -> if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else m.arm(1, wrap = true)
+                    "backtab" -> m.arm(-1, wrap = true)
+                    "back" -> m.leaveScope()
+                    "esc" -> if (!m.cancelConfirm()) act.close()
+                    "enter" -> m.enter { r, a -> act.run(r, a) }
+                    "stay" -> m.enter { r, a -> act.run(r, a, keep = true) }
                 }
                 out("ok")
             }
@@ -68,9 +79,9 @@ class DebugReceiver : BroadcastReceiver() {
                 val m = act?.model ?: return@post out("no panel")
                 val d = act.window.decorView
                 val loc = IntArray(2).also { d.getLocationOnScreen(it) }
-                out("query='${m.query}' selected=${m.selected} search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} " +
-                    "blur=${act.windowManager.isCrossWindowBlurEnabled} actions=${m.actionsOf?.title} completion=${m.completion} site=${m.site?.name} card=${m.card} rows=" +
-                    m.results.joinToString(" | ") { "${it.title} [${it.kind}]" })
+                out("chip=${m.chip?.key} query='${m.query}' selected=${m.selected} armed=${m.chosen()?.second?.id}${if (m.confirming) "?" else ""} cell=${m.cell} flash=${m.flash} " +
+                    "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} rows=" +
+                    m.results.joinToString(" | ") { describe(it) })
             }
             "shot" -> main.post {
                 val a = act ?: return@post out("no panel")
@@ -87,5 +98,20 @@ class DebugReceiver : BroadcastReceiver() {
             }
             else -> out("unknown")
         }
+    }
+
+    /** A row in one line: its title, kind, what it holds, and its actions with the armed one marked. */
+    private fun describe(r: io.github.kuscher.booklight.core.Result): String {
+        val body = when (val b = r.body) {
+            null -> ""
+            is io.github.kuscher.booklight.core.Body.Slots -> " {" + listOfNotNull(b.caption).plus(b.slots.map { "${it.label}=${it.value}${if (it.state == io.github.kuscher.booklight.core.SlotState.GUESSED) "?" else ""}" }).plus(listOfNotNull(b.note)).joinToString("; ") + "}"
+            is io.github.kuscher.booklight.core.Body.Level -> " {${b.percent}%${if (b.muted) " muted" else ""}${if (b.locked) " locked" else ""}${b.target?.let { " →$it" } ?: ""}}"
+            is io.github.kuscher.booklight.core.Body.Grid -> " {${b.cells.size} cells: ${b.cells.take(6).joinToString("") { it.glyph }}…}"
+            is io.github.kuscher.booklight.core.Body.Code -> " {qr}"
+            is io.github.kuscher.booklight.core.Body.Mono -> " {${b.text}}"
+            is io.github.kuscher.booklight.core.Body.Media -> " {media}"
+        }
+        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id }.joinToString(",")
+        return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.kind}]$body <$acts>"
     }
 }

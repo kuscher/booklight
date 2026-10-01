@@ -25,6 +25,7 @@ import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.BooklightTheme
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
@@ -51,34 +52,53 @@ class OverlayActivity : ComponentActivity() {
     private var lastHeightPx = -1
     private var lastBlur = -1
     private var dark = false
-    private val dim get() = if (dark) Look.dimDark else Look.dimLight
+    /** No blur and an opaque surface: the user chose Solid. */
+    private var solid = false
+    /** How much the rest of the screen darkens while the panel is open; 0 = not at all (the default). */
+    private var dim = 0f
+    private var flashJob: Job? = null
+    /** Something was run: what was typed need not be kept for next time. */
+    private var ran = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         current = WeakReference(this)
         val app = application as BooklightApp
+        val settings = app.prefs.now
         motion = Motion.of(this)
         val screen = windowManager.maximumWindowMetrics.bounds
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screen.height() / resources.displayMetrics.density))
         stay = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)
-        Look.use(GlassLevel.of(app.prefs.now.glass))
-        if (BuildConfig.DEBUG) {   // try other glass values from adb: ./bl open stay tint=0.2 blur=24 dim=0.1
+        solid = settings.glass == "solid"
+        Look.use(GlassLevel.of(settings.glass))
+        var opening = settings.opening
+        if (BuildConfig.DEBUG) {   // try other values from adb: ./bl open stay tint=0.2 blur=24 dim=0.1 opening=slow
             if (intent.hasExtra("tint")) intent.getFloatExtra("tint", 0f).let { Look.tintLight = it; Look.tintDark = it }
             if (intent.hasExtra("blur")) Look.blurDp = intent.getFloatExtra("blur", Look.blurDp)
-            if (intent.hasExtra("dim")) intent.getFloatExtra("dim", 0f).let { Look.dimLight = it; Look.dimDark = it }
+            intent.getStringExtra("opening")?.let { opening = it }
         }
         val icons = app.icons ?: AppIcons(app).also { app.icons = it }
-        // `--ez dark true|false` (debug, for pictures) overrides the system's theme for this panel only.
-        dark = if (intent.hasExtra(EXTRA_DARK)) intent.getBooleanExtra(EXTRA_DARK, false)
-            else resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        // `--ez dark true|false` (debug, for pictures) overrides the theme for this panel only.
+        dark = when {
+            intent.hasExtra(EXTRA_DARK) -> intent.getBooleanExtra(EXTRA_DARK, false)
+            settings.theme == "dark" -> true
+            settings.theme == "light" -> false
+            else -> resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        }
+        dim = when {
+            BuildConfig.DEBUG && intent.hasExtra("dim") -> intent.getFloatExtra("dim", 0f)
+            settings.dim -> if (dark) Look.dimDark else Look.dimLight
+            else -> 0f
+        }
         placeWindow()
+        val arrival = Arrival.of(opening, motion)
 
         setContent {
-            BooklightTheme(dark) {
+            BooklightTheme(dark, tint = settings.tint) {
                 CompositionLocalProvider(LocalMotion provides motion) {
                     BackHandler { close() }
                     Panel(
-                        model, icons, glass, dark, leaving,
+                        model, icons, glass && !solid, dark, arrival, leaving,
                         onHeight = ::sizeWindow, onPresence = ::present,
                         onRun = ::run, onCard = ::card, onClose = ::close,
                     )
@@ -94,9 +114,11 @@ class OverlayActivity : ComponentActivity() {
 
     private fun placeWindow() {
         window.setGravity(Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-        // A soft dim separates the panel from busy windows; the desktop stays readable.
-        window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        window.setDimAmount(if (motion.on) 0f else dim)
+        // Optional: a soft dim separates the panel from busy windows. Off unless the user turns it on.
+        if (dim > 0f) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            window.setDimAmount(if (motion.on) 0f else dim)
+        }
         // The background draws nothing; the platform reads the blur region's corner radius from its outline.
         window.setBackgroundDrawable(PanelOutline(dp(Metrics.radius.value)))
         val screen = windowManager.maximumWindowMetrics.bounds
@@ -106,10 +128,10 @@ class OverlayActivity : ComponentActivity() {
         lp.y = (screen.height() * Metrics.TOP).roundToInt()
         window.attributes = lp
         lastHeightPx = lp.height
-        if (!motion.on) present(1f)
+        if (!motion.on) present(1f, 1f)
     }
 
-    /** Called on every frame of the height spring: the window is always exactly as tall as the panel. */
+    /** Called on every frame of the height spring: the window is always exactly as tall as the panel. Its width never changes. */
     private fun sizeWindow(height: Dp) {
         val px = dp(height.value).roundToInt().coerceAtLeast(1)
         if (px == lastHeightPx) return
@@ -119,11 +141,11 @@ class OverlayActivity : ComponentActivity() {
         window.attributes = lp
     }
 
-    /** The glass comes into focus as the panel arrives, and lets go as it leaves. */
-    private fun present(amount: Float) {
-        val blur = (dp(Look.blurDp) * amount).roundToInt()
+    /** The room dims (if asked to) and the glass comes into focus as the panel arrives, and they let go as it leaves. */
+    private fun present(dimmed: Float, focused: Float) {
+        val blur = if (solid) 0 else (dp(Look.blurDp) * focused).roundToInt()
         if (blur != lastBlur) { lastBlur = blur; window.setBackgroundBlurRadius(blur) }
-        window.setDimAmount(dim * amount)
+        if (dim > 0f) window.setDimAmount(dim * dimmed)
     }
 
     override fun onAttachedToWindow() {
@@ -146,7 +168,11 @@ class OverlayActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (!hasFocus && !stay) close()
+        if (hasFocus || stay) return
+        // Whatever started the panel (the taskbar, a widget, the Apps list) may still be closing and
+        // take focus for a moment: early on, only close if focus is still gone a little later.
+        if (SystemClock.uptimeMillis() - created < EARLY_MS) window.decorView.postDelayed({ if (!hasWindowFocus() && !isFinishing) close() }, 250)
+        else close()
     }
 
     /** The window takes every touch on the screen while it is up; one outside the panel closes it. */
@@ -158,22 +184,29 @@ class OverlayActivity : ComponentActivity() {
         return super.onTouchEvent(event)
     }
 
-    fun run(r: Result, a: Action) {
+    /** Runs an action of a row. [keep]: Shift was held, so the panel stays whatever the action says. */
+    fun run(r: Result, a: Action, keep: Boolean = false) {
         if (leaving) return   // a second Enter or click while the panel is on its way out
         val app = application as BooklightApp
-        if (!app.executor.run(a.effect, this)) {
-            model.flash = getString(R.string.failed)
-            lifecycleScope.launch { delay(1600); model.flash = null }
-            return
-        }
+        if (!app.executor.run(a.effect, this)) { say(getString(R.string.failed), bad = true); return }
+        ran = true
         model.learn(r)
+        val word = a.done ?: if (a.effect is Effect.CopyText) getString(R.string.copied) else null
+        if (word != null) say(word)
         when {
-            a.effect is Effect.CopyText -> {
-                model.flash = getString(R.string.copied)
-                lifecycleScope.launch { delay(520); close() }
-            }
-            !a.keepOpen -> close()
+            a.keepOpen || keep -> model.refresh()
+            // Long enough to read the word, or to see a level arrive, then away.
+            word != null -> lifecycleScope.launch { delay(520); close() }
+            r.nudge != null -> { model.refresh(); lifecycleScope.launch { delay(400); close() } }
+            else -> close()
         }
+    }
+
+    /** A word in the footer for a moment. */
+    private fun say(word: String, bad: Boolean = false) {
+        model.flash = word; model.flashBad = bad
+        flashJob?.cancel()
+        flashJob = lifecycleScope.launch { delay(1600); model.flash = null }
     }
 
     /** A button on the first-run card. Either way the step is done and doesn't come back. */
@@ -191,6 +224,7 @@ class OverlayActivity : ComponentActivity() {
     /** Leaves: the panel fades with its blur, then the activity finishes. */
     fun close() {
         if (leaving) return
+        if (!ran) model.keep()
         leaving = true
         if (!motion.on) { finishNow(); return }
         lifecycleScope.launch { delay(Motion.LEAVE_MS); finishNow() }
@@ -216,6 +250,7 @@ class OverlayActivity : ComponentActivity() {
     companion object {
         const val EXTRA_STAY = "stay"
         const val EXTRA_DARK = "dark"
+        private const val EARLY_MS = 600L
         var current: WeakReference<OverlayActivity> = WeakReference(null)
     }
 }

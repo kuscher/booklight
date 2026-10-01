@@ -24,6 +24,18 @@ data class SiteEntry(val keyword: String, val name: String, val url: String) {
     fun site() = Site(keyword, name, url)
 }
 
+/** A piece of text with a short name: `snip sig` copies it. */
+@Serializable
+data class SnippetEntry(val key: String, val text: String)
+
+/** One step of a recipe, as saved: [kind] says which effect, the rest are its values (`data/Recipes.kt`). */
+@Serializable
+data class StepEntry(val kind: String, val a: String = "", val b: String = "", val n: Int = 0)
+
+/** Several things done in order under one name. */
+@Serializable
+data class RecipeEntry(val id: String, val name: String, val keyword: String = "", val steps: List<StepEntry> = emptyList())
+
 /** Everything the user can choose, plus which first-run cards are still to show. */
 @Serializable
 data class Settings(
@@ -32,11 +44,29 @@ data class Settings(
     val suggestions: Boolean = false,
     val showSettings: Boolean = true,
     val showSums: Boolean = true,
-    /** How see-through the panel is: clear, balanced or frosted (`overlay/Glass.kt`). */
+    /** Offer "Ask Gemini" for longer text. */
+    val showGemini: Boolean = true,
+    /** How see-through the panel is: clear, balanced, frosted or solid (`overlay/Glass.kt`). */
     val glass: String = "balanced",
+    /** `auto` follows the system; `light` and `dark` don't. */
+    val theme: String = "auto",
+    /** Colours from the wallpaper (the system's), or Booklight's own. */
+    val tint: Boolean = true,
+    /** Darken the rest of the screen a little while the panel is open. */
+    val dim: Boolean = false,
+    /** How the panel arrives: `off` (a small settle and a fade), or unfolding `fast`, `medium` or `slow`. */
+    val opening: String = "fast",
+    /** The keyword searches and links: 1.0's sites, now with placeholders. */
     val sites: List<SiteEntry> = Sites.defaults.map { SiteEntry(it.keyword, it.name, it.url) },
+    val snippets: List<SnippetEntry> = emptyList(),
+    val recipes: List<RecipeEntry> = emptyList(),
+    /** The folder notes go to, as the tree address the user granted; null until they have. */
+    val notesFolder: String? = null,
+    val emojiRecent: List<String> = emptyList(),
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
+    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1. */
+    val schema: Int = 1,
 ) {
     fun engine(): Engine = Engines.byId(engine)
     fun sites(): List<Site> = sites.map { it.site() }
@@ -47,15 +77,25 @@ class Prefs(context: Context, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "settings.json")
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val writing = Mutex()
+    private companion object { const val SCHEMA = 2 }
     private val _state = MutableStateFlow(load())
     val state: StateFlow<Settings> = _state
     val now: Settings get() = _state.value
 
     private fun load(): Settings = try {
-        if (file.exists()) json.decodeFromString(Settings.serializer(), file.readText()) else Settings()
+        if (file.exists()) migrate(json.decodeFromString(Settings.serializer(), file.readText())) else Settings(schema = SCHEMA)
     } catch (e: Exception) {
         Log.w(BooklightApp.TAG, "settings unreadable, using defaults", e)
-        Settings()
+        Settings(schema = SCHEMA)
+    }
+
+    /** A 1.0 file: `play` used to search the Play Store; it plays music now and `store` searches the store. New defaults are added. */
+    private fun migrate(s: Settings): Settings {
+        if (s.schema >= SCHEMA) return s
+        val renamed = s.sites.map { if (it.keyword == "play" && it.url.contains("play.google.com")) it.copy(keyword = "store") else it }
+        val have = renamed.mapTo(HashSet()) { it.keyword }
+        val added = Sites.defaults.filter { it.keyword !in have }.map { SiteEntry(it.keyword, it.name, it.url) }
+        return s.copy(sites = renamed + added, schema = SCHEMA)
     }
 
     fun update(change: (Settings) -> Settings) {

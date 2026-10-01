@@ -4,6 +4,7 @@ import android.app.Application
 import io.github.kuscher.booklight.core.Provider
 import io.github.kuscher.booklight.core.SearchEngine
 import io.github.kuscher.booklight.data.HistoryStore
+import io.github.kuscher.booklight.data.Notes
 import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.providers.AppsProvider
 import io.github.kuscher.booklight.providers.CalcProvider
@@ -11,6 +12,7 @@ import io.github.kuscher.booklight.providers.CommandsProvider
 import io.github.kuscher.booklight.providers.SettingsProvider
 import io.github.kuscher.booklight.providers.SuggestProvider
 import io.github.kuscher.booklight.providers.WebProvider
+import io.github.kuscher.booklight.scopes.Scopes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +30,10 @@ class BooklightApp : Application() {
     lateinit var apps: AppsProvider private set
     lateinit var engine: SearchEngine private set
     lateinit var executor: Executor private set
+    lateinit var scopes: Scopes private set
+    lateinit var notes: Notes private set
+    /** What was typed when the panel last closed without running anything (the chip's key, the text): Up brings it back. */
+    var lastText: Pair<String?, String>? = null
     /** App icons, made when the panel first needs them and kept after. */
     var icons: io.github.kuscher.booklight.ui.AppIcons? = null
 
@@ -41,8 +47,16 @@ class BooklightApp : Application() {
         prefs = Prefs(this, scope)
         suggest = SuggestProvider(this, prefs)
         apps = AppsProvider(this, scope)
-        providers = listOf(apps, CalcProvider(this, prefs), SettingsProvider(this, prefs), CommandsProvider(this), WebProvider(this, prefs))
-        engine = SearchEngine(providers, historyStore.history)
+        notes = Notes(this, prefs)
+        val web = WebProvider(this, prefs)
+        scopes = Scopes(this, prefs)
+        providers = listOf(apps, CalcProvider(this, prefs), SettingsProvider(this, prefs), CommandsProvider(this), web)
+        engine = SearchEngine(
+            providers, historyStore.history,
+            scopes = { scopes.all() },
+            enterLabel = { getString(if (it.symbol == "search") R.string.scope_search else R.string.scope_type) },
+            fallback = { listOf(web.search(it)) },
+        )
         executor = Executor(this)
     }
 

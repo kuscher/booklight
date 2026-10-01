@@ -12,6 +12,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  * runs the first row. Order = the provider's match score × the kind's weight + what [History]
  * has learned for this exact text. Answers (a sum) go first; the web search comes after every
  * local row, and suggestions from the search engine, when they arrive, go below it.
+ *
+ * Inside a scope (the chip in the field) only that scope is asked, its rows keep their own order,
+ * and the way out to the web for the keyword and the text together keeps the last place.
  */
 class SearchEngine(
     private val providers: List<Provider>,
@@ -19,18 +22,63 @@ class SearchEngine(
     private val clock: () -> Long = System::currentTimeMillis,
     /** A provider that takes longer than this is left out of that keystroke's list. */
     private val budgetMs: Long = 150,
+    /** The scopes there are right now (the user can add keyword searches). */
+    private val scopes: () -> List<Scope> = { emptyList() },
+    /** What a scope's own row says Enter does ("Type…", "Search…"). */
+    private val enterLabel: (Scope) -> String = { "Open" },
+    /** The rows that end a scope's list: the web search for the keyword and the text together. */
+    private val fallback: (String) -> List<Result> = { emptyList() },
 ) {
     suspend fun search(q: Query, limit: Int = DEFAULT_LIMIT): List<Result> {
+        if (q.scope != null) return inScope(q, limit)
         if (q.isEmpty) return zeroState(limit)
         val now = clock()
-        val all = ask { it.query(q) }
+        val all = ask { it.query(q) } + scopeRows(q.text)
         val ranked = all.distinctBy { it.id }
             .map { it to rank(it, q.text, now) }
             .sortedWith(compareByDescending<Pair<Result, Double>> { it.second }.thenBy { it.first.title.length }.thenBy { it.first.title })
             .map { it.first }
-        // The way out to the web keeps the last row, however many other rows match.
-        val fallback = ranked.filter(::isFallback).take(1)
-        return ranked.filterNot(::isFallback).take(limit - fallback.size) + fallback
+        // The ways out (search the web, ask Gemini) keep the last rows, however many other rows match.
+        val out = ranked.filter(::isFallback).take(MAX_FALLBACKS)
+        return ranked.filterNot(::isFallback).take(limit - out.size) + out
+    }
+
+    private suspend fun inScope(q: Query, limit: Int): List<Result> {
+        val s = scope(q.scope ?: return emptyList()) ?: return emptyList()
+        val rows = withTimeoutOrNull(budgetMs) { runCatching { s.rows(q.text) }.getOrElse { emptyList() } } ?: emptyList()
+        // An ordinary word that happened to be a keyword ("new york weather") is one row away.
+        val out = if (q.isEmpty) emptyList() else fallback("${s.keywords.firstOrNull() ?: s.key} ${q.text}").take(1)
+        return (rows.take(limit - out.size) + out).distinctBy { it.id }
+    }
+
+    fun scope(key: String): Scope? = scopes().firstOrNull { it.key == key }
+
+    /**
+     * The scope and its argument when [text] starts with a keyword and a space: "yt lofi" is
+     * YouTube and "lofi", "yt " is YouTube and nothing yet. The keyword alone is ordinary text.
+     */
+    fun scopeFor(text: String): Pair<Scope, String>? {
+        val t = text.trimStart()
+        val space = t.indexOf(' ')
+        if (space <= 0) return null
+        val word = t.substring(0, space)
+        val s = scopes().firstOrNull { sc -> sc.keywords.any { it.equals(word, ignoreCase = true) } } ?: return null
+        return s to t.substring(space + 1)
+    }
+
+    /** Scopes as rows of the ordinary list: found by a keyword or by name, entered with Tab or Enter. */
+    private fun scopeRows(text: String): List<Result> = scopes().mapNotNull { s ->
+        val t = text.lowercase()
+        val score = when {
+            s.keywords.any { it.equals(text, ignoreCase = true) } -> 1.0
+            t.length >= 2 && s.keywords.any { it.lowercase().startsWith(t) } -> 0.85
+            else -> Matcher.score(text, s.name) * 0.8
+        }
+        if (score <= 0) null else Result(
+            id = "scope:${s.key}", provider = "scopes", kind = Kind.SCOPE, title = s.name, subtitle = s.about,
+            icon = Icon.Symbol(s.symbol), score = score,
+            actions = listOf(Action("enter", enterLabel(s), Effect.EnterScope(s.key), keepOpen = true, symbol = "edit")),
+        )
     }
 
     private fun isFallback(r: Result) = r.kind == Kind.WEB && r.score < URL_SCORE
@@ -74,6 +122,8 @@ class SearchEngine(
     /** Apps are what people open most; settings and commands sit just under an equal app match. */
     private fun weight(k: Kind) = when (k) {
         Kind.APP -> 1.0
+        Kind.SCOPE -> 0.97                         // "mail" is the Mail scope unless an app is called exactly that
+        Kind.CONTROL -> 0.95
         Kind.COMMAND -> 0.92
         Kind.SETTING -> 0.9
         else -> 1.0
@@ -89,5 +139,6 @@ class SearchEngine(
         /** A web result scoring this or more is an address the user typed, ranked like a match. */
         const val URL_SCORE = 0.9
         const val MAX_SUGGESTIONS = 3
+        const val MAX_FALLBACKS = 2
     }
 }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What Booklight may hand to another app as a file: only pictures it made itself (a QR code), from its cache. -->
+<paths>
+    <cache-path name="share" path="share/" />
+</paths>

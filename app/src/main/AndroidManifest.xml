@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Booklight's one permission. It is used for search suggestions only, and only after the user
-         turns them on (first-run card or settings): the typed text then goes to the chosen search
-         engine. With suggestions off, nothing typed leaves the device until a web row is chosen,
-         which hands the text to the browser. No runtime permissions, no accessibility service. -->
+    <!-- Used for search suggestions only, and only after the user turns them on (first-run card or
+         settings): the typed text then goes to the chosen search engine. With suggestions off, nothing
+         typed leaves the device until a web row is chosen, which hands the text to the browser. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- "Uninstall" on an app's row. Granted at install, no prompt; Android shows its own
+         "Do you want to uninstall this app?" every time. Without it the request is ignored silently. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- Timers, alarms and reminders are handed to the Clock app. Granted at install, no prompt. -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!-- Brightness. Does nothing until the user switches on "Modify system settings" for Booklight in
+         Settings; the brightness row says so and opens that page. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <!-- No runtime permissions, no accessibility service, nothing that runs in the background. -->
 
     <!-- The app list: launchable apps only (no QUERY_ALL_PACKAGES), and the Settings app for its pages. -->
     <queries>
@@ -64,6 +73,22 @@
             android:label="@string/settings_title"
             android:taskAffinity="io.github.kuscher.booklight.settings"
             android:launchMode="singleTask" />
+
+        <!-- Asks once where notes go (the system's folder picker). No screen of its own. -->
+        <activity
+            android:name=".entry.PickFolderActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Booklight.Overlay" />
+
+        <!-- Hands a picture Booklight made (a QR code) to the clipboard or the share sheet. Its own cache only. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/share_paths" />
+        </provider>
 
         <!-- adb-only test hooks: the shell holds DUMP, apps don't. -->
         <receiver

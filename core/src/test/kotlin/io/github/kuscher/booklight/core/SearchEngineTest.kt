@@ -102,4 +102,62 @@ class SearchEngineTest {
         val full = e.search(Query("c"))                         // five apps + the web row
         assertEquals(full, e.merge(full, listOf(suggestion("cats")), limit = full.size))
     }
+
+    private class Words(override val key: String, override val keywords: List<String>, override val name: String) : Scope {
+        override val symbol = "search"
+        override val hint = "…"
+        override suspend fun rows(arg: String) = if (arg.isEmpty()) emptyList() else listOf("first", "second").map {
+            Result("$key:$it", key, Kind.WEB, "$it $arg", icon = Icon.Symbol("search"), score = if (it == "first") 0.1 else 1.0,
+                actions = listOf(Action("go", "Go", Effect.OpenUrl("https://example.com/$arg"))), learnable = false)
+        }
+    }
+
+    private val yt = Words("yt", listOf("yt", "youtube"), "YouTube")
+    private val mail = Words("mail", listOf("mail"), "Mail")
+
+    private fun scoped() = SearchEngine(
+        listOf(Names(listOf("Maps", "Mail", "Chrome"), ::app), web), History(), clock = { 1000 },
+        scopes = { listOf(yt, mail) },
+        fallback = { text -> listOf(Result("web:search", "web", Kind.WEB, "Search for $text", icon = Icon.Symbol("search"), score = 0.1,
+            actions = listOf(Action("search", "Search", Effect.OpenUrl(Engines.default.search(text)))), learnable = false)) },
+    )
+
+    @Test fun aKeywordAndASpaceIsAScope() {
+        val e = scoped()
+        assertEquals("yt" to "lofi beats", e.scopeFor("yt lofi beats")?.let { it.first.key to it.second })
+        assertEquals("yt" to "", e.scopeFor("YT ")?.let { it.first.key to it.second })
+        assertEquals("yt" to "x", e.scopeFor("youtube x")?.let { it.first.key to it.second })
+        assertEquals(null, e.scopeFor("yt"))                    // the keyword alone is ordinary text
+        assertEquals(null, e.scopeFor("ytx lofi"))
+        assertEquals(null, e.scopeFor(" lofi"))
+    }
+
+    @Test fun insideAScopeItsRowsKeepTheirOrderAndTheWebRowIsLast() = runTest {
+        val r = scoped().search(Query("lofi", scope = "yt"))
+        assertEquals(listOf("first lofi", "second lofi", "Search for yt lofi"), r.map { it.title })
+        assertTrue(scoped().search(Query("", scope = "yt")).isEmpty())          // nothing typed: no way out needed yet
+        assertTrue(scoped().search(Query("x", scope = "gone")).isEmpty())
+    }
+
+    @Test fun scopesAreRowsOfTheOrdinaryList() = runTest {
+        val e = scoped()
+        assertEquals("scope:yt", e.search(Query("yt")).first().id)              // its keyword, exactly
+        assertEquals(Effect.EnterScope("yt"), e.search(Query("yt")).first().actions.first().effect)
+        assertEquals("app:Mail", e.search(Query("mail")).first().id)            // an app called exactly that still wins
+        assertEquals("scope:mail", e.search(Query("mail"))[1].id)
+        assertEquals(listOf("app:Mail", "app:Maps", "scope:mail"), e.search(Query("ma")).take(3).map { it.id })   // apps first for a prefix
+        assertTrue(e.search(Query("you")).any { it.id == "scope:yt" })          // by name
+        assertTrue(e.search(Query("y")).none { it.id == "scope:yt" && it.score >= 0.85 })
+    }
+
+    @Test fun twoWaysOutKeepTheEnd() = runTest {
+        val gemini = object : Provider {
+            override val id = "gemini"
+            override suspend fun query(q: Query) = listOf(Result("web:gemini", id, Kind.WEB, "Ask", icon = Icon.Symbol("spark"), score = 0.09,
+                actions = listOf(Action("ask", "Ask", Effect.AskGemini(q.text))), learnable = false))
+        }
+        val r = engine(History(), gemini).search(Query("c"), limit = 4)
+        assertEquals(listOf("web:search", "web:gemini"), r.takeLast(2).map { it.id })
+        assertEquals(4, r.size)
+    }
 }

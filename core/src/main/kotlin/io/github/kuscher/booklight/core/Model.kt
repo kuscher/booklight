@@ -1,13 +1,16 @@
 package io.github.kuscher.booklight.core
 
-/** What the user typed, as typed; [text] is what providers match against. */
-data class Query(val raw: String) {
+/**
+ * What the user typed, as typed; [text] is what providers match against. Inside a scope (the chip
+ * in the field: a keyword search, a note, a timer) [scope] is its key and the text is its argument.
+ */
+data class Query(val raw: String, val scope: String? = null) {
     val text: String = raw.trim()
     val isEmpty: Boolean get() = text.isEmpty()
 }
 
 /** What a result is. Drives the row's label and how the ranker weighs it. */
-enum class Kind { APP, ANSWER, SETTING, COMMAND, WEB, SUGGESTION, OTHER }
+enum class Kind { APP, ANSWER, SETTING, COMMAND, WEB, SUGGESTION, SCOPE, CONTROL, OTHER }
 
 /**
  * A picture for a row, as data: the core has no drawables. The app turns it into pixels
@@ -18,33 +21,121 @@ sealed interface Icon {
     data class App(val packageName: String, val className: String, val user: Long = 0) : Icon
     /** One of Booklight's own symbols, by name (`ui/Icons.kt`). */
     data class Symbol(val name: String) : Icon
+    /** A patch of one colour (a colour value typed into the panel). */
+    data class Swatch(val argb: Int) : Icon
+    /** A character shown as the picture: an emoji, a snippet's first letter. */
+    data class Glyph(val text: String) : Icon
 }
+
+/** Where on the screen an app's window is asked to open. */
+enum class Place { NONE, LEFT, RIGHT, FULL }
+
+enum class MediaKey { PLAY_PAUSE, NEXT, PREVIOUS }
+
+/** What to do with a picture Booklight made (a QR code). */
+enum class ImageUse { COPY, SAVE, SHARE }
 
 /**
  * What running an action does, as data. The core never touches Android: the app's `Executor`
  * performs effects. New abilities are a new effect plus a few lines there.
  */
 sealed interface Effect {
-    data class LaunchApp(val packageName: String, val className: String, val user: Long = 0) : Effect
+    data class LaunchApp(val packageName: String, val className: String, val user: Long = 0, val place: Place = Place.NONE, val newWindow: Boolean = false) : Effect
     data class AppInfo(val packageName: String, val className: String, val user: Long = 0) : Effect
     /** The app's page in the store it came from. */
     data class StorePage(val packageName: String) : Effect
+    /** Asks the system to remove an app; the system shows its own confirmation. */
+    data class Uninstall(val packageName: String, val user: Long = 0) : Effect
     data class OpenUrl(val url: String) : Effect
-    data class CopyText(val text: String) : Effect
+    /** [sensitive]: a password; the clipboard is told not to show it. */
+    data class CopyText(val text: String, val sensitive: Boolean = false) : Effect
+    data class ShareText(val text: String) : Effect
     /** A system settings screen, by its `android.settings.…` intent action. */
     data class OpenSettings(val action: String) : Effect
-    /** One of Booklight's own pages or commands (`settings`, `hotkey`…). */
+    /** One of Booklight's own pages or commands (`window`, `shortcuts`…). */
     data class Internal(val command: String) : Effect
+
+    /** The mail app's compose window, filled in. Nothing is sent. */
+    data class Compose(val to: List<String>, val subject: String, val body: String) : Effect
+    /** A line for the user's notes file. */
+    data class AppendNote(val text: String) : Effect
+    /** The notes app's editor with this text. */
+    data class KeepNote(val text: String) : Effect
+    /** The calendar's editor, filled in. Times are epoch milliseconds. */
+    data class InsertEvent(val title: String, val startMillis: Long, val endMillis: Long, val allDay: Boolean, val place: String) : Effect
+    data class SetTimer(val seconds: Int, val label: String) : Effect
+    data class SetAlarm(val hour: Int, val minute: Int, val label: String) : Effect
+    /** A new file or folder in Documents. [pick]: ask where instead. */
+    data class NewFile(val name: String, val folder: Boolean, val pick: Boolean = false) : Effect
+    /** Hands text to the Gemini app, which shows it in its prompt; the user sends it there. */
+    data class AskGemini(val text: String) : Effect
+
+    data class SetVolume(val percent: Int) : Effect
+    data object ToggleMute : Effect
+    data class Media(val key: MediaKey) : Effect
+    /** "Play this" to whichever music app answers. */
+    data class PlayMusic(val query: String) : Effect
+    data class SetBrightness(val percent: Int) : Effect
+
+    /** The QR code for [text]: copied, saved to Downloads, or shared. */
+    data class QrImage(val text: String, val use: ImageUse) : Effect
+
+    /** Turns a scope's row into the chip in the field; [text] becomes its argument. */
+    data class EnterScope(val key: String, val text: String = "") : Effect
+    /** Opens the place where the user allows something, once: `brightness`, `notes`. */
+    data class Grant(val what: String) : Effect
+
+    data class SaveSnippet(val key: String, val text: String) : Effect
+    /** Removes something the user made: `snippet`, `quicklink`, `recipe`. */
+    data class Delete(val kind: String, val id: String) : Effect
+    /** Opens the editor for something the user made, or for a new one ([id] empty). */
+    data class Edit(val kind: String, val id: String) : Effect
+    /** A recipe: these, in order. */
+    data class Steps(val steps: List<Effect>) : Effect
 }
 
-/** One thing you can do with a result. The first action of a result is what Enter does. */
+/**
+ * One thing you can do with a result. A row shows all of its actions as icons; one is armed
+ * (the first, unless a typed verb armed another) and Enter runs it.
+ */
 data class Action(
     val id: String,
     val label: String,
     val effect: Effect,
-    /** Leave the panel open afterwards (copying an answer keeps it open only if this is set). */
+    /** Leave the panel open afterwards. */
     val keepOpen: Boolean = false,
+    /** The action's icon, by name (`ui/Icons.kt`). */
+    val symbol: String = id,
+    /** Removes or uninstalls: drawn last and in the error colour, never armed unless asked for by name. */
+    val danger: Boolean = false,
+    /** Needs Enter twice (deleting something the user made). */
+    val confirm: Boolean = false,
+    /** What the footer says once it is done ("Added to Notes"); null = nothing to say. */
+    val done: String? = null,
 )
+
+/** What a row shows besides, or instead of, its title. */
+sealed interface Body {
+    /** A preview of what was understood: labelled slots that fill as the argument is typed. */
+    data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null) : Body
+    /** A level from 0 to 100 (volume, brightness). [target]: a typed value, not yet set. [locked]: needs a grant first. */
+    data class Level(val percent: Int, val target: Int? = null, val muted: Boolean = false, val locked: Boolean = false) : Body
+    /** Previous, play or pause, next. */
+    data object Media : Body
+    /** A grid of characters to pick from; the arrows move between cells. */
+    data class Grid(val cells: List<Cell>, val columns: Int = 14) : Body
+    /** A QR code of [text]. */
+    data class Code(val text: String) : Body
+    /** Text shown large in the fixed-width face (a password). */
+    data class Mono(val text: String) : Body
+}
+
+enum class SlotState { TYPED, GUESSED, EMPTY }
+data class Slot(val label: String, val value: String, val state: SlotState)
+data class Cell(val glyph: String, val name: String)
+
+/** What Left and Right do on a control row, at once and without closing. */
+data class Nudge(val down: Effect, val up: Effect)
 
 data class Result(
     /** Stable across sessions (`app:pkg/cls`, `setting:wifi`…): what the ranker learns on. */
@@ -61,6 +152,10 @@ data class Result(
     val answer: String? = null,
     /** False for results that are the query itself (a sum, a web search): nothing to learn. */
     val learnable: Boolean = true,
+    /** Which action Enter runs: 0, unless a typed verb ("chrome uninstall") armed another. */
+    val armed: Int = 0,
+    val body: Body? = null,
+    val nudge: Nudge? = null,
 )
 
 /**
@@ -75,4 +170,22 @@ interface Provider {
     suspend fun query(q: Query): List<Result>
     /** What to offer before anything is typed. */
     suspend fun zeroState(): List<Result> = emptyList()
+}
+
+/**
+ * A row that takes text: a keyword search, a note, a timer. Typing one of its [keywords] and a
+ * space, or Tab on its row, makes it the chip in the field; what is typed after that is its
+ * argument, and [rows] says what the list shows for it, best first, in the scope's own order.
+ */
+interface Scope {
+    val key: String
+    val keywords: List<String>
+    /** On the chip and on its row: "YouTube", "Mail". */
+    val name: String
+    val symbol: String
+    /** The field's placeholder inside the scope: what to type. */
+    val hint: String
+    /** One line under the row's name outside the scope; null for none. */
+    val about: String? get() = null
+    suspend fun rows(arg: String): List<Result>
 }

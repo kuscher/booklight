@@ -6,6 +6,7 @@ import android.os.UserManager
 import android.util.LruCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -19,7 +20,7 @@ import kotlinx.coroutines.withContext
 /** Booklight's own symbols (24 dp, one path each), drawn in the row's colour. */
 object Symbols {
     private fun icon(name: String, path: String) = ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f)
-        .addPath(addPathNodes(path), fill = SolidColor(Color.Black)).build()
+        .addPath(addPathNodes(path), fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd).build()
 
     val search = icon("search", "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z")
     val settings = icon("settings", "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z")
@@ -29,6 +30,48 @@ object Symbols {
     /** Booklight's mark: a lamp head with its beam. */
     val booklight = icon("booklight", "M6 4h12a3 3 0 0 1 0 6H6a3 3 0 0 1 0-6zM7.2 12h9.6l3.2 8H4l3.2-8z")
     val app = icon("app", "M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z")
+    val check = icon("check", "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z")
+
+    // What a row can do: one icon per action.
+    private val more = mapOf(
+        "open" to "M14 3h7v7h-2V6.41l-8.3 8.3-1.4-1.42L17.58 5H14zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
+        "window" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4v10h16V8zm7 2h2v2h2v2h-2v2h-2v-2H9v-2h2z",
+        "info" to "M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z",
+        "left" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 2v12h8V6z",
+        "right" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v12h8V6z",
+        "store" to "M6 7V6a6 6 0 0 1 12 0v1h3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm2 0h8V6a4 4 0 0 0-8 0z",
+        "trash" to "M9 3h6l1 1h4v2H4V4h4zM6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm3.5 2.5V19H11v-8.5zm3.5 0V19h1.5v-8.5z",
+        "copy" to "M8 3h10a2 2 0 0 1 2 2v12h-2V5H8zM5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h10V9z",
+        "edit" to "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z",
+        "share" to "M18 16a3 3 0 0 0-2.4 1.2L8.9 13.3a3 3 0 0 0 0-2.6l6.7-3.9A3 3 0 1 0 15 5q0 .4.1.7L8.4 9.6a3 3 0 1 0 0 4.8l6.700 3.900q-.1.3-.1.7a3 3 0 1 0 3-3z",
+        "save" to "M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z",
+        "again" to "M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z",
+        "link" to "M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.900H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.900h4a3.1 3.1 0 0 1 0 6.200h-4V17h4a5 5 0 0 0 0-10z",
+        "play" to "M8 5v14l11-7z",
+        "pause" to "M6 5h4v14H6zm8 0h4v14h-4z",
+        "next" to "M6 18l8.5-6L6 6zM16 6h2v12h-2z",
+        "previous" to "M6 6h2v12H6zm3.5 6 8.5 6V6z",
+        "lock" to "M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 0 1 6 0v3z",
+        "mail" to "M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5z",
+        "note" to "M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9l7-7V5a2 2 0 0 0-2-2zM7 8h10v2H7zm0 4h5v2H7zm7 7.500V14h5.500z",
+        "timer" to "M15 1H9v2h6zm-4 13h2V8h-2zm8.030-6.610 1.420-1.420a11 11 0 0 0-1.410-1.410l-1.420 1.420A9 9 0 1 0 19.030 7.390zM12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14z",
+        "event" to "M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14zM7 12h5v5H7z",
+        "plus" to "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z",
+        "spark" to "M12 2l1.900 6.100L20 10l-6.100 1.900L12 18l-1.900-6.100L4 10l6.100-1.900zM19 15l.900 2.600 2.600.900-2.600.900L19 22l-.900-2.600-2.600-.900 2.600-.900z",
+        "smile" to "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm3.500 6a1.500 1.500 0 1 1 0 3 1.500 1.500 0 0 1 0-3zm-7 0a1.500 1.500 0 1 1 0 3 1.500 1.500 0 0 1 0-3zM12 17.500c-2.330 0-4.310-1.460-5.110-3.500h10.220c-.800 2.040-2.780 3.500-5.110 3.500z",
+        "qr" to "M3 11h8V3H3zm2-6h4v4H5zM3 21h8v-8H3zm2-6h4v4H5zm8-12v8h8V3zm6 6h-4V5h4zm-6 4h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2z",
+        "volume" to "M3 9v6h4l5 5V4L7 9zm13.500 3A4.500 4.500 0 0 0 14 8v8a4.500 4.500 0 0 0 2.500-4zM14 3.200v2.100a7 7 0 0 1 0 13.400v2.100a9 9 0 0 0 0-17.600z",
+        "mute" to "M3 9v6h4l5 5V4L7 9zm18.500.900-1.400-1.400L18 10.600l-2.100-2.100-1.400 1.400 2.100 2.100-2.100 2.100 1.400 1.400 2.100-2.100 2.100 2.100 1.400-1.400-2.100-2.100z",
+        "sun" to "M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM2 13h2a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2zm18 0h2a1 1 0 0 0 0-2h-2a1 1 0 0 0 0 2zM11 2v2a1 1 0 0 0 2 0V2a1 1 0 0 0-2 0zm0 18v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-2 0zM5.640 4.220 4.220 5.640l1.420 1.410 1.410-1.410zm12.720 12.730-1.410 1.410 1.410 1.420 1.420-1.420zM19.780 5.640l-1.420-1.420-1.410 1.420 1.410 1.410zM7.050 18.360l-1.410-1.410-1.420 1.410 1.420 1.420z",
+        "moon" to "M12 3a9 9 0 1 0 9 9c0-.460-.040-.920-.100-1.360a5.400 5.400 0 0 1-7.540-7.540A9 9 0 0 0 12 3z",
+        "key" to "M12.650 10A6 6 0 1 0 12.650 14H17v4h4v-4h2v-4zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z",
+        "clip" to "M16 3h-2.200a2 2 0 0 0-3.600 0H8a2 2 0 0 0-2 2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1a2 2 0 0 0-2-2zM8 5h8v3H8zM5 7h1v3h12V7h1v12H5z",
+        "bolt" to "M11 21h-1l1-7H7.500c-.600 0-.600-.300-.400-.700L13 3h1l-1 7h3.500c.500 0 .600.300.400.700z",
+        "text" to "M5 4h14v3h-2V6h-4v12h2v2H9v-2h2V6H7v1H5z",
+        "full" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+        "folder" to "M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z",
+        "music" to "M12 3v10.550A4 4 0 1 0 14 17V7h4V3z",
+    ).mapValues { (k, v) -> icon(k, v) }
 
     fun of(name: String): ImageVector = when (name) {
         "search" -> search
@@ -36,7 +79,9 @@ object Symbols {
         "globe" -> globe
         "calc" -> calc
         "booklight" -> booklight
-        else -> app
+        "enter" -> enter
+        "check" -> check
+        else -> more[name] ?: app
     }
 }
 

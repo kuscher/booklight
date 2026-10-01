@@ -13,7 +13,6 @@ import io.github.kuscher.booklight.core.Provider
 import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.SearchEngine
-import io.github.kuscher.booklight.core.Sites
 import io.github.kuscher.booklight.core.Web
 import io.github.kuscher.booklight.data.Prefs
 
@@ -90,8 +89,8 @@ class CommandsProvider(private val context: Context) : Provider {
 }
 
 /**
- * The way out to the web. A typed address opens in the browser; a keyword search (`yt lofi`)
- * searches that site; and anything typed can be searched for with the chosen engine. Choosing
+ * The way out to the web. A typed address opens in the browser, and anything typed can be searched
+ * for with the chosen engine (keyword searches like `yt lofi` are scopes: `scopes/Scopes.kt`). Choosing
  * one of these rows hands the text to the browser. (Suggestions while typing are a separate,
  * opt-in thing: `SuggestProvider`.)
  */
@@ -100,32 +99,31 @@ class WebProvider(private val context: Context, private val prefs: Prefs) : Prov
 
     override suspend fun query(q: Query): List<Result> {
         val t = q.text
-        val s = prefs.now
         val out = ArrayList<Result>(3)
-        Sites.parse(t, s.sites())?.let { (site, rest) ->
-            out.add(Result(
-                id = "web:site:${site.keyword}", provider = id, kind = Kind.WEB,
-                title = context.getString(R.string.web_search_title, site.name, rest),
-                icon = Icon.Symbol("search"), score = SearchEngine.URL_SCORE + 0.08, learnable = false,
-                actions = listOf(Action("search", context.getString(R.string.action_search_engine, site.name), Effect.OpenUrl(site.search(rest)))),
-            ))
-        }
         Web.url(t)?.let { u ->
             out.add(Result(
                 id = "web:url", provider = id, kind = Kind.WEB, title = t, subtitle = context.getString(R.string.action_open_link),
                 icon = Icon.Symbol("globe"), score = SearchEngine.URL_SCORE + 0.05, learnable = false,
                 actions = listOf(
                     Action("open", context.getString(R.string.action_open_link), Effect.OpenUrl(u)),
-                    Action("copy", context.getString(R.string.action_copy), Effect.CopyText(u)),
+                    Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(u)),
                 ),
             ))
         }
-        val engine = s.engine()
-        out.add(Result(
-            id = "web:search", provider = id, kind = Kind.WEB, title = context.getString(R.string.web_search_title, engine.name, t),
-            icon = Icon.Symbol("search"), score = 0.1, learnable = false,
-            actions = listOf(Action("search", context.getString(R.string.action_search_engine, engine.name), Effect.OpenUrl(engine.search(t)))),
-        ))
+        out.add(search(t))
         return out
+    }
+
+    /** "Search Google for …": the last row of every list, and of every scope for its keyword and text together. */
+    fun search(text: String): Result {
+        val engine = prefs.now.engine()
+        return Result(
+            id = "web:search", provider = id, kind = Kind.WEB, title = context.getString(R.string.web_search_title, engine.name, text),
+            icon = Icon.Symbol("search"), score = 0.1, learnable = false,
+            actions = listOf(
+                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(engine.search(text))),
+                Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(engine.search(text))),
+            ),
+        )
     }
 }

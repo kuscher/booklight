@@ -34,7 +34,8 @@ object Sites {
         Site("w", "Wikipedia", "https://en.wikipedia.org/w/index.php?search=%s"),
         Site("maps", "Maps", "https://www.google.com/maps/search/%s"),
         Site("gh", "GitHub", "https://github.com/search?q=%s"),
-        Site("play", "Play Store", "https://play.google.com/store/search?c=apps&q=%s"),
+        Site("store", "Play Store", "https://play.google.com/store/search?c=apps&q=%s"),
+        Site("drive", "Drive", "https://drive.google.com/drive/search?q=%s"),
     )
 
     /**

@@ -74,4 +74,20 @@ The system needs the Action key in every shortcut. Action + Alt + Space and Acti
     <string name="set_glass_frosted">Frosted</string>
     <string name="set_glass_text">How much of your desktop shows through the panel. Clear shows the most; Frosted is the easiest to read over busy windows.</string>
     <string name="set_privacy_policy">Privacy policy</string>
+    <string name="action_search">Search</string>
+    <string name="action_copy_link">Copy link</string>
+    <string name="scope_search">Search…</string>
+    <string name="scope_type">Type…</string>
+    <string name="scope_site_hint">Search %1$s</string>
+    <string name="level_muted">Muted</string>
+    <string name="level_percent">%1$d %%</string>
+    <string name="confirm_again">Press again to delete</string>
+    <string name="hint_move">Move</string>
+    <string name="hint_adjust">Adjust</string>
+    <string name="hint_fill">Fill in</string>
+    <string name="hint_leave">Leave</string>
+    <string name="hint_cancel">Cancel</string>
+    <string name="a11y_leave_scope">Leave %1$s</string>
+    <string name="done_note">Added to Notes</string>
+    <string name="failed_note">Couldn’t add the note</string>
 </resources>

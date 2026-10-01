@@ -72,4 +72,20 @@ Das System verlangt in jedem Kürzel die Aktionstaste. Aktion + Alt + Leertaste 
     <string name="set_glass_frosted">Milchig</string>
     <string name="set_glass_text">Wie viel von deinem Desktop durch das Fenster scheint. „Klar“ zeigt am meisten, „Milchig“ liest sich über unruhigen Fenstern am besten.</string>
     <string name="set_privacy_policy">Datenschutzerklärung</string>
+    <string name="action_search">Suchen</string>
+    <string name="action_copy_link">Link kopieren</string>
+    <string name="scope_search">Suchen …</string>
+    <string name="scope_type">Eingeben …</string>
+    <string name="scope_site_hint">%1$s durchsuchen</string>
+    <string name="level_muted">Stumm</string>
+    <string name="level_percent">%1$d %%</string>
+    <string name="confirm_again">Zum Löschen nochmal drücken</string>
+    <string name="hint_move">Bewegen</string>
+    <string name="hint_adjust">Ändern</string>
+    <string name="hint_fill">Ausfüllen</string>
+    <string name="hint_leave">Verlassen</string>
+    <string name="hint_cancel">Abbrechen</string>
+    <string name="a11y_leave_scope">%1$s verlassen</string>
+    <string name="done_note">Zu den Notizen hinzugefügt</string>
+    <string name="failed_note">Notiz ließ sich nicht hinzufügen</string>
 </resources>

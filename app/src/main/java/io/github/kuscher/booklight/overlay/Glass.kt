@@ -42,7 +42,7 @@ object Look {
  * near-black in dark: the most contrast for the least tint), two flat rings at the edge (a black
  * hairline that holds the edge on a white page, then the white outline, even all the way round),
  * and fine grain so the blur doesn't band. Nothing is modelled in 3D: no bevel, no
- * highlights on the surface. On arrival one gleam runs along the outline and splits into the
+ * highlights on the surface. On arrival one light runs once around the outline and splits into the
  * device's colours, like light through the edge of a pane. Android blurs what is behind a window
  * but doesn't let an app bend it, so the see-through look comes from the veil and blur amounts.
  */
@@ -53,7 +53,8 @@ uniform float density;    // px per dp
 uniform float4 tint;      // straight rgb, alpha
 uniform float3 cLead;     // the gleam's leading colour
 uniform float3 cTail;     // and its trailing one
-uniform float sweep;      // the gleam's position along x + 0.6 y, in px
+uniform float run;        // the light's head: how far it has come round the outline, in px, clockwise from the top's middle
+uniform float glow;       // how bright the light is, 0..1
 uniform float dark;       // 0 light theme, 1 dark
 uniform float solid;      // 1: no blur behind, so stay opaque
 
@@ -81,11 +82,20 @@ half4 main(float2 xy) {
     float w = 1.25 * density;
     float line = smoothstep(0.6, 1.2, depth) * (1.0 - smoothstep(1.0 + w - 0.5, 1.0 + w + 0.5, depth));
     float base = mix(0.80, 0.44, dark);       // the same all the way round: no light from above
-    // The arrival gleam lives only in this line: white at its core, the device's colours at its edges.
-    float t = (xy.x + 0.6 * xy.y - sweep) / (110.0 * density / 1.125);
-    float core = exp(-t * t);
-    float lead = exp(-(t - 0.9) * (t - 0.9));
-    float tail = exp(-(t + 0.9) * (t + 0.9));
+    // The arrival light lives only in this line: white at its core, the device's colours ahead and behind.
+    // Where this pixel is along the outline, measured the way the light travels.
+    float2 p = xy - size * 0.5;
+    float2 h = size * 0.5;
+    float2 e = abs(p) - h;
+    float s = e.x > e.y
+        ? (p.x > 0.0 ? size.x + p.y + h.y : 2.0 * size.x + size.y + h.y - p.y)
+        : (p.y < 0.0 ? p.x + h.x : size.x + size.y + h.x - p.x);
+    float around = 2.0 * (size.x + size.y);
+    s = mod(s - h.x + around, around);
+    float t = (run - s) / (120.0 * density);
+    float core = glow * exp(-t * t);
+    float lead = glow * exp(-(t + 0.9) * (t + 0.9));
+    float tail = glow * exp(-(t - 0.9) * (t - 0.9));
     float3 lineCol = (float3(1.0) * (base + core) + cLead * lead + cTail * tail) / (base + core + lead + tail);
     float la = line * clamp(base + 0.35 * core + 0.30 * (lead + tail), 0.0, 1.0);
     pm = mix(pm, lineCol, la);
@@ -95,19 +105,23 @@ half4 main(float2 xy) {
 }
 """
 
-/** Draws the glass behind the content. [sweep] runs from before the left edge to past the right one as the panel arrives. */
-fun Modifier.glass(tint: Color, lead: Color, tail: Color, radiusPx: Float, density: Float, sweep: () -> Float, dark: Boolean, solid: Boolean): Modifier = composed {
+/**
+ * Draws the glass behind the content. [run] is how far round the outline the arrival light has come, 0 to 1
+ * (and a little beyond, so its tail leaves too); [glow] its brightness.
+ */
+fun Modifier.glass(tint: Color, lead: Color, tail: Color, radiusPx: Float, density: Float, run: () -> Float, glow: () -> Float, dark: Boolean, solid: Boolean): Modifier = composed {
     val shader = remember { RuntimeShader(GLASS) }
     drawWithCache {
         val brush = ShaderBrush(shader)
         onDrawBehind {
             shader.setFloatUniform("size", size.width, size.height)
-            shader.setFloatUniform("radius", radiusPx)
+            shader.setFloatUniform("radius", minOf(radiusPx, size.width / 2f, size.height / 2f))
             shader.setFloatUniform("density", density)
             shader.setFloatUniform("tint", tint.red, tint.green, tint.blue, tint.alpha)
             shader.setFloatUniform("cLead", lead.red, lead.green, lead.blue)
             shader.setFloatUniform("cTail", tail.red, tail.green, tail.blue)
-            shader.setFloatUniform("sweep", sweep())
+            shader.setFloatUniform("run", run() * 2f * (size.width + size.height))
+            shader.setFloatUniform("glow", glow())
             shader.setFloatUniform("dark", if (dark) 1f else 0f)
             shader.setFloatUniform("solid", if (solid) 1f else 0f)
             drawRect(brush)
