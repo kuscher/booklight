@@ -33,7 +33,9 @@ class Notes(private val context: Context, private val prefs: Prefs) {
             val file = find(tree) ?: DocumentsContract.createDocument(context.contentResolver,
                 DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree)), "text/markdown", NAME) ?: return false
             val lines = text.trim().lines()
-            val entry = "- ${now.format(STAMP)}  ${lines.first()}\n" + lines.drop(1).joinToString("") { "  $it\n" }
+            // If the file's last line was left without a line break (edited by hand), start a new one first.
+            val open = context.contentResolver.openInputStream(file)?.use { it.readBytes() }?.let { it.isNotEmpty() && it.last() != '\n'.code.toByte() } ?: false
+            val entry = (if (open) "\n" else "") + "- ${now.format(STAMP)}  ${lines.first()}\n" + lines.drop(1).joinToString("") { "  $it\n" }
             context.contentResolver.openOutputStream(file, "wa")?.use { it.write(entry.toByteArray()) } ?: return false
             true
         } catch (e: Exception) {

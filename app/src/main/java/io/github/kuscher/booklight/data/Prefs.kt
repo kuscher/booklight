@@ -85,16 +85,23 @@ class Prefs(context: Context, private val scope: CoroutineScope) {
     private fun load(): Settings = try {
         if (file.exists()) migrate(json.decodeFromString(Settings.serializer(), file.readText())) else Settings(schema = SCHEMA)
     } catch (e: Exception) {
-        Log.w(BooklightApp.TAG, "settings unreadable, using defaults", e)
+        // The file holds what the user made (links, snippets, recipes): put it aside rather than write over it.
+        // Only the kind of error is logged: the message of a parse error quotes the file.
+        Log.w(BooklightApp.TAG, "settings unreadable (${e.javaClass.simpleName}); kept as settings.json.bad, using defaults")
+        runCatching { file.copyTo(File(file.parentFile, file.name + ".bad"), overwrite = true) }
         Settings(schema = SCHEMA)
     }
 
-    /** A 1.0 file: `play` used to search the Play Store; it plays music now and `store` searches the store. New defaults are added. */
+    /**
+     * A 1.0 file: `play` used to search the Play Store; it plays music now and `store` searches the store
+     * (unless the user already has a `store` of their own). The one default that is new in 1.1, `drive`, is
+     * added; defaults the user had removed stay removed.
+     */
     private fun migrate(s: Settings): Settings {
         if (s.schema >= SCHEMA) return s
-        val renamed = s.sites.map { if (it.keyword == "play" && it.url.contains("play.google.com")) it.copy(keyword = "store") else it }
-        val have = renamed.mapTo(HashSet()) { it.keyword }
-        val added = Sites.defaults.filter { it.keyword !in have }.map { SiteEntry(it.keyword, it.name, it.url) }
+        val free = s.sites.none { it.keyword == "store" }
+        val renamed = s.sites.map { if (free && it.keyword == "play" && it.url.contains("play.google.com")) it.copy(keyword = "store") else it }
+        val added = Sites.defaults.filter { it.keyword == "drive" && renamed.none { r -> r.keyword == "drive" } }.map { SiteEntry(it.keyword, it.name, it.url) }
         return s.copy(sites = renamed + added, schema = SCHEMA)
     }
 

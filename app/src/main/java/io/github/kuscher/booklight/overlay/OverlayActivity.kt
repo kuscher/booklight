@@ -62,6 +62,8 @@ class OverlayActivity : ComponentActivity() {
     private var flashJob: Job? = null
     /** Something was run: what was typed need not be kept for next time. */
     private var ran = false
+    /** Something ran and the panel is only waiting to close: a second Enter in that moment must not run it again. */
+    private var settled = false
     /** This start was a click on the icon: there is no panel, only a hand-over to the Booklight window. */
     private var handedOver = false
 
@@ -225,10 +227,11 @@ class OverlayActivity : ComponentActivity() {
 
     /** Runs an action of a row. [keep]: Shift was held, so the panel stays whatever the action says. */
     fun run(r: Result, a: Action, keep: Boolean = false) {
-        if (leaving) return   // a second Enter or click while the panel is on its way out
+        if (leaving || settled) return   // a second Enter or click while the panel is on its way out
         val app = application as BooklightApp
         if (!app.executor.run(a.effect, this)) { say(getString(R.string.failed), bad = true); return }
-        ran = true
+        // Asking for a grant runs nothing yet: what was typed (the first note) is kept, in case the picker is cancelled.
+        ran = a.effect !is Effect.Grant
         model.learn(r)
         // An emoji that was picked comes first next time.
         if (r.body is Body.Grid && r.provider == "emoji") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(emojiRecent = (listOf(c.text) + (it.emojiRecent - c.text)).take(14)) } }
@@ -237,8 +240,8 @@ class OverlayActivity : ComponentActivity() {
         when {
             a.keepOpen || keep -> model.refresh()
             // Long enough to read the word, or to see a level arrive, then away.
-            word != null -> lifecycleScope.launch { delay(520); close() }
-            r.nudge != null -> { model.refresh(); lifecycleScope.launch { delay(400); close() } }
+            word != null -> { settled = true; lifecycleScope.launch { delay(520); close() } }
+            r.nudge != null -> { settled = true; model.refresh(); lifecycleScope.launch { delay(400); close() } }
             else -> close()
         }
     }
@@ -281,7 +284,7 @@ class OverlayActivity : ComponentActivity() {
         super.onStop()
         if (handedOver) return
         // Covered or sent away without a close (a new desk, the lock screen): don't come back half open.
-        if (!stay) finishNow()
+        if (!stay) { if (!ran && !leaving) model.keep(); finishNow() }
     }
 
     override fun onDestroy() {

@@ -55,6 +55,12 @@ class OverlayModel(
     var lastSearchMicros by mutableLongStateOf(0); private set
     var settings by mutableStateOf(app.prefs.now); private set
 
+    /** The word that was typed to make the chip ("meeting" for the event scope); null if its row was used. */
+    private var word: String? = null
+    /** A keyword the user turned back into plain text: it stays plain text until the field has been emptied. */
+    private var held: String? = null
+    /** The chip's text came from another app (through that app's chip): it is never kept after the panel closes. */
+    private var foreign = false
     private var job: Job? = null
     private var confirmJob: Job? = null
     private var confirmAt = 0L
@@ -81,30 +87,42 @@ class OverlayModel(
     /** The rest of the selected row's name, shown grey after the typed text ("chr" + "ome"). */
     val completion: String? by derivedStateOf {
         val r = current
-        if (chip != null || r == null || r.answer != null || r.body != null || r.kind == Kind.WEB || r.kind == Kind.SUGGESTION || r.kind == Kind.SCOPE) null
+        if (chip != null || r == null || r.answer != null || r.body != null || r.nudge != null || r.kind == Kind.WEB || r.kind == Kind.SUGGESTION || r.kind == Kind.SCOPE) null
         else Matcher.completion(query, r.title)
     }
 
     fun type(text: String) {
         if (text == query) return
-        // A keyword and a space at the start of the field: the keyword becomes the chip.
-        if (chip == null) app.engine.scopeFor(text)?.let { (s, rest) -> enterScope(s, rest); return }
+        foreign = false                     // edited: it is the user's own text now
+        if (chip == null) {
+            if (text.isEmpty()) held = null
+            // A keyword and a space at the start of the field: the keyword becomes the chip. Not if the user
+            // has just turned that very keyword back into text: then it is a word ("new york weather").
+            app.engine.scopeFor(text)?.takeIf { !it.word.equals(held, ignoreCase = true) }?.let { enterScope(it.scope, it.text, it.word); return }
+        }
         query = text
         search()
     }
 
-    /** Makes [s] the chip; [text] is what is already typed for it. */
-    fun enterScope(s: Scope, text: String = "") {
+    /** Makes [s] the chip; [text] is what is already typed for it, [word] the keyword that was typed, if one was. */
+    fun enterScope(s: Scope, text: String = "", word: String? = null) {
         chip = s
+        this.word = word
         query = text
         search()
     }
 
-    /** Backspace on an empty argument, or a click on the chip: the chip turns back into its keyword as text. */
-    fun leaveScope(): Boolean {
+    /**
+     * Backspace on an empty argument, or a click on the chip: the chip turns back into text, the word that
+     * was typed for it (or the scope's own first keyword). [withText]: what was typed after it comes along.
+     * Text another app handed over has no keyword: its chip just goes.
+     */
+    fun leaveScope(withText: Boolean = false): Boolean {
         val s = chip ?: return false
-        chip = null
-        query = s.keywords.firstOrNull() ?: s.key
+        val w = word ?: s.keywords.firstOrNull()
+        chip = null; word = null; foreign = false
+        held = w
+        query = when { w == null -> ""; withText && query.isNotEmpty() -> "$w $query"; else -> w }
         search()
         return true
     }
@@ -117,7 +135,7 @@ class OverlayModel(
         if (key == null && text.isBlank()) { results = emptyList(); selected = 0; armed = 0; cell = 0; resultsFor = null to text; whenReady = null; return }
         job = scope.launch(Dispatchers.Default) {
             val t0 = System.nanoTime()
-            val local = app.engine.search(Query(text, key), limit)
+            val local = app.engine.search(Query(text, key, word), limit)
             val took = (System.nanoTime() - t0) / 1000
             withContext(Dispatchers.Main.immediate) {
                 val was = current?.id
@@ -180,6 +198,8 @@ class OverlayModel(
     fun moveCell(dx: Int, dy: Int): Boolean {
         val g = current?.body as? Body.Grid ?: return false
         val n = minOf(g.cells.size, g.columns * 5)
+        // At the start of a line Left is the caret's: the text can still be edited by key.
+        if (dx < 0 && cell % g.columns == 0) return false
         val to = cell + dx + dy * g.columns
         if (to in 0 until n) { cell = to; return true }
         return dy == 0     // sideways the grid keeps the key; up or down past its edge belongs to the list
@@ -196,7 +216,7 @@ class OverlayModel(
         val a = r.actions.getOrNull(armed) ?: r.actions.firstOrNull() ?: return null
         val g = r.body as? Body.Grid ?: return r to a
         val c = g.cells.getOrNull(cell) ?: return null
-        return r to a.copy(effect = Effect.CopyText(if (a.id == "name") c.name else c.glyph), done = a.done?.let { "$it ${c.glyph}" })
+        return r to a.copy(effect = Effect.CopyText(c.glyph), done = a.done?.let { "$it ${c.glyph}" })
     }
 
     /**
@@ -218,7 +238,32 @@ class OverlayModel(
             cancelConfirm()
         }
         // A scope's own row: its keyword becomes the chip.
-        (a.effect as? Effect.EnterScope)?.let { e -> app.engine.scope(e.key)?.let { enterScope(it, e.text) }; return }
+        (a.effect as? Effect.EnterScope)?.let { into(it); return }
+        run(r, a)
+    }
+
+    private fun into(e: Effect.EnterScope) {
+        val from = chip
+        app.engine.scope(e.key)?.let { enterScope(it, e.text); if (from != null && from.keywords.isEmpty()) foreign = true }
+    }
+
+    /**
+     * Tab or Right on a scope's row: type into it. Only for the list that is on screen: if the rows for the
+     * current text are still on their way, nothing happens (an arrow key must never run a row nobody has seen).
+     */
+    fun fill(): Boolean {
+        if (resultsFor != (chip?.key to query)) return false
+        val e = chosen()?.second?.effect as? Effect.EnterScope ?: return false
+        into(e)
+        return true
+    }
+
+    /** Ctrl + a digit: that row's first action, straight away. Never one that removes something, and only for rows on screen. */
+    fun runRow(n: Int, run: (Result, Action) -> Unit) {
+        if (resultsFor != (chip?.key to query)) return
+        val r = results.getOrNull(n)?.takeIf { it.body !is Body.Grid } ?: return
+        val a = r.actions.firstOrNull()?.takeIf { !it.danger && !it.confirm } ?: return
+        (a.effect as? Effect.EnterScope)?.let { into(it); return }
         run(r, a)
     }
 
@@ -249,8 +294,8 @@ class OverlayModel(
 
     /** The panel is closing without having run anything: keep what was typed for [restoreLast]. */
     fun keep() {
-        // Text another app handed over is never kept: its chip has no keyword to come back by.
-        if (query.isNotBlank() && chip?.keywords?.isEmpty() != true) app.lastText = chip?.key to query
+        // Text another app handed over is never kept, in its own chip or once it has moved into a note or a code.
+        if (query.isNotBlank() && !foreign && chip?.keywords?.isEmpty() != true) app.lastText = chip?.key to query
     }
 
     /** Remember the pick, so the same text finds it first next time. */

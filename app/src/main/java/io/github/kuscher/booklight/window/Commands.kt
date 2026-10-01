@@ -74,7 +74,9 @@ import kotlinx.coroutines.withContext
 fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, String>?, onEdited: () -> Unit, onTyping: (Boolean) -> Unit) {
     /** What is being edited: its kind and its id; an empty id is a new one. */
     var open by remember { mutableStateOf<Pair<String, String>?>(null) }
-    LaunchedEffect(edit) { if (edit != null) { open = edit; page.selected = "${edit.first}:${edit.second}"; onEdited() } }
+    LaunchedEffect(edit) { if (edit != null) { open = edit; page.selected = "${edit.first}:${edit.second}"; delay(1600); onEdited() } }
+    // A link can't have a keyword one of Booklight's own scopes answers to: it would never be reached.
+    val taken = s.sites.map { it.keyword.lowercase() }.toSet() + app.scopes.reserved
     fun close() { open = null; onTyping(false) }
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
 
@@ -86,14 +88,14 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
                 Cap(link.keyword, it)
             }
             Editor(open == ("quicklink" to link.keyword)) {
-                LinkEditor(link, s.sites.map { it.keyword.lowercase() }.toSet(), onTyping,
+                LinkEditor(link, taken, onTyping,
                     onSave = { new -> set { st -> st.copy(sites = st.sites.map { if (it.keyword == link.keyword) new else it }) }; close() },
                     onDelete = { set { st -> st.copy(sites = st.sites.filter { it.keyword != link.keyword }) }; close() }, onClose = ::close)
             }
         }
         Add(page, "quicklink:", stringResource(R.string.win_link_add)) { open = "quicklink" to "" }
         Editor(open == ("quicklink" to "")) {
-            LinkEditor(null, s.sites.map { it.keyword.lowercase() }.toSet(), onTyping, onSave = { new -> set { it.copy(sites = it.sites + new) }; close() }, onDelete = null, onClose = ::close)
+            LinkEditor(null, taken, onTyping, onSave = { new -> set { it.copy(sites = it.sites + new) }; close() }, onDelete = null, onClose = ::close)
         }
 
         Label(stringResource(R.string.snip_name))
@@ -209,7 +211,7 @@ private fun LinkEditor(initial: SiteEntry?, taken: Set<String>, onTyping: (Boole
     Text(stringResource(R.string.win_link_help), color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECOND), style = SMALL.copy(lineHeight = 18.sp))
     // A link needs a keyword nobody else has, a name, and an address.
     val ok = keyword.isNotEmpty() && ' ' !in keyword && (keyword.lowercase() !in taken || keyword.equals(initial?.keyword, ignoreCase = true)) && name.isNotBlank() &&
-        (url.startsWith("https://") || url.startsWith("http://") || url.startsWith("intent:")) && url.length > 10
+        (url.startsWith("https://") || url.startsWith("http://")) && url.length > 10
     Buttons(ok, { onSave(SiteEntry(keyword, name.trim(), url)) }, onDelete, onClose)
 }
 
@@ -241,7 +243,7 @@ private fun RecipeEditor(app: BooklightApp, initial: RecipeEntry?, onTyping: (Bo
         delay(120)
         found = if (find.isBlank()) emptyList() else withContext(Dispatchers.Default) {
             val scoped = app.engine.scopeFor(find)
-            val rows = if (scoped != null) app.engine.search(Query(scoped.second, scoped.first.key), 6) else app.engine.search(Query(find), 6)
+            val rows = if (scoped != null) app.engine.search(Query(scoped.text, scoped.scope.key, scoped.word), 6) else app.engine.search(Query(find), 6)
             rows.filter { r -> r.actions.any { Recipes.step(it.effect, "") != null } }.take(4)
         }
     }

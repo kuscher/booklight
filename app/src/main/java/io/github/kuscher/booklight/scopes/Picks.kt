@@ -19,6 +19,7 @@ import io.github.kuscher.booklight.core.Scope
 import io.github.kuscher.booklight.core.Slot
 import io.github.kuscher.booklight.core.SlotState
 import io.github.kuscher.booklight.data.Prefs
+import io.github.kuscher.booklight.overlay.qr
 import io.github.kuscher.booklight.providers.Answers
 
 /** What the clipboard holds as plain text, or null. Readable only while one of Booklight's windows has focus, which the panel has. */
@@ -78,7 +79,11 @@ class QrScope(private val context: Context) : Scope {
 
     override suspend fun rows(arg: String): List<Result> {
         val text = arg.trim()
-        if (text.isEmpty() || text.length > 1200) return emptyList()
+        if (text.isEmpty()) return emptyList()
+        // A code holds bytes, not characters: whether it fits is asked of the encoder, not guessed from the length.
+        if (text.length > 2000 || qr(text) == null) return listOf(Result(
+            id = "pick:qr:long", provider = key, kind = Kind.OTHER, title = context.getString(R.string.qr_too_long), icon = Icon.Symbol("qr"), score = 1.0, learnable = false, actions = emptyList(),
+        ))
         return listOf(Result(
             id = "pick:qr", provider = key, kind = Kind.OTHER, title = text, subtitle = context.getString(R.string.qr_sub, text.codePointCount(0, text.length)),
             icon = Icon.Symbol("qr"), score = 1.0, learnable = false, body = Body.Code(text),
@@ -175,10 +180,12 @@ class TextScope(private val context: Context, private val fixed: String?, privat
         val names = mapOf("upper" to R.string.clip_upper, "lower" to R.string.clip_lower, "title" to R.string.clip_title, "line" to R.string.clip_line, "count" to R.string.clip_count, "url" to R.string.clip_url)
         val copy = context.getString(R.string.action_copy)
         val rows = ArrayList<Result>()
-        rows += web(one)
-        rows += gemini(context, text, 1.0)
+        // Text another app sent is something to look up: the ways out come first. The clipboard may hold anything
+        // (a password): there the rows that stay on the device come first and the ways out last.
+        val out = listOf(web(one), gemini(context, text, 1.0))
+        if (fixed != null) rows += out
         rows += row("note", context.getString(R.string.note_name), "note", one, Action("note", context.getString(R.string.scope_type), Effect.EnterScope("note", one), keepOpen = true, symbol = "edit"))
-        rows += row("mail", context.getString(R.string.mail_name), "mail", one, Action("compose", context.getString(R.string.action_compose), Effect.Compose(emptyList(), "", text), symbol = "mail"))
+        rows += row("mail", context.getString(R.string.mail_name), "mail", one, Action("compose", context.getString(R.string.action_compose), Effect.Compose(emptyList(), "", text), symbol = "edit"))
         if (one.length <= 1200) rows += row("qr", context.getString(R.string.qr_name), "qr", one, Action("qr", context.getString(R.string.scope_type), Effect.EnterScope("qr", one), keepOpen = true, symbol = "qr"))
         for (t in Clip.transforms(text)) {
             val label = context.getString(names[t.id] ?: continue)
@@ -187,6 +194,7 @@ class TextScope(private val context: Context, private val fixed: String?, privat
                 rows += row("count", context.getString(R.string.clip_counted, words, chars), "text", label, Action("copy", copy, Effect.CopyText(t.value.replace(' ', '\t'))))
             } else rows += row(t.id, t.value.trim().replace('\n', ' '), "text", label, Action("copy", copy, Effect.CopyText(t.value)))
         }
+        if (fixed == null) rows += out
         val filter = arg.trim()
         return if (filter.isEmpty()) rows else rows.filter { r -> Matcher.score(filter, r.subtitle ?: "") > 0 || Matcher.score(filter, r.title) > 0 }
     }

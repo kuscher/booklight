@@ -10,13 +10,13 @@ import java.time.YearMonth
 
 internal sealed interface Day {
     class On(val date: LocalDate) : Day
-    /** A weekday. [weak]: a short form that is an ordinary word too ("do", "so", "we"); it needs a time beside it. */
+    /** A weekday. [weak]: a two-letter form, which is often an ordinary word or a name too ("do", "so", "Mo", "Di"); it needs a time beside it. */
     class Every(val day: DayOfWeek, val weak: Boolean) : Day
 }
 
 internal object Days {
     private val WORDS = mapOf("today" to 0, "heute" to 0, "tomorrow" to 1, "morgen" to 1, "ubermorgen" to 2, "uebermorgen" to 2)
-    private val WEAK = setOf("do", "so", "we")
+    private val WEAK = setOf("mo", "tu", "we", "th", "fr", "sa", "su", "di", "mi", "do", "so")
     private val WEEKDAYS: Map<String, DayOfWeek> = names(
         "monday mon mo montag", "tuesday tue tues tu dienstag di", "wednesday wed weds we mittwoch mi",
         "thursday thu thur thurs th donnerstag do", "friday fri fr freitag", "saturday sat sa samstag sonnabend",

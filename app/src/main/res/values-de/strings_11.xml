@@ -87,7 +87,7 @@
     <string name="ask_hint">Deine Frage</string>
     <string name="ask_about">Öffnet Gemini mit deinem Text</string>
     <string name="gemini_title">Gemini fragen</string>
-    <string name="emoji_keys">emoji,e</string>
+    <string name="emoji_keys">emoji</string>
     <string name="emoji_name">Emoji</string>
     <string name="emoji_hint">Emoji-Name</string>
     <string name="emoji_about">Eins aussuchen und kopieren</string>
@@ -103,7 +103,7 @@
     <string name="color_name">Farbe</string>
     <string name="color_hint">Farbwert</string>
     <string name="color_about">Eine Farbe in HEX, RGB, HSL und OKLCH</string>
-    <string name="password_keys">password,pw,pass,passwort,kennwort</string>
+    <string name="password_keys">password,pw,passwort,kennwort</string>
     <string name="password_sub">Passwort · %1$d Zeichen</string>
     <string name="snip_keys">snip,snippet,baustein</string>
     <string name="snip_add_keys">add,new,neu</string>
@@ -187,4 +187,5 @@
     <string name="win_recipe_step_hint">eine App, ein Link, eine Einstellung, vol 30</string>
     <string name="new_caption_online">Öffnet ein neues in Google Drive</string>
     <string name="new_caption_folder">Wird in Dokumente erstellt</string>
+    <string name="qr_too_long">Zu lang für einen QR-Code</string>
 </resources>

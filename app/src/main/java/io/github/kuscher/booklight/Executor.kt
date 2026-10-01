@@ -39,9 +39,10 @@ import io.github.kuscher.booklight.window.MainActivity
  * couldn't (the app was removed a moment ago, no browser, nothing to play…), so the panel can
  * stay open and say so.
  *
- * Everything here either opens a window the user sees (a compose window, the calendar's editor,
- * Android's own "uninstall?" dialog), copies to the clipboard, or changes something the user can
- * see and undo at once (the volume). Nothing is sent anywhere.
+ * Most effects open a window the user sees (a compose window, the calendar's editor, Android's own
+ * "uninstall?" dialog) or copy to the clipboard. A few act at once and say so in the panel's footer:
+ * a note is added, a file made, a timer or alarm set, a level changed, a snippet saved or deleted.
+ * Nothing is sent anywhere.
  */
 class Executor(private val context: Context) {
     private val app get() = context.applicationContext as BooklightApp
@@ -73,7 +74,6 @@ class Executor(private val context: Context) {
             is Effect.Uninstall -> start(Intent(Intent.ACTION_DELETE, Uri.fromParts("package", effect.packageName, null)).putExtra(Intent.EXTRA_USER, user(effect.user)))
             is Effect.OpenUrl -> start(Intent(Intent.ACTION_VIEW, effect.url.toUri()))
             is Effect.CopyText -> copy(effect.text, effect.sensitive)
-            is Effect.ShareText -> start(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, effect.text), null))
             is Effect.OpenSettings -> start(Intent(effect.action))
             is Effect.Internal -> when (effect.command) {
                 "settings", "window" -> start(Intent(context, MainActivity::class.java))
@@ -170,8 +170,7 @@ class Executor(private val context: Context) {
         val r = Rect(metrics.bounds).apply { left += bars.left; top += bars.top; right -= bars.right; bottom -= bars.bottom }
         return when (p) {
             Place.LEFT -> Rect(r.left, r.top, r.centerX(), r.bottom)
-            Place.RIGHT -> Rect(r.centerX(), r.top, r.right, r.bottom)
-            else -> r
+            else -> Rect(r.centerX(), r.top, r.right, r.bottom)
         }
     }
 

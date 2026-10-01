@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        take(intent)
+        if (savedInstanceState == null) take(intent)     // not again when the window is only rebuilt
         val app = application as BooklightApp
         val motion = Motion.of(this)
         setContent {
@@ -156,12 +156,13 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
             .focusRequester(focus).focusable()
             .onPreviewKeyEvent { e ->
                 if (typing || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                val again = e.nativeKeyEvent.repeatCount > 0     // a held key runs a row once
                 when (e.key) {
                     Key.DirectionDown -> { page.move(1)?.let(::reveal); true }
                     Key.DirectionUp -> { page.move(-1)?.let(::reveal); true }
                     Key.DirectionLeft -> page.current?.step?.let { it(-1); true } ?: false
                     Key.DirectionRight -> page.current?.step?.let { it(1); true } ?: false
-                    Key.Enter, Key.NumPadEnter, Key.Spacebar -> page.current?.let { it.enter(); true } ?: false
+                    Key.Enter, Key.NumPadEnter, Key.Spacebar -> page.current?.let { if (!again) it.enter(); true } ?: false
                     else -> false
                 }
             },
@@ -221,6 +222,11 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                 }
 
                 Rise(arrive, 4) { Commands(page, app, s, edit, onEdited, onTyping = { typing = it; if (!it) focus.requestFocus() }) }
+                // "Edit…" in the panel opens the window at that item: bring it into view once it has a place.
+                LaunchedEffect(edit) {
+                    val key = edit?.let { "${it.first}:${it.second}" } ?: return@LaunchedEffect
+                    repeat(30) { page.rows[key]?.takeIf { it.height > 0 }?.let { reveal(it); return@LaunchedEffect }; delay(50) }
+                }
 
                 Rise(arrive, 5) {
                     Section(stringResource(R.string.set_results_title)) {
@@ -253,9 +259,15 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                         // Forgetting needs Enter twice, like deleting in the panel.
                         var sure by remember { mutableStateOf(false) }
                         var done by remember { mutableStateOf(false) }
+                        var asked by remember { mutableStateOf(0L) }
                         LaunchedEffect(sure) { if (sure) { delay(3000); sure = false } }
                         PageRow(page, "forget", stringResource(R.string.set_forget), null, mark = { Icon(Symbols.of("trash"), null, tint = it) },
-                            onEnter = { if (sure) { app.historyStore.clear(); sure = false; done = true } else if (!done) sure = true }) {
+                            onEnter = {
+                                val now = android.os.SystemClock.uptimeMillis()
+                                // A second press, a moment later: a double click or a bouncing key doesn't forget everything.
+                                if (sure && now - asked >= 350) { app.historyStore.clear(); sure = false; done = true }
+                                else if (!sure && !done) { sure = true; asked = now }
+                            }) {
                             Text(stringResource(if (done) R.string.set_forgotten else if (sure) R.string.win_forget_again else R.string.action_delete),
                                 color = if (sure) scheme.error else it, style = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(600)))
                         }

@@ -165,6 +165,9 @@ fun Panel(
         val card = model.card
         val atEnd = field.selection.collapsed && field.selection.end == field.text.length
         val enter = e.key == Key.Enter || e.key == Key.NumPadEnter
+        // A key that is held repeats. Whatever runs something takes one press for one run: a held Enter must not confirm its own delete.
+        val again = e.nativeKeyEvent.repeatCount > 0
+        val bare = !e.isShiftPressed && !e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed
         // A waiting confirmation is cancelled by any key but Enter; Esc then only cancels.
         if (!enter && model.cancelConfirm() && e.key == Key.Escape) return true
         val r = model.current
@@ -173,27 +176,29 @@ fun Panel(
             Key.DirectionDown -> { if (!model.moveCell(0, 1)) model.move(1); true }
             Key.DirectionUp -> { if (!model.moveCell(0, -1) && !model.restoreLast()) model.move(-1); true }
             Key.Enter, Key.NumPadEnter -> {
-                if (card != null) onCard(card, cardChoice == 0) else model.enter { row, a -> go(row, a, e.isShiftPressed) }
+                if (!again) { if (card != null) onCard(card, cardChoice == 0) else model.enter { row, a -> go(row, a, e.isShiftPressed) } }
                 true
             }
             Key.Tab -> {
                 when {
-                    card != null -> cardChoice = 1 - cardChoice
-                    entersScope && !e.isShiftPressed -> model.enter { row, a -> go(row, a, false) }
+                    card != null -> if (!again) cardChoice = 1 - cardChoice
+                    entersScope && !e.isShiftPressed -> if (!again) model.fill()
                     else -> model.arm(if (e.isShiftPressed) -1 else 1, wrap = true)
                 }
                 true
             }
             // Right at the end of the text and Left go along what the row offers: a grid's cells, a level, its actions.
+            // With a modifier held they are the text's own (select, a word back).
             Key.DirectionRight -> when {
-                !atEnd -> false
+                !atEnd || !bare -> false
                 r?.body is Body.Grid -> model.moveCell(1, 0)
                 model.nudge(1) -> true
-                entersScope -> { model.enter { row, a -> go(row, a, false) }; true }
+                entersScope -> { if (!again) model.fill(); true }
                 else -> model.arm(1, wrap = false)
             }
             Key.DirectionLeft -> when {
-                r?.body is Body.Grid -> model.moveCell(-1, 0)
+                !bare -> false
+                r?.body is Body.Grid -> atEnd && model.moveCell(-1, 0)
                 atEnd && model.nudge(-1) -> true
                 else -> model.arm(-1, wrap = false)     // on the first action Left is the caret's again
             }
@@ -203,7 +208,7 @@ fun Panel(
                 // Ctrl+1…9 runs that row's first action straight away (never one that removes something: those are never first).
                 val n = DIGITS.indexOf(e.key)
                 if (n >= 0 && e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed) {
-                    model.results.getOrNull(n)?.takeIf { it.body !is Body.Grid }?.let { row -> row.actions.firstOrNull()?.takeIf { !it.danger && !it.confirm }?.let { go(row, it, false) } }
+                    if (!again) model.runRow(n) { row, a -> go(row, a, false) }
                     true
                 } else false
             }
@@ -219,7 +224,7 @@ fun Panel(
                 .layout { measurable, constraints ->
                     val full = constraints.maxWidth
                     val h = height.roundToPx().coerceAtMost(constraints.maxHeight)
-                    val w = (full * landed(wide.value)).roundToInt().coerceIn(1, full)
+                    val w = (full * landed(wide.value)).roundToInt().coerceIn(1, full.coerceAtLeast(1))
                     val hh = (h * landed(high.value)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
                     val p = measurable.measure(Constraints.fixed(w, hh))
                     layout(full, constraints.maxHeight) { p.place((full - w) / 2, (h - hh) / 2) }
@@ -242,7 +247,10 @@ fun Panel(
                         .offset { IntOffset(0, -((height.roundToPx() * (1f - landed(high.value))) / 2f).roundToInt()) }
                         .graphicsLayer { alpha = smooth(0.35f, 0.85f, opened()) },
                 ) {
-                    Field(model, field, onChange = { field = it; model.type(it.text) }, focus = focus)
+                    Field(model, field, focus = focus, onChange = { v ->
+                        model.type(v.text)
+                        field = if (model.query == v.text) v else TextFieldValue(model.query, TextRange(model.query.length))
+                    })
 
                     val body = when {
                         model.results.isNotEmpty() -> "results"

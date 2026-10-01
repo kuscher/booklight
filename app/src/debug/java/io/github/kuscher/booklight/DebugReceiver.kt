@@ -16,8 +16,9 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
- * Test hooks for driving Booklight from adb (`./bl debug …`). The receiver requires the DUMP
- * permission, which only the shell (adb) holds, so other apps can't use it.
+ * Test hooks for driving Booklight from adb (`./bl debug …`). Debug builds only. The receiver requires
+ * the DUMP permission, which only the shell (adb) holds, so other apps can't use it.
+ *   keys TEXT (typed one character at a time, as a person does: every list in between is made) |
  *   ping | dump | type TEXT | key up|down|left|right|tab|backtab|esc|enter|stay|back | close | shot [NAME]
  *   find TEXT (ranked results without the panel; "KEY: TEXT" searches inside a scope) | apps | forget
  *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted|solid | pref opening off|fast|medium|slow
@@ -54,8 +55,16 @@ class DebugReceiver : BroadcastReceiver() {
             "find" -> app.scope.launch {
                 val t0 = System.nanoTime()
                 val scoped = app.engine.scopeFor(arg)
-                val r = if (scoped != null) app.engine.search(Query(scoped.second, scoped.first.key)) else app.engine.search(Query(arg))
+                val r = if (scoped != null) app.engine.search(Query(scoped.text, scoped.scope.key, scoped.word)) else app.engine.search(Query(arg))
                 out("${(System.nanoTime() - t0) / 1000} us | " + r.joinToString(" | ") { describe(it) })
+            }
+            "keys" -> main.post {
+                val m = act?.model ?: return@post out("no panel")
+                while (m.leaveScope()) {}
+                m.type("")
+                // One character at a time, a frame apart, building on whatever the field holds by then (a keyword may have become the chip).
+                arg.forEachIndexed { i, c -> main.postDelayed({ m.type(m.query + c) }, 40L * (i + 1)) }
+                main.postDelayed({ out("ok") }, 40L * (arg.length + 2))
             }
             "type" -> main.post { act?.model?.let { m -> while (m.leaveScope()) {}; m.type(arg) }; out(if (act != null) "ok" else "no panel") }
             "key" -> main.post {
@@ -109,7 +118,6 @@ class DebugReceiver : BroadcastReceiver() {
             is io.github.kuscher.booklight.core.Body.Grid -> " {${b.cells.size} cells: ${b.cells.take(6).joinToString("") { it.glyph }}…}"
             is io.github.kuscher.booklight.core.Body.Code -> " {qr}"
             is io.github.kuscher.booklight.core.Body.Mono -> " {${b.text}}"
-            is io.github.kuscher.booklight.core.Body.Media -> " {media}"
         }
         val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id }.joinToString(",")
         return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.kind}]$body <$acts>"

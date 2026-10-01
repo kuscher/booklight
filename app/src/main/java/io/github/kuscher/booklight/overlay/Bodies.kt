@@ -254,5 +254,3 @@ fun MonoText(text: String, ink: Color) {
         maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
-/** The row height a body asks for is in [Metrics.rowHeight]; this keeps a tall row's top band the height of an ordinary row. */
-val BAND = Modifier.height(Metrics.row)

@@ -33,6 +33,9 @@ class Scopes(private val context: Context, private val prefs: Prefs, dials: Dial
         LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),
     )
 
+    /** The keywords the built-in scopes answer to: a link of the user's can't have one of these. */
+    val reserved: Set<String> = fixed.flatMapTo(HashSet()) { s -> s.keywords.map { it.lowercase() } }
+
     /** Text sent from another app: a scope of its own for as long as the panel shows it. */
     @Volatile var incoming: Scope? = null; private set
 

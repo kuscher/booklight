@@ -80,7 +80,7 @@ fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue)
             },
             contentKey = { it?.key }, contentAlignment = Alignment.CenterStart, label = "mark",
         ) { chip ->
-            if (chip != null) ScopeChip(chip) { model.leaveScope() }
+            if (chip != null) ScopeChip(chip) { model.leaveScope(withText = true) }
             // The search engine's mark where the magnifier would be: Google's G when Google does the searching.
             else Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
                 if (model.settings.engine == "google") Text("G", color = scheme.onSurface, style = TextStyle(fontFamily = Fonts.round, fontSize = 24.sp, fontWeight = FontWeight(600)))

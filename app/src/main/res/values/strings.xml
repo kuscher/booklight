@@ -18,7 +18,7 @@
     <string name="hint_actions">Actions</string>
     <string name="hint_close">Close</string>
     <string name="copied">Copied</string>
-    <string name="failed">Couldn’t open that</string>
+    <string name="failed">Couldn’t do that</string>
     <string name="cmd_settings">Booklight settings</string>
     <string name="cmd_settings_words">booklight,preferences,options,about</string>
     <string name="cmd_shortcut">Set up the keyboard shortcut</string>

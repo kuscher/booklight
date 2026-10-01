@@ -124,10 +124,11 @@ class SearchEngineTest {
 
     @Test fun aKeywordAndASpaceIsAScope() {
         val e = scoped()
-        assertEquals("yt" to "lofi beats", e.scopeFor("yt lofi beats")?.let { it.first.key to it.second })
-        assertEquals("yt" to "", e.scopeFor("YT ")?.let { it.first.key to it.second })
-        assertEquals("yt" to "x", e.scopeFor("youtube x")?.let { it.first.key to it.second })
+        assertEquals("yt" to "lofi beats", e.scopeFor("yt lofi beats")?.let { it.scope.key to it.text })
+        assertEquals("yt" to "", e.scopeFor("YT ")?.let { it.scope.key to it.text })
+        assertEquals("yt" to "x", e.scopeFor("youtube x")?.let { it.scope.key to it.text })
         assertEquals(null, e.scopeFor("yt"))                    // the keyword alone is ordinary text
+        assertEquals("youtube", e.scopeFor("youtube x")?.word)         // the word that was typed is kept
         assertEquals(null, e.scopeFor("ytx lofi"))
         assertEquals(null, e.scopeFor(" lofi"))
     }
@@ -136,6 +137,8 @@ class SearchEngineTest {
         val r = scoped().search(Query("lofi", scope = "yt"))
         assertEquals(listOf("first lofi", "second lofi", "Search for yt lofi"), r.map { it.title })
         assertTrue(scoped().search(Query("", scope = "yt")).isEmpty())          // nothing typed: no way out needed yet
+        // The way out searches for what was typed, whichever of the scope's keywords that was.
+        assertEquals("Search for youtube lofi", scoped().search(Query("lofi", scope = "yt", keyword = "youtube")).last().title)
         assertTrue(scoped().search(Query("x", scope = "gone")).isEmpty())
         // The keyword was the start of an app's name: the app comes first.
         val named = SearchEngine(listOf(Names(listOf("YT Music"), ::app)), History(), clock = { 1000 }, scopes = { listOf(yt) })

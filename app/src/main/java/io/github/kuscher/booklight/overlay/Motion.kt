@@ -27,8 +27,6 @@ class Motion(val on: Boolean) {
     fun <T> pop(): FiniteAnimationSpec<T> = if (on) spring(dampingRatio = 0.62f, stiffness = 700f) else snap()
     /** The arming gliding along a row's actions: the highlight, and how much of each name shows, ride this one spring. */
     fun <T> arm(): FiniteAnimationSpec<T> = if (on) spring(dampingRatio = 0.78f, stiffness = 560f) else snap()
-    /** The glass opening out of its seam as the panel arrives. */
-    fun <T> open(): FiniteAnimationSpec<T> = if (on) spring(dampingRatio = 0.72f, stiffness = 1000f) else snap()
     /** Appearing and going. */
     fun <T> fade(ms: Int = 110, delay: Int = 0): FiniteAnimationSpec<T> = if (on) tween(ms, delay) else snap()
 

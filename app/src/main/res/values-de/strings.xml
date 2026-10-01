@@ -16,7 +16,7 @@
     <string name="hint_actions">Aktionen</string>
     <string name="hint_close">Schließen</string>
     <string name="copied">Kopiert</string>
-    <string name="failed">Das ließ sich nicht öffnen</string>
+    <string name="failed">Das hat nicht geklappt</string>
     <string name="cmd_settings">Booklight-Einstellungen</string>
     <string name="cmd_settings_words">booklight,optionen,präferenzen,info</string>
     <string name="cmd_shortcut">Tastenkürzel einrichten</string>

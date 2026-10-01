@@ -8,7 +8,8 @@
 #   ./bl install [APK] | open [stay] [tint=N] [blur=DP] [dim=N] | stop | uninstall
 #                            `open stay` keeps the panel up when it loses focus (for pictures);
 #                            DARK=true|false ./bl open stay shows it in that theme whatever the system's is
-#   ./bl debug CMD...        test hooks (DebugReceiver.kt): ping, apps, find TEXT, type TEXT,
+#   ./bl debug CMD...        test hooks (DebugReceiver.kt, debug builds): ping, apps, find TEXT, type TEXT,
+#                            keys TEXT (one character at a time, as a person types: use this to test typing),
 #                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
 #   ./bl screen [OUT]        the panel as it looks on screen, blur and shadow included: a crop of a

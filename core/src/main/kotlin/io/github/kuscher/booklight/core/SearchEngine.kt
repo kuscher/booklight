@@ -48,11 +48,12 @@ class SearchEngine(
         val rows = withTimeoutOrNull(budgetMs) { runCatching { s.rows(q.text) }.getOrElse { emptyList() } } ?: emptyList()
         // An ordinary word that happened to be a keyword ("new york weather") is one row away.
         if (q.isEmpty || s.keywords.isEmpty()) return rows.take(limit)
-        val whole = "${s.keywords.first()} ${q.text}"
+        // What was actually typed: the word the user used for the scope, then the text.
+        val whole = "${q.keyword ?: s.keywords.first()} ${q.text}"
         val out = fallback(whole).take(1)
         // The keyword may have been the first word of an app's name ("play store"): such an app comes first.
         val now = clock()
-        val apps = ask { it.query(Query(whole)) }.filter { it.kind == Kind.APP && it.score >= Matcher.PREFIX }
+        val apps = ask(providers.filter { it.id == APPS }) { it.query(Query(whole)) }.filter { it.kind == Kind.APP && it.score >= Matcher.PREFIX }
             .sortedByDescending { rank(it, whole, now) }.take(2)
         return (apps + rows).take(limit - out.size).plus(out).distinctBy { it.id }
     }
@@ -63,14 +64,17 @@ class SearchEngine(
      * The scope and its argument when [text] starts with a keyword and a space: "yt lofi" is
      * YouTube and "lofi", "yt " is YouTube and nothing yet. The keyword alone is ordinary text.
      */
-    fun scopeFor(text: String): Pair<Scope, String>? {
+    fun scopeFor(text: String): Scoped? {
         val t = text.trimStart()
         val space = t.indexOf(' ')
         if (space <= 0) return null
         val word = t.substring(0, space)
         val s = scopes().firstOrNull { sc -> sc.keywords.any { it.equals(word, ignoreCase = true) } } ?: return null
-        return s to t.substring(space + 1)
+        return Scoped(s, t.substring(space + 1), word)
     }
+
+    /** A scope, the text typed for it, and the [word] that was typed to enter it. */
+    data class Scoped(val scope: Scope, val text: String, val word: String)
 
     /** Scopes as rows of the ordinary list: found by a keyword or by name, entered with Tab or Enter. */
     private fun scopeRows(text: String): List<Result> = scopes().filter { it.listed }.mapNotNull { s ->
@@ -111,8 +115,8 @@ class SearchEngine(
             .map { it.first }
     }
 
-    private suspend fun ask(call: suspend (Provider) -> List<Result>): List<Result> = coroutineScope {
-        providers.map { p ->
+    private suspend fun ask(from: List<Provider> = providers, call: suspend (Provider) -> List<Result>): List<Result> = coroutineScope {
+        from.map { p ->
             async { withTimeoutOrNull(budgetMs) { runCatching { call(p) }.getOrElse { emptyList() } } ?: emptyList() }
         }.awaitAll().flatten()
     }
@@ -147,6 +151,8 @@ class SearchEngine(
         const val URL_SCORE = 0.9
         const val MAX_SUGGESTIONS = 3
         const val MAX_FALLBACKS = 2
+        /** The id of the provider of apps: the only one asked inside a scope. */
+        const val APPS = "apps"
         /** A web row scoring less than this is a way out, kept for the end of the list. */
         const val FALLBACK_BELOW = 0.5
     }

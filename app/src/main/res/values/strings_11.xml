@@ -87,7 +87,7 @@
     <string name="ask_hint">Your question</string>
     <string name="ask_about">Opens Gemini with your text</string>
     <string name="gemini_title">Ask Gemini</string>
-    <string name="emoji_keys">emoji,e</string>
+    <string name="emoji_keys">emoji</string>
     <string name="emoji_name">Emoji</string>
     <string name="emoji_hint">Emoji name</string>
     <string name="emoji_about">Pick one to copy</string>
@@ -103,7 +103,7 @@
     <string name="color_name">Colour</string>
     <string name="color_hint">Colour value</string>
     <string name="color_about">A colour in HEX, RGB, HSL and OKLCH</string>
-    <string name="password_keys">password,pw,pass</string>
+    <string name="password_keys">password,pw</string>
     <string name="password_sub">Password · %1$d characters</string>
     <string name="snip_keys">snip,snippet</string>
     <string name="snip_add_keys">add,new</string>
@@ -187,4 +187,5 @@
     <string name="win_recipe_step_hint">an app, a link, a setting, vol 30</string>
     <string name="new_caption_online">Opens a new one in Google Drive</string>
     <string name="new_caption_folder">Creates it in Documents</string>
+    <string name="qr_too_long">Too long for a QR code</string>
 </resources>

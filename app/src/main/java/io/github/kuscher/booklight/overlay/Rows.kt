@@ -291,7 +291,8 @@ fun ResultRow(
             else fadeIn(motion.fade(110)) togetherWith fadeOut(motion.fade(60))
         }, contentAlignment = Alignment.CenterEnd, label = "trail") { strip ->
             when {
-                strip -> ActionStrip(r.actions, armed.coerceIn(0, r.actions.size - 1), confirming,
+                // (While this is on its way out the row may already have lost its actions: an empty range must not be coerced into.)
+                strip -> ActionStrip(r.actions, armed.coerceIn(0, (r.actions.size - 1).coerceAtLeast(0)), confirming,
                     confirmLabel = stringResource(R.string.confirm_again), onArm = onArm, onRun = onAction)
                 body is Body.Level -> Spacer(Modifier.width(0.dp))
                 r.kind == Kind.SCOPE -> Keycap("tab")

@@ -8,6 +8,11 @@
             android:exported="true"
             android:label="Booklight backdrop"
             android:taskAffinity="io.github.kuscher.booklight.backdrop" />
+        <!-- adb-only test hooks (./bl debug …): the shell holds DUMP, apps don't. Debug builds only: they print
+             what is typed and what the rows hold to the log, which a release never should. -->
+        <receiver android:name=".DebugReceiver" android:exported="true" android:permission="android.permission.DUMP">
+            <intent-filter><action android:name="io.github.kuscher.booklight.DEBUG" /></intent-filter>
+        </receiver>
         <!-- Feasibility probes for planned features; the shell holds DUMP, apps don't. ./bl probe … -->
         <receiver android:name=".debug.ProbeReceiver" android:exported="true" android:permission="android.permission.DUMP">
             <intent-filter><action android:name="io.github.kuscher.booklight.PROBE" /></intent-filter>

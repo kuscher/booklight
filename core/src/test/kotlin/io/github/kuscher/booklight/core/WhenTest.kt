@@ -60,11 +60,14 @@ class WhenTest {
 
     @Test fun aWeekdayIsTheNextSuchDay() {
         assertEquals(at(5), start("mon"))
-        assertEquals(at(5), start("Mo"))
         assertEquals(at(5), start("Montag"))
-        assertEquals(at(6), start("Di"))
         assertEquals(at(7), start("wednesday"))
-        assertEquals(at(3), start("sa"))
+        assertEquals(at(3), start("sat"))
+        // Two-letter forms are names and words too ("Mo Farah", "Di Maria"): days only beside a time.
+        assertNull(p("Mo"))
+        assertNull(p("Di Maria signing"))
+        assertEquals(at(5, 15), start("Mo 15 Uhr"))
+        assertEquals(at(6, 9), start("Di 9:00 Zahnarzt"))
         assertEquals(at(4), start("Sonntag"))
         assertEquals(at(8), start("thursday"))          // today is one: the next
     }

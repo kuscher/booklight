@@ -4,7 +4,12 @@ package io.github.kuscher.booklight.core
  * What the user typed, as typed; [text] is what providers match against. Inside a scope (the chip
  * in the field: a keyword search, a note, a timer) [scope] is its key and the text is its argument.
  */
-data class Query(val raw: String, val scope: String? = null) {
+data class Query(
+    val raw: String,
+    val scope: String? = null,
+    /** The word that was typed to enter [scope]: a scope may have several keywords. Null = entered from its row. */
+    val keyword: String? = null,
+) {
     val text: String = raw.trim()
     val isEmpty: Boolean get() = text.isEmpty()
 }
@@ -28,7 +33,7 @@ sealed interface Icon {
 }
 
 /** Where on the screen an app's window is asked to open. */
-enum class Place { NONE, LEFT, RIGHT, FULL }
+enum class Place { NONE, LEFT, RIGHT }
 
 enum class MediaKey { PLAY_PAUSE, NEXT, PREVIOUS }
 
@@ -49,7 +54,6 @@ sealed interface Effect {
     data class OpenUrl(val url: String) : Effect
     /** [sensitive]: a password; the clipboard is told not to show it. */
     data class CopyText(val text: String, val sensitive: Boolean = false) : Effect
-    data class ShareText(val text: String) : Effect
     /** A system settings screen, by its `android.settings.…` intent action. */
     data class OpenSettings(val action: String) : Effect
     /** One of Booklight's own pages or commands (`window`, `shortcuts`…). */
@@ -120,8 +124,6 @@ sealed interface Body {
     data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null) : Body
     /** A level from 0 to 100 (volume, brightness). [target]: a typed value, not yet set. [locked]: needs a grant first. */
     data class Level(val percent: Int, val target: Int? = null, val muted: Boolean = false, val locked: Boolean = false) : Body
-    /** Previous, play or pause, next. */
-    data object Media : Body
     /** A grid of characters to pick from; the arrows move between cells. */
     data class Grid(val cells: List<Cell>, val columns: Int = 14) : Body
     /** A QR code of [text]. */
