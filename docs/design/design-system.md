@@ -145,6 +145,14 @@ Feedback: a 16 dp check and a word in `word`, strong ink: "Copied", "Added to No
 
 ## 4. The opening: "unfold"
 
+> **Checked on the devices, 1 October** (`docs/research/device-findings.md`, "How the panel can arrive").
+> This section was written at the desk and three things in it change: (1) the window is not resized in
+> width; it is the panel's final rectangle from the first frame and the glass grows inside it; (2) the blur
+> is always the whole window, so its radius stays 0 until the glass is more than half open, and nothing
+> overshoots past the final edge; (3) Alex likes the edge light ("the little highlight running around the
+> edge is excellent"), so it stays, slower, rather than being retired. Times and the order of events below
+> still hold.
+
 A seam of outline grows up and down to the field's height, then the glass opens left and right out of it. The window itself is animated; its content is laid out once at 720 dp, centred on the seam, and never moves on screen.
 
 | Time | Window | Outline, veil, blur, dim | Content |

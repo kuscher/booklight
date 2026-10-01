@@ -2,6 +2,30 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (evening): 1.1 to 1.4 planned, waiting for Alex's answers
+
+**Asked for:** build 1.1 Jot, 1.2 Dials, 1.3 Recipes and 2.2 Switches (not the Gmail relay); a way of acting
+on a row (actions inside the row, Tab or arrows, typed verbs like "chrome uninstall"); keyword searches as a
+chip after Tab; an opening animation with an off switch; a Booklight window (what it is, settings) behind the
+app icon; Ask Gemini; fix the janky two-option switching on the first-run card. Plan first, then questions.
+
+**Done, nothing built into the app yet:**
+- `docs/design/ux-model.md` (the interaction model), `docs/design/design-system.md` (tokens, components,
+  motion table; §4 carries a note on what the devices changed), `docs/research/permissions.md`.
+- The page with a prototype and 18 questions: `docs/design/booklight-next.html`, published at
+  https://claude.ai/artifact/Nc98FHZosXidEaHqMpU1me (publish the same file to update it).
+- Device checks: `docs/research/device-findings.md`, the last two sections before the testing rules.
+- A throwaway spike on the local branch `spike/unfold` (not pushed): the opening animations on a real device.
+  Its debug build is on the Lenovo and opens with the unfold.
+
+**Next:** Alex answers the questions (or "Default"). Then: write the spec in `docs/superpowers/specs/`, have
+him read it, write the plan, build in the order on the page (foundation, Jot, Dials, Recipes, Switches).
+
+**Loose ends**
+- The HP went offline (lid closed) while it had a spike build installed that draws a blurred band around
+  the panel. Put 1.0 back as soon as it is online: `./bl install` with the release APK from the GitHub release.
+- Uninstall needs `REQUEST_DELETE_PACKAGES` (install-time, no prompt, Play asks nothing): Alex has to say yes.
+
 ## 2026-10-01 (later): 1.0 released
 
 **Where it stands.** Booklight 1.0 (versionCode 1) is built, signed with the Booklight release key and

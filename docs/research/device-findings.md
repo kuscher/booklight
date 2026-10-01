@@ -99,6 +99,44 @@ over Wi-Fi adb. Each item says how it was checked. Desk research is in
   `ROND` axis), so the panel uses the device's own font without bundling it.
 - `android.settings.*` actions resolve with `<queries><package android:name="com.android.settings"/>`.
 
+## How the panel can arrive (checked 1 October, HP and Lenovo Googlebook 15)
+
+Tried with a throwaway build (local branch `spike/unfold`), recorded and stepped through frame by frame.
+
+- **Resizing the window in width on every frame does not work.** The window's new position is applied at
+  once, its new buffer arrives one or two frames later, and a gravity-centred window is repositioned with
+  every width. Result on the HP: the left edge runs ahead, the right edge lags, the contents slide sideways,
+  and the size only changes every second frame (30 of 60). Height alone is fine (1.0 does it for the list),
+  because the top edge never moves.
+- **A window that stays put, with the glass growing inside it, works.** The window is the panel's final
+  rectangle from the first frame; a box inside it is laid out narrower and shorter and grows; the contents
+  are laid out once at full width, centred, and only uncovered. 60 of 60 frames, symmetric, the text never
+  moves on screen.
+- **The blur is always the whole window.** On Android 17 the window's background stays the app's own
+  drawable (no `LayerDrawable` with a blur layer to resize), and an outline with a smaller rectangle changes
+  only the corner radius. A window 24 dp larger than the panel showed a blurred band around the panel at
+  rest. So: the window must be exactly the panel, nothing can swing out past the panel's final edge (a
+  bounce has to turn back inwards), and while the glass is still narrow the blur radius is kept at 0; it
+  comes in over the second half of the opening.
+- The Lenovo is 2880 × 1800 at 240 dpi (1 dp = 1.5 px), Android user 10, SDK 37; the same build behaves the same.
+
+## Checked for 1.1 to 1.4 (1 October, HP; nothing was sent or changed)
+
+- **Who answers which intent:** `mailto:` → Gmail; `CREATE_NOTE` → Keep; `SET_TIMER`, `SET_ALARM` → Google
+  Clock; calendar `INSERT` (`vnd.android.cursor.dir/event`) → Google Calendar; `MEDIA_PLAY_FROM_SEARCH` →
+  Spotify and others; `DELETE` / `UNINSTALL_PACKAGE` → the package installer's own confirmation; text files
+  `VIEW` / `EDIT` → the desktop text editor; the Settings panels (volume, internet) exist; `geo:` is only
+  answered by Zoom, so maps go through https links.
+- **Protection levels here:** `REQUEST_DELETE_PACKAGES`, `SET_ALARM`, `ACCESS_NOTIFICATION_POLICY` normal;
+  `WRITE_SETTINGS`, `SCHEDULE_EXACT_ALARM` app-op (a switch in Settings).
+- **Files with no permission** (`./bl probe files`, debug builds): `Documents/Booklight/` can be created,
+  written, appended to and given sub-folders; `Download/` too; a new top-level folder cannot.
+- **Gemini:** `ACTION_SEND` with `text/plain` to `com.google.android.apps.bard/.shellapp.BardEntryPointActivity`
+  opens Gemini with the text in the prompt, not sent. No launcher shortcuts are published by the Gemini app.
+- **The app icon:** started from the system's Apps list, the panel opens and closes within about 0.2 s: the
+  Apps list closing takes focus, and losing focus closes the panel. `Activity.getReferrer()` can tell an
+  icon start from a keyboard-shortcut start.
+
 ## Rules for testing on this device
 
 - **Never run `uiautomator dump`.** UiAutomation suspends every accessibility service. On 1 October it

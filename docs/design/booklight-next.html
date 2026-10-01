@@ -319,7 +319,8 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
 <section id="ideas">
   <h2>Your three additions</h2>
   <div class="prose" style="display:flex;flex-direction:column;gap:1rem">
-    <p><b>Four openings to compare.</b> <i>Unfold</i> is your idea: a line grows up and down, then the glass opens out of it to both sides and settles with a small bounce. The contents are laid out once and only uncovered, so nothing reflows. <i>Bloom</i> grows the glass out of a small pill in every direction at once. <i>Bigger bounce</i> is 1.0's arrival with about twice the bounce. The edge light can run as in 1.0, about half as fast, or once around the outline. Use Replay and Quarter speed above the panel. Typing is live from the first frame in all of them, and a setting turns the animation off.</p>
+    <p><b>Four openings to compare.</b> <i>Unfold</i> is your idea: a line grows up and down, then the glass opens out of it to both sides, lands and settles. The contents are laid out once and only uncovered, so nothing reflows. <i>Bloom</i> grows the glass out of a small pill in every direction at once. <i>Bigger bounce</i> is 1.0's arrival with about twice the bounce. The edge light can run as in 1.0, about half as fast, or once around the outline. Use Replay and Quarter speed above the panel. Typing is live from the first frame in all of them, and a setting turns the animation off.</p>
+    <p><b>Is it too complicated? No.</b> I tried it on the HP and on the Lenovo today. Growing the real window frame by frame is lopsided and runs at half the frame rate. Keeping the window still and growing the glass inside it is smooth and symmetric, and that is what the prototype now shows. One limit follows from how Android blurs: the blur always fills the whole window, so nothing can swing out past the panel's final edge. A bounce therefore lands and turns back inwards, and the blur comes into focus as the glass opens.</p>
     <p><b>A Booklight window for the app icon.</b> Today the icon appears to do nothing. I found why: started from the Apps list, the panel opens and closes itself within a moment, because the Apps list closing takes focus away. That is a bug to fix either way. The proposal: the icon opens a normal window that says what Booklight is, shows how to give it a key, and holds the settings, drawn with the panel's own components and motion. The keyboard shortcut still opens the panel (Android tells the app who started it, so the two can be told apart).</p>
     <p><b>Ask Gemini.</b> Checked on the HP: handing text to the Gemini app opens it with your text in the prompt, not sent, so one more Enter there sends it. No permission needed. In Booklight a long or question-like text gets "Ask Gemini" as its first row; for anything else it is one row under "Search Google". <code>ask</code> then Tab makes it a scope. Gemini's own actions (new chat, Live, notebooks) can't be listed by another app today; the ones with public links can be added as rows.</p>
   </div>
@@ -427,12 +428,12 @@ const prev = new Map();          // where things were, so they move instead of j
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // The app's springs (Motion.kt), sampled into CSS linear() so the page moves as the panel does.
 const canSpring = CSS.supports('transition-timing-function', 'linear(0, 1)');
-function spring(z, k) {
+function spring(z, k, land) {     // land: instead of passing its end, it turns back, like something landing
   const w = Math.sqrt(k), wd = w * Math.sqrt(1 - z * z), T = 6.9 / (z * w), n = 48, pts = [];
-  for (let i = 0; i <= n; i++) { const t = T * i / n; pts.push((1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t))).toFixed(4)); }
+  for (let i = 0; i <= n; i++) { const t = T * i / n; const x = 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t)); pts.push((land ? 1 - Math.abs(1 - x) : x).toFixed(4)); }
   pts[n] = 1; return { duration: Math.round(T * 1000), easing: canSpring ? `linear(${pts.join(',')})` : 'cubic-bezier(.3,1.2,.4,1)' };
 }
-const PLACE = spring(.86, 520), LEADS = spring(.82, 1100), TRAIL = spring(.9, 420), POP = spring(.62, 700), BOUNCE = spring(.48, 420), OUT = spring(.7, 1100), GROW = spring(.72, 620);
+const PLACE = spring(.86, 520), LEADS = spring(.82, 1100), TRAIL = spring(.9, 420), POP = spring(.62, 700), BOUNCE = spring(.48, 420, true), OUT = spring(.72, 1000, true), GROW = spring(.72, 620, true);
 let speed = 1;
 const anim = (el, kf, o) => el.animate(kf, { ...o, duration: (o.duration || 0) * speed, delay: (o.delay || 0) * speed });
 function setSpeed() { panel.style.transition = reduce ? 'none' : `height ${PLACE.duration * speed}ms ${PLACE.easing}`; }
@@ -631,7 +632,10 @@ function open(keep) {
   prev.clear(); stage.classList.add('open'); draw(keep);
   input.focus({ preventScroll: true }); arrive();
 }
-// Four ways to arrive. Typing is live from the first frame in all of them.
+// Four ways to arrive. Typing is live from the first frame in all of them. As on the device: the window
+// stays put and the glass grows inside it, nothing swings out past the panel's final edge, and the blur
+// (which always fills the whole window there) comes into focus once the glass is more than half open.
+function focus(ms) { const b = getComputedStyle(stage).getPropertyValue('--blur').trim() || '22px', k = [{ backdropFilter: 'blur(0px)', webkitBackdropFilter: 'blur(0px)' }, { backdropFilter: 'blur(0px)', webkitBackdropFilter: 'blur(0px)', offset: .4 }, { backdropFilter: `blur(${b})`, webkitBackdropFilter: `blur(${b})` }]; anim(panel, k, { duration: ms * .8 }); }
 function arrive() {
   if (reduce) return; panel.getAnimations().forEach(a => a.cancel()); $('gleam').getAnimations().forEach(a => a.cancel());
   const T = 'translateX(-50%)', o = opts.opening, inner = $('inner'), W = panel.offsetWidth, H = parseFloat(panel.style.height); let light = 70;
@@ -639,11 +643,11 @@ function arrive() {
     const up = 90, total = up + OUT.duration;
     anim(panel, [{ width: '4px', clipPath: 'inset(50% 0 50% 0)', easing: 'cubic-bezier(.2,.9,.2,1)' }, { width: '4px', clipPath: 'inset(0 0 0 0)', offset: up / total, easing: OUT.easing }, { width: W + 'px', clipPath: 'inset(0 0 0 0)' }], { duration: total });
     anim(inner, [{ opacity: 0 }, { opacity: 0, offset: .38 }, { opacity: 1 }], { duration: 280 });
-    light = 190;
+    focus(total); light = 190;
   } else if (o === 'bloom') {  // the glass grows out of a small pill where the text will be, in every direction at once
     anim(panel, [{ width: '132px', height: '36px', transform: T + ' translateY(16px)' }, { width: W + 'px', height: H + 'px', transform: T }], GROW);
     anim(inner, [{ opacity: 0 }, { opacity: 0, offset: .3 }, { opacity: 1 }], { duration: 240 });
-    light = 170;
+    focus(GROW.duration); light = 170;
   } else if (o === 'bounce') { // 1.0's arrival with about twice the bounce
     anim(panel, [{ transform: T + ' scale(.9)' }, { transform: T }], BOUNCE);
     anim(panel, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 });
