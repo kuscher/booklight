@@ -127,7 +127,8 @@ class OverlayModel(
                     selected = same
                     armed = armed.coerceIn(0, (local[same].actions.size - 1).coerceAtLeast(0))
                 } else { selected = 0; armed = local.firstOrNull()?.armed ?: 0; cell = 0 }
-                whenReady?.let { run -> whenReady = null; chosen()?.let { run(it.first, it.second) } }
+                // An Enter that came before these rows did: now it runs, by the same rules as any Enter (a scope's row enters it, a delete waits).
+                whenReady?.let { run -> whenReady = null; enter(run) }
             }
             // Suggestions come from the network: after a pause in typing, never holding up the
             // list, and dropped if the text has moved on (this job is cancelled by then).
