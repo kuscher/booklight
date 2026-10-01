@@ -141,8 +141,27 @@ class Executor(private val context: Context) {
             is Effect.Steps -> return effect.steps.all { perform(it, from) }
             is Effect.EnterScope, is Effect.Type -> return false     // the panel does these itself
             // 2.0, each in its own task:
-            is Effect.Open, is Effect.Pin, is Effect.Unpin, is Effect.Replace, is Effect.AddTodo, is Effect.TickTodo, is Effect.OpenNote -> return false
+            is Effect.Open -> return open(effect, ctx)
+            is Effect.Pin, is Effect.Unpin, is Effect.Replace, is Effect.AddTodo, is Effect.TickTodo, is Effect.OpenNote -> return false
         }
+        return true
+    }
+
+    /**
+     * Something another app offers. Whatever the address says, it is started only if it leads to an
+     * activity of [Effect.Open.owner] itself, open to other apps, that asks for no permission; with
+     * no flags but Booklight's own, no data to grant, nothing to choose from.
+     */
+    private fun open(e: Effect.Open, ctx: Context): Boolean {
+        val intent = try { Intent.parseUri(e.intent, Intent.URI_INTENT_SCHEME) } catch (_: Exception) { return false }
+        intent.selector = null
+        intent.clipData = null
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        if (intent.component == null) intent.setPackage(e.owner) else if (intent.component?.packageName != e.owner) return false
+        val a = context.packageManager.resolveActivity(intent, 0)?.activityInfo ?: return false
+        if (a.packageName != e.owner || !a.exported || a.permission != null) return false
+        intent.setClassName(a.packageName, a.name)
+        ctx.startActivity(intent)
         return true
     }
 

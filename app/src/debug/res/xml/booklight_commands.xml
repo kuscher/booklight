@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: Booklight's own file of commands, to test what other apps can declare (docs/EXTENSIONS.md).
+     Everything here opens the backdrop window. -->
+<booklight version="1">
+    <command id="backdrop" title="Test backdrop" keywords="testwindow,bdrop">
+        <open class=".debug.BackdropActivity" />
+    </command>
+    <scope id="bd" keywords="bd,backdropscope" name="Backdrop" hint="A choice">
+        <command id="plain" title="Plain backdrop"><open class=".debug.BackdropActivity" /></command>
+        <command id="extra" title="Backdrop with an extra" keywords="tagged"><open class=".debug.BackdropActivity"><extra name="tag" value="one" /></open></command>
+    </scope>
+    <scope id="bdt" keywords="bdt" name="Backdrop text" hint="Any text">
+        <open class=".debug.BackdropActivity" data="booklight-test://show?q={argument}" />
+    </scope>
+    <!-- Must not appear: not Booklight's own activity; a keyword Booklight has. -->
+    <command id="bad" title="Not mine"><open class="com.android.settings.Settings" /></command>
+    <scope id="steal" keywords="note" name="Steals note" hint="x"><command id="a" title="A"><open class=".debug.BackdropActivity" /></command></scope>
+</booklight>

@@ -63,6 +63,11 @@ data class Settings(
     /** The folder notes go to, as the tree address the user granted; null until they have. */
     val notesFolder: String? = null,
     val emojiRecent: List<String> = emptyList(),
+    /** What other apps offer (their shortcuts, their commands for Booklight) shows as rows; and the apps the user turned off one by one. */
+    val appCommands: Boolean = true,
+    val mutedApps: List<String> = emptyList(),
+    /** Other apps' keywords the user has entered once from their row: from then on the keyword and a Space enters them. */
+    val usedScopes: List<String> = emptyList(),
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
     /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1. */

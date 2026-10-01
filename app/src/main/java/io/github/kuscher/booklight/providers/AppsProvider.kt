@@ -57,6 +57,8 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     }
 
     private var loading: Job? = null
+    /** Called when the app list has been read again: what is made from it (other apps' commands) is read again too. */
+    var onReload: (() -> Unit)? = null
 
     private companion object {
         /** A name found through a verb ranks just under the same name typed alone. */
@@ -81,6 +83,7 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             ensureActive()
             index = out.sortedBy { it.label.lowercase() }
             loadedMs = (System.nanoTime() - t0) / 1_000_000
+            onReload?.invoke()
         }
     }
 
@@ -151,6 +154,10 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
         }
         return out
     }
+
+    /** The package of the app whose name [text] matches best from its start, if any: the app that leads the list for it. */
+    fun best(text: String): String? = index.map { it to Matcher.score(text, it.label) }.filter { it.second >= Matcher.PREFIX }
+        .maxWithOrNull(compareBy<Pair<App, Double>> { it.second }.thenBy { -it.first.label.length })?.first?.pkg
 
     /** Every app with score 0: the engine keeps only the ones you have used. */
     override suspend fun zeroState(): List<Result> = index.map { result(it, 0.0, 0) }

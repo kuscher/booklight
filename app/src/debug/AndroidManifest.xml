@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <!-- The file another app would add (docs/EXTENSIONS.md); here Booklight's own, in debug builds, to test the reading of it. -->
+        <meta-data android:name="io.github.kuscher.booklight.commands" android:resource="@xml/booklight_commands" />
         <!-- Debug builds only: a window of test content (a white page, a dark terminal, colour) to judge the
              glass against, so captures never show anyone's real windows. ./bl backdrop -->
         <activity

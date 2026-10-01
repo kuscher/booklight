@@ -84,6 +84,19 @@ class DebugReceiver : BroadcastReceiver() {
                 }
                 out("ok")
             }
+            // What an app's manifest shortcuts look like as XML: `./bl debug xml com.android.chrome`.
+            "xml" -> {
+                val pm = context.packageManager
+                val sb = StringBuilder()
+                for (ri in pm.queryIntentActivities(android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER).setPackage(arg), android.content.pm.PackageManager.GET_META_DATA)) {
+                    val x = runCatching { ri.activityInfo.loadXmlMetaData(pm, "android.app.shortcuts") }.getOrNull() ?: continue
+                    sb.append(ri.activityInfo.name).append(": ")
+                    var n = 0
+                    while (x.next() != org.xmlpull.v1.XmlPullParser.END_DOCUMENT && n++ < 200) if (x.eventType == org.xmlpull.v1.XmlPullParser.START_TAG)
+                        sb.append("<").append(x.name).append((0 until x.attributeCount).joinToString("") { " ${x.getAttributeName(it)}=${x.getAttributeValue(it)}" }).append("> ")
+                }
+                out(sb.toString().take(3500))
+            }
             "close" -> main.post { act?.close(); out("ok") }
             "dump" -> main.post {
                 val m = act?.model ?: return@post out("no panel")

@@ -8,6 +8,7 @@ import io.github.kuscher.booklight.data.Notes
 import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.data.Recipes
 import io.github.kuscher.booklight.providers.Answers
+import io.github.kuscher.booklight.providers.AppCommands
 import io.github.kuscher.booklight.providers.AppsProvider
 import io.github.kuscher.booklight.providers.User
 import io.github.kuscher.booklight.providers.CalcProvider
@@ -36,6 +37,8 @@ class BooklightApp : Application() {
     lateinit var executor: Executor private set
     lateinit var scopes: Scopes private set
     lateinit var notes: Notes private set
+    /** What other apps offer. */
+    lateinit var commands: AppCommands private set
     /** What was typed when the panel last closed without running anything (the chip's key, the text): Up brings it back. */
     var lastText: Pair<String?, String>? = null
     /** App icons, made when the panel first needs them and kept after. */
@@ -56,8 +59,9 @@ class BooklightApp : Application() {
         val web = WebProvider(this, prefs)
         executor = Executor(this)
         val dials = Dials(this, executor)
-        scopes = Scopes(this, prefs, dials, notes) { web.search(it) }
-        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), SettingsProvider(this, prefs), CommandsProvider(this), dials, User(this, prefs), web)
+        commands = AppCommands(this, prefs, scope, apps)
+        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, others = { commands.scopes(it) })
+        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), SettingsProvider(this, prefs), CommandsProvider(this), dials, User(this, prefs), commands, web)
         engine = SearchEngine(
             providers, historyStore.history,
             scopes = { scopes.all() },

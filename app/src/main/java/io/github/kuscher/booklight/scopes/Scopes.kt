@@ -24,7 +24,11 @@ import io.github.kuscher.booklight.providers.PlayScope
  * while it is being shown, the text another app handed over.
  * **A new scope is one more line in [fixed].**
  */
-class Scopes(private val context: Context, private val prefs: Prefs, dials: Dials, notes: Notes, private val web: (String) -> Result) {
+class Scopes(
+    private val context: Context, private val prefs: Prefs, dials: Dials, notes: Notes, private val web: (String) -> Result,
+    /** The keywords other apps declare, given the ones already taken. */
+    private val others: (Set<String>) -> List<Scope> = { emptyList() },
+) {
     private val fixed: List<Scope> = listOf(
         MailScope(context), NoteScope(context, notes), EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context),
@@ -55,7 +59,9 @@ class Scopes(private val context: Context, private val prefs: Prefs, dials: Dial
             val taken = fixed.flatMapTo(HashSet()) { it.keywords }
             sites = saved.filter { Templates.takesArgument(it.url) && it.keyword !in taken }.map { SiteScope(context, it.site()) }
         }
-        return fixed + sites + listOfNotNull(incoming)
+        // Booklight's own first, then the user's, then other apps': an app never takes a keyword somebody already has.
+        val mine = fixed + sites
+        return mine + others(mine.flatMapTo(HashSet()) { sc -> sc.keywords.map { it.lowercase() } }) + listOfNotNull(incoming)
     }
 }
 

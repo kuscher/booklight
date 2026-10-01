@@ -336,7 +336,11 @@ class OverlayModel(
 
     private fun into(e: Effect.EnterScope) {
         val from = chip
-        app.engine.scope(e.key)?.let { enterScope(it, e.text); if (from != null && from.keywords.isEmpty()) foreign = true }
+        app.engine.scope(e.key)?.let {
+            enterScope(it, e.text); if (from != null && from.keywords.isEmpty()) foreign = true
+            // Another app's keyword, entered from its row: from now on its keyword and a Space enters it, like Booklight's own.
+            if (!demo && !it.spaceEnters) change { s -> if (e.key in s.usedScopes) s else s.copy(usedScopes = s.usedScopes + e.key) }
+        }
     }
 
     /**
