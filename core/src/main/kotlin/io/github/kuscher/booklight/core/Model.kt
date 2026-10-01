@@ -172,8 +172,15 @@ sealed interface Body {
     data class Keys(val keys: List<String>) : Body
     /** A task: a box, ticked or not. */
     data class Task(val done: Boolean) : Body
-    /** Text that is still arriving (an answer from the device's own model): [text] so far, [busy] while more is coming. */
-    data class Stream(val text: String, val busy: Boolean, val caption: String) : Body
+    /**
+     * A text under a caption, on up to four lines: what a prompt will be asked about, and then the
+     * answer of the device's own model as it arrives. [answer]: [text] is the model's (shown at full
+     * ink; before that it is the user's own text, a step back). [busy] while more is coming.
+     * [ask]: what the device's own model would be asked for this row (the prompt with the text in
+     * it); null when there is nothing to ask or nobody to ask. [tall]: the answer needed a third
+     * line, and the row has grown, once, to hold four.
+     */
+    data class Stream(val text: String, val busy: Boolean, val caption: String, val answer: Boolean = false, val ask: String? = null, val tall: Boolean = false) : Body
 }
 
 enum class SlotState { TYPED, GUESSED, EMPTY }

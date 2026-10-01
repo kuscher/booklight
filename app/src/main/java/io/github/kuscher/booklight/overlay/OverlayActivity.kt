@@ -209,7 +209,9 @@ class OverlayActivity : ComponentActivity() {
             Intent.ACTION_SEND -> intent.getCharSequenceExtra(Intent.EXTRA_TEXT)
             else -> null
         }?.toString()?.takeIf { it.isNotBlank() } ?: return false
-        model.enterScope((application as BooklightApp).scopes.receive(text.take(MAX_TEXT)))
+        // A selection in a field that can be edited comes with the offer to take text back.
+        val editable = intent.action == Intent.ACTION_PROCESS_TEXT && !intent.getBooleanExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false)
+        model.enterScope((application as BooklightApp).scopes.receive(text.take(MAX_TEXT), editable))
         return true
     }
 
@@ -294,7 +296,10 @@ class OverlayActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (current.get() === this) { current = WeakReference(null); (application as BooklightApp).scopes.forget() }
+        if (current.get() === this) {
+            current = WeakReference(null)
+            (application as BooklightApp).let { it.scopes.forget(); it.onDevice.close() }
+        }
         super.onDestroy()
     }
 

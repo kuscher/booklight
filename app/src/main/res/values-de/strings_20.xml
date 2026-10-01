@@ -83,4 +83,35 @@
     <string name="day_today">Heute</string>
     <string name="day_yesterday">Gestern</string>
     <string name="action_pin">Anheften</string>
+
+    <!-- Prompts und Antworten vom Modell auf diesem Gerät -->
+    <string name="prompt_hint">Text, oder nichts für das Kopierte</string>
+    <string name="prompt_clip">Aus der Zwischenablage</string>
+    <string name="prompt_device">Auf diesem Gerät</string>
+    <string name="prompt_long">Zu lang für eine Antwort auf diesem Gerät</string>
+    <string name="prompt_failed">Diesmal keine Antwort auf diesem Gerät</string>
+    <string name="prompt_empty">Text eingeben oder vorher kopieren</string>
+    <string name="prompt_private">Das Kopierte ist als privat markiert: Text eingeben</string>
+    <string name="action_in_gemini">In Gemini öffnen</string>
+    <string name="action_replace">Ersetzen</string>
+    <string name="done_replaced">Ersetzt</string>
+    <string name="action_get">Laden</string>
+    <string name="model_get">Modell für dieses Gerät laden</string>
+    <string name="model_get_sub">Das System lädt es einmal, für alle Apps. Antworten erscheinen dann hier</string>
+    <string name="model_getting">Modell wird geladen</string>
+    <string name="model_waiting">Das System lädt es</string>
+    <string name="model_progress">%1$d von %2$d MB</string>
+    <string name="win_prompts">Prompts</string>
+    <string name="win_prompt_add">Prompt hinzufügen …</string>
+    <string name="win_prompt_text">Prompt</string>
+    <string name="win_prompt_help">{text} steht dort, wo dein Text hinkommt; ohne {text} folgt der Text dem Prompt. Im Fenster tippst du das Kürzel und dann den Text, oder nichts für das Kopierte. Die Antwort kommt vom Modell auf diesem Gerät, wenn das System eines hat; sonst öffnet sich die Gemini-App mit Prompt und Text.</string>
+    <string name="win_prompt_name_hint">Freundlicher</string>
+    <string name="win_prompt_text_hint">Formuliere diesen Text freundlicher. Antworte nur mit dem neuen Text.</string>
+    <string-array name="prompt_seeds" translatable="false">
+        <item>fix|Korrigieren|Korrigiere Rechtschreibung und Grammatik dieses Textes. Behalte Sprache und Wortwahl bei. Antworte nur mit dem korrigierten Text.\n\n{text}</item>
+        <item>kürzer|Kürzer|Formuliere diesen Text kürzer und klarer, in derselben Sprache. Antworte nur mit dem neuen Text.\n\n{text}</item>
+        <item>en|Auf Englisch|Übersetze diesen Text ins Englische. Antworte nur mit der Übersetzung.\n\n{text}</item>
+        <item>sum|Zusammenfassung|Fasse diesen Text in ein bis zwei Sätzen zusammen, in der Sprache, in der er geschrieben ist. Antworte nur mit der Zusammenfassung.\n\n{text}</item>
+        <item>erkläre|Erklären|Erkläre das in zwei kurzen, einfachen Sätzen.\n\n{text}</item>
+    </string-array>
 </resources>

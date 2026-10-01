@@ -205,6 +205,19 @@ fun Panel(
         run.animateTo(1.15f, motion.fade((1100 * slow).toInt(), easing = CubicBezierEasing(0.3f, 0f, 0.2f, 1f)))
     }
 
+    // While the device's own model works on an answer the light runs again, slowly. When the first word lands it
+    // finishes its lap and is gone: it is never switched off where it stands.
+    LaunchedEffect(model.thinking) {
+        if (!motion.on) return@LaunchedEffect
+        fun left() = (1.15f - run.value) / 1.15f
+        if (model.thinking) while (true) {
+            if (run.value >= 1.15f) run.snapTo(0f)
+            run.animateTo(1.15f, motion.fade((2400 * left()).toInt().coerceAtLeast(1), easing = LinearEasing))
+        } else if (run.value > 0f && run.value < 1.15f) {
+            run.animateTo(1.15f, motion.fade((700 * left()).toInt().coerceAtLeast(1), easing = CubicBezierEasing(0.2f, 0f, 0.2f, 1f)))
+        }
+    }
+
     fun go(r: Result, a: Action, stay: Boolean) = onRun(r, a, stay)
 
     fun keys(e: KeyEvent): Boolean {

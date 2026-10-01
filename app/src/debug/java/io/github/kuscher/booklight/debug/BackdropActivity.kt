@@ -1,6 +1,11 @@
 package io.github.kuscher.booklight.debug
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
+import io.github.kuscher.booklight.BooklightApp
+import io.github.kuscher.booklight.overlay.OverlayActivity
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -23,10 +28,27 @@ import androidx.compose.ui.unit.sp
 /**
  * Test content to put behind the panel (debug builds only): the hard cases for glass side by side.
  * A white document with black text, a dark terminal, and saturated colour. `./bl backdrop` opens it.
+ *
+ * It also stands in for an app with a text field: started with `--es process TEXT` it hands that
+ * text to the panel the way a selection menu does (not read-only), and logs what comes back, to
+ * test "Replace".
  */
 class BackdropActivity : ComponentActivity() {
+    private val asked = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        Log.i(BooklightApp.TAG, "debug process -> result=${r.resultCode} text=${r.data?.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)}")
+    }
+
+    private fun process(intent: Intent) {
+        val text = intent.getStringExtra("process") ?: return
+        asked.launch(Intent(Intent.ACTION_PROCESS_TEXT).setType("text/plain").setClass(this, OverlayActivity::class.java)
+            .putExtra(Intent.EXTRA_PROCESS_TEXT, text).putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false).putExtra(OverlayActivity.EXTRA_STAY, true))
+    }
+
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); process(intent) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) process(intent)
         val prose = "The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. ".repeat(60)
         val shell = buildString { repeat(60) { append("droid@book:~/booklight\$ ./gradlew :core:test --console=plain\nBUILD SUCCESSFUL in 4s  ·  36 tests  ·  0 failures\n") } }
         setContent {

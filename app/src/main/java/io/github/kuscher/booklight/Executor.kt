@@ -79,6 +79,8 @@ class Executor(private val context: Context) {
                 // The system's Keyboard shortcuts window, where Customize adds an app shortcut.
                 "shortcuts" -> from?.requestShowKeyboardShortcuts() ?: return false
                 "done", "again" -> {}     // nothing to do here: the level was set as it was moved; a new password comes with the next list
+                // The system fetches the on-device model, once, for every app; Booklight only asks it to.
+                "model" -> app.onDevice.download()
                 else -> return false
             }
 
@@ -151,7 +153,9 @@ class Executor(private val context: Context) {
             is Effect.EnterScope, is Effect.Type -> return false     // the panel does these itself
             // 2.0, each in its own task:
             is Effect.Open -> return open(effect, ctx)
-            is Effect.Pin, is Effect.Unpin, is Effect.Replace -> return false
+            // The app the text came from asked for text back (its selection menu): this is the answer to that.
+            is Effect.Replace -> (from ?: return false).setResult(Activity.RESULT_OK, Intent().putExtra(Intent.EXTRA_PROCESS_TEXT, effect.text))
+            is Effect.Pin, is Effect.Unpin -> return false
         }
         return true
     }

@@ -1,7 +1,16 @@
 package io.github.kuscher.booklight.overlay
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -86,6 +96,66 @@ fun RowScope.SlotsBody(b: Body.Slots, ink: Color) {
         }
         b.note?.let { Text(it, color = ink, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
     }
+}
+
+/** How many letters behind its head an answer being written is still coming into view. */
+private const val SOFT = 14f
+
+/**
+ * A text under a caption: what a prompt is about, and then the answer as it arrives. The answer is
+ * written into the row: laid out as far as it has come, and uncovered letter by letter behind a
+ * head that follows what arrives, so words come into view instead of appearing. Two lines; four
+ * once the answer needs them, uncovered on the spring the rows below move on. The caption, the mark
+ * and the strip keep their places while the row grows.
+ */
+@Composable
+fun RowScope.StreamBody(b: Body.Stream, ink: Color, onGrow: () -> Unit) {
+    val motion = LocalMotion.current
+    val line = Metrics.streamLine
+    val style = VALUE.copy(lineHeight = with(LocalDensity.current) { line.toSp() })
+    val room by animateDpAsState(line * if (b.tall) 4 else 2, motion.place(), label = "room")
+    // The question and the answer are two texts in one place: the one that goes keeps its own words while it fades.
+    var own by remember { mutableStateOf("") }
+    var said by remember { mutableStateOf("") }
+    if (b.answer) said = b.text else own = b.text
+    val answer by animateFloatAsState(if (b.answer) 1f else 0f, motion.fade(if (b.answer) 110 else 70), label = "answer")
+    Column(Modifier.weight(1f).align(Alignment.Top).padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
+        AnimatedContent(b.caption, transitionSpec = { motion.roll() }, contentAlignment = Alignment.CenterStart, label = "caption") { c ->
+            Text(c, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Box(Modifier.padding(top = 3.dp).fillMaxWidth().height(room).clipToBounds()) {
+            if (answer < 1f) Text(own, color = ink.copy(alpha = ink.alpha * SECOND), style = style, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.graphicsLayer { alpha = 1f - answer })
+            if (b.answer || answer > 0f) Written(said, ink, style, Modifier.graphicsLayer { alpha = answer }, onGrow)
+        }
+    }
+}
+
+@Composable
+private fun Written(text: String, ink: Color, style: TextStyle, modifier: Modifier, onGrow: () -> Unit) {
+    val motion = LocalMotion.current
+    val head = remember { Animatable(0f) }
+    LaunchedEffect(text.length) {
+        val to = text.length + SOFT
+        if (head.value > to) head.snapTo(0f)       // another answer: written from its start
+        if (motion.on) head.animateTo(to, motion.fade(240, easing = LinearEasing)) else head.snapTo(to)
+    }
+    val h = head.value
+    val shown = buildAnnotatedString {
+        append(text)
+        val n = text.length
+        var i = (h - SOFT).toInt().coerceIn(0, n)
+        while (i < n) {
+            val a = ((h - i) / SOFT).coerceIn(0f, 1f)
+            if (a <= 0f) { addStyle(SpanStyle(color = Color.Transparent), i, n); break }
+            if (a < 1f) addStyle(SpanStyle(color = ink.copy(alpha = ink.alpha * a)), i, i + 1)
+            i++
+        }
+    }
+    var lines by remember { mutableIntStateOf(0) }
+    LaunchedEffect(lines > 2) { if (lines > 2) onGrow() }
+    // Laid out at its four lines whatever room the row has yet: the room is what uncovers it.
+    Text(shown, color = ink, style = style, maxLines = 4, overflow = TextOverflow.Ellipsis, onTextLayout = { lines = it.lineCount },
+        modifier = modifier.wrapContentHeight(Alignment.Top, unbounded = true))
 }
 
 /**

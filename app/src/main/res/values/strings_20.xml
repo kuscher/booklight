@@ -89,4 +89,36 @@
     <string name="day_today">Today</string>
     <string name="day_yesterday">Yesterday</string>
     <string name="action_pin">Pin</string>
+
+    <!-- Prompts, and answers from the model on this device -->
+    <string name="prompt_hint">Text, or nothing for what you copied</string>
+    <string name="prompt_clip">From the clipboard</string>
+    <string name="prompt_device">On this device</string>
+    <string name="prompt_long">Too long to answer on this device</string>
+    <string name="prompt_failed">No answer on this device this time</string>
+    <string name="prompt_empty">Type the text, or copy it first</string>
+    <string name="prompt_private">What you copied is marked private: type the text</string>
+    <string name="action_in_gemini">Open in Gemini</string>
+    <string name="action_replace">Replace</string>
+    <string name="done_replaced">Replaced</string>
+    <string name="action_get">Get</string>
+    <string name="model_get">Get the on-device model</string>
+    <string name="model_get_sub">The system fetches it once, for every app. Answers then appear here</string>
+    <string name="model_getting">Getting the on-device model</string>
+    <string name="model_waiting">The system is fetching it</string>
+    <string name="model_progress">%1$d of %2$d MB</string>
+    <string name="win_prompts">Prompts</string>
+    <string name="win_prompt_add">Add a prompt…</string>
+    <string name="win_prompt_text">Prompt</string>
+    <string name="win_prompt_help">{text} is where your text goes; without it, the text follows the prompt. In the panel, type the keyword and then the text, or nothing to use what you copied. The answer comes from the model on this device where the system has one; otherwise the Gemini app opens with the prompt and the text.</string>
+    <string name="win_prompt_name_hint">Friendlier</string>
+    <string name="win_prompt_text_hint">Rewrite this text in a friendlier tone. Reply with only the new text.</string>
+    <!-- The prompts a new installation starts with: keyword|name|text. -->
+    <string-array name="prompt_seeds" translatable="false">
+        <item>fix|Fix spelling|Fix the spelling and grammar of this text. Keep its language and its wording. Reply with only the corrected text.\n\n{text}</item>
+        <item>shorter|Shorter|Rewrite this text to be shorter and clearer, in the same language. Reply with only the rewritten text.\n\n{text}</item>
+        <item>de|In German|Translate this text into German. Reply with only the translation.\n\n{text}</item>
+        <item>sum|Summary|Summarize this text in one or two sentences, in the language it is written in. Reply with only the summary.\n\n{text}</item>
+        <item>explain|Explain|Explain this in two short, plain sentences.\n\n{text}</item>
+    </string-array>
 </resources>

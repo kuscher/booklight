@@ -9,6 +9,7 @@
             android:name=".debug.BackdropActivity"
             android:exported="true"
             android:label="Booklight backdrop"
+            android:launchMode="singleTop"
             android:taskAffinity="io.github.kuscher.booklight.backdrop" />
         <!-- adb-only test hooks (./bl debug …): the shell holds DUMP, apps don't. Debug builds only: they print
              what is typed and what the rows hold to the log, which a release never should. -->

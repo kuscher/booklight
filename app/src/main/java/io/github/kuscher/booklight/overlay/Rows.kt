@@ -173,6 +173,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                     onCell = { if (selected) model.cellAt(it) else if (!slot.leaving) model.select(slot.index) },
                     onPick = { if (!slot.leaving) { model.select(slot.index); model.cellAt(it); model.armAt(0); model.enter(onRun) } },
                     onToggle = { if (!slot.leaving) { model.select(slot.index); if (open == r.id) model.close() else model.open() } },
+                    onGrow = { model.grow(r.id) },
                 )
                 if (mine != null) ActionBlock(
                     mine.second, shown = { block.value.coerceIn(0f, 1f) },
@@ -335,6 +336,8 @@ fun ResultRow(
     /** What the arming can rest on (indices into the row's actions; the number of actions is its arrow), and whether its other actions are listed under it. */
     stops: List<Int> = r.actions.indices.toList(), opened: Boolean = false,
     onHover: () -> Unit, onClick: () -> Unit, onArm: (Int) -> Unit, onAction: (Int) -> Unit, onCell: (Int) -> Unit, onPick: (Int) -> Unit, onToggle: () -> Unit = {},
+    /** An answer in this row needs more than its two lines. */
+    onGrow: () -> Unit = {},
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -348,14 +351,17 @@ fun ResultRow(
     val described = stringResource(R.string.a11y_selected, r.title, r.actions.getOrNull(armed)?.label ?: kind)
     RowFrame(Metrics.rowHeight(r), selected, described, r.actions, bare = body is Body.Grid, onHover, onClick, onAction) {
         if (body is Body.Grid) { GridBody(body, cell.coerceAtLeast(0), selected, onCell, onPick); return@RowFrame }
+        // A row that grows under its answer keeps its mark and its strip where they were: on the line of the row's first height.
+        val pinned = if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = (Metrics.tall - 36.dp) / 2) else Modifier
         if (body is Body.Task) TaskBox(body.done, dim)
         else if (body is Body.Code) QrPlate(body.text, Modifier.padding(start = 4.dp))
         // A swatch is a sample, not a mark: it doesn't swell with the selection.
         else if (r.icon is RowIcon.Swatch) RowPicture(r.icon, icons, dim)
-        else Box(Modifier.graphicsLayer { scaleX = pop; scaleY = pop }) { RowPicture(r.icon, icons, dim) }
+        else Box(pinned.graphicsLayer { scaleX = pop; scaleY = pop }) { RowPicture(r.icon, icons, dim) }
 
         when {
             body is Body.Slots -> SlotsBody(body, on)
+            body is Body.Stream -> StreamBody(body, on, onGrow)
             body is Body.Code -> Column(Modifier.weight(1f).padding(start = 20.dp, end = 12.dp)) {
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 3, overflow = TextOverflow.Ellipsis)
                 r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = 1, modifier = Modifier.padding(top = 4.dp)) }
@@ -402,7 +408,7 @@ fun ResultRow(
         // A key combination: the caps keep one place in every row, selected or not. The strip's room is kept free
         // after them, and the kind label and the strip trade places inside it.
         if (body is Body.Keys) { KeyCaps(body.keys, dim); Spacer(Modifier.width(16.dp)) }
-        Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else Modifier, contentAlignment = Alignment.CenterEnd) {
+        Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = (Metrics.tall - 32.dp) / 2).height(32.dp) else Modifier, contentAlignment = Alignment.CenterEnd) {
         AnimatedContent(when { selected && r.actions.isNotEmpty() -> 2; opened -> 1; else -> 0 }, transitionSpec = {
             if (targetState == 2) (slideInHorizontally(motion.place()) { it / 4 } + fadeIn(motion.fade(110, 60))) togetherWith fadeOut(motion.fade(60))
             else fadeIn(motion.fade(110)) togetherWith fadeOut(motion.fade(60))

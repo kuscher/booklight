@@ -29,13 +29,17 @@ object Metrics {
     /** Where the panel's top edge sits, as a share of the screen's height: the field stays put while the list grows down. */
     const val TOP = 0.2f
 
+    /** A line of an answer. A row holds two, and four once it has grown. */
+    val streamLine = 22.dp
+
     /** One of an opened row's other actions: the strip's slot as a line of its own. */
     val action = 40.dp
 
     fun rowHeight(r: Result): Dp = when (val b = r.body) {
         is Body.Grid -> cell * gridRows(b) + 16.dp
         is Body.Code -> picture
-        is Body.Slots, is Body.Mono, is Body.Stream -> tall
+        is Body.Slots, is Body.Mono -> tall
+        is Body.Stream -> if (b.tall) tall + streamLine * 2 else tall
         else -> if (r.kind == Kind.ACTION) action else if (r.answer != null) tall else row
     }
 

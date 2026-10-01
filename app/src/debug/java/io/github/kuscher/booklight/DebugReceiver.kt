@@ -22,6 +22,7 @@ import java.io.FileOutputStream
  *   ping | dump | type TEXT | key up|down|left|right|tab|backtab|esc|enter|stay|back | close | shot [NAME]
  *   find TEXT (ranked results without the panel; "KEY: TEXT" searches inside a scope) | apps | forget
  *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted|solid | pref opening off|fast|medium|slow
+ *   ai none|downloadable|downloading|ready|real (what the rows of a prompt show on a device in that state; `real` asks the device again)
  *   pref theme auto|light|dark | pref tint on|off | pref dim on|off | pref cards (show the first-run cards again) | pref nocards
  */
 class DebugReceiver : BroadcastReceiver() {
@@ -97,12 +98,22 @@ class DebugReceiver : BroadcastReceiver() {
                 }
                 out(sb.toString().take(3500))
             }
+            "ai" -> app.scope.launch {
+                app.onDevice.pretend = when (arg) {
+                    "none" -> io.github.kuscher.booklight.ai.OnDevice.State.NONE
+                    "downloadable" -> io.github.kuscher.booklight.ai.OnDevice.State.DOWNLOADABLE
+                    "downloading" -> io.github.kuscher.booklight.ai.OnDevice.State.DOWNLOADING
+                    "ready" -> io.github.kuscher.booklight.ai.OnDevice.State.READY
+                    else -> null
+                }
+                out("${app.onDevice.check()}")
+            }
             "close" -> main.post { act?.close(); out("ok") }
             "dump" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
                 val d = act.window.decorView
                 val loc = IntArray(2).also { d.getLocationOnScreen(it) }
-                out("chip=${m.chip?.key} query='${m.query}' selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
+                out("chip=${m.chip?.key} query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
                     "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
             }
@@ -134,7 +145,7 @@ class DebugReceiver : BroadcastReceiver() {
             is io.github.kuscher.booklight.core.Body.Mono -> " {${b.text}}"
             is io.github.kuscher.booklight.core.Body.Keys -> " {" + b.keys.joinToString(" + ") + "}"
             is io.github.kuscher.booklight.core.Body.Task -> if (b.done) " {done}" else " {open}"
-            is io.github.kuscher.booklight.core.Body.Stream -> " {${b.caption}: ${b.text}${if (b.busy) "…" else ""}}"
+            is io.github.kuscher.booklight.core.Body.Stream -> " {${b.caption}${if (b.answer) " =" else ":"} ${b.text}${if (b.busy) "…" else ""}${if (b.tall) " tall" else ""}${if (b.ask != null && !b.answer) " ?" else ""}}"
         }
         val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (a.more) "+" else "") }.joinToString(",")
         return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.label ?: r.kind}]$body <$acts>"

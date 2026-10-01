@@ -1,6 +1,7 @@
 package io.github.kuscher.booklight
 
 import android.app.Application
+import io.github.kuscher.booklight.ai.OnDevice
 import io.github.kuscher.booklight.core.Provider
 import io.github.kuscher.booklight.core.SearchEngine
 import io.github.kuscher.booklight.data.HistoryStore
@@ -38,6 +39,8 @@ class BooklightApp : Application() {
     lateinit var executor: Executor private set
     lateinit var scopes: Scopes private set
     lateinit var notes: Notes private set
+    /** The device's own model, where the system has one for apps: it answers the user's prompts. */
+    lateinit var onDevice: OnDevice private set
     /** What other apps offer. */
     lateinit var commands: AppCommands private set
     /** What was typed when the panel last closed without running anything (the chip's key, the text): Up brings it back. */
@@ -63,7 +66,8 @@ class BooklightApp : Application() {
         commands = AppCommands(this, prefs, scope, apps)
         val pages = SettingsProvider(this, prefs)
         val keys = KeysProvider(this, prefs)
-        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, others = { commands.scopes(it) })
+        onDevice = OnDevice(scope)
+        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, onDevice, others = { commands.scopes(it) })
         providers = listOf(apps, CalcProvider(this, prefs), Answers(this), pages, CommandsProvider(this), dials, User(this, prefs), commands, keys, web)
         engine = SearchEngine(
             providers, historyStore.history,

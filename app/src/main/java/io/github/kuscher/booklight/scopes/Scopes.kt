@@ -2,6 +2,8 @@ package io.github.kuscher.booklight.scopes
 
 import android.content.Context
 import io.github.kuscher.booklight.R
+import io.github.kuscher.booklight.ai.OnDevice
+import io.github.kuscher.booklight.data.PromptEntry
 import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Icon
@@ -24,13 +26,13 @@ import io.github.kuscher.booklight.providers.LevelScope
 import io.github.kuscher.booklight.providers.PlayScope
 
 /**
- * Every scope there is: the built-in ones, one for each of the user's links that take text, and,
- * while it is being shown, the text another app handed over.
+ * Every scope there is: the built-in ones, one for each of the user's links that take text, one
+ * for each of their prompts, and, while it is being shown, the text another app handed over.
  * **A new scope is one more line in [fixed].**
  */
 class Scopes(
     private val context: Context, private val prefs: Prefs, dials: Dials, private val notes: Notes, private val web: (String) -> Result,
-    settings: SettingsProvider, keys: KeysProvider,
+    settings: SettingsProvider, keys: KeysProvider, private val ai: OnDevice,
     /** The keywords other apps declare, given the ones already taken. */
     private val others: (Set<String>) -> List<Scope> = { emptyList() },
 ) {
@@ -41,7 +43,7 @@ class Scopes(
         MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context),
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), QrScope(context), ColorScope(context),
-        SnipScope(context, prefs), TextScope(context, null, web),
+        SnipScope(context, prefs), TextScope(context, null, web) { prefs.now.prompts },
         LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),
         // `s` and `k`: the two that give their letter up to a link of the user's own with that keyword.
         SettingsScope(context, settings, ::linkKeywords), KeysScope(context, keys, ::linkKeywords),
@@ -60,23 +62,35 @@ class Scopes(
     /** Text sent from another app: a scope of its own for as long as the panel shows it. */
     @Volatile var incoming: Scope? = null; private set
 
-    fun receive(text: String): Scope = TextScope(context, text, web).also { incoming = it }
+    /** The text came from a field that can be edited, and the app it is in takes text back: an answer can replace it there. */
+    @Volatile var editable = false; private set
+
+    fun receive(text: String, editable: Boolean = false): Scope = TextScope(context, text, web) { prefs.now.prompts }.also { incoming = it; this.editable = editable }
 
     /** The panel closed: someone else's text is not kept, and neither is what was read of the user's notes. */
-    fun forget() { incoming = null; todo.closed(); notes.forget() }
+    fun forget() { incoming = null; editable = false; todo.closed(); notes.forget() }
 
-    // The user's links change rarely: their scopes are made again only when the saved list is another one.
+    // The user's links and prompts change rarely: their scopes are made again only when a saved list is another one.
     private var sitesFor: List<SiteEntry>? = null
+    private var promptsFor: List<PromptEntry>? = null
     private var sites: List<Scope> = emptyList()
+    private var prompts: List<Scope> = emptyList()
 
     fun all(): List<Scope> {
-        val saved = prefs.now.sites
-        if (saved !== sitesFor) {
-            sitesFor = saved
-            sites = saved.filter { Templates.takesArgument(it.url) && it.keyword.lowercase() !in reserved }.map { SiteScope(context, it.site()) }
+        val saved = prefs.now
+        if (saved.sites !== sitesFor || saved.prompts !== promptsFor) {
+            sitesFor = saved.sites; promptsFor = saved.prompts
+            sites = saved.sites.filter { Templates.takesArgument(it.url) && it.keyword.lowercase() !in reserved }.map { SiteScope(context, it.site()) }
+            // A prompt's keyword is its own only if nobody has it: Booklight, a link, or a prompt before it.
+            val taken = HashSet(reserved) + saved.sites.map { it.keyword.lowercase() }
+            val seen = HashSet<String>()
+            prompts = saved.prompts.map { p ->
+                val k = p.keyword.lowercase()
+                PromptScope(context, p, if (k.isEmpty() || k in taken || !seen.add(k)) "" else p.keyword, ai) { editable }
+            }
         }
         // Booklight's own first, then the user's, then other apps': an app never takes a keyword somebody already has.
-        val mine = fixed + sites
+        val mine = fixed + sites + prompts
         return mine + others(mine.flatMapTo(HashSet()) { sc -> sc.keywords.map { it.lowercase() } }) + listOfNotNull(incoming)
     }
 }

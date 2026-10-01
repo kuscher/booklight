@@ -48,6 +48,7 @@ import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Templates
+import io.github.kuscher.booklight.data.PromptEntry
 import io.github.kuscher.booklight.data.RecipeEntry
 import io.github.kuscher.booklight.data.Recipes
 import io.github.kuscher.booklight.data.Settings
@@ -66,8 +67,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /**
- * "Your commands": the links (1.0's keyword searches, now with placeholders), the snippets and the
- * recipes the user made. A row opens its editor in place, under it; names, keywords and ordered
+ * "Your commands": the links (1.0's keyword searches, now with placeholders), the snippets, the
+ * recipes and the prompts the user made. A row opens its editor in place, under it; names, keywords and ordered
  * steps are form work, which a window does better than a one-line panel.
  */
 @Composable
@@ -75,8 +76,9 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
     /** What is being edited: its kind and its id; an empty id is a new one. */
     var open by remember { mutableStateOf<Pair<String, String>?>(null) }
     LaunchedEffect(edit) { if (edit != null) { open = edit; page.selected = "${edit.first}:${edit.second}"; delay(1600); onEdited() } }
-    // A link can't have a keyword one of Booklight's own scopes answers to: it would never be reached.
-    val taken = s.sites.map { it.keyword.lowercase() }.toSet() + app.scopes.reserved
+    // A link can't have a keyword one of Booklight's own scopes answers to: it would never be reached. Nor one a prompt has.
+    val words = s.prompts.mapNotNull { it.keyword.lowercase().takeIf { k -> k.isNotEmpty() } }.toSet()
+    val taken = s.sites.map { it.keyword.lowercase() }.toSet() + app.scopes.reserved + words
     fun close() { open = null; onTyping(false) }
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
 
@@ -126,6 +128,25 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
         Add(page, "recipe:", stringResource(R.string.win_recipe_add)) { open = "recipe" to "" }
         Editor(open == ("recipe" to "")) {
             RecipeEditor(app, null, onTyping, onSave = { new -> set { it.copy(recipes = it.recipes + new) }; close() }, onDelete = null, onClose = ::close)
+        }
+
+        Label(stringResource(R.string.win_prompts))
+        // A prompt's keyword must be free of links, recipes, Booklight's own and the other prompts.
+        val used = taken + s.recipes.mapNotNull { it.keyword.lowercase().takeIf { k -> k.isNotEmpty() } }
+        for (prompt in s.prompts) {
+            PageRow(page, "prompt:${prompt.id}", prompt.name, prompt.text.replace("{text}", "").lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() },
+                mark = { Icon(Symbols.of("spark"), null, tint = it) }, onEnter = { open = "prompt" to prompt.id }) {
+                if (prompt.keyword.isNotEmpty()) Cap(prompt.keyword, it)
+            }
+            Editor(open == ("prompt" to prompt.id)) {
+                PromptEditor(prompt, used, onTyping,
+                    onSave = { new -> set { st -> st.copy(prompts = st.prompts.map { if (it.id == prompt.id) new else it }) }; close() },
+                    onDelete = { set { st -> st.copy(prompts = st.prompts.filter { it.id != prompt.id }) }; close() }, onClose = ::close)
+            }
+        }
+        Add(page, "prompt:", stringResource(R.string.win_prompt_add)) { open = "prompt" to "" }
+        Editor(open == ("prompt" to "")) {
+            PromptEditor(null, used, onTyping, onSave = { new -> set { it.copy(prompts = it.prompts + new) }; close() }, onDelete = null, onClose = ::close)
         }
     }
 }
@@ -223,6 +244,22 @@ private fun SnippetEditor(initial: SnippetEntry?, taken: Set<String>, onTyping: 
     Input(stringResource(R.string.slot_text), text, { text = it }, onTyping, lines = 3)
     val ok = key.isNotEmpty() && ' ' !in key && (key.lowercase() !in taken || key.equals(initial?.key, ignoreCase = true)) && text.isNotBlank()
     Buttons(ok, { onSave(SnippetEntry(key, text)) }, onDelete, onClose)
+}
+
+/** A prompt is a name, a keyword (it can do without: it is then found by its name) and the text the model is given. */
+@Composable
+private fun PromptEditor(initial: PromptEntry?, taken: Set<String>, onTyping: (Boolean) -> Unit, onSave: (PromptEntry) -> Unit, onDelete: (() -> Unit)?, onClose: () -> Unit) {
+    var name by remember { mutableStateOf(initial?.name.orEmpty()) }
+    var keyword by remember { mutableStateOf(initial?.keyword.orEmpty()) }
+    var text by remember { mutableStateOf(initial?.text.orEmpty()) }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Input(stringResource(R.string.slot_name), name, { name = it.take(28) }, onTyping, Modifier.weight(2f), hint = stringResource(R.string.win_prompt_name_hint))
+        Input(stringResource(R.string.set_site_keyword), keyword, { keyword = it.trim().take(16) }, onTyping, Modifier.weight(1f), hint = "nice")
+    }
+    Input(stringResource(R.string.win_prompt_text), text, { text = it.take(2000) }, onTyping, lines = 4, hint = stringResource(R.string.win_prompt_text_hint))
+    Text(stringResource(R.string.win_prompt_help), color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECOND), style = SMALL.copy(lineHeight = 18.sp))
+    val ok = name.isNotBlank() && text.isNotBlank() && ' ' !in keyword && (keyword.isEmpty() || keyword.lowercase() !in taken || keyword.equals(initial?.keyword, ignoreCase = true))
+    Buttons(ok, { onSave(PromptEntry(initial?.id ?: "p${System.currentTimeMillis()}", name.trim(), keyword, text.trim())) }, onDelete, onClose)
 }
 
 /**

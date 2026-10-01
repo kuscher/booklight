@@ -11,6 +11,8 @@ kotlinxSerialization = "1.9.0"
 kotlinxCoroutines = "1.10.2"
 junit = "4.13.2"
 zxing = "3.5.3"
+# The device's own model (Gemini Nano through AICore). Beta: pinned.
+mlkitGenaiPrompt = "1.0.0-beta4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +32,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+mlkit-genai-prompt = { group = "com.google.mlkit", name = "genai-prompt", version.ref = "mlkitGenaiPrompt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

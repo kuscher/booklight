@@ -36,6 +36,10 @@ data class StepEntry(val kind: String, val a: String = "", val b: String = "", v
 @Serializable
 data class RecipeEntry(val id: String, val name: String, val keyword: String = "", val steps: List<StepEntry> = emptyList())
 
+/** A prompt the user keeps: a name, a keyword (may be empty) and the text, with `{text}` where what is typed goes. */
+@Serializable
+data class PromptEntry(val id: String, val name: String, val keyword: String = "", val text: String)
+
 /** Everything the user can choose, plus which first-run cards are still to show. */
 @Serializable
 data class Settings(
@@ -62,6 +66,8 @@ data class Settings(
     val sites: List<SiteEntry> = Sites.defaults.map { SiteEntry(it.keyword, it.name, it.url) },
     val snippets: List<SnippetEntry> = emptyList(),
     val recipes: List<RecipeEntry> = emptyList(),
+    /** Prompts: `fix teh text`. Five to start with, in the device's language when Booklight first ran. */
+    val prompts: List<PromptEntry> = emptyList(),
     /** The folder notes go to, as the tree address the user granted; null until they have. */
     val notesFolder: String? = null,
     val emojiRecent: List<String> = emptyList(),
@@ -72,7 +78,7 @@ data class Settings(
     val usedScopes: List<String> = emptyList(),
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
-    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1. */
+    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0. */
     val schema: Int = 1,
 ) {
     fun engine(): Engine = Engines.byId(engine)
@@ -80,23 +86,23 @@ data class Settings(
 }
 
 /** The settings as `files/settings.json`: read once at start, written off the main thread on change. */
-class Prefs(context: Context, private val scope: CoroutineScope) {
+class Prefs(private val context: Context, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "settings.json")
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val writing = Mutex()
-    private companion object { const val SCHEMA = 2 }
+    private companion object { const val SCHEMA = 3 }
     private val _state = MutableStateFlow(load())
     val state: StateFlow<Settings> = _state
     val now: Settings get() = _state.value
 
     private fun load(): Settings = try {
-        if (file.exists()) migrate(json.decodeFromString(Settings.serializer(), file.readText())) else Settings(schema = SCHEMA)
+        if (file.exists()) migrate(json.decodeFromString(Settings.serializer(), file.readText())) else started(Settings(schema = SCHEMA))
     } catch (e: Exception) {
         // The file holds what the user made (links, snippets, recipes): put it aside rather than write over it.
         // Only the kind of error is logged: the message of a parse error quotes the file.
         Log.w(BooklightApp.TAG, "settings unreadable (${e.javaClass.simpleName}); kept as settings.json.bad, using defaults")
         runCatching { file.copyTo(File(file.parentFile, file.name + ".bad"), overwrite = true) }
-        Settings(schema = SCHEMA)
+        started(Settings(schema = SCHEMA))
     }
 
     /**
@@ -104,12 +110,32 @@ class Prefs(context: Context, private val scope: CoroutineScope) {
      * (unless the user already has a `store` of their own). The one default that is new in 1.1, `drive`, is
      * added; defaults the user had removed stay removed.
      */
-    private fun migrate(s: Settings): Settings {
-        if (s.schema >= SCHEMA) return s
-        val free = s.sites.none { it.keyword == "store" }
-        val renamed = s.sites.map { if (free && it.keyword == "play" && it.url.contains("play.google.com")) it.copy(keyword = "store") else it }
-        val added = Sites.defaults.filter { it.keyword == "drive" && renamed.none { r -> r.keyword == "drive" } }.map { SiteEntry(it.keyword, it.name, it.url) }
-        return s.copy(sites = renamed + added, schema = SCHEMA)
+    private fun migrate(old: Settings): Settings {
+        var s = old
+        if (s.schema < 2) {
+            val free = s.sites.none { it.keyword == "store" }
+            val renamed = s.sites.map { if (free && it.keyword == "play" && it.url.contains("play.google.com")) it.copy(keyword = "store") else it }
+            val added = Sites.defaults.filter { it.keyword == "drive" && renamed.none { r -> r.keyword == "drive" } }.map { SiteEntry(it.keyword, it.name, it.url) }
+            s = s.copy(sites = renamed + added)
+        }
+        // 2.0: the five prompts to start with.
+        if (s.schema < 3) s = started(s)
+        return s.copy(schema = SCHEMA)
+    }
+
+    /**
+     * What a new installation, and one that comes from 1.1, starts with: the prompts, in the
+     * device's language. A keyword the user already has for a link or a recipe stays theirs: that
+     * prompt comes without one, and is found by its name.
+     */
+    private fun started(s: Settings): Settings {
+        if (s.prompts.isNotEmpty()) return s
+        val used = (s.sites.map { it.keyword } + s.recipes.map { it.keyword }).mapTo(HashSet()) { it.lowercase() }
+        val seeds = context.resources.getStringArray(io.github.kuscher.booklight.R.array.prompt_seeds).mapNotNull { line ->
+            val (keyword, name, text) = line.split('|', limit = 3).takeIf { it.size == 3 } ?: return@mapNotNull null
+            PromptEntry("p-$keyword", name, if (keyword.lowercase() in used) "" else keyword, text)
+        }
+        return s.copy(prompts = seeds)
     }
 
     fun update(change: (Settings) -> Settings) {

@@ -19,6 +19,7 @@ import io.github.kuscher.booklight.core.Scope
 import io.github.kuscher.booklight.core.Slot
 import io.github.kuscher.booklight.core.SlotState
 import io.github.kuscher.booklight.data.Prefs
+import io.github.kuscher.booklight.data.PromptEntry
 import io.github.kuscher.booklight.overlay.qr
 import io.github.kuscher.booklight.providers.Answers
 
@@ -159,8 +160,11 @@ class SnipScope(private val context: Context, private val prefs: Prefs) : Scope 
  * A piece of text and what can be done with it: the clipboard (`clip`), or text another app
  * handed over (its selection menu, its share sheet), which then is the chip. Typing narrows the
  * rows by name. The text goes nowhere unless a row is run.
+ *
+ * The user's prompts are rows too: for text another app sent, after the two ways out; for the
+ * clipboard, when their name is typed.
  */
-class TextScope(private val context: Context, private val fixed: String?, private val search: (String) -> Result) : Scope {
+class TextScope(private val context: Context, private val fixed: String?, private val search: (String) -> Result, private val prompts: () -> List<PromptEntry> = { emptyList() }) : Scope {
     override val key = if (fixed == null) "clip" else "text"
     override val keywords: List<String> = if (fixed == null) context.getString(R.string.clip_keys).split(',') else emptyList()
     override val name: String = fixed?.let { it.trim().replace('\n', ' ').let { t -> if (t.length > 28) t.take(27) + "…" else t } } ?: context.getString(R.string.clip_name)
@@ -184,6 +188,12 @@ class TextScope(private val context: Context, private val fixed: String?, privat
         // (a password): there the rows that stay on the device come first and the ways out last.
         val out = listOf(search(one), gemini(context, text, 1.0))
         if (fixed != null) rows += out
+        val filter = arg.trim()
+        val asked = prompts().filter { fixed != null || (filter.isNotEmpty() && (Matcher.score(filter, it.name) > 0 || it.keyword.equals(filter, ignoreCase = true))) }.map { p ->
+            row("prompt:${p.id}", p.name, "spark", one, Action("prompt", context.getString(R.string.scope_type), Effect.EnterScope(PromptScope.key(p), one), keepOpen = true, symbol = "spark"))
+        }
+        // Three of them while nothing is typed, so that Note, Mail and the code stay in sight; a name finds the rest.
+        if (fixed != null) rows += if (filter.isEmpty()) asked.take(3) else asked
         rows += row("note", context.getString(R.string.note_name), "note", one, Action("note", context.getString(R.string.scope_type), Effect.EnterScope("note", one), keepOpen = true, symbol = "edit"))
         rows += row("mail", context.getString(R.string.mail_name), "mail", one, Action("compose", context.getString(R.string.action_compose), Effect.Compose(emptyList(), "", text), symbol = "edit"))
         if (one.length <= 1200) rows += row("qr", context.getString(R.string.qr_name), "qr", one, Action("qr", context.getString(R.string.scope_type), Effect.EnterScope("qr", one), keepOpen = true, symbol = "qr"))
@@ -195,7 +205,8 @@ class TextScope(private val context: Context, private val fixed: String?, privat
             } else rows += row(t.id, t.value.trim().replace('\n', ' '), "text", label, Action("copy", copy, Effect.CopyText(t.value)))
         }
         if (fixed == null) rows += out
-        val filter = arg.trim()
-        return if (filter.isEmpty()) rows else rows.filter { r -> Matcher.score(filter, r.subtitle ?: "") > 0 || Matcher.score(filter, r.title) > 0 }
+        if (filter.isEmpty()) return rows
+        // In the clipboard's list a prompt found by its name comes first: it was asked for.
+        return (if (fixed == null) asked else emptyList()) + rows.filter { r -> Matcher.score(filter, r.subtitle ?: "") > 0 || Matcher.score(filter, r.title) > 0 }
     }
 }

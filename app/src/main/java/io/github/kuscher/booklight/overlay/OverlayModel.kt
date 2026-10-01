@@ -8,6 +8,9 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.kuscher.booklight.BooklightApp
+import io.github.kuscher.booklight.ai.OnDevice
+import io.github.kuscher.booklight.scopes.PromptScope
+import kotlinx.coroutines.flow.drop
 import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.Effect
@@ -58,6 +61,13 @@ class OverlayModel(
     var opened by mutableStateOf<String?>(null); private set
     /** The list as it was before a row was opened: closing brings it back. */
     private var closed: List<Result> = emptyList()
+    /** The device's own model has been asked and has not said a word yet: the panel's edge light runs while it works. */
+    var thinking by mutableStateOf(false); private set
+    private var answering: Job? = null
+    /** The last answer and what was asked for it: the same thing is not asked twice in a row. */
+    private var answered: Pair<String, Result>? = null
+    /** An Enter that came while the answer was still arriving: it runs when the answer is whole. */
+    private var whenAnswered: ((Result, Action) -> Unit)? = null
     /** The selection or the arming has been moved by hand since the text last changed. */
     private var touched by mutableStateOf(false)
 
@@ -93,6 +103,11 @@ class OverlayModel(
 
     init {
         scope.launch { app.prefs.state.collect { settings = it } }
+        // What the system says about its model (there, being fetched, how far) changes a prompt's rows.
+        if (!demo) {
+            scope.launch { app.onDevice.state.drop(1).collect { if (chip is PromptScope) refresh() } }
+            scope.launch { app.onDevice.progress.drop(1).collect { if (chip is PromptScope) refresh() } }
+        }
     }
 
     val current: Result? get() = results.getOrNull(selected)
@@ -136,6 +151,8 @@ class OverlayModel(
         this.word = word
         query = text
         search()
+        // A prompt: ask the system what it has, and have its model loaded by the time the text is typed.
+        if (s is PromptScope && !demo) scope.launch { if (app.onDevice.check() == OnDevice.State.READY) app.onDevice.warm() }
     }
 
     /**
@@ -155,6 +172,7 @@ class OverlayModel(
 
     private fun search(keep: Boolean = false) {
         job?.cancel()
+        answering?.cancel(); answering = null; thinking = false; whenAnswered = null     // typing again takes the question back
         cancelConfirm()
         if (!keep) shut()
         val text = query
@@ -183,6 +201,7 @@ class OverlayModel(
                     if (armed !in stops(local[same])) armed = local[same].armed
                     cell = cell.coerceIn(0, (((local[same].body as? Body.Grid)?.cells?.size ?: 1) - 1).coerceAtLeast(0))
                 } else { selected = 0; armed = local.firstOrNull()?.armed ?: 0; cell = 0 }
+                ask()
                 // An Enter that came before these rows did: now it runs, by the same rules as any Enter (a scope's row enters it, a delete waits).
                 whenReady?.let { run -> whenReady = null; enter(run) }
             }
@@ -196,6 +215,62 @@ class OverlayModel(
                 if (query == text && chip == null && results == local) results = app.engine.merge(local, more, limit)
             }
         }
+    }
+
+    /**
+     * A prompt's row is answered by the device's own model, in the row. Not for every letter: after
+     * a pause in typing, and not for a word that has hardly begun ([now]: Enter asked for it). One
+     * question at a time; the text changing takes it back.
+     */
+    private fun ask(now: Boolean = false) {
+        answering?.cancel(); answering = null; thinking = false
+        if (demo) return
+        val s = chip as? PromptScope ?: return
+        val row = results.firstOrNull { it.id == s.row } ?: return
+        val q = (row.body as? Body.Stream)?.takeIf { !it.answer }?.ask ?: return
+        answered?.let { (was, r) -> if (was == q) { put(r); return } }
+        if (!now && query.isNotBlank() && query.trim().length < ASK_MIN) return
+        answering = scope.launch {
+            if (!now) delay(ASK_PAUSE_MS)
+            thinking = true
+            val text = StringBuilder()
+            try {
+                app.onDevice.ask(q).collect { piece ->
+                    text.append(piece)
+                    thinking = false
+                    put(s.answered(row, text.toString().trimStart(), busy = true))
+                }
+            } finally { thinking = false }
+            val all = text.toString().trim()
+            if (all.isEmpty()) { whenAnswered = null; put(s.unanswered(row)); return@launch }
+            answered = q to put(s.answered(row, all, busy = false))
+            whenAnswered?.let { run -> whenAnswered = null; if (current?.id == row.id) chosen()?.let { (r, a) -> run(r, a) } }
+        }
+    }
+
+    /** [row] takes the place of the row with its id. The arming stays on the action it was on, if the row still has it. */
+    private fun put(row: Result): Result {
+        val i = results.indexOfFirst { it.id == row.id }
+        if (i < 0) return row
+        val was = results[i]
+        // An answer that has grown to four lines stays that tall while more of it arrives.
+        val grown = (was.body as? Body.Stream)?.let { it.answer && it.tall } == true
+        val next = (row.body as? Body.Stream)?.takeIf { grown && it.answer && !it.tall }?.let { row.copy(body = it.copy(tall = true)) } ?: row
+        if (i == selected) {
+            val id = was.actions.getOrNull(armed)?.id
+            armed = next.actions.indexOfFirst { it.id == id }.takeIf { it >= 0 } ?: 0
+        }
+        results = results.toMutableList().also { it[i] = next }
+        return next
+    }
+
+    /** The answer in row [id] needs a third line: the row grows, once, to hold four. */
+    fun grow(id: String) {
+        val r = results.firstOrNull { it.id == id } ?: return
+        val b = r.body as? Body.Stream ?: return
+        if (b.tall || !b.answer) return
+        results = results.map { if (it.id == id) it.copy(body = b.copy(tall = true)) else it }
+        answered?.let { (q, a) -> if (a.id == id) answered = q to a.copy(body = (a.body as? Body.Stream)?.copy(tall = true)) }
     }
 
     /** The same text again, keeping the row and the arming: after a level changed or something was saved. */
@@ -345,6 +420,10 @@ class OverlayModel(
         // On the row's arrow: Enter opens its other actions, or closes them again.
         if (onMore) { if (opened == null) open() else close(); return }
         val (r, a) = chosen() ?: return
+        // A prompt's row: the model is asked now, without waiting for a pause in typing. While its answer is still
+        // arriving, Enter waits for all of it.
+        if (a.effect == PromptScope.ASK) { if (thinking) whenAnswered = run else ask(now = true); return }
+        if ((r.body as? Body.Stream)?.busy == true) { whenAnswered = run; return }
         if (a.confirm) {
             val now = SystemClock.uptimeMillis()
             if (!confirming) {
@@ -387,6 +466,7 @@ class OverlayModel(
         val r = results.getOrNull(n)?.takeIf { it.body !is Body.Grid } ?: return
         val a = r.actions.firstOrNull()?.takeIf { !it.danger && !it.confirm } ?: return
         (a.effect as? Effect.EnterScope)?.let { into(it); return }
+        if (a.effect == PromptScope.ASK || (r.body as? Body.Stream)?.busy == true) return     // an answer is Enter's
         run(r, a)
     }
 
@@ -436,5 +516,8 @@ class OverlayModel(
         /** How long a confirmation waits for its second Enter. */
         const val CONFIRM_MS = 3000L
         private const val CONFIRM_GAP_MS = 350L
+        /** How long typing rests before the device's own model is asked, and how much must be typed for it to be asked unasked. */
+        private const val ASK_PAUSE_MS = 500L
+        private const val ASK_MIN = 3
     }
 }
