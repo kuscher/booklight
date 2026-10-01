@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Booklight dev helper: build, install and drive the app on a Googlebook over adb.
+#
+#   ./bl build [release]     assemble the debug (or release) APK
+#   ./bl test                core tests on this machine (JUnit, no device)
+#   ./bl app                 build, install and open the panel
+#   ./bl install [APK] | open [stay] | stop | uninstall
+#                            `open stay` keeps the panel up when it loses focus (for pictures)
+#   ./bl debug CMD...        test hooks (DebugReceiver.kt): ping, apps, find TEXT, type TEXT,
+#                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget
+#   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
+#   ./bl screen [OUT]        the panel as it looks on screen, blur and shadow included: a crop of a
+#                            screenshot around the panel's window (it shows what is behind the panel)
+#   ./bl logs [N]            Booklight's log lines
+#   ./bl sh CMD...           adb shell on the device
+#   ./bl idle                seconds since the last user input on the device, and the focused window
+#
+# adb: $ADB, else `adb` on PATH, else the Mac's Android SDK. Device: $ANDROID_SERIAL, else the first
+# attached device that isn't an emulator. Inside the Googlebook's own Linux VM, VSCodeBook's
+# Unix-socket adb is used instead (never tcp:5037 there: the Terminal forwards every TCP port to Android).
+# House rules: never touch the Debian VM (no Terminal launch or force-stop, no `vm`, no reboot), and
+# check `./bl idle` before opening the panel: it takes the keyboard from whoever is typing.
+set -euo pipefail
+cd "$(dirname "$(readlink -f "$0")")"
+PKG=io.github.kuscher.booklight
+PANEL="$PKG/.overlay.OverlayActivity"
+APK=app/build/outputs/apk/debug/app-debug.apk
+ADB=${ADB:-$(command -v adb || echo "$HOME/Library/Android/sdk/platform-tools/adb")}
+ENVF="$HOME/.config/vscodebook/android.env"
+if [ -f "$ENVF" ]; then . "$ENVF"; export ADB_SERVER_SOCKET=${ADB_SERVER_SOCKET:-localfilesystem:$HOME/.local/state/vscodebook/adb.sock}; fi
+TMP=${TMPDIR:-/tmp}; TMP=${TMP%/}
+
+serial() {
+  if [ -n "${ANDROID_SERIAL:-}" ]; then echo "$ANDROID_SERIAL"; return; fi
+  "$ADB" devices | awk 'NR>1 && $2=="device" && $1 !~ /^emulator-/ {print $1; exit}'
+}
+A() { local s; s="$(serial)"; [ -n "$s" ] || { echo "bl: no device attached" >&2; exit 1; }; "$ADB" -s "$s" "$@"; }
+user() { A shell am get-current-user | tr -d '\r'; }
+dbg() {
+  A logcat -c >/dev/null 2>&1 || true
+  A shell "am broadcast --user current -a $PKG.DEBUG -p $PKG --es c '$*'" >/dev/null
+  local first=${1:-}; local i
+  for i in $(seq 1 "${TRIES:-20}"); do
+    sleep 0.25
+    local line; line=$(A shell "logcat -d -s Booklight:I" | grep "debug $first ->" | tail -1 || true)
+    if [ -n "$line" ]; then echo "$line" | sed 's/.*-> //'; return; fi
+  done
+  echo "bl: no answer from the app (is it running?)" >&2; return 1
+}
+build() { if [ "${1:-}" = release ]; then ./gradlew :app:assembleRelease --console=plain -q; else ./gradlew :app:assembleDebug --console=plain -q; fi; }
+install() {
+  A shell settings put global verifier_verify_adb_installs 0
+  A install -r "${1:-$APK}" || { A shell settings put global verifier_verify_adb_installs 1; exit 1; }
+  A shell settings put global verifier_verify_adb_installs 1
+}
+open() { A shell am start --user current -n "$PANEL" ${1:+--ez stay true} >/dev/null; }
+
+cmd=${1:-help}; shift || true
+case "$cmd" in
+  build) build "${1:-}" ;;
+  test) ./gradlew :core:test --console=plain -q ;;
+  install) install "${1:-}" ;;
+  open) open "${1:-}" ;;
+  stop) A shell am force-stop --user current "$PKG" ;;
+  uninstall) A shell pm uninstall --user current "$PKG" || true ;;
+  app) build && install && open ;;
+  debug) dbg "$@" ;;
+  shot)
+    name=${1:-shot}; out=${2:-$TMP/booklight-$name.png}
+    path=$(dbg shot "$name"); case "$path" in /*) ;; *) echo "bl: $path" >&2; exit 1 ;; esac
+    A exec-out run-as "$PKG" --user "$(user)" cat "cache/$name.png" > "$out" && echo "$out" ;;
+  screen)
+    out=${1:-$TMP/booklight-screen.png}
+    read -r w h x y < <(dbg dump | sed -n 's/.*window=\([0-9]*\)x\([0-9]*\)@\(-\{0,1\}[0-9]*\),\(-\{0,1\}[0-9]*\).*/\1 \2 \3 \4/p')
+    [ -n "${w:-}" ] || { echo "bl: no panel open" >&2; exit 1; }
+    A exec-out screencap -p > "$out.full"
+    m=${MARGIN:-60}
+    python3 -c "import sys; from PIL import Image; w,h,x,y,m=map(int,sys.argv[3:8]); im=Image.open(sys.argv[1]); im.crop((max(0,x-m),max(0,y-m),min(im.width,x+w+m),min(im.height,y+h+m))).save(sys.argv[2])" "$out.full" "$out" "$w" "$h" "$x" "$y" "$m"
+    rm -f "$out.full"; echo "$out" ;;
+  logs) A shell "logcat -d -s Booklight:V AndroidRuntime:E" | tail -n "${1:-40}" ;;
+  sh) A shell "$@" ;;
+  idle)
+    A shell dumpsys power | grep -E "lastUserActivityTime=|mWakefulness=" | head -2
+    A shell "dumpsys window | grep -E 'mCurrentFocus' | head -1" ;;
+  *) sed -n '3,18p' "$0" ;;
+esac

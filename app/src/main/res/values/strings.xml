@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Booklight</string>
+    <string name="settings_title">Booklight settings</string>
+    <string name="search_hint">Search apps, settings and the web</string>
+    <string name="kind_app">App</string>
+    <string name="kind_setting">Settings</string>
+    <string name="kind_command">Booklight</string>
+    <string name="kind_web">Web</string>
+    <string name="kind_answer">Answer</string>
+    <string name="action_open">Open</string>
+    <string name="action_app_info">App info</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_search_web">Search the web</string>
+    <string name="action_open_link">Open link</string>
+    <string name="web_search_title">Search the web for “%1$s”</string>
+    <string name="hint_actions">Actions</string>
+    <string name="hint_close">Close</string>
+    <string name="hint_back">Back</string>
+    <string name="copied">Copied</string>
+    <string name="cmd_settings">Booklight settings</string>
+    <string name="cmd_shortcut">Set up the keyboard shortcut</string>
+    <string name="cmd_shortcut_sub">Open Keyboard shortcuts</string>
+</resources>
