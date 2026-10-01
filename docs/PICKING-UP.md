@@ -2,6 +2,34 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (night): 1.1 built, not released
+
+**Where it stands.** Alex answered the 18 questions (spec §12) and asked for one big 1.1. It is built on
+`main` (versionName 1.1, versionCode 2): the action row, scopes, previews, controls, grids, the unfold
+arrival, the Booklight window, Jot, Dials, Recipes, Switches. 167 core tests pass; the release build and
+lint pass; cold start about 110 ms, warm about 30 ms on the Lenovo.
+
+**Tested on the Lenovo Googlebook 15** (the HP was offline with its lid closed): every kind of row through
+`./bl debug`; the opening, the edge light, the arming and the first-run card frame by frame; mail, event,
+new file, Ask Gemini, a timer, left half, right half and new window for real; German and dark; text handed
+over by another app; real key presses on the release build.
+
+**Not tested, needs Alex's own clicks:** the app icon opening the Booklight window; the notes-folder picker;
+the brightness switch; adding the widget and the tile; Uninstall's system dialog; a bound key on the Lenovo.
+
+**Not released.** No tag yet: releasing puts a bundle on Play, where the listing, the data-safety answers and
+the three new permissions want a look first (the facts are in `store-submission/forms/data-safety.md`, "1.1:
+what changed"). Alex says when.
+
+**Loose ends**
+- The HP still has a throwaway spike build that draws a blurred band around the panel (it went offline
+  before 1.0 could be put back). When it is online: `ANDROID_SERIAL=adb-HP-SERIAL-… ./bl install` with the
+  1.1 build, or the 1.0 APK from the GitHub release.
+- On the Lenovo: a test file `Documents/booklight-test.md`, a Text editor window, a Gemini window with a test
+  question typed in (not sent) and two Chrome custom tabs are left from the tests; a 45-minute test timer was
+  started and the Clock app then force-stopped.
+- The spike branch `spike/unfold` (local) can go.
+
 ## 2026-10-01 (evening): 1.1 to 1.4 planned, waiting for Alex's answers
 
 **Asked for:** build 1.1 Jot, 1.2 Dials, 1.3 Recipes and 2.2 Switches (not the Gmail relay); a way of acting
