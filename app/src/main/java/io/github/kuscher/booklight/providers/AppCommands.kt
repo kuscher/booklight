@@ -278,6 +278,9 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
     }
 
     /** The keywords apps' files declare, as scopes. One the user has entered before is entered by its keyword and a Space, like Booklight's own. */
+    /** Something another app offers, as it would be typed: an example for the list of everything. Null when no app offers anything. */
+    fun example(): String? = commands.firstOrNull { allowed(it.owner) && it.owner != context.packageName }?.title?.lowercase()
+
     fun scopes(taken: Set<String>): List<Scope> {
         val s = prefs.now
         if (!s.appCommands) return emptyList()

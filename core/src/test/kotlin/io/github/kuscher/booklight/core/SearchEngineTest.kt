@@ -3,6 +3,7 @@ package io.github.kuscher.booklight.core
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -252,5 +253,17 @@ class SearchEngineTest {
         assertTrue(two(Commands(listOf("New a", "New ab", "New abc"))).search(Query("a", scope = "new", keyword = "new")).none { it.provider == SearchEngine.COMMANDS })
         assertEquals(2, two(Commands(listOf("New ab", "New abc", "New abcd"))).search(Query("ab", scope = "new", keyword = "new")).count { it.provider == SearchEngine.COMMANDS })
     }
-}
 
+    @Test fun `a scope's row is found by its other words, which do not enter it`() = runTest {
+        val help = object : Scope {
+            override val key = "help"; override val keywords = listOf("?"); override val name = "Everything"; override val symbol = "list"; override val hint = ""
+            override val words = listOf("help")
+            override suspend fun rows(arg: String) = emptyList<Result>()
+        }
+        val engine = SearchEngine(emptyList(), History(), scopes = { listOf(help) })
+        assertEquals("scope:help", engine.search(Query("help")).first().id)
+        assertEquals("scope:help", engine.search(Query("he")).first().id)
+        assertNull(engine.scopeFor("help with taxes"))
+        assertNull(engine.keywordScope("help"))
+    }
+}

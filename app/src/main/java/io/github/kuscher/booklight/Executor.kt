@@ -78,6 +78,8 @@ class Executor(private val context: Context) {
             is Effect.OpenSettings -> start(Intent(effect.action))
             is Effect.Internal -> when (effect.command) {
                 "settings", "window" -> start(Intent(context, MainActivity::class.java))
+                // The list of everything, in the window.
+                "commands" -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_PAGE, "commands"))
                 // The system's Keyboard shortcuts window, where Customize adds an app shortcut.
                 "shortcuts" -> from?.requestShowKeyboardShortcuts() ?: return false
                 "done", "again" -> {}     // nothing to do here: the level was set as it was moved; a new password comes with the next list

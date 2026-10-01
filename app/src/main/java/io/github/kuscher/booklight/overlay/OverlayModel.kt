@@ -100,6 +100,12 @@ class OverlayModel(
     private var whenReady: ((Result, Action) -> Unit)? = null
     /** When Booklight last filled the field itself (entered a scope from its row, typed an example). */
     private var filledAt = 0L
+    /** Booklight is typing an example into the field, a letter at a time. */
+    private var typist: Job? = null
+    /** What is in the field was typed by Booklight and not touched since: it is nobody's "last text". */
+    private var shown = false
+    /** How long each letter waits for the one before it when Booklight types [letters] letters (`Motion.typeStep`). */
+    var typeStep: (letters: Int) -> Long = { 0 }
 
     init {
         scope.launch { app.prefs.state.collect { settings = it } }
@@ -131,11 +137,15 @@ class OverlayModel(
 
     fun type(text: String) {
         if (text == query) return
+        typist?.cancel(); typist = null     // the user's own typing takes over from Booklight's
+        shown = false
         shut()                              // typing closes an opened row in the same frame
         touched = false
         foreign = false                     // edited: it is the user's own text now
         if (chip == null) {
             if (text.isEmpty()) held = null
+            // A question mark first is the list of everything, at once: nothing else begins with one.
+            if (text.startsWith(HELP) && held != HELP) app.engine.scope("help")?.let { enterScope(it, text.drop(1).trimStart(), HELP); return }
             // A keyword and a space at the start of the field: the keyword becomes the chip. Not if the user
             // has just turned that very keyword back into text: then it is a word ("new york weather").
             app.engine.scopeFor(text)?.takeIf { !it.word.equals(held, ignoreCase = true) }?.let { enterScope(it.scope, it.text, it.word); return }
@@ -153,6 +163,35 @@ class OverlayModel(
         search()
         // A prompt: ask the system what it has, and have its model loaded by the time the text is typed.
         if (s is PromptScope && !demo) scope.launch { if (app.onDevice.check() == OnDevice.State.READY) app.onDevice.warm() }
+    }
+
+    /**
+     * Booklight types [text] for the user to see: an example from the list of everything or from a
+     * tip. From an empty field, a letter at a time; a keyword becomes its chip when its Space lands,
+     * as it does under the user's own hands. The list that was showing stays until the last letter,
+     * and there is one search, at the end. The Enter that asked for this does not also run what it
+     * brings: only a new press, a moment later.
+     */
+    fun typeOut(text: String) {
+        typist?.cancel()
+        job?.cancel(); answering?.cancel(); answering = null; thinking = false; whenAnswered = null; whenReady = null
+        cancelConfirm()
+        chip = null; word = null; held = null; foreign = false; touched = false
+        query = ""
+        shown = true
+        filledAt = SystemClock.uptimeMillis()
+        val step = typeStep(text.length)
+        typist = scope.launch {
+            for (c in text) {
+                val next = query + c
+                val s = if (chip == null) app.engine.scopeFor(next) else null
+                if (s != null) { chip = s.scope; word = s.word; query = s.text } else query = next
+                if (step > 0) delay(step)
+            }
+            typist = null
+            filledAt = SystemClock.uptimeMillis()
+            search()
+        }
     }
 
     /**
@@ -413,6 +452,7 @@ class OverlayModel(
      * An action that deletes waits for a second Enter, a new press a moment later.
      */
     fun enter(run: (Result, Action) -> Unit) {
+        if (typist != null) return          // Booklight is still typing: there is nothing to run yet
         // The field was just filled in for the user (a scope entered from its row, an example typed): the Enter that
         // did it must not also run what it brought. Only a new press, a moment later, runs.
         if (SystemClock.uptimeMillis() - filledAt < CONFIRM_GAP_MS) return
@@ -436,6 +476,8 @@ class OverlayModel(
         }
         // A scope's own row: its keyword becomes the chip.
         (a.effect as? Effect.EnterScope)?.let { into(it); return }
+        // "Try it": Booklight types the example.
+        (a.effect as? Effect.Type)?.let { typeOut(it.text); return }
         run(r, a)
     }
 
@@ -467,6 +509,7 @@ class OverlayModel(
         val a = r.actions.firstOrNull()?.takeIf { !it.danger && !it.confirm } ?: return
         (a.effect as? Effect.EnterScope)?.let { into(it); return }
         if (a.effect == PromptScope.ASK || (r.body as? Body.Stream)?.busy == true) return     // an answer is Enter's
+        (a.effect as? Effect.Type)?.let { typeOut(it.text); return }
         run(r, a)
     }
 
@@ -497,8 +540,16 @@ class OverlayModel(
 
     /** The panel is closing without having run anything: keep what was typed for [restoreLast]. */
     fun keep() {
-        // Text another app handed over is never kept, in its own chip or once it has moved into a note or a code.
-        if (query.isNotBlank() && !foreign && chip?.keywords?.isEmpty() != true) app.lastText = chip?.key to query
+        // Text another app handed over is never kept, in its own chip or once it has moved into a note or a code. Nor is
+        // an example Booklight typed, unless the user made it their own by editing it.
+        if (query.isNotBlank() && !foreign && !shown && chip?.keywords?.isEmpty() != true) app.lastText = chip?.key to query
+    }
+
+    /** Something was run: the line of the list of everything it belongs to has been used, and is not suggested again. */
+    fun used(r: Result, a: Action) {
+        if (demo) return
+        val id = app.guide.used(chip, r, a) ?: return
+        if (id !in settings.used) change { it.copy(used = it.used + id) }
     }
 
     /** Remember the pick, so the same text finds it first next time. */
@@ -519,5 +570,6 @@ class OverlayModel(
         /** How long typing rests before the device's own model is asked, and how much must be typed for it to be asked unasked. */
         private const val ASK_PAUSE_MS = 500L
         private const val ASK_MIN = 3
+        private const val HELP = "?"
     }
 }

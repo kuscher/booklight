@@ -82,6 +82,7 @@ class OverlayActivity : ComponentActivity() {
         motion = Motion.of(this, if (BuildConfig.DEBUG) intent.getFloatExtra("slow", 1f) else 1f)
         val screen = windowManager.maximumWindowMetrics.bounds
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screen.height() / resources.displayMetrics.density))
+        model.typeStep = motion::typeStep
         stay = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)
         solid = settings.glass == "solid"
         Look.use(GlassLevel.of(settings.glass))
@@ -265,6 +266,7 @@ class OverlayActivity : ComponentActivity() {
         // Asking for a grant runs nothing yet: what was typed (the first note) is kept, in case the picker is cancelled.
         ran = a.effect !is Effect.Grant
         model.learn(r)
+        model.used(r, a)
         // An emoji that was picked comes first next time.
         if (r.body is Body.Grid && r.provider == "emoji") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(emojiRecent = (listOf(c.text) + (it.emojiRecent - c.text)).take(14)) } }
         val word = a.done ?: if (a.effect is Effect.CopyText) getString(R.string.copied) else null

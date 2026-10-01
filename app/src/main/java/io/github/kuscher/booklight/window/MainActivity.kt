@@ -114,6 +114,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_EDIT = "edit"
         const val EXTRA_ID = "id"
+        /** Which section to open at: `commands`. */
+        const val EXTRA_PAGE = "page"
         const val PRIVACY_URL = "https://googlebook.studio/privacy/booklight"
     }
 }

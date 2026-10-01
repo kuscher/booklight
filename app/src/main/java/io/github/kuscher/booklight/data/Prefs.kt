@@ -78,6 +78,8 @@ data class Settings(
     val mutedApps: List<String> = emptyList(),
     /** Other apps' keywords the user has entered once from their row: from then on the keyword and a Space enters them. */
     val usedScopes: List<String> = emptyList(),
+    /** The lines of the list of everything (`Guide`) the user has run something of: they are not suggested again. */
+    val used: List<String> = emptyList(),
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
     /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0. */

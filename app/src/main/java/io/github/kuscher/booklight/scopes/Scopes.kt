@@ -32,7 +32,7 @@ import io.github.kuscher.booklight.providers.PlayScope
  */
 class Scopes(
     private val context: Context, private val prefs: Prefs, dials: Dials, private val notes: Notes, private val web: (String) -> Result,
-    settings: SettingsProvider, keys: KeysProvider, private val ai: OnDevice,
+    settings: SettingsProvider, keys: KeysProvider, private val ai: OnDevice, guide: io.github.kuscher.booklight.Guide,
     /** The keywords other apps declare, given the ones already taken. */
     private val others: (Set<String>) -> List<Scope> = { emptyList() },
     /** What the pinned window shows, if there is one. */
@@ -43,7 +43,7 @@ class Scopes(
 
     private val fixed: List<Scope> = listOf(
         MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, PinScope(context, pinned), EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
-        NewScope(context), AskScope(context),
+        NewScope(context), AskScope(context), HelpScope(context, guide) { prefs.now.used },
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), QrScope(context), ColorScope(context),
         SnipScope(context, prefs), TextScope(context, null, web) { prefs.now.prompts },
         LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),

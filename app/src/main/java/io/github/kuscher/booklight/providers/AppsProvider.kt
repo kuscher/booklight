@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
  * The list is held in memory and refreshed when packages change.
  */
 class AppsProvider(private val context: Context, private val scope: CoroutineScope) : Provider {
-    override val id = "apps"
+    override val id = ID
 
     /** [system]: came with the device, so it can't be uninstalled. */
     private data class App(val label: String, val pkg: String, val cls: String, val user: Long, val system: Boolean)
@@ -60,9 +60,10 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     /** Called when the app list has been read again: what is made from it (other apps' commands) is read again too. */
     var onReload: (() -> Unit)? = null
 
-    private companion object {
+    companion object {
+        const val ID = "apps"
         /** A name found through a verb ranks just under the same name typed alone. */
-        const val VERB = 0.95
+        private const val VERB = 0.95
     }
 
     fun reload() {

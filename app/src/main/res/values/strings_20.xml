@@ -147,4 +147,56 @@
     <string name="pin_kind_color">Color</string>
     <string name="pin_kind_qr">QR code</string>
     <string name="pin_kind_timer">Timer</string>
+
+    <!-- The list of everything (the scope behind the question mark) -->
+    <string name="help_name">Everything</string>
+    <string name="help_title">Everything Booklight does</string>
+    <string name="help_hint">What you want to do</string>
+    <string name="help_about">Every keyword, with an example to try</string>
+    <string name="help_words" translatable="false">help,commands</string>
+    <string name="help_all">All commands</string>
+    <string name="action_try">Try it</string>
+    <string name="guide_link_text">lofi</string>
+    <string name="guide_prompt_text">teh quick brown fox</string>
+    <string name="guide_group_open">Open</string>
+    <string name="guide_group_write">Write down</string>
+    <string name="guide_group_time">Time</string>
+    <string name="guide_group_answers">Answers</string>
+    <string name="guide_group_text">Text</string>
+    <string name="guide_group_controls">Controls</string>
+    <string name="guide_group_booklight">Booklight</string>
+    <!-- id|group|symbol|scope|example|name|line. The example is typed as it stands: it must work. -->
+    <string-array name="guide">
+        <item>apps|open|open||chrome|Apps|Type a name; the icons on its row are what else it can do</item>
+        <item>places|open|left||chrome left|An app, in a place|left, right third, top left, full… for an app that is not open yet</item>
+        <item>commands|open|bolt||{command}|What other apps offer|Their own shortcuts and commands, as rows</item>
+        <item>settings|open|settings|settings|s wifi|Settings|s, then Tab: every settings page</item>
+        <item>keys|open|key|keys|k snap|Keyboard shortcuts|k, then Tab: what the system’s keys do</item>
+        <item>links|open|search||{link}|Your links|A keyword, then what to search for</item>
+        <item>web|open|globe||weather berlin|The web|The last row searches for what you typed</item>
+        <item>note|write|note|note|note buy milk|Note|A dated line in Notes.md</item>
+        <item>notes|write|note|notes|notes milk|Find a note|Lines of Notes.md, newest first</item>
+        <item>todo|write|check|todo|todo call the bank|To-do|A task for Todo.md; todo alone shows what is open</item>
+        <item>mail|write|mail|mail|mail anna@example.com Lunch? / See you at 1|Mail|The compose window, filled in</item>
+        <item>event|write|event|event|event Fri 3pm Dentist|Event|The calendar’s editor, filled in</item>
+        <item>remind|write|bell|remind|remind 5pm call the bank|Reminder|A timer, an alarm or an event, by when it is</item>
+        <item>new|write|plus|new|new doc Q3 plan|New|A file, a folder, a doc, a sheet or slides</item>
+        <item>timer|time|timer|timer|timer 10m tea|Timer|The Clock starts it; Start and pin keeps the countdown on top</item>
+        <item>alarm|time|bell|alarm|alarm 7:30 gym|Alarm|The Clock sets it</item>
+        <item>sums|answers|calc||12*3.5|Sums|Enter copies the answer</item>
+        <item>color|answers|edit||#3478f6|Colors|Its other ways of being written, each to copy</item>
+        <item>password|answers|key||password 20|Passwords|A new one each time</item>
+        <item>qr|answers|qr|qr|qr https://example.com|QR code|To scan from the screen, copy, save or share</item>
+        <item>emoji|answers|smile|emoji|emoji party|Emoji|A grid to pick from; Enter copies</item>
+        <item>sym|answers|text|sym|sym arrow|Symbols|Arrows, math, currency</item>
+        <item>prompts|text|spark||{prompt}|Prompts|Your text, answered by the model on this device</item>
+        <item>ask|text|spark|ask|ask how do I fold a fitted sheet|Ask Gemini|Hands the text to the Gemini app</item>
+        <item>clip|text|clip|clip|clip |Clipboard|What you copied: upper case, a note, a QR code…</item>
+        <item>snip|text|text|snip|snip add sig / Best, Alex|Snippets|Pieces of text under short names</item>
+        <item>pin|text|pin|pin|pin gate B22, 14:05|Pin|A line in a small window that stays on top</item>
+        <item>vol|controls|volume|vol|vol 30|Volume|Or the arrow keys on its row</item>
+        <item>brightness|controls|sun|brightness|brightness 60|Brightness|Or the arrow keys on its row</item>
+        <item>play|controls|music|play|play lofi|Play|Asks the music app</item>
+        <item>window|booklight|booklight||booklight|Booklight’s window|Settings, and your links, snippets, recipes and prompts</item>
+    </string-array>
 </resources>

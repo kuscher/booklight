@@ -43,6 +43,8 @@ class BooklightApp : Application() {
     lateinit var onDevice: OnDevice private set
     /** What the pinned window shows, while there is one. */
     val pinned = kotlinx.coroutines.flow.MutableStateFlow<io.github.kuscher.booklight.pin.Pinned?>(null)
+    /** Everything Booklight does, with examples: the list behind `?`, the Commands page, the tips. */
+    lateinit var guide: Guide private set
     /** What other apps offer. */
     lateinit var commands: AppCommands private set
     /** What was typed when the panel last closed without running anything (the chip's key, the text): Up brings it back. */
@@ -69,7 +71,8 @@ class BooklightApp : Application() {
         val pages = SettingsProvider(this, prefs)
         val keys = KeysProvider(this, prefs)
         onDevice = OnDevice(scope)
-        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, onDevice, others = { commands.scopes(it) }, pinned = { pinned.value })
+        guide = Guide(this, prefs, commands)
+        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, onDevice, guide, others = { commands.scopes(it) }, pinned = { pinned.value })
         providers = listOf(apps, CalcProvider(this, prefs), Answers(this), pages, CommandsProvider(this), dials, User(this, prefs), commands, keys, web)
         engine = SearchEngine(
             providers, historyStore.history,

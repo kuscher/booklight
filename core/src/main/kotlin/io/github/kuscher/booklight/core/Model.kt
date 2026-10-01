@@ -248,6 +248,8 @@ interface Scope {
     val listed: Boolean get() = true
     /** False for a list that is not a search (the list of everything): no "search the web for…" closes it. */
     val web: Boolean get() = true
+    /** Other words its row is found by, which do not enter it: `help` finds the list of everything, but "help with taxes" is a search. */
+    val words: List<String> get() = emptyList()
     /** False for a keyword the user has not chosen yet (another app's): it is entered from its row, not by a Space. */
     val spaceEnters: Boolean get() = true
     suspend fun rows(arg: String): List<Result>

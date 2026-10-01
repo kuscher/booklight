@@ -121,6 +121,18 @@ class DebugReceiver : BroadcastReceiver() {
                 out("${app.executor.run(e)}")
             }
             "unpin" -> main.post { out("${app.executor.run(io.github.kuscher.booklight.core.Effect.Unpin)}") }
+            // Every example of the list of everything, run through the engine: what its first row is. An example must work.
+            "guide" -> app.scope.launch {
+                val sb = StringBuilder()
+                for (e in app.guide.entries()) {
+                    val scoped = app.engine.scopeFor(e.example)
+                    val rows = if (scoped != null) app.engine.search(Query(scoped.text, scoped.scope.key, scoped.word)) else app.engine.search(Query(e.example))
+                    val first = rows.firstOrNull()
+                    val ok = first != null && first.actions.isNotEmpty() && (e.scope == null || scoped?.scope?.key == e.scope) && (first.kind != io.github.kuscher.booklight.core.Kind.WEB || e.id == "web" || e.id == "ask" || e.id == "links")
+                    sb.append(if (ok) "ok " else "BAD ").append(e.id).append(" '").append(e.example).append("' = ").append(first?.let { (it.answer ?: it.title).take(24) + " [" + (scoped?.scope?.key ?: it.provider) + "]" }).append(" ; ")
+                }
+                out(sb.toString())
+            }
             "close" -> main.post { act?.close(); out("ok") }
             "dump" -> main.post {
                 val m = act?.model ?: return@post out("no panel")

@@ -140,4 +140,54 @@
     <string name="pin_kind_color">Farbe</string>
     <string name="pin_kind_qr">QR-Code</string>
     <string name="pin_kind_timer">Timer</string>
+
+    <!-- Die Liste von allem (hinter dem Fragezeichen) -->
+    <string name="help_name">Alles</string>
+    <string name="help_title">Alles, was Booklight kann</string>
+    <string name="help_hint">Was du tun möchtest</string>
+    <string name="help_about">Jedes Kürzel, mit einem Beispiel zum Ausprobieren</string>
+    <string name="help_all">Alle Befehle</string>
+    <string name="action_try">Ausprobieren</string>
+    <string name="guide_link_text">lofi</string>
+    <string name="guide_prompt_text">der schnele braune Fuchs</string>
+    <string name="guide_group_open">Öffnen</string>
+    <string name="guide_group_write">Aufschreiben</string>
+    <string name="guide_group_time">Zeit</string>
+    <string name="guide_group_answers">Antworten</string>
+    <string name="guide_group_text">Text</string>
+    <string name="guide_group_controls">Regler</string>
+    <string name="guide_group_booklight">Booklight</string>
+    <string-array name="guide">
+        <item>apps|open|open||chrome|Apps|Einen Namen tippen; die Symbole in der Zeile zeigen, was noch geht</item>
+        <item>places|open|left||chrome links|Eine App, an einem Platz|links, rechtes Drittel, oben links, voll … für eine App, die noch nicht offen ist</item>
+        <item>commands|open|bolt||{command}|Was andere Apps anbieten|Ihre eigenen Kurzbefehle, als Zeilen</item>
+        <item>settings|open|settings|settings|s wlan|Einstellungen|s, dann Tab: jede Einstellungsseite</item>
+        <item>keys|open|key|keys|k andocken|Tastenkürzel|k, dann Tab: was die Tasten des Systems tun</item>
+        <item>links|open|search||{link}|Deine Links|Ein Kürzel, dann der Suchtext</item>
+        <item>web|open|globe||wetter berlin|Das Web|Die letzte Zeile sucht nach dem, was du getippt hast</item>
+        <item>note|write|note|note|notiz Milch kaufen|Notiz|Eine Zeile mit Datum in Notes.md</item>
+        <item>notes|write|note|notes|notizen Milch|Notiz finden|Zeilen aus Notes.md, die neuesten zuerst</item>
+        <item>todo|write|check|todo|todo Bank anrufen|Aufgaben|Eine Aufgabe für Todo.md; todo allein zeigt, was offen ist</item>
+        <item>mail|write|mail|mail|mail anna@example.com Mittag? / Bis um 1|Mail|Das Fenster für eine neue Mail, ausgefüllt</item>
+        <item>event|write|event|event|termin Fr 15 Uhr Zahnarzt|Termin|Der Editor des Kalenders, ausgefüllt</item>
+        <item>remind|write|bell|remind|erinnere 17 Uhr Bank anrufen|Erinnerung|Ein Timer, ein Wecker oder ein Termin, je nachdem wann</item>
+        <item>new|write|plus|new|neu doc Plan Q3|Neu|Datei, Ordner, Dokument, Tabelle oder Präsentation</item>
+        <item>timer|time|timer|timer|timer 10m Tee|Timer|Die Uhr startet ihn; „Starten und anheften“ hält den Countdown oben</item>
+        <item>alarm|time|bell|alarm|wecker 7:30 Sport|Wecker|Die Uhr stellt ihn</item>
+        <item>sums|answers|calc||12*3,5|Rechnen|Enter kopiert das Ergebnis</item>
+        <item>color|answers|edit||#3478f6|Farben|Ihre anderen Schreibweisen, jede zum Kopieren</item>
+        <item>password|answers|key||passwort 20|Passwörter|Jedes Mal ein neues</item>
+        <item>qr|answers|qr|qr|qr https://example.com|QR-Code|Zum Scannen vom Bildschirm, Kopieren, Speichern oder Teilen</item>
+        <item>emoji|answers|smile|emoji|emoji party|Emoji|Ein Raster zum Auswählen; Enter kopiert</item>
+        <item>sym|answers|text|sym|zeichen pfeil|Zeichen|Pfeile, Mathematik, Währungen</item>
+        <item>prompts|text|spark||{prompt}|Prompts|Dein Text, beantwortet vom Modell auf diesem Gerät</item>
+        <item>ask|text|spark|ask|frage wie falte ich ein Spannbettlaken|Gemini fragen|Übergibt den Text an die Gemini-App</item>
+        <item>clip|text|clip|clip|clip |Zwischenablage|Was du kopiert hast: Großbuchstaben, eine Notiz, ein QR-Code …</item>
+        <item>snip|text|text|snip|snip add sig / Viele Grüße, Alex|Textbausteine|Textstücke unter kurzen Namen</item>
+        <item>pin|text|pin|pin|pin Gate B22, 14:05|Anheften|Eine Zeile in einem kleinen Fenster, das oben bleibt</item>
+        <item>vol|controls|volume|vol|vol 30|Lautstärke|Oder die Pfeiltasten in ihrer Zeile</item>
+        <item>brightness|controls|sun|brightness|helligkeit 60|Helligkeit|Oder die Pfeiltasten in ihrer Zeile</item>
+        <item>play|controls|music|play|play lofi|Abspielen|Fragt die Musik-App</item>
+        <item>window|booklight|booklight||booklight|Booklights Fenster|Einstellungen und deine Links, Bausteine, Rezepte und Prompts</item>
+    </string-array>
 </resources>

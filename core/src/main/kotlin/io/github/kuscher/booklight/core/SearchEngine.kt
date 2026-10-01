@@ -98,6 +98,7 @@ class SearchEngine(
             s.keywords.any { it.equals(text, ignoreCase = true) } -> 1.0
             // The start of a keyword is a hint, not a request: under any app or setting whose name starts that way ("st" is Storage before it is the store).
             t.length >= 2 && s.keywords.any { it.lowercase().startsWith(t) } -> 0.7
+            t.length >= 2 && s.words.any { it.lowercase().startsWith(t) } -> 0.7
             else -> Matcher.score(text, s.name) * 0.8
         }
         if (score <= 0) null else Result(
