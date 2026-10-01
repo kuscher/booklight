@@ -12,6 +12,7 @@
 #                            keys TEXT (one character at a time, as a person types: use this to test typing),
 #                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
+#   ./bl wshot [NAME] [OUT]  the same of the Booklight window
 #   ./bl screen [OUT]        the panel as it looks on screen, blur and shadow included: a crop of a
 #                            screenshot around the panel's window (it shows what is behind the panel)
 #   ./bl backdrop            a window of test content (white page, dark terminal, colour) to put behind
@@ -60,7 +61,7 @@ install() {
 }
 open() { # open [stay] [tint=0.2] [blur=24] [dim=0.1]  (the glass values are for debug builds)
   local extra=() a
-  for a in "$@"; do case "$a" in stay) extra+=(--ez stay true) ;; tint=*|blur=*|dim=*|slow=*) extra+=(--ef "${a%%=*}" "${a#*=}") ;; opening=*|shade=*) extra+=(--es "${a%%=*}" "${a#*=}") ;; esac; done
+  for a in "$@"; do case "$a" in stay) extra+=(--ez stay true) ;; key) extra+=(--ez key true) ;; tint=*|blur=*|dim=*|slow=*) extra+=(--ef "${a%%=*}" "${a#*=}") ;; opening=*|shade=*) extra+=(--es "${a%%=*}" "${a#*=}") ;; esac; done
   A shell am start --user current -n "$PANEL" ${extra[@]+"${extra[@]}"} ${DARK:+--ez dark "$DARK"} >/dev/null
 }
 
@@ -79,6 +80,10 @@ case "$cmd" in
   shot)
     name=${1:-shot}; out=${2:-$TMP/booklight-$name.png}
     path=$(dbg shot "$name"); case "$path" in /*) ;; *) echo "bl: $path" >&2; exit 1 ;; esac
+    A exec-out run-as "$PKG" --user "$(user)" cat "cache/$name.png" > "$out" && echo "$out" ;;
+  wshot)   # a PNG of the Booklight window's own content (debug builds)
+    name=${1:-window}; out=${2:-$TMP/booklight-$name.png}
+    path=$(dbg wshot "$name"); case "$path" in /*) ;; *) echo "bl: $path" >&2; exit 1 ;; esac
     A exec-out run-as "$PKG" --user "$(user)" cat "cache/$name.png" > "$out" && echo "$out" ;;
   screen)
     out=${1:-$TMP/booklight-screen.png}

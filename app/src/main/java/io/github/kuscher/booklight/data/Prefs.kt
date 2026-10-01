@@ -85,6 +85,8 @@ data class Settings(
     val tipsSeen: List<String> = emptyList(),
     val tipId: String = "",
     val tipMs: Long = 0,
+    /** The panel has been opened the way a keyboard shortcut (or the assistant key) opens it: Booklight has a key. */
+    val keySeen: Boolean = false,
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
     /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0. */
@@ -127,8 +129,9 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
             val added = Sites.defaults.filter { it.keyword == "drive" && renamed.none { r -> r.keyword == "drive" } }.map { SiteEntry(it.keyword, it.name, it.url) }
             s = s.copy(sites = renamed + added)
         }
-        // 2.0: the five prompts to start with.
-        if (s.schema < 3) s = started(s)
+        // 2.0: the five prompts to start with. And whoever answered 1.1's first card, or has picked anything, has a key:
+        // the window must not tell them "No key yet".
+        if (s.schema < 3) s = started(s).copy(keySeen = !s.shortcutCard || File(context.filesDir, "history.json").length() > 8)
         return s.copy(schema = SCHEMA)
     }
 

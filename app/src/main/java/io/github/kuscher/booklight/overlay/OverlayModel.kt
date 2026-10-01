@@ -123,7 +123,8 @@ class OverlayModel(
     val card: Card? by derivedStateOf {
         when {
             demo || query.isNotEmpty() || chip != null -> null
-            settings.shortcutCard -> Card.SHORTCUT
+            // "Give Booklight a key": not for someone whose key has already opened the panel.
+            settings.shortcutCard && !settings.keySeen -> Card.SHORTCUT
             settings.suggestionsCard && !settings.suggestions -> Card.SUGGESTIONS
             else -> null
         }
@@ -144,7 +145,7 @@ class OverlayModel(
      * it is. Never as part of the opening, and never while a first-run card is to be shown.
      */
     fun offerTip() {
-        if (demo || typedYet || tip != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || !settings.tips || settings.shortcutCard || card != null) return
+        if (demo || typedYet || tip != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || !settings.tips || card != null) return
         tip = app.tips.next(settings) ?: return
         tipArmed = 0; tipOff = false
         tipSince = SystemClock.uptimeMillis()

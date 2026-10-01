@@ -212,4 +212,23 @@
         <item>sums|calc|12*3,5|Rechnen|wird beim Tippen beantwortet. Enter kopiert</item>
         <item>emoji|smile|emoji party|Emoji|ist ein Raster zum Auswählen. Enter kopiert</item>
     </string-array>
+
+    <!-- Das Booklight-Fenster: seine Bereiche -->
+    <string name="nav_start">Start</string>
+    <string name="nav_commands">Befehle</string>
+    <string name="nav_yours">Eigenes</string>
+    <string name="nav_look">Aussehen</string>
+    <string name="nav_results">Ergebnisse</string>
+    <string name="nav_access">Zugriff</string>
+    <string name="nav_about">Info</string>
+    <string name="key_none">Noch keine Taste</string>
+    <string name="key_press">Jetzt die Taste einmal drücken</string>
+    <string name="key_works">Deine Taste funktioniert</string>
+    <string name="win_commands_lead">Alles, was Booklight kann, jeweils mit einem Beispiel. Enter auf einer Zeile öffnet Booklight und tippt es für dich; ausgeführt wird erst, wenn du dort Enter drückst.</string>
+    <string name="win_other_apps">Andere Apps</string>
+    <string name="set_app_commands">Befehle deiner Apps</string>
+    <string name="set_app_commands_text">Was deine anderen Apps anbieten, wird zu Zeilen: „neuer termin“ öffnet den Editor des Kalenders. Booklight startet nichts von ihnen, bevor du Enter drückst, und sie sehen nie, was du tippst.</string>
+    <string name="win_apps_none">Noch bietet keine deiner Apps etwas an.</string>
+    <string name="win_link_letter">Dieser Link nimmt Booklight das %1$s. „%2$s“ führt weiter dorthin, wohin %1$s führte.</string>
+    <string name="about_device">Prompts beantwortet das Modell des Systems auf diesem Gerät, wenn es eines hat; dein Text bleibt hier. Die Bibliothek, die es erreicht, meldet Google, wie sie genutzt wird (nicht, was du tippst): Die Datenschutzerklärung sagt, was.</string>
 </resources>

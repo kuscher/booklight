@@ -82,7 +82,7 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
     fun close() { open = null; onTyping(false) }
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
 
-    Section(stringResource(R.string.win_commands_title), stringResource(R.string.win_commands_text)) {
+    Column {
         Label(stringResource(R.string.win_links))
         for (link in s.sites) {
             val takes = Templates.takesArgument(link.url)
@@ -151,11 +151,11 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
     }
 }
 
+/** Booklight's two one-letter keywords, which a link of the user's may take, and the long keyword that then still works. */
+private val LETTERS = mapOf("s" to "settings", "k" to "keys")
+
 @Composable
-private fun Label(text: String) {
-    Text(text.uppercase(), color = MaterialTheme.colorScheme.onSurface.copy(alpha = THIRD), style = TextStyle(fontFamily = Fonts.text, fontSize = 11.5.sp, fontWeight = FontWeight(600), letterSpacing = 0.6.sp),
-        modifier = Modifier.padding(start = GUTTER, top = 14.dp, bottom = 4.dp))
-}
+private fun Label(text: String) = GroupLabel(text)
 
 @Composable
 private fun Add(page: Page, key: String, title: String, onEnter: () -> Unit) {
@@ -230,6 +230,8 @@ private fun LinkEditor(initial: SiteEntry?, taken: Set<String>, onTyping: (Boole
     }
     Input(stringResource(R.string.win_link_address), url, { url = it.trim() }, onTyping, hint = "https://example.com/browse/{argument}")
     Text(stringResource(R.string.win_link_help), color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECOND), style = SMALL.copy(lineHeight = 18.sp))
+    // A link may take one of Booklight's two letters; the long keyword still reaches what the letter did.
+    LETTERS[keyword.lowercase()]?.let { long -> Text(stringResource(R.string.win_link_letter, keyword.lowercase(), long), color = MaterialTheme.colorScheme.onSurface, style = SMALL.copy(lineHeight = 18.sp)) }
     // A link needs a keyword nobody else has, a name, and an address.
     val ok = keyword.isNotEmpty() && ' ' !in keyword && (keyword.lowercase() !in taken || keyword.equals(initial?.keyword, ignoreCase = true)) && name.isNotBlank() &&
         (url.startsWith("https://") || url.startsWith("http://")) && url.length > 10

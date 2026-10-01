@@ -104,18 +104,27 @@ fun PageRow(
     onEnter: () -> Unit = {},
     /** Left (−1) and Right (+1) on the row: the next or previous choice of its control. */
     onStep: ((Int) -> Unit)? = null,
+    /** False: the row keeps its place but is dimmed, and the selection passes over it (what it switches is switched off above it). */
+    enabled: Boolean = true,
+    /** How many lines the line under the title may take; 0 = as many as it needs. */
+    lines: Int = 0,
+    /** Something under the title, on the title's edge: a strip of choices that is too wide to stand beside it. */
+    below: (@Composable (ink: Color) -> Unit)? = null,
     trailing: @Composable RowScope.(ink: Color) -> Unit = {},
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val selected = page.selected == key
-    val ink = scheme.onSurface
+    val ink by animateColorAsState(scheme.onSurface.copy(alpha = if (enabled) 1f else 0.40f), motion.fade(120), label = "row")
     val enter by rememberUpdatedState(onEnter)
     val step by rememberUpdatedState(onStep)
     val entry = remember(key) { Page.Entry() }
     entry.enter = { enter() }
     entry.step = if (onStep == null) null else { d -> step?.invoke(d) }
-    DisposableEffect(key) { page.rows[key] = entry; onDispose { page.rows.remove(key); if (page.selected == key) page.selected = null } }
+    DisposableEffect(key, enabled) {
+        if (enabled) page.rows[key] = entry else if (page.selected == key) page.selected = null
+        onDispose { page.rows.remove(key); if (page.selected == key) page.selected = null }
+    }
     Row(
         Modifier.fillMaxWidth().defaultMinSize(minHeight = 56.dp)
             .onGloballyPositioned { c ->
@@ -123,8 +132,8 @@ fun PageRow(
                 if (top != entry.top || c.size.height.toFloat() != entry.height) { entry.top = top; entry.height = c.size.height.toFloat(); page.placed++ }
             }
             .clip(RoundedCornerShape(24.dp))
-            .pointerInput(key) { awaitPointerEventScope { while (true) if (awaitPointerEvent().type == PointerEventType.Move) page.selected = key } }
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { page.selected = key; enter() }
+            .pointerInput(key, enabled) { awaitPointerEventScope { while (true) if (awaitPointerEvent().type == PointerEventType.Move && enabled) page.selected = key } }
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, enabled = enabled) { page.selected = key; enter() }
             .semantics(mergeDescendants = true) { this.selected = selected; role = Role.Button }
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -132,7 +141,9 @@ fun PageRow(
         if (mark != null) Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) { mark(ink) }
         Column(Modifier.weight(1f).padding(start = if (mark != null) 16.dp else 0.dp, end = 12.dp)) {
             Text(title, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)))
-            subtitle?.let { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL.copy(lineHeight = 18.sp)) }
+            subtitle?.let { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL.copy(lineHeight = 18.sp), maxLines = if (lines > 0) lines else Int.MAX_VALUE, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+            // The strip's first name stands on the title's edge: its highlight reaches 14 dp out to the left of it.
+            below?.let { Box(Modifier.padding(top = 6.dp).offset(x = (-14).dp)) { it(ink) } }
         }
         trailing(ink)
     }

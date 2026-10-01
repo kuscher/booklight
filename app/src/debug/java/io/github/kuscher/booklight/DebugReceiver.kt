@@ -55,7 +55,8 @@ class DebugReceiver : BroadcastReceiver() {
                         else -> s
                     } }
                     "shadow" -> app.prefs.update { it.copy(shadow = v) }
-                    "cards" -> app.prefs.update { it.copy(shortcutCard = true, suggestionsCard = true, suggestions = false) }
+                    "cards" -> app.prefs.update { it.copy(shortcutCard = true, suggestionsCard = true, suggestions = false, keySeen = false) }
+                    "key" -> app.prefs.update { it.copy(keySeen = v == "seen") }
                     "nocards" -> app.prefs.update { it.copy(shortcutCard = false, suggestionsCard = false) }
                 }
                 out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim}" })
@@ -147,6 +148,20 @@ class DebugReceiver : BroadcastReceiver() {
                 out("chip=${m.chip?.key} query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
                     "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} tip=${m.tip?.id}${if (m.tipArmed != 0) ":" + m.tipArmed else ""}${if (m.tipOff) " off" else ""} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
+            }
+            // A picture of the Booklight window's own content (PixelCopy: no other apps): `wshot NAME`.
+            "wshot" -> main.post {
+                val w = io.github.kuscher.booklight.window.MainActivity.current.get() ?: return@post out("no window")
+                val v = w.window.decorView
+                if (v.width == 0) return@post out("no window")
+                val bmp = createBitmap(v.width, v.height)
+                PixelCopy.request(w.window, bmp, { r ->
+                    if (r == PixelCopy.SUCCESS) {
+                        val f = File(context.cacheDir, "${arg.ifEmpty { "window" }}.png")
+                        FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        out(f.absolutePath)
+                    } else out("failed $r")
+                }, main)
             }
             "shot" -> main.post {
                 val a = act ?: return@post out("no panel")

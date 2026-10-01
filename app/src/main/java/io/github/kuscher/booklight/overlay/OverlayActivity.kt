@@ -106,6 +106,10 @@ class OverlayActivity : ComponentActivity() {
             else -> 0f
         }
         arrival = Arrival.of(opening, motion)
+        // Opened the way a key opens it (a keyboard shortcut starts the launcher activity; the assistant key asks for
+        // assistance): Booklight has a key, and need not ask for one.
+        val byKey = intent.action == Intent.ACTION_ASSIST || (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)) || (BuildConfig.DEBUG && intent.getBooleanExtra("key", false))
+        if (byKey && !settings.keySeen) app.prefs.update { it.copy(keySeen = true) }
         shade = Shade.of(if (BuildConfig.DEBUG) intent.getStringExtra("shade") ?: settings.shadow else settings.shadow)
         take(intent)
         placeWindow()
@@ -122,6 +126,8 @@ class OverlayActivity : ComponentActivity() {
                 }
             }
         }
+        // A row of the window's Commands page: Booklight types its example, once the panel has opened.
+        intent.getStringExtra(EXTRA_TYPE)?.let { text -> lifecycleScope.launch { delay(motion.hold(TYPE_AFTER_MS)); if (!leaving) model.typeOut(text) } }
         window.decorView.post {
             Log.i(BooklightApp.TAG, "panel shown ${SystemClock.uptimeMillis() - created} ms after onCreate, ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
         }
@@ -204,6 +210,7 @@ class OverlayActivity : ComponentActivity() {
         if (fromIcon(intent)) { startActivity(Intent(this, MainActivity::class.java)); close(); return }
         // The key again while the panel is still leaving: it turns round and opens again (unless it is leaving because something ran).
         if (leaving) { if (!ran && !isFinishing) { leaveJob?.cancel(); leaving = false; take(intent) }; return }
+        intent.getStringExtra(EXTRA_TYPE)?.let { model.typeOut(it); return }
         if (!take(intent)) close()
     }
 
@@ -332,6 +339,9 @@ class OverlayActivity : ComponentActivity() {
     companion object {
         const val EXTRA_STAY = "stay"
         const val EXTRA_DARK = "dark"
+        /** An example for Booklight to type once the panel is open (the window's Commands page). Nothing is run. */
+        const val EXTRA_TYPE = "type"
+        private const val TYPE_AFTER_MS = 320L
         /** Asked for by name (the widget, the tile): the panel, whoever started it. */
         const val ACTION_PANEL = "io.github.kuscher.booklight.PANEL"
         private const val EARLY_MS = 600L

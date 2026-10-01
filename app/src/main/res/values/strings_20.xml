@@ -222,4 +222,23 @@
         <item>sums|calc|12*3.5|Sums|is answered as you type. Enter copies</item>
         <item>emoji|smile|emoji party|Emoji|is a grid to pick from. Enter copies</item>
     </string-array>
+
+    <!-- The Booklight window: its sections -->
+    <string name="nav_start">Start</string>
+    <string name="nav_commands">Commands</string>
+    <string name="nav_yours">Yours</string>
+    <string name="nav_look">Look</string>
+    <string name="nav_results">Results</string>
+    <string name="nav_access">Access</string>
+    <string name="nav_about">About</string>
+    <string name="key_none">No key yet</string>
+    <string name="key_press">Now press the key once</string>
+    <string name="key_works">Your key works</string>
+    <string name="win_commands_lead">Everything Booklight does, each with an example. Enter on a row opens Booklight and types it for you; nothing is run until you press Enter there.</string>
+    <string name="win_other_apps">Other apps</string>
+    <string name="set_app_commands">Commands from your apps</string>
+    <string name="set_app_commands_text">What your other apps offer becomes rows: “new event” opens the calendar’s editor. Booklight starts nothing of theirs before you press Enter, and they never see what you type.</string>
+    <string name="win_apps_none">None of your apps offers anything yet.</string>
+    <string name="win_link_letter">This link takes %1$s from Booklight. “%2$s” still reaches what %1$s did.</string>
+    <string name="about_device">Prompts are answered by the system’s own model on this device, where it has one; your text stays here. The library that reaches it reports how it is used to Google (not what you type): the privacy policy says what.</string>
 </resources>
