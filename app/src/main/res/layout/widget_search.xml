@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The search pill: Booklight's mark and one word. The whole pill opens the panel. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_search"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -16,7 +17,9 @@
         android:layout_height="22dp"
         android:importantForAccessibility="no"
         android:src="@drawable/ic_booklight"
-        android:tint="@color/widget_ink" />
+        android:tint="@color/widget_ink"
+        tools:ignore="UseAppTint" />
+    <!-- A widget is drawn by the home app from this layout: only the platform's own attributes work there. -->
 
     <TextView
         android:layout_width="0dp"

@@ -343,9 +343,10 @@ private fun Countdown(p: Pinned) {
             }
         }
     }
-    val at = remember(p) {
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val at = remember(p, locale) {
         val pattern = if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a"
-        Instant.ofEpochMilli(p.until).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern(pattern, context.resources.configuration.locales[0]))
+        Instant.ofEpochMilli(p.until).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern(pattern, locale))
     }
     val set = stringResource(R.string.pin_set_for, at)
     val text = when {

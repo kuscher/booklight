@@ -59,7 +59,7 @@ class OnDevice(private val scope: CoroutineScope) {
                 else -> State.NONE
             }
         } catch (e: Throwable) {
-            Log.i(BooklightApp.TAG, "on-device model: not here (${e.javaClass.simpleName})")
+            Log.i(BooklightApp.TAG, "on-device model: not here (${e.javaClass.simpleName})", e)
             State.NONE
         }
         _state.value = s
