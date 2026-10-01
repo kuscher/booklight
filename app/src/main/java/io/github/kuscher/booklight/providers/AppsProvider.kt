@@ -93,7 +93,6 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             Verb("info", words(R.string.verb_info)),
             Verb("left", words(R.string.verb_left), atStart = false),
             Verb("right", words(R.string.verb_right), atStart = false),
-            Verb("store", words(R.string.verb_store)),
             Verb("uninstall", words(R.string.verb_uninstall), min = 3),
         )
     }
@@ -134,7 +133,6 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             Action("info", context.getString(R.string.action_app_info), Effect.AppInfo(a.pkg, a.cls, a.user)),
             Action("left", context.getString(R.string.action_left_half), Effect.LaunchApp(a.pkg, a.cls, a.user, place = Place.LEFT)),
             Action("right", context.getString(R.string.action_right_half), Effect.LaunchApp(a.pkg, a.cls, a.user, place = Place.RIGHT)),
-            Action("store", context.getString(R.string.action_store_page), Effect.StorePage(a.pkg)),
             Action("uninstall", context.getString(R.string.action_uninstall), Effect.Uninstall(a.pkg, a.user), symbol = "trash", danger = true).takeIf { !a.system },
         ),
     )

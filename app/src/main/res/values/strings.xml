@@ -10,7 +10,6 @@
     <string name="kind_suggestion">Suggestion</string>
     <string name="action_open">Open</string>
     <string name="action_app_info">App info</string>
-    <string name="action_store_page">Store page</string>
     <string name="action_copy">Copy</string>
     <string name="action_open_link">Open link</string>
     <string name="action_search_engine">Search %1$s</string>

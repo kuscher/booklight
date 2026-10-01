@@ -166,4 +166,91 @@ class SearchEngineTest {
         assertEquals(listOf("web:search", "web:gemini"), r.takeLast(2).map { it.id })
         assertEquals(4, r.size)
     }
+
+    // ---- 2.0
+
+    private class Pages(override val key: String, override val keywords: List<String>, override val name: String, private val pages: List<String>) : Scope {
+        override val symbol = "settings"
+        override val hint = "…"
+        override suspend fun rows(arg: String) = pages.filter { arg.isEmpty() || Matcher.score(arg, it) > 0 }.map {
+            Result("page:$it", key, Kind.SETTING, it, icon = Icon.Symbol("settings"), score = 1.0, actions = listOf(Action("open", "Open", Effect.OpenSettings(it))))
+        } + Result("${SearchEngine.HANDOVER}$key", key, Kind.COMMAND, "Search the other place", icon = Icon.Symbol("open"), score = 1.0,
+            actions = listOf(Action("open", "Open", Effect.OpenSettings("search"))), learnable = false)
+    }
+
+    private val settings = Pages("settings", listOf("s", "settings"), "Search settings", listOf("Bluetooth", "Sound", "Storage"))
+    private val help = object : Scope {
+        override val key = "help"; override val keywords = listOf("?"); override val name = "Everything"; override val symbol = "list"; override val hint = "…"
+        override val web = false
+        override suspend fun rows(arg: String) = listOf(Result("help:timer", key, Kind.OTHER, "Timer", icon = Icon.Symbol("timer"), score = 1.0, actions = emptyList()))
+    }
+    private val other = object : Scope {
+        override val key = "ext:shot"; override val keywords = listOf("shot"); override val name = "Capture"; override val symbol = "app"; override val hint = "…"
+        override val spaceEnters = false
+        override suspend fun rows(arg: String) = emptyList<Result>()
+    }
+
+    private class Commands(private val titles: List<String>) : Provider {
+        override val id = SearchEngine.COMMANDS
+        override suspend fun query(q: Query) = titles.mapNotNull { t ->
+            val s = Matcher.score(q.text, t)
+            if (s > 0) Result("cmd:$t", id, Kind.COMMAND, t, icon = Icon.Symbol("app"), score = s * 0.9, actions = listOf(Action("open", "Open", Effect.Open("pkg", "intent:#Intent;end"))), label = "Chrome") else null
+        }
+    }
+
+    private fun two(vararg providers: Provider) = SearchEngine(
+        listOf(Names(listOf("Slack", "Spotify", "Settings", "Summa", "Sheets", "Slides", "Snapseed", "Signal", "Skype", "Stocks"), ::app), web) + providers,
+        History(), clock = { 1000 }, scopes = { listOf(settings, help, other, Words("new", listOf("new"), "New")) },
+        fallback = { text -> listOf(Result("web:search", "web", Kind.WEB, "Search for $text", icon = Icon.Symbol("search"), score = 0.1,
+            actions = listOf(Action("search", "Search", Effect.OpenUrl(Engines.default.search(text)))), learnable = false)) },
+    )
+
+    @Test fun aOneLetterKeywordsRowKeepsTheLastLocalPlace() = runTest {
+        val r = two().search(Query("s"))
+        assertEquals(Kind.APP, r.first().kind)                                  // "s", Enter still opens an app
+        assertEquals(listOf("scope:settings", "web:search"), r.takeLast(2).map { it.id })   // and the keyword's row is always there, last before the web
+        assertEquals(8, r.size)                                                 // ten apps on S: it is not pushed off the list
+        // A longer keyword keeps its place at the top, as in 1.1.
+        assertEquals("scope:settings", two().search(Query("settings")).first { it.kind == Kind.SCOPE }.id)
+        assertTrue(two().search(Query("settings")).indexOfFirst { it.id == "scope:settings" } <= 1)
+    }
+
+    @Test fun whatTabTurnsIntoAChip() {
+        val e = two()
+        assertEquals("settings", e.keywordScope("s")?.key)
+        assertEquals("settings", e.keywordScope(" S ")?.key)
+        assertEquals("settings", e.keywordScope("Settings")?.key)
+        assertEquals(null, e.keywordScope("se"))
+        assertEquals(null, e.keywordScope("s x"))
+        assertEquals(null, e.keywordScope(""))
+        assertEquals("ext:shot", e.keywordScope("shot")?.key)                   // Tab enters another app's keyword…
+        assertEquals(null, e.scopeFor("shot area"))                             // …a Space does not, until it has been used
+    }
+
+    @Test fun insideAScopeNothingMatchedMeansTheWebComesFirst() = runTest {
+        val e = two()
+        assertEquals(listOf("page:Bluetooth", "handover:settings", "web:search"), e.search(Query("blu", scope = "settings", keyword = "s")).map { it.id })
+        val none = e.search(Query("bahn", scope = "settings", keyword = "s"))
+        assertEquals(listOf("web:search", "handover:settings"), none.map { it.id })
+        assertEquals("Search for s bahn", none.first().title)
+        // Nothing typed yet: the scope's own rows, no way out.
+        assertEquals(4, e.search(Query("", scope = "settings")).size)
+    }
+
+    @Test fun aListThatIsNotASearchHasNoWebRow() = runTest {
+        assertEquals(listOf("help:timer"), two().search(Query("ti", scope = "help", keyword = "?")).map { it.id })
+    }
+
+    @Test fun aCommandThatStartsWithTheKeywordComesFirst() = runTest {
+        val e = two(Commands(listOf("New tab", "New incognito tab", "New event")))
+        val r = e.search(Query("tab", scope = "new", keyword = "new"))
+        assertEquals("cmd:New tab", r.first().id)                               // "new tab" is Chrome's command, not a file called tab
+        assertEquals(listOf("new:first", "new:second", "web:search"), r.drop(1).map { it.id })
+        // One letter after the keyword is not enough to put commands in front.
+        assertEquals("new:first", e.search(Query("t", scope = "new", keyword = "new")).first().id)
+        // Two at most.
+        assertTrue(two(Commands(listOf("New a", "New ab", "New abc"))).search(Query("a", scope = "new", keyword = "new")).none { it.provider == SearchEngine.COMMANDS })
+        assertEquals(2, two(Commands(listOf("New ab", "New abc", "New abcd"))).search(Query("ab", scope = "new", keyword = "new")).count { it.provider == SearchEngine.COMMANDS })
+    }
 }
+

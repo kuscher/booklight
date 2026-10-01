@@ -16,9 +16,9 @@ data class Reading(val rest: String, val action: String)
  */
 object Verbs {
     /**
-     * Every reading of [text], verbs at the end first, none twice.
+     * Every reading of [text], verbs at the end first (the longest first), none twice.
      *
-     * At the end, the last word or the last two are the start of one of a verb's words, with at least
+     * At the end, the last one, two or three words are the start of one of a verb's words, with at least
      * [Verb.min] letters ("chrome inf", "chrome new w"); a whole verb word always counts. At the start
      * the verb must be a whole word, and only if [Verb.atStart]. A verb with nothing beside it is no
      * reading: "info" finds apps called Info. Case and accents don't matter ([Matcher.fold]).
@@ -28,12 +28,14 @@ object Verbs {
         val n = words.size
         if (n < 2 || verbs.isEmpty()) return emptyList()
         val out = LinkedHashSet<Reading>()
-        val widest = minOf(2, n - 1)
-        for (k in 1..widest) {
+        val widest = minOf(WIDEST, n - 1)
+        // A whole verb word first, then the start of one: "chrome left" is Left before it is the start of "left third".
+        // And the longest verb first: "chrome top left" is Top left before it is Left with a name of "chrome top".
+        for (whole in listOf(true, false)) for (k in widest downTo 1) {
             val tail = folded(words, n - k, n) ?: continue
             val letters = tail.count { it != ' ' }
             for (v in verbs) {
-                val hit = v.words.any { w -> val f = Matcher.fold(w); f == tail || (letters >= v.min && f.startsWith(tail)) }
+                val hit = v.words.any { w -> val f = Matcher.fold(w); if (whole) f == tail else f != tail && letters >= v.min && f.startsWith(tail) }
                 if (hit) out.add(Reading(Words.cut(text, words, 0, n - k), v.action))
             }
         }
@@ -45,6 +47,24 @@ object Verbs {
         }
         return out.toList()
     }
+
+    /**
+     * "chrome t", on the way to "chrome top left": the name part when the last word is a single
+     * letter that starts one of the verbs. One letter is not a reading, but it must not make the
+     * row vanish for a keystroke either. Null when the text is not of that shape.
+     */
+    fun dangling(text: String, verbs: List<Verb>): String? {
+        val words = Words.of(text)
+        val n = words.size
+        if (n < 2) return null
+        val last = Matcher.fold(words[n - 1].text)
+        if (last.length != 1) return null
+        if (verbs.none { v -> v.words.any { Matcher.fold(it).startsWith(last) } }) return null
+        return Words.cut(text, words, 0, n - 1)
+    }
+
+    /** A verb is three words at most: "left two thirds". */
+    private const val WIDEST = 3
 
     /** Words [from] to [to] folded and joined; null when one of them has no letters ("-"), so it can't hide in a verb. */
     private fun folded(words: List<Word>, from: Int, to: Int): String? {

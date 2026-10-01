@@ -32,8 +32,15 @@ sealed interface Icon {
     data class Glyph(val text: String) : Icon
 }
 
-/** Where on the screen an app's window is asked to open. */
-enum class Place { NONE, LEFT, RIGHT }
+/**
+ * Where on the screen an app's window is asked to open. Recipes save a place by its number:
+ * new ones go at the end.
+ */
+enum class Place {
+    NONE, LEFT, RIGHT,
+    LEFT_THIRD, MIDDLE_THIRD, RIGHT_THIRD, LEFT_TWO_THIRDS, RIGHT_TWO_THIRDS,
+    TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, CENTER, FULL,
+}
 
 enum class MediaKey { PLAY_PAUSE, NEXT, PREVIOUS }
 
@@ -45,10 +52,15 @@ enum class ImageUse { COPY, SAVE, SHARE }
  * performs effects. New abilities are a new effect plus a few lines there.
  */
 sealed interface Effect {
-    data class LaunchApp(val packageName: String, val className: String, val user: Long = 0, val place: Place = Place.NONE, val newWindow: Boolean = false) : Effect
+    /** [display]: which screen, counted from 1; 0 = wherever the system puts it. */
+    data class LaunchApp(val packageName: String, val className: String, val user: Long = 0, val place: Place = Place.NONE, val newWindow: Boolean = false, val display: Int = 0) : Effect
     data class AppInfo(val packageName: String, val className: String, val user: Long = 0) : Effect
-    /** The app's page in the store it came from. */
-    data class StorePage(val packageName: String) : Effect
+    /**
+     * Something another app offers (one of its own shortcuts, or a command from its Booklight file):
+     * [intent] as an `intent:` address. The executor starts it only if it leads to an activity of
+     * [owner] that is open to other apps and asks for no permission.
+     */
+    data class Open(val owner: String, val intent: String) : Effect
     /** Asks the system to remove an app; the system shows its own confirmation. */
     data class Uninstall(val packageName: String, val user: Long = 0) : Effect
     data class OpenUrl(val url: String) : Effect
@@ -61,8 +73,16 @@ sealed interface Effect {
 
     /** The mail app's compose window, filled in. Nothing is sent. */
     data class Compose(val to: List<String>, val subject: String, val body: String) : Effect
-    /** A line for the user's notes file. */
-    data class AppendNote(val text: String) : Effect
+    /** A line for the user's notes: [file] empty is Notes.md, [TODAY] the day's own file, else that file in the notes folder. */
+    data class AppendNote(val text: String, val file: String = "") : Effect {
+        companion object { const val TODAY = "@today" }
+    }
+    /** A task for Todo.md. */
+    data class AddTodo(val text: String) : Effect
+    /** Ticks the task on line [line] of Todo.md, or unticks it. [text] is what the line said, so a file changed meanwhile is not ticked in the wrong place. */
+    data class TickTodo(val line: Int, val text: String, val done: Boolean) : Effect
+    /** Opens a file of the notes folder in whatever edits text. */
+    data class OpenNote(val file: String) : Effect
     /** The notes app's editor with this text. */
     data class KeepNote(val text: String) : Effect
     /** The calendar's editor, filled in. Times are epoch milliseconds. */
@@ -73,6 +93,16 @@ sealed interface Effect {
     data class NewFile(val name: String, val folder: Boolean, val pick: Boolean = false) : Effect
     /** Hands text to the Gemini app, which shows it in its prompt; the user sends it there. */
     data class AskGemini(val text: String) : Effect
+    /**
+     * A small window that stays above the others. [kind]: `text`, `answer`, `color`, `qr`, `timer`.
+     * [text] is what it shows (a colour: its hex), [note] a line with it (the sum; a timer's label),
+     * [value] a number with it (a colour's ARGB; a timer's seconds).
+     */
+    data class Pin(val kind: String, val text: String, val value: Long = 0, val note: String = "") : Effect
+    /** Takes away the pinned window. */
+    data object Unpin : Effect
+    /** Hands the text back to the app that handed text over from a field that can be edited. */
+    data class Replace(val text: String) : Effect
 
     data class SetVolume(val percent: Int) : Effect
     data object ToggleMute : Effect
@@ -86,6 +116,8 @@ sealed interface Effect {
 
     /** Turns a scope's row into the chip in the field; [text] becomes its argument. */
     data class EnterScope(val key: String, val text: String = "") : Effect
+    /** Booklight types [text] into the field, a letter at a time (an example from a tip or from the list of everything). The panel does this itself. */
+    data class Type(val text: String) : Effect
     /** Opens the place where the user allows something, once: `brightness`, `notes`. */
     data class Grant(val what: String) : Effect
 
@@ -130,6 +162,12 @@ sealed interface Body {
     data class Code(val text: String) : Body
     /** Text shown large in the fixed-width face (a password). */
     data class Mono(val text: String) : Body
+    /** A key combination, drawn as key caps: Action, Ctrl, ]. */
+    data class Keys(val keys: List<String>) : Body
+    /** A task: a box, ticked or not. */
+    data class Task(val done: Boolean) : Body
+    /** Text that is still arriving (an answer from the device's own model): [text] so far, [busy] while more is coming. */
+    data class Stream(val text: String, val busy: Boolean, val caption: String) : Body
 }
 
 enum class SlotState { TYPED, GUESSED, EMPTY }
@@ -158,6 +196,8 @@ data class Result(
     val armed: Int = 0,
     val body: Body? = null,
     val nudge: Nudge? = null,
+    /** What the row says at its right end in place of its kind's name: the app a command belongs to, "Key". */
+    val label: String? = null,
 )
 
 /**
@@ -193,5 +233,9 @@ interface Scope {
     val about: String? get() = null
     /** False when something else already puts a row for it in the ordinary list (a level is its own row): then only its keyword and a space enter it. */
     val listed: Boolean get() = true
+    /** False for a list that is not a search (the list of everything): no "search the web for…" closes it. */
+    val web: Boolean get() = true
+    /** False for a keyword the user has not chosen yet (another app's): it is entered from its row, not by a Space. */
+    val spaceEnters: Boolean get() = true
     suspend fun rows(arg: String): List<Result>
 }

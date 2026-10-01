@@ -160,7 +160,7 @@ class SnipScope(private val context: Context, private val prefs: Prefs) : Scope 
  * handed over (its selection menu, its share sheet), which then is the chip. Typing narrows the
  * rows by name. The text goes nowhere unless a row is run.
  */
-class TextScope(private val context: Context, private val fixed: String?, private val web: (String) -> Result) : Scope {
+class TextScope(private val context: Context, private val fixed: String?, private val search: (String) -> Result) : Scope {
     override val key = if (fixed == null) "clip" else "text"
     override val keywords: List<String> = if (fixed == null) context.getString(R.string.clip_keys).split(',') else emptyList()
     override val name: String = fixed?.let { it.trim().replace('\n', ' ').let { t -> if (t.length > 28) t.take(27) + "…" else t } } ?: context.getString(R.string.clip_name)
@@ -182,7 +182,7 @@ class TextScope(private val context: Context, private val fixed: String?, privat
         val rows = ArrayList<Result>()
         // Text another app sent is something to look up: the ways out come first. The clipboard may hold anything
         // (a password): there the rows that stay on the device come first and the ways out last.
-        val out = listOf(web(one), gemini(context, text, 1.0))
+        val out = listOf(search(one), gemini(context, text, 1.0))
         if (fixed != null) rows += out
         rows += row("note", context.getString(R.string.note_name), "note", one, Action("note", context.getString(R.string.scope_type), Effect.EnterScope("note", one), keepOpen = true, symbol = "edit"))
         rows += row("mail", context.getString(R.string.mail_name), "mail", one, Action("compose", context.getString(R.string.action_compose), Effect.Compose(emptyList(), "", text), symbol = "edit"))

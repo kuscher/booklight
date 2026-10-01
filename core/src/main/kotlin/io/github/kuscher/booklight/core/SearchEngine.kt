@@ -38,24 +38,32 @@ class SearchEngine(
             .map { it to rank(it, q.text, now) }
             .sortedWith(compareByDescending<Pair<Result, Double>> { it.second }.thenBy { it.first.title.length }.thenBy { it.first.title })
             .map { it.first }
-        // The ways out (search the web, ask Gemini) keep the last rows, however many other rows match.
-        val out = ranked.filter(::isFallback).take(MAX_FALLBACKS)
-        return ranked.filterNot(::isFallback).take(limit - out.size) + out
+        // The ways out (search the web, ask Gemini) keep the last rows, however many other rows match. So does the
+        // row of a one-letter keyword ("s" for Settings): it is always there to Tab into, under everything that matched.
+        val letter = ranked.filter { isLetterRow(it, q.text) }.take(1)
+        val out = letter + ranked.filter(::isFallback).take(MAX_FALLBACKS)
+        return ranked.filterNot { isFallback(it) || it in letter }.take(limit - out.size) + out
     }
 
     private suspend fun inScope(q: Query, limit: Int): List<Result> {
         val s = scope(q.scope ?: return emptyList()) ?: return emptyList()
         val rows = withTimeoutOrNull(budgetMs) { runCatching { s.rows(q.text) }.getOrElse { emptyList() } } ?: emptyList()
         // An ordinary word that happened to be a keyword ("new york weather") is one row away.
-        if (q.isEmpty || s.keywords.isEmpty()) return rows.take(limit)
+        if (q.isEmpty || s.keywords.isEmpty() || !s.web) return rows.take(limit)
         // What was actually typed: the word the user used for the scope, then the text.
         val whole = "${q.keyword ?: s.keywords.first()} ${q.text}"
         val out = fallback(whole).take(1)
-        // The keyword may have been the first word of an app's name ("play store"): such an app comes first.
+        // The keyword may have been the first word of an app's name ("play store") or of something an app offers
+        // ("new tab"): such a row comes first. A command needs two letters after the keyword.
         val now = clock()
-        val apps = ask(providers.filter { it.id == APPS }) { it.query(Query(whole)) }.filter { it.kind == Kind.APP && it.score >= Matcher.PREFIX }
+        val named = ask(providers.filter { it.id == APPS || it.id == COMMANDS }) { it.query(Query(whole)) }
+            .filter { (it.kind == Kind.APP && it.score >= Matcher.PREFIX) || (it.provider == COMMANDS && q.text.length >= 2 && Matcher.score(whole, it.title) >= Matcher.PREFIX) }
             .sortedByDescending { rank(it, whole, now) }.take(2)
-        return (apps + rows).take(limit - out.size).plus(out).distinctBy { it.id }
+        // Nothing of the scope's own matched (only its way out to another search is left): the text was probably
+        // an ordinary one ("s bahn"), and the web search for all of it comes first.
+        val own = rows.any { !it.id.startsWith(HANDOVER) }
+        val list = if (own || named.isNotEmpty()) (named + rows).take(limit - out.size) + out else out + rows.take(limit - out.size)
+        return list.distinctBy { it.id }
     }
 
     fun scope(key: String): Scope? = scopes().firstOrNull { it.key == key }
@@ -69,8 +77,15 @@ class SearchEngine(
         val space = t.indexOf(' ')
         if (space <= 0) return null
         val word = t.substring(0, space)
-        val s = scopes().firstOrNull { sc -> sc.keywords.any { it.equals(word, ignoreCase = true) } } ?: return null
+        val s = scopes().firstOrNull { sc -> sc.spaceEnters && sc.keywords.any { it.equals(word, ignoreCase = true) } } ?: return null
         return Scoped(s, t.substring(space + 1), word)
+    }
+
+    /** The scope [text] is exactly a keyword of, if any: what Tab turns into the chip. */
+    fun keywordScope(text: String): Scope? {
+        val t = text.trim()
+        if (t.isEmpty() || ' ' in t) return null
+        return scopes().firstOrNull { sc -> sc.keywords.any { it.equals(t, ignoreCase = true) } }
     }
 
     /** A scope, the text typed for it, and the [word] that was typed to enter it. */
@@ -93,6 +108,12 @@ class SearchEngine(
     }
 
     private fun isFallback(r: Result) = r.kind == Kind.WEB && r.score < FALLBACK_BELOW
+
+    /** The row of a scope whose keyword is the one letter that was typed. */
+    private fun isLetterRow(r: Result, text: String): Boolean {
+        if (r.kind != Kind.SCOPE || text.length != 1) return false
+        return scopes().any { "scope:${it.key}" == r.id && it.keywords.any { k -> k.equals(text, ignoreCase = true) } }
+    }
 
     /**
      * Adds a search engine's suggestions, which arrive after the local rows are on screen, below
@@ -151,8 +172,12 @@ class SearchEngine(
         const val URL_SCORE = 0.9
         const val MAX_SUGGESTIONS = 3
         const val MAX_FALLBACKS = 2
-        /** The id of the provider of apps: the only one asked inside a scope. */
+        /** The id of the provider of apps: asked inside a scope too. */
         const val APPS = "apps"
+        /** The id of the provider of what other apps offer: asked inside a scope too. */
+        const val COMMANDS = "appcommands"
+        /** How the id of a scope's way out to another search starts ("Search the Settings app"). */
+        const val HANDOVER = "handover:"
         /** A web row scoring less than this is a way out, kept for the end of the list. */
         const val FALLBACK_BELOW = 0.5
     }

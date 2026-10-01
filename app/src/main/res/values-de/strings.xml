@@ -8,7 +8,6 @@
     <string name="kind_suggestion">Vorschlag</string>
     <string name="action_open">Öffnen</string>
     <string name="action_app_info">App-Info</string>
-    <string name="action_store_page">Im Store ansehen</string>
     <string name="action_copy">Kopieren</string>
     <string name="action_open_link">Link öffnen</string>
     <string name="action_search_engine">Mit %1$s suchen</string>

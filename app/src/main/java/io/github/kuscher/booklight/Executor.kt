@@ -65,11 +65,6 @@ class Executor(private val context: Context) {
         when (effect) {
             is Effect.LaunchApp -> launch(effect, ctx)
             is Effect.AppInfo -> launcher.startAppDetailsActivity(ComponentName(effect.packageName, effect.className), user(effect.user), null, null)
-            is Effect.StorePage -> try {
-                start(Intent(Intent.ACTION_VIEW, "market://details?id=${effect.packageName}".toUri()))
-            } catch (_: ActivityNotFoundException) {
-                start(Intent(Intent.ACTION_VIEW, "https://play.google.com/store/apps/details?id=${effect.packageName}".toUri()))
-            }
             // Android asks "Do you want to uninstall this app?" itself. Needs REQUEST_DELETE_PACKAGES; without it nothing happens at all.
             is Effect.Uninstall -> start(Intent(Intent.ACTION_DELETE, Uri.fromParts("package", effect.packageName, null)).putExtra(Intent.EXTRA_USER, user(effect.user)))
             is Effect.OpenUrl -> start(Intent(Intent.ACTION_VIEW, effect.url.toUri()))
@@ -140,7 +135,9 @@ class Executor(private val context: Context) {
             is Effect.Edit -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_EDIT, effect.kind).putExtra(MainActivity.EXTRA_ID, effect.id))
             // A recipe: each step in turn; it stops at the first that can't be done.
             is Effect.Steps -> return effect.steps.all { perform(it, from) }
-            is Effect.EnterScope -> return false     // the panel does this itself
+            is Effect.EnterScope, is Effect.Type -> return false     // the panel does these itself
+            // 2.0, each in its own task:
+            is Effect.Open, is Effect.Pin, is Effect.Unpin, is Effect.Replace, is Effect.AddTodo, is Effect.TickTodo, is Effect.OpenNote -> return false
         }
         return true
     }

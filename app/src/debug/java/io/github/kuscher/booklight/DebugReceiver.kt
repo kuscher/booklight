@@ -118,8 +118,11 @@ class DebugReceiver : BroadcastReceiver() {
             is io.github.kuscher.booklight.core.Body.Grid -> " {${b.cells.size} cells: ${b.cells.take(6).joinToString("") { it.glyph }}…}"
             is io.github.kuscher.booklight.core.Body.Code -> " {qr}"
             is io.github.kuscher.booklight.core.Body.Mono -> " {${b.text}}"
+            is io.github.kuscher.booklight.core.Body.Keys -> " {" + b.keys.joinToString(" + ") + "}"
+            is io.github.kuscher.booklight.core.Body.Task -> if (b.done) " {done}" else " {open}"
+            is io.github.kuscher.booklight.core.Body.Stream -> " {${b.caption}: ${b.text}${if (b.busy) "…" else ""}}"
         }
         val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id }.joinToString(",")
-        return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.kind}]$body <$acts>"
+        return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.label ?: r.kind}]$body <$acts>"
     }
 }
