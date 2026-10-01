@@ -50,6 +50,16 @@ object Matcher {
         return if (s >= WORD_PREFIX) s * 0.85 else 0.0
     }
 
+    /**
+     * What is left of [title] after the typed text, when the title starts with it ("chr" → "ome"):
+     * shown in the field as grey text. Null when the title doesn't start that way.
+     */
+    fun completion(query: String, title: String): String? {
+        if (query.isEmpty() || query.length >= title.length) return null
+        if (!title.regionMatches(0, query, 0, query.length, ignoreCase = true)) return null
+        return title.substring(query.length)
+    }
+
     private fun one(q: String, n: String, words: List<String>): Double {
         if (q == n) return EXACT
         // A shorter name is the closer match for the same typed text: "Chrome" before "Chrome Beta".

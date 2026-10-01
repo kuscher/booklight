@@ -7,7 +7,7 @@ data class Query(val raw: String) {
 }
 
 /** What a result is. Drives the row's label and how the ranker weighs it. */
-enum class Kind { APP, ANSWER, SETTING, COMMAND, WEB, OTHER }
+enum class Kind { APP, ANSWER, SETTING, COMMAND, WEB, SUGGESTION, OTHER }
 
 /**
  * A picture for a row, as data: the core has no drawables. The app turns it into pixels
@@ -27,8 +27,9 @@ sealed interface Icon {
 sealed interface Effect {
     data class LaunchApp(val packageName: String, val className: String, val user: Long = 0) : Effect
     data class AppInfo(val packageName: String, val className: String, val user: Long = 0) : Effect
+    /** The app's page in the store it came from. */
+    data class StorePage(val packageName: String) : Effect
     data class OpenUrl(val url: String) : Effect
-    data class WebSearch(val query: String) : Effect
     data class CopyText(val text: String) : Effect
     /** A system settings screen, by its `android.settings.…` intent action. */
     data class OpenSettings(val action: String) : Effect

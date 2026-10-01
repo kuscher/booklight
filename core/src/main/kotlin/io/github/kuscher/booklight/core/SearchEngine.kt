@@ -10,7 +10,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * One list, best first (Alfred, Raycast, Spotlight since macOS 26), not groups: Enter always
  * runs the first row. Order = the provider's match score × the kind's weight + what [History]
- * has learned for this exact text. Answers (a sum) go first; the web search is always last.
+ * has learned for this exact text. Answers (a sum) go first; the web search comes after every
+ * local row, and suggestions from the search engine, when they arrive, go below it.
  */
 class SearchEngine(
     private val providers: List<Provider>,
@@ -33,6 +34,16 @@ class SearchEngine(
     }
 
     private fun isFallback(r: Result) = r.kind == Kind.WEB && r.score < URL_SCORE
+
+    /**
+     * Adds a search engine's suggestions, which arrive after the local rows are on screen, below
+     * everything else. They only take rows that are free, so nothing already shown moves or goes.
+     */
+    fun merge(local: List<Result>, suggestions: List<Result>, limit: Int = DEFAULT_LIMIT): List<Result> {
+        val shown = local.map { Matcher.fold(it.title) }.toSet()
+        val fresh = suggestions.filter { Matcher.fold(it.title) !in shown }.distinctBy { Matcher.fold(it.title) }
+        return local + fresh.take(minOf(MAX_SUGGESTIONS, limit - local.size).coerceAtLeast(0))
+    }
 
     /** Before anything is typed: what you use most, then whatever providers suggest. */
     private suspend fun zeroState(limit: Int): List<Result> {
@@ -77,5 +88,6 @@ class SearchEngine(
         const val DEFAULT_LIMIT = 8
         /** A web result scoring this or more is an address the user typed, ranked like a match. */
         const val URL_SCORE = 0.9
+        const val MAX_SUGGESTIONS = 3
     }
 }

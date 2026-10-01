@@ -25,7 +25,7 @@ class SearchEngineTest {
         override val id = "web"
         override suspend fun query(q: Query) = listOf(
             Result("web:search", id, Kind.WEB, "Search the web", icon = Icon.Symbol("globe"), score = 0.1,
-                actions = listOf(Action("search", "Search", Effect.WebSearch(q.text))), learnable = false),
+                actions = listOf(Action("search", "Search", Effect.OpenUrl(Engines.default.search(q.text)))), learnable = false),
         )
     }
 
@@ -87,5 +87,19 @@ class SearchEngineTest {
         assertEquals(3, r.size)
         assertEquals(Kind.WEB, r.last().kind)
         assertEquals(listOf(Kind.APP, Kind.APP), r.take(2).map { it.kind })
+    }
+
+    private fun suggestion(text: String) = Result("suggest:$text", "suggest", Kind.SUGGESTION, text, icon = Icon.Symbol("search"), score = 0.2,
+        actions = listOf(Action("search", "Search", Effect.OpenUrl(Engines.default.search(text)))), learnable = false)
+
+    @Test fun suggestionsGoBelowAndOnlyTakeFreeRows() = runTest {
+        val e = engine()
+        val local = e.search(Query("cam"))                      // Camera + the web row
+        assertEquals(2, local.size)
+        val merged = e.merge(local, listOf("camera", "camping", "cambridge", "camel", "cameo").map(::suggestion))
+        assertEquals(local, merged.take(2))                     // nothing already shown moved
+        assertEquals(listOf("camping", "cambridge", "camel"), merged.drop(2).map { it.title })   // "camera" is on screen as the app
+        val full = e.search(Query("c"))                         // five apps + the web row
+        assertEquals(full, e.merge(full, listOf(suggestion("cats")), limit = full.size))
     }
 }

@@ -66,4 +66,12 @@ class MatcherTest {
         assertEquals(0.0, Matcher.keyword("chr", "charge"), 0.0)     // scattered letters
         assertEquals(0.0, Matcher.keyword("ark", "dark mode"), 0.0)  // inside a word
     }
+
+    @Test fun completionIsTheRestOfANameThatStartsWithTheText() {
+        assertEquals("ome", Matcher.completion("chr", "Chrome"))
+        assertEquals("ome", Matcher.completion("CHR", "Chrome"))
+        assertEquals(null, Matcher.completion("gc", "Google Chrome"))
+        assertEquals(null, Matcher.completion("chrome", "Chrome"))
+        assertEquals(null, Matcher.completion("", "Chrome"))
+    }
 }
