@@ -2,6 +2,50 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (night): 2.0
+
+**What 2.0 is.** Alex ticked seven things in `research/next-features.md` and added the rest in his own words
+(spec §1 and §2): other apps' commands as rows; a pinned window; the system's shortcuts as answers; more
+places, nine icons and a list under the row; `?`; notes that grow; prompts; `s` and `k`; tips; a window with
+a column of sections and a list of commands; a shadow around the panel; answers from the device's own model.
+203 core tests; release build and lint pass; the release build opens in about 110 ms on the Lenovo.
+
+**What the devices decided** (all in `research/device-findings.md`):
+- **The pin is a picture-in-picture window.** A window in Android 17's pinned layer takes the keyboard when it
+  opens and again each time the panel closes; an app cannot hand it back. Picture-in-picture never has the keys,
+  opens at the size the manifest names as its smallest, and needs no permission. So: no caption, no buttons of
+  its own; Copy and Unpin are on the row `pin` shows. Its arrival is the system's (about half a second).
+- **The shadow is the system's own**, in room the window's blur does not reach; the window's background clears
+  the glass's shape first, so nothing of it is under the glass.
+- **The on-device model answers Booklight** (Lenovo, `nano-v3`): first word about 0.3 s once loaded, 70 to 100
+  characters a second. **The release build needs a keep rule** for ML Kit's registrars or every prompt falls
+  back to Gemini: found only by installing the release build. Do that before every tag.
+- The desktop gives a new single-task window of Booklight's the bounds of whichever Booklight window is in
+  front; `FLAG_ACTIVITY_MULTIPLE_TASK` gets the bounds asked for.
+
+**Alex's decisions for 2.0** beyond the spec's list: Google's ML Kit library as shipped (its usage reporting
+stays: PRIVACY.md and the data-safety note say so); Play audience 18 and over; tips on from the start, Tab
+then Enter, one pass; the shadow in low, medium and high.
+
+**For the Play session** (it files these; this session does not touch the Console): the audience change to 18
+and over; data safety gains Device or other IDs and Diagnostics, collected, for analytics, through Google's
+ML Kit (`store-submission/forms/data-safety.md`, "2.0"); the privacy page needs `PRIVACY.md`'s new text; the
+store's release notes are in `store-submission/listing/*/release-notes.txt`.
+
+**Not done, known**
+- The HP was offline the whole time: nothing of 2.0 has run on it, the on-device model least of all. Install
+  it there and try `fix …`, a pin, the shadow, and the key.
+- A second display ("… on display 2") was not tried.
+- Not as specified, on purpose or for time: the keyword does not travel into the chip (it grows where the mark
+  was); the pill returns to a closing row on `lead` and `trail`, not rigid; a pin has no Copy of its own.
+- At the speed `adb shell input text` types, a letter right after a keyword's Space can be lost (seen once:
+  "fix this" became Fix + "his"). `./bl debug keys` (40 ms a letter) never loses one. Worth a look in `Panel`'s
+  `onChange` if a fast typist reports it.
+- The calculator still has no decimal comma (the German examples use a point).
+- TalkBack was not run.
+- Not built: the Gmail relay (Alex: not yet); extensions that answer while you type; "say it plainly" through
+  the model (proposed for the release after).
+
 ## 2026-10-01 (late): 1.1.1 released to testers
 
 Alex asked the Play session to cut 1.1.1 with the close animation: versionCode 3, tag `v1.1.1`, release notes in
