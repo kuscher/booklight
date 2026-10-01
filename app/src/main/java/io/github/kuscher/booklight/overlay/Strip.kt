@@ -267,6 +267,8 @@ fun OptionStrip(
     quiet: Boolean = false,
     /** The text's colour, when the strip sits on something other than the panel's glass. */
     ink: Color? = null,
+    /** False: nothing is chosen yet (a tip's answers before Tab): no highlight and no mark, until something is. */
+    lit: Boolean = true,
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -283,11 +285,12 @@ fun OptionStrip(
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
     val hair = if (!quiet) Color.Transparent else if (dark) Color.Black.copy(alpha = 0.28f) else scheme.onSurface.copy(alpha = 0.20f)
     LaunchedEffect(chosen) { a.animateTo(chosen.toFloat(), motion.arm()) }
+    val glow by animateFloatAsState(if (lit) 1f else 0f, motion.fade(120), label = "lit")
 
     Layout(
         modifier = modifier
             .drawBehind {
-                if (n == 0) return@drawBehind
+                if (n == 0 || glow <= 0f) return@drawBehind
                 // Before the first move the highlight simply is where the chosen slot is.
                 val still = head.value.isNaN()
                 val lo = if (still) slots.x[chosen.coerceIn(0, n - 1)].toFloat() else minOf(head.value, tail.value)
@@ -296,9 +299,9 @@ fun OptionStrip(
                 val r = CornerRadius(SLOT.toPx() / 2)
                 val o = if (vertical) Offset(0f, lo) else Offset(lo, 0f)
                 val s = if (vertical) Size(across, hi - lo) else Size(hi - lo, across)
-                if (hair.alpha > 0f) drawRoundRect(hair, o - Offset(0.5f, 0.5f), Size(s.width + 1f, s.height + 1f), CornerRadius(r.x + 0.5f), style = Stroke(1f))
-                drawRoundRect(fill, o, s, r)
-                drawRoundRect(rim, o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
+                if (hair.alpha > 0f) drawRoundRect(hair.copy(alpha = hair.alpha * glow), o - Offset(0.5f, 0.5f), Size(s.width + 1f, s.height + 1f), CornerRadius(r.x + 0.5f), style = Stroke(1f))
+                drawRoundRect(fill.copy(alpha = fill.alpha * glow), o, s, r)
+                drawRoundRect(rim.copy(alpha = rim.alpha * glow), o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
             }
             .pointerInput(n) { detectTapGestures { run(slots.at(if (vertical) it.y else it.x)) } }
             .pointerInput(n) {
@@ -312,8 +315,8 @@ fun OptionStrip(
         content = {
             options.forEachIndexed { k, label ->
                 Text(label, color = ink ?: scheme.onSurface, style = LABEL.copy(fontSize = 14.sp, fontWeight = FontWeight(600)), maxLines = 1, softWrap = false,
-                    modifier = Modifier.graphicsLayer { alpha = SECOND + (1f - SECOND) * on(a.value, k) })
-                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) }, tint = ink ?: scheme.onSurface)
+                    modifier = Modifier.graphicsLayer { alpha = SECOND + (1f - SECOND) * on(a.value, k) * glow })
+                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) * glow }, tint = ink ?: scheme.onSurface)
             }
         },
     ) { measurables, _ ->

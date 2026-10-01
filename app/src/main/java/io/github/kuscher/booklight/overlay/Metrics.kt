@@ -60,7 +60,7 @@ object Metrics {
     /** The panel's height for what the model is showing. Must match what [Panel] draws. */
     fun height(m: OverlayModel): Dp = field + when {
         m.results.isNotEmpty() -> pad + listHeight(m.results) + pad + footer
-        m.card != null -> card + pad
+        m.card != null || m.tip != null -> card + pad
         else -> 0.dp
     }
 

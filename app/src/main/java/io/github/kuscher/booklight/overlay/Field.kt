@@ -91,7 +91,8 @@ fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue)
             val style = TextStyle(fontFamily = Fonts.text, fontSize = 24.sp, fontWeight = FontWeight(500), color = scheme.onSurface)
             if (field.text.isEmpty()) {
                 // The placeholder says what to type: what Booklight finds, or what the scope takes.
-                AnimatedContent(model.chip?.hint ?: stringResource(R.string.search_hint), transitionSpec = {
+                // While a tip shows, its example stands here: where it would be typed, in the ink that means "not typed yet".
+                AnimatedContent(model.chip?.hint ?: model.tip?.takeIf { !model.tipOff }?.example?.trim() ?: stringResource(R.string.search_hint), transitionSpec = {
                     (fadeIn(motion.fade(140, 60)) + slideInHorizontally(motion.place()) { it / 40 }) togetherWith fadeOut(motion.fade(60))
                 }, contentAlignment = Alignment.CenterStart, label = "hint") { hint ->
                     Text(hint, style = style.copy(color = scheme.onSurface.copy(alpha = THIRD), fontWeight = FontWeight(400)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 2.dp))

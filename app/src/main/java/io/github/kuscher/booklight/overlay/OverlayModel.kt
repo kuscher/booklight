@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.kuscher.booklight.BooklightApp
+import io.github.kuscher.booklight.Tips
 import io.github.kuscher.booklight.ai.OnDevice
 import io.github.kuscher.booklight.scopes.PromptScope
 import kotlinx.coroutines.flow.drop
@@ -128,6 +129,53 @@ class OverlayModel(
         }
     }
 
+    /** The tip that is on screen under the empty field; null = none. */
+    var tip by mutableStateOf<Tips.Tip?>(null); private set
+    /** Which of the tip's two answers Enter would do: 0 neither (Enter on an empty panel does nothing), 1 Try it, 2 Turn off tips. */
+    var tipArmed by mutableIntStateOf(0); private set
+    /** Tips were just turned off: the card says so for a moment before it goes. */
+    var tipOff by mutableStateOf(false); private set
+    private var tipSince = 0L
+    /** Something has been typed since the panel opened: whoever types at once never sees a tip. */
+    private var typedYet = false
+
+    /**
+     * The panel has been open for a moment and nothing was typed: a tip, if there is one whose turn
+     * it is. Never as part of the opening, and never while a first-run card is to be shown.
+     */
+    fun offerTip() {
+        if (demo || typedYet || tip != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || !settings.tips || settings.shortcutCard || card != null) return
+        tip = app.tips.next(settings) ?: return
+        tipArmed = 0; tipOff = false
+        tipSince = SystemClock.uptimeMillis()
+    }
+
+    /** The tip goes: something was typed, the panel closes. How long it was on screen counts towards its turn. */
+    fun hideTip() {
+        val t = tip ?: return
+        tip = null; tipArmed = 0; tipOff = false
+        val ms = SystemClock.uptimeMillis() - tipSince
+        change { Tips.shown(it, t.id, ms) }
+    }
+
+    /** Tab on a tip: its first answer, then its second, and round again. */
+    fun tipTab() { if (tip != null && !tipOff) tipArmed = if (tipArmed == 1) 2 else 1 }
+    fun tipArm(which: Int) { if (tip != null && !tipOff) tipArmed = which }
+
+    /** Enter on a tip does the armed answer; with neither armed, nothing. */
+    fun tipEnter() {
+        val t = tip ?: return
+        when (tipArmed) {
+            // Booklight types the example; the card stays until the last letter. Tried counts as its turn.
+            1 -> { change { Tips.seen(it, t.id) }; tipArmed = 0; typeOut(t.example) }
+            2 -> {
+                change { it.copy(tips = false) }
+                tipOff = true; tipArmed = 0
+                scope.launch { delay(TIP_OFF_MS); if (tipOff) { tip = null; tipOff = false } }
+            }
+        }
+    }
+
     /** The rest of the selected row's name, shown grey after the typed text ("chr" + "ome"). */
     val completion: String? by derivedStateOf {
         val r = current
@@ -139,6 +187,8 @@ class OverlayModel(
         if (text == query) return
         typist?.cancel(); typist = null     // the user's own typing takes over from Booklight's
         shown = false
+        typedYet = true
+        hideTip()
         shut()                              // typing closes an opened row in the same frame
         touched = false
         foreign = false                     // edited: it is the user's own text now
@@ -161,6 +211,8 @@ class OverlayModel(
         this.word = word
         query = text
         search()
+        // The list of everything has been opened: its tip need not come.
+        if (!demo && s.key == "help" && "help" !in settings.used) change { it.copy(used = it.used + "help") }
         // A prompt: ask the system what it has, and have its model loaded by the time the text is typed.
         if (s is PromptScope && !demo) scope.launch { if (app.onDevice.check() == OnDevice.State.READY) app.onDevice.warm() }
     }
@@ -184,8 +236,14 @@ class OverlayModel(
         typist = scope.launch {
             for (c in text) {
                 val next = query + c
-                val s = if (chip == null) app.engine.scopeFor(next) else null
-                if (s != null) { chip = s.scope; word = s.word; query = s.text } else query = next
+                // The same two ways into a scope the user's own typing has: a question mark first, or a keyword and its Space.
+                val help = if (chip == null && next.startsWith(HELP)) app.engine.scope("help") else null
+                val s = if (chip == null && help == null) app.engine.scopeFor(next) else null
+                when {
+                    help != null -> { chip = help; word = HELP; query = next.drop(1).trimStart() }
+                    s != null -> { chip = s.scope; word = s.word; query = s.text }
+                    else -> query = next
+                }
                 if (step > 0) delay(step)
             }
             typist = null
@@ -210,6 +268,7 @@ class OverlayModel(
     }
 
     private fun search(keep: Boolean = false) {
+        hideTip()
         job?.cancel()
         answering?.cancel(); answering = null; thinking = false; whenAnswered = null     // typing again takes the question back
         cancelConfirm()
@@ -540,6 +599,7 @@ class OverlayModel(
 
     /** The panel is closing without having run anything: keep what was typed for [restoreLast]. */
     fun keep() {
+        hideTip()
         // Text another app handed over is never kept, in its own chip or once it has moved into a note or a code. Nor is
         // an example Booklight typed, unless the user made it their own by editing it.
         if (query.isNotBlank() && !foreign && !shown && chip?.keywords?.isEmpty() != true) app.lastText = chip?.key to query
@@ -571,5 +631,7 @@ class OverlayModel(
         private const val ASK_PAUSE_MS = 500L
         private const val ASK_MIN = 3
         private const val HELP = "?"
+        /** How long "Tips are off…" stands before the card goes. */
+        const val TIP_OFF_MS = 1600L
     }
 }

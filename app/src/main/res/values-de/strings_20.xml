@@ -190,4 +190,26 @@
         <item>play|controls|music|play|play lofi|Abspielen|Fragt die Musik-App</item>
         <item>window|booklight|booklight||booklight|Booklights Fenster|Einstellungen und deine Links, Bausteine, Rezepte und Prompts</item>
     </string-array>
+
+    <!-- Tipps -->
+    <string name="tips_turn_off">Tipps ausschalten</string>
+    <string name="tips_off">Tipps sind aus. Du schaltest sie in Booklights Fenster wieder ein.</string>
+    <string name="set_tips">Tipps</string>
+    <string name="set_tips_text">Eine Sache, die Booklight kann, unter dem leeren Feld, wenn du es geöffnet und nichts getippt hast. Jeder ist einmal dran.</string>
+    <string name="set_tips_again">Tipps noch einmal zeigen</string>
+    <string name="set_tips_again_done">Ab dem ersten</string>
+    <string-array name="tips">
+        <item>help|list|?|Alles|listet alles auf, was Booklight kann, jedes mit einem Beispiel</item>
+        <item>places|left|chrome links|Eine App, an einem Platz|öffnet Chrome in der linken Hälfte. Auch: rechtes Drittel, oben links, voll</item>
+        <item>settings|settings|s wlan|Einstellungen|führt zu einer Einstellungsseite. s, Tab, dann ihr Name</item>
+        <item>keys|key|k andocken|Tastenkürzel|zeigt die Tasten dafür. k, Tab, dann was du tun möchtest</item>
+        <item>todo|check|todo Bank anrufen|Aufgaben|fügt Todo.md eine Aufgabe hinzu. todo allein zeigt, was offen ist</item>
+        <item>prompts|spark|{prompt}|Prompts|wird auf diesem Gerät beantwortet, in seiner Zeile. Enter kopiert</item>
+        <item>pin|pin|pin Gate B22, 14:05|Anheften|hält eine Zeile in einem kleinen Fenster über den anderen</item>
+        <item>timer|timer|timer 10m Tee|Timer|startet ihn in der Uhr. „Starten und anheften“ hält den Countdown im Blick</item>
+        <item>note|note|notiz Milch kaufen|Notiz|fügt Notes.md eine Zeile mit Datum hinzu</item>
+        <item>clip|clip|clip |Zwischenablage|zeigt, was du kopiert hast und was sich damit tun lässt</item>
+        <item>sums|calc|12*3,5|Rechnen|wird beim Tippen beantwortet. Enter kopiert</item>
+        <item>emoji|smile|emoji party|Emoji|ist ein Raster zum Auswählen. Enter kopiert</item>
+    </string-array>
 </resources>

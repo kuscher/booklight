@@ -48,6 +48,12 @@ class DebugReceiver : BroadcastReceiver() {
                     "theme" -> app.prefs.update { it.copy(theme = v) }
                     "tint" -> app.prefs.update { it.copy(tint = v == "on") }
                     "dim" -> app.prefs.update { it.copy(dim = v == "on") }
+                    // tips on|off|again (from the first one)|at ID (that tip next)
+                    "tips" -> app.prefs.update { s -> when (v) {
+                        "on" -> s.copy(tips = true); "off" -> s.copy(tips = false)
+                        "again" -> s.copy(tips = true, tipsSeen = emptyList(), tipId = "", tipMs = 0, used = emptyList())
+                        else -> s
+                    } }
                     "shadow" -> app.prefs.update { it.copy(shadow = v) }
                     "cards" -> app.prefs.update { it.copy(shortcutCard = true, suggestionsCard = true, suggestions = false) }
                     "nocards" -> app.prefs.update { it.copy(shortcutCard = false, suggestionsCard = false) }
@@ -76,12 +82,12 @@ class DebugReceiver : BroadcastReceiver() {
                     "up" -> if (!m.moveCell(0, -1) && !m.restoreLast()) m.move(-1)
                     "right" -> if (!m.moveCell(1, 0) && !m.nudge(1) && m.opened == null) { if (m.onMore) m.open() else m.arm(1, wrap = false) }
                     "left" -> if (m.opened != null) m.close() else if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
-                    "tab" -> if (m.keyword != null) m.enterKeyword() else if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
+                    "tab" -> if (m.tip != null) m.tipTab() else if (m.keyword != null) m.enterKeyword() else if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
                     "backtab" -> if (m.opened != null) m.step(-1) else m.arm(-1, wrap = true)
                     "more" -> { m.current?.let { m.armAt(it.actions.size) } }
                     "back" -> m.leaveScope()
                     "esc" -> if (!m.cancelConfirm()) act.close()
-                    "enter" -> m.enter { r, a -> act.run(r, a) }
+                    "enter" -> if (m.tip != null) m.tipEnter() else m.enter { r, a -> act.run(r, a) }
                     "stay" -> m.enter { r, a -> act.run(r, a, keep = true) }
                 }
                 out("ok")
@@ -139,7 +145,7 @@ class DebugReceiver : BroadcastReceiver() {
                 val d = act.window.decorView
                 val loc = IntArray(2).also { d.getLocationOnScreen(it) }
                 out("chip=${m.chip?.key} query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
-                    "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} rows=" +
+                    "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} tip=${m.tip?.id}${if (m.tipArmed != 0) ":" + m.tipArmed else ""}${if (m.tipOff) " off" else ""} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
             }
             "shot" -> main.post {

@@ -199,4 +199,27 @@
         <item>play|controls|music|play|play lofi|Play|Asks the music app</item>
         <item>window|booklight|booklight||booklight|Booklight’s window|Settings, and your links, snippets, recipes and prompts</item>
     </string-array>
+
+    <!-- Tips -->
+    <string name="tips_turn_off">Turn off tips</string>
+    <string name="tips_off">Tips are off. Turn them on again in Booklight’s window.</string>
+    <string name="set_tips">Tips</string>
+    <string name="set_tips_text">One thing Booklight can do, under the empty field, when you have opened it and not typed. Each has its turn once.</string>
+    <string name="set_tips_again">Show the tips again</string>
+    <string name="set_tips_again_done">From the first one</string>
+    <!-- id|symbol|example|name|what happens. The line reads: example, a space, what happens; 90 characters at most. -->
+    <string-array name="tips">
+        <item>help|list|?|Everything|lists all that Booklight does, each with an example to try</item>
+        <item>places|left|chrome left|An app, in a place|opens Chrome in the left half. Also: right third, top left, full</item>
+        <item>settings|settings|s wifi|Settings|goes to a settings page. s, Tab, then its name</item>
+        <item>keys|key|k snap|Keyboard shortcuts|shows the keys for it. k, Tab, then what you want to do</item>
+        <item>todo|check|todo call the bank|To-do|adds a task to Todo.md. todo alone shows what is open</item>
+        <item>prompts|spark|{prompt}|Prompts|is answered on this device, in its row. Enter copies</item>
+        <item>pin|pin|pin gate B22, 14:05|Pin|keeps a line in a small window on top of the others</item>
+        <item>timer|timer|timer 10m tea|Timer|starts it in the Clock. Start and pin keeps the countdown in view</item>
+        <item>note|note|note buy milk|Note|adds a dated line to Notes.md</item>
+        <item>clip|clip|clip |Clipboard|shows what you copied and what can be done with it</item>
+        <item>sums|calc|12*3.5|Sums|is answered as you type. Enter copies</item>
+        <item>emoji|smile|emoji party|Emoji|is a grid to pick from. Enter copies</item>
+    </string-array>
 </resources>

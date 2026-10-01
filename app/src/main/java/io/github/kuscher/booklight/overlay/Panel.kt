@@ -162,6 +162,8 @@ fun Panel(
     val scale = remember { Animatable(if (motion.on && !arrival.unfold) 0.96f else 1f) }
     fun opened() = if (arrival.unfold) ((landed(wide.value) - w0) / (1f - w0)).coerceIn(0f, 1f) else 1f
     LaunchedEffect(Unit) { if (!gate) { snapshotFlow { opened() >= Motion.GATE }.first { it }; gate = true } }
+    // A tip comes only after the opening, and only if nothing has been typed for a moment: the opening is the same every time.
+    LaunchedEffect(gate) { if (gate) { delay(TIP_AFTER_MS); model.offerTip() } }
     // The seam the glass grows out of, and draws back into, lies on the field's centre line whatever the panel's height.
     val seamPx = with(density) { Metrics.field.toPx() * 0.1f }
     val fieldPx = with(density) { Metrics.field.toPx() }
@@ -238,12 +240,13 @@ fun Panel(
             Key.DirectionDown -> { if (!model.moveCell(0, 1)) model.move(1); true }
             Key.DirectionUp -> { if (!model.moveCell(0, -1) && !model.restoreLast()) model.move(-1); true }
             Key.Enter, Key.NumPadEnter -> {
-                if (!again) { if (card != null) onCard(card, cardChoice == 0) else model.enter { row, a -> go(row, a, e.isShiftPressed) } }
+                if (!again) { if (card != null) onCard(card, cardChoice == 0) else if (model.tip != null) model.tipEnter() else model.enter { row, a -> go(row, a, e.isShiftPressed) } }
                 true
             }
             Key.Tab -> {
                 when {
                     card != null -> if (!again) cardChoice = 1 - cardChoice
+                    model.tip != null -> if (!again) model.tipTab()
                     // The text is exactly a keyword and nothing has been moved: Tab makes it the chip. Text and chip change in one frame.
                     model.keyword != null && !e.isShiftPressed -> if (!again && model.enterKeyword()) field = TextFieldValue("")
                     entersScope && !e.isShiftPressed -> if (!again) model.fill()
@@ -339,6 +342,7 @@ fun Panel(
                     val body = when {
                         model.results.isNotEmpty() -> "results"
                         model.card != null -> "card:${model.card}"
+                        model.tip != null -> "tip"
                         else -> "none"
                     }
                     val rows = body == "results"
@@ -361,6 +365,7 @@ fun Panel(
                             when {
                                 state == "results" -> ResultsBody(model, icons) { r, a -> go(r, a, false) }
                                 state.startsWith("card") -> model.card?.let { CardBody(it, model, cardChoice, onChoice = { c -> cardChoice = c }, onCard = onCard) }
+                                state == "tip" -> TipBody(model)
                                 else -> Spacer(Modifier.fillMaxWidth())
                             }
                         }
@@ -368,6 +373,57 @@ fun Panel(
                     AnimatedVisibility(rows, enter = fadeIn(motion.fade(140)), exit = fadeOut(motion.fade(70))) { Footer(model) }
                 }
             }
+        }
+    }
+}
+
+/** How long the open panel waits, with nothing typed, before a tip comes. */
+private const val TIP_AFTER_MS = 320L
+
+/**
+ * A tip: the first-run card's shape. The feature's own mark, its name, one line that begins with
+ * what to type (in full ink: it is what "Try it" types), and two answers. Neither answer is armed at
+ * rest, so Enter on an empty panel still does nothing; a `tab` cap says how to get to them. Its
+ * parts rise in one after the other, once the panel has made room.
+ */
+@Composable
+private fun TipBody(model: OverlayModel) {
+    val scheme = MaterialTheme.colorScheme
+    val motion = LocalMotion.current
+    val dark = LocalDark.current
+    val tip = remember { model.tip } ?: return
+    val off = model.tipOff
+    val arrive = remember { Animatable(if (motion.on) 0f else 1f) }
+    LaunchedEffect(Unit) { arrive.animateTo(1f, motion.fade(140 + 2 * 22, easing = LinearEasing)) }
+    val rise = with(LocalDensity.current) { 12.dp.toPx() }
+    // Part [i] of three starts 22 ms after the one before it and takes 140 ms.
+    fun Modifier.part(i: Int) = graphicsLayer {
+        val t = ((arrive.value * (140f + 44f) - i * 22f) / 140f).coerceIn(0f, 1f)
+        alpha = t; translationY = (1f - t) * rise
+    }
+    Row(Modifier.padding(horizontal = Metrics.pad).fillMaxWidth().height(Metrics.card).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.part(0).size(36.dp).clip(CircleShape).background(scheme.onSurface.copy(alpha = if (dark) 0.12f else 0.08f)), contentAlignment = Alignment.Center) {
+            Icon(Symbols.of(tip.symbol), null, Modifier.size(20.dp), tint = scheme.onSurface)
+        }
+        Column(Modifier.part(1).weight(1f).padding(start = 16.dp, end = 14.dp)) {
+            Text(tip.name, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val line = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), lineHeight = 17.sp)
+            AnimatedContent(off, transitionSpec = { motion.roll() }, contentAlignment = Alignment.TopStart, label = "line") { gone ->
+                if (gone) Text(stringResource(R.string.tips_off), color = scheme.onSurface.copy(alpha = SECOND), style = line, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                else Text(androidx.compose.ui.text.buildAnnotatedString {
+                    append(tip.example.trim())
+                    addStyle(androidx.compose.ui.text.SpanStyle(color = scheme.onSurface), 0, length)
+                    append(" "); append(tip.rest)
+                }, color = scheme.onSurface.copy(alpha = SECOND), style = line, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        val answers by androidx.compose.animation.core.animateFloatAsState(if (off) 0f else 1f, motion.fade(60), label = "answers")
+        Row(Modifier.part(2).graphicsLayer { alpha *= answers }, verticalAlignment = Alignment.CenterVertically) {
+            // Nothing is armed until Tab: the cap says so, and goes once an answer is.
+            val cap by androidx.compose.animation.core.animateFloatAsState(if (model.tipArmed == 0) 1f else 0f, motion.fade(120), label = "cap")
+            Box(Modifier.padding(end = 10.dp).graphicsLayer { alpha = cap }) { Keycap("tab") }
+            OptionStrip(listOf(stringResource(R.string.action_try), stringResource(R.string.tips_turn_off)), (model.tipArmed - 1).coerceAtLeast(0),
+                onChoose = { model.tipArm(it + 1) }, onRun = { model.tipArm(it + 1); model.tipEnter() }, vertical = true, lit = model.tipArmed != 0)
         }
     }
 }

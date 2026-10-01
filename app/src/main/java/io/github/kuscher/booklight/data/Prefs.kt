@@ -80,6 +80,11 @@ data class Settings(
     val usedScopes: List<String> = emptyList(),
     /** The lines of the list of everything (`Guide`) the user has run something of: they are not suggested again. */
     val used: List<String> = emptyList(),
+    /** Tips under the empty field. On from the start; the ones that have had their turn; the one whose turn it is and how long it has been on screen. */
+    val tips: Boolean = true,
+    val tipsSeen: List<String> = emptyList(),
+    val tipId: String = "",
+    val tipMs: Long = 0,
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
     /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0. */
