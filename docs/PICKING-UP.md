@@ -2,33 +2,40 @@
 
 *Living status. Newest first.*
 
-## 2026-10-01 (night): 1.1 built, not released
+## 2026-10-01 (night): 1.1 released to testers
 
-**Where it stands.** Alex answered the 18 questions (spec §12) and asked for one big 1.1. It is built on
-`main` (versionName 1.1, versionCode 2): the action row, scopes, previews, controls, grids, the unfold
-arrival, the Booklight window, Jot, Dials, Recipes, Switches. 167 core tests pass; the release build and
-lint pass; cold start about 110 ms, warm about 30 ms on the Lenovo.
+**Released.** Tag `v1.1` at 7fadfbe (pushed by the Play session in ~/googlebook-tech on Alex's request to it).
+The workflow was green on its first run: GitHub release "Booklight 1.1" with `Booklight.apk`,
+`Booklight-1.1.apk` and `SHA256SUMS`; the bundle (version code 2) on Play closed testing, sent for review at
+about 18:40 UTC. 1.0 stays live for testers until the review passes. Production is Alex's call.
+
+**What Play said about the new permissions:** nothing. One warning (no debug symbols for native code), no
+declaration form for `REQUEST_DELETE_PACKAGES`, `SET_ALARM` or `WRITE_SETTINGS`; App content "all caught up";
+still offered to exactly the five Googlebooks. The listing is updated in English and now exists in German;
+eight new screenshots, feature graphic and icon; googlebook.studio/privacy/booklight carries the 1.1 text
+from `PRIVACY.md`; the data-safety form is as filed for 1.0.
+
+**What 1.1 is.** Alex answered the 18 questions (spec §12) and asked for one big 1.1: the action row, scopes,
+previews, controls, grids, the unfold arrival, the Booklight window, Jot, Dials, Recipes, Switches. 167 core
+tests; release build and lint pass; cold start about 110 ms, warm about 30 ms on the Lenovo.
 
 **Tested on the Lenovo Googlebook 15** (the HP was offline with its lid closed): every kind of row through
-`./bl debug`; the opening, the edge light, the arming and the first-run card frame by frame; mail, event,
-new file, Ask Gemini, a timer, left half, right half and new window for real; German and dark; text handed
-over by another app; real key presses on the release build.
+`./bl debug` (and every example line typed one character at a time); the opening, the edge light, the arming
+and the first-run card frame by frame; event, new file, Ask Gemini, a timer, left half, right half and new
+window for real; German and dark; text handed over by another app; real key presses on the release build.
+
+**Reviewed.** A visual design review and a code review of the whole diff, both independent; every must-fix
+and should-fix is in. Left on purpose: a monospace face for passwords, fade-outs instead of ellipses, the
+site's own icon in a link's chip.
 
 **Not tested, needs Alex's own clicks:** the app icon opening the Booklight window; the notes-folder picker;
 the brightness switch; adding the widget and the tile; Uninstall's system dialog; a bound key on the Lenovo.
+If the icon routing guesses wrong the panel opens, as in 1.0.
 
-**Reviewed.** A visual design review (captures against the design system) and a code review of the whole
-1.1 diff, both independent; every must-fix and should-fix is in (the selected row's ink, the pane's one rim,
-icons, the grid on the mark column; a crash when a row lost its actions while being typed, held-Enter
-repeats, the typed keyword of a scope, the clipboard's rows, migration, the window's editors). Left on
-purpose: a monospace face for passwords (none on the device; the panel's own face with a slashed zero is
-used), fade-outs instead of ellipses, the site's own icon in a link's chip.
-
-**Release.** Store screenshots (`store-submission/graphics/screens`, eight, made from panel-only captures
-on a drawn desk), the listing (en-US, de-DE), `PRIVACY.md` and the data-safety facts are final for 1.1. Alex
-asked the Play session (~/googlebook-tech) to release Booklight to testers; it pushes the tag `v1.1` itself
-once CI on main is green, then does the Console side (listing, screenshots, privacy page, forms, closed-testing
-rollout, send for review). This session does not tag. Check `git tag` and the Actions tab for where that stands.
+**Next**
+1. When the review passes: confirm with the Play session that testers get 1.1.
+2. Alex's first impressions of 1.1 on a device; fix what he finds as 1.1.1.
+3. Then PLAN.md §4: 2.0 Extensions. The Gmail relay (2.1) is explicitly not started.
 
 **Loose ends**
 - The HP still has a throwaway spike build that draws a blurred band around the panel (it went offline

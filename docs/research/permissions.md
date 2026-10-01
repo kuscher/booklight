@@ -216,3 +216,9 @@ Sources:
 5. **Uninstall wording** that nudges users to remove other apps.
 6. **Sending selected text or notes off the device** without a data-safety entry.
 7. **Requesting SMS or Call Log permissions** because the assistant role would grant them. That triggers the Permissions Declaration Form and an "extended review" that "may require up to several weeks" (https://support.google.com/googleplay/android-developer/answer/9214102).
+
+## What Play actually asked (1.1, 1 October 2026)
+
+1.1 went to closed testing with `REQUEST_DELETE_PACKAGES`, `com.android.alarm.permission.SET_ALARM` and
+`WRITE_SETTINGS` in its manifest. The Console's review step raised no declaration form and no error for any
+of them; App content stayed "all caught up". (Closed testing; production review may look again.)
