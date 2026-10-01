@@ -1,0 +1,7 @@
+Booklight uses work by others:
+
+The emoji names and keywords in app/src/main/assets/emoji.tsv come from the Unicode CLDR
+annotations and the Unicode emoji data files, © Unicode, Inc., used under the Unicode
+License v3 (https://www.unicode.org/license.txt).
+
+QR codes are made with ZXing ("core"), Apache License 2.0 (https://github.com/zxing/zxing).
