@@ -67,6 +67,9 @@ class OverlayActivity : ComponentActivity() {
     /** This start was a click on the icon: there is no panel, only a hand-over to the Booklight window. */
     private var handedOver = false
     private lateinit var arrival: Arrival
+    /** The window's background: the blur's corners, and where the glass stands for its shadow. */
+    private lateinit var ground: PanelOutline
+    private var shade = Shade.MEDIUM
     private var leaveJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,6 +105,7 @@ class OverlayActivity : ComponentActivity() {
             else -> 0f
         }
         arrival = Arrival.of(opening, motion)
+        shade = Shade.of(if (BuildConfig.DEBUG) intent.getStringExtra("shade") ?: settings.shadow else settings.shadow)
         take(intent)
         placeWindow()
 
@@ -111,7 +115,7 @@ class OverlayActivity : ComponentActivity() {
                     BackHandler { close() }
                     Panel(
                         model, icons, glass && !solid, dark, arrival, leaving,
-                        onHeight = ::sizeWindow, onPresence = ::present,
+                        onHeight = ::sizeWindow, onPresence = ::present, onGlass = ::shadow,
                         onRun = ::run, onCard = ::card, onClose = ::close,
                     )
                 }
@@ -132,7 +136,20 @@ class OverlayActivity : ComponentActivity() {
             window.setDimAmount(if (motion.on) 0f else dim)
         }
         // The background draws nothing; the platform reads the blur region's corner radius from its outline.
-        window.setBackgroundDrawable(PanelOutline(dp(Metrics.radius.value)))
+        ground = PanelOutline(dp(Metrics.radius.value))
+        window.setBackgroundDrawable(ground)
+        if (shade != Shade.OFF) {
+            // The shadow is the system's own, cast by the window's root view; it lies in room the system adds around the
+            // window for it, where the window's blur does not reach. Darker in dark theme, where it has less to show against.
+            val deep = if (dark) 1.4f else 1f
+            ground.shaded = true
+            window.decorView.apply {
+                outlineProvider = ground.caster
+                outlineAmbientShadowColor = android.graphics.Color.argb((shade.ambient * deep).coerceAtMost(1f), 0f, 0f, 0f)
+                outlineSpotShadowColor = android.graphics.Color.argb((shade.spot * deep).coerceAtMost(1f), 0f, 0f, 0f)
+            }
+            window.setElevation(dp(shade.height))
+        }
         val screen = windowManager.maximumWindowMetrics.bounds
         val lp = window.attributes
         lp.width = minOf(dp(Metrics.width.value).roundToInt(), screen.width() - dp(48f).roundToInt())
@@ -159,6 +176,13 @@ class OverlayActivity : ComponentActivity() {
         val blur = if (solid) 0 else (dp(Look.blurDp) * focused).roundToInt()
         if (blur != lastBlur) { lastBlur = blur; window.setBackgroundBlurRadius(blur) }
         if (dim > 0f) window.setDimAmount(dim * dimmed)
+    }
+
+    /** Where the glass stands in the window and how far it has arrived: its shadow is cast from exactly there. */
+    private fun shadow(left: Int, top: Int, right: Int, bottom: Int, shown: Float) {
+        if (shade == Shade.OFF || !ground.place(left, top, right, bottom, shown)) return
+        window.decorView.invalidateOutline()
+        ground.invalidateSelf()
     }
 
     override fun onAttachedToWindow() {

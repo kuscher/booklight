@@ -125,6 +125,8 @@ fun Panel(
     onHeight: (Dp) -> Unit,
     /** How far the room has dimmed and how far the glass has come into focus, each 0 to 1: the window's dim and blur follow. */
     onPresence: (dim: Float, blur: Float) -> Unit,
+    /** Where the glass stands in the window, in pixels, and how far it has arrived (0 to 1): its shadow follows it. */
+    onGlass: (left: Int, top: Int, right: Int, bottom: Int, shown: Float) -> Unit,
     /** Runs an action; [stay]: Shift was held, keep the panel open. */
     onRun: (Result, Action, stay: Boolean) -> Unit,
     onCard: (Card, primary: Boolean) -> Unit,
@@ -287,6 +289,18 @@ fun Panel(
     val radiusPx = with(density) { Metrics.radius.toPx() }
     BoxWithConstraints(Modifier.fillMaxSize().onPreviewKeyEvent(::keys)) {
         val full = maxWidth
+        val fullPx = constraints.maxWidth
+        // The same arithmetic as the glass's own layout below: its shadow is cast from where it is drawn.
+        LaunchedEffect(fullPx) {
+            snapshotFlow {
+                val h = with(density) { height.roundToPx() }
+                val w = (fullPx * landed(wide.value)).roundToInt().coerceIn(1, fullPx.coerceAtLeast(1))
+                val u = unrolled()
+                val hh = (h * u + seamPx * (1f - u)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
+                val top = glassTop().coerceAtMost((h - hh).coerceAtLeast(0))
+                listOf((fullPx - w) / 2, top, (fullPx - w) / 2 + w, top + hh, (presence.value * opened() * 1000).roundToInt())
+            }.collect { (l, t, r, b, a) -> onGlass(l, t, r, b, a / 1000f) }
+        }
         Box(
             Modifier
                 // The glass: as wide and as high as the arrival has opened it, centred on the seam.

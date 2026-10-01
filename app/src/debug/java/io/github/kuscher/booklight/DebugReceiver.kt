@@ -48,6 +48,7 @@ class DebugReceiver : BroadcastReceiver() {
                     "theme" -> app.prefs.update { it.copy(theme = v) }
                     "tint" -> app.prefs.update { it.copy(tint = v == "on") }
                     "dim" -> app.prefs.update { it.copy(dim = v == "on") }
+                    "shadow" -> app.prefs.update { it.copy(shadow = v) }
                     "cards" -> app.prefs.update { it.copy(shortcutCard = true, suggestionsCard = true, suggestions = false) }
                     "nocards" -> app.prefs.update { it.copy(shortcutCard = false, suggestionsCard = false) }
                 }

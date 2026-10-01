@@ -150,6 +150,33 @@ Tried with a throwaway build (local branch `spike/unfold`), recorded and stepped
 - `./bl screen` crops a real screenshot, so it shows whatever is behind the panel: never publish
   one. `./bl shot` (PixelCopy of Booklight's own window) is the one for docs.
 
+## A shadow around the panel (Lenovo Googlebook 15, 1 October 2026)
+
+Alex asked for a wide, soft shadow around the panel that never lies under the glass. 1.0 had found that the
+window's elevation gives no shadow once the window blurs; this is why, and what works.
+
+- **The system makes room for a window's shadow outside the window.** `Window.setElevation(z)`, called once the
+  window's root view exists (before that the theme's value replaces it), gives the window surface insets of
+  2 × z pixels on every side (`dumpsys window`: `surfaceInsets=Rect(96, 96 - 96, 96)` for 32 dp). **The blur
+  stays inside the window's frame**: nothing around the panel is blurred. So the window is still exactly the
+  panel, and the shadow lies in room the blur does not reach.
+- **The root view casts no shadow by default** because its outline comes from the window's background, and with
+  blur on that outline has alpha 0. A `ViewOutlineProvider` of our own on the root view (a round rect, alpha 1)
+  brings the shadow back.
+- **Its strength** is the theme's `ambientShadowAlpha` and `spotShadowAlpha` (the defaults darken a white page
+  by under 2 %: invisible) times the alpha of `outlineAmbientShadowColor` and `outlineSpotShadowColor`. With the
+  theme's two at 1.0 the colours' alpha is the strength. Its **size** is the elevation. Measured over a white
+  page: 72 dp and spot 0.14: 15 % under the lower edge, gone 30 dp out; 96 dp and 0.24: 24 %, 53 dp; 128 dp and
+  0.36: 33 %, 87 dp. The sides get about half of that and the top edge 2 to 3 %: the system's light is above.
+- **The root view cannot draw into that room itself** (a rectangle drawn outside its bounds from the window's
+  background did not show): only the system's shadow gets there.
+- **Under the glass:** the shadow is drawn before anything of the window. The window's background drawable
+  clears the glass's own shape first (`PorterDuff.Mode.CLEAR`), and the glass measured the same with the shadow
+  on and off (254 against 254 of 255).
+- The outline can be made again every frame (`invalidateOutline`), so the shadow is cast from the glass as it
+  opens and goes with it as it closes.
+- Not checked on the HP.
+
 ## The on-device model (Lenovo Googlebook 15, 1 October 2026)
 
 Checked with a throwaway debug build (`com.google.mlkit:genai-prompt:1.0.0-beta4`), from Booklight's own process,

@@ -114,4 +114,12 @@
         <item>sum|Zusammenfassung|Fasse diesen Text in ein bis zwei Sätzen zusammen, in der Sprache, in der er geschrieben ist. Antworte nur mit der Zusammenfassung.\n\n{text}</item>
         <item>erkläre|Erklären|Erkläre das in zwei kurzen, einfachen Sätzen.\n\n{text}</item>
     </string-array>
+
+    <!-- Der Schatten um das Fenster -->
+    <string name="set_shadow">Schatten</string>
+    <string name="set_shadow_text">Ein breiter, weicher Schatten um das Fenster, damit es sich klar von den Fenstern dahinter abhebt. Er liegt nie unter dem Glas.</string>
+    <string name="set_shadow_off">Aus</string>
+    <string name="set_shadow_low">Leicht</string>
+    <string name="set_shadow_medium">Mittel</string>
+    <string name="set_shadow_high">Stark</string>
 </resources>

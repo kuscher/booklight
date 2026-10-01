@@ -121,4 +121,12 @@
         <item>sum|Summary|Summarize this text in one or two sentences, in the language it is written in. Reply with only the summary.\n\n{text}</item>
         <item>explain|Explain|Explain this in two short, plain sentences.\n\n{text}</item>
     </string-array>
+
+    <!-- The shadow around the panel -->
+    <string name="set_shadow">Shadow</string>
+    <string name="set_shadow_text">A wide, soft shadow around the panel, so it stands clear of the windows behind it. It never lies under the glass.</string>
+    <string name="set_shadow_off">Off</string>
+    <string name="set_shadow_low">Low</string>
+    <string name="set_shadow_medium">Medium</string>
+    <string name="set_shadow_high">High</string>
 </resources>

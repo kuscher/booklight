@@ -207,6 +207,8 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                             listOf(R.string.set_tint_wallpaper, R.string.set_tint_own), if (s.tint) "on" else "off") { v -> set { it.copy(tint = v == "on") } }
                         Choice(page, "glass", stringResource(R.string.set_glass), stringResource(R.string.set_glass_text), listOf("clear", "balanced", "frosted", "solid"),
                             listOf(R.string.set_glass_clear, R.string.set_glass_balanced, R.string.set_glass_frosted, R.string.set_glass_solid), s.glass) { v -> set { it.copy(glass = v) } }
+                        Choice(page, "shadow", stringResource(R.string.set_shadow), stringResource(R.string.set_shadow_text), listOf("off", "low", "medium", "high"),
+                            listOf(R.string.set_shadow_off, R.string.set_shadow_low, R.string.set_shadow_medium, R.string.set_shadow_high), s.shadow) { v -> set { it.copy(shadow = v) } }
                         Toggle(page, "dim", stringResource(R.string.set_dim), stringResource(R.string.set_dim_text), s.dim) { v -> set { it.copy(dim = v) } }
                         Choice(page, "opening", stringResource(R.string.set_opening), stringResource(R.string.set_opening_text), listOf("off", "fast", "medium", "slow"),
                             listOf(R.string.set_opening_off, R.string.set_opening_fast, R.string.set_opening_medium, R.string.set_opening_slow), s.opening) { v -> set { it.copy(opening = v) } }

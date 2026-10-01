@@ -25,6 +25,25 @@ enum class GlassLevel(val id: String, val tintLight: Float, val tintDark: Float,
     }
 }
 
+/**
+ * The shadow around the panel: how high the panel stands over the windows behind it. Higher is a
+ * wider, softer shadow; [spot] is how dark it is under the panel's lower edge, where it is darkest,
+ * and [ambient] the even part all round. Large and faint, never a dark rim: it is there so the panel
+ * reads as on top, also over a window as light as itself. It lies only around the glass (see
+ * [PanelOutline]). Measured on the Lenovo at 96 dp and spot 0.5: 48 % at the lower edge, gone 60 dp
+ * out; 20 % at the sides; 3 % above.
+ */
+enum class Shade(val id: String, val height: Float, val spot: Float, val ambient: Float) {
+    OFF("off", 0f, 0f, 0f),
+    LOW("low", 72f, 0.14f, 0.03f),
+    MEDIUM("medium", 96f, 0.24f, 0.05f),
+    HIGH("high", 128f, 0.36f, 0.07f);
+
+    companion object {
+        fun of(id: String) = entries.firstOrNull { it.id == id } ?: MEDIUM
+    }
+}
+
 /** The values in use. `./bl open stay tint=0.2 blur=24 dim=0.1` tries others on a debug build. */
 object Look {
     var tintLight = GlassLevel.BALANCED.tintLight

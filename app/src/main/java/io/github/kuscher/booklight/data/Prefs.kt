@@ -60,6 +60,8 @@ data class Settings(
     val tint: Boolean = true,
     /** Darken the rest of the screen a little while the panel is open. */
     val dim: Boolean = false,
+    /** The shadow around the panel: `off`, `low`, `medium` or `high` (`overlay/Glass.kt`). */
+    val shadow: String = "medium",
     /** How the panel arrives: `off` (a small settle and a fade), or unfolding `fast`, `medium` or `slow`. */
     val opening: String = "fast",
     /** The keyword searches and links: 1.0's sites, now with placeholders. */

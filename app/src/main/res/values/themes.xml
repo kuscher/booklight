@@ -9,6 +9,10 @@
          (the panel animates itself, so it can appear in the same frame as the key press). -->
     <style name="Theme.Booklight.Overlay" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
+        <!-- The shadow around the panel is the system's own, cast by the window. Its strength is chosen per setting,
+             through the shadow's colours (OverlayActivity); these two only take the theme's own ceiling away. -->
+        <item name="android:ambientShadowAlpha">1.0</item>
+        <item name="android:spotShadowAlpha">1.0</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowContentOverlay">@null</item>
