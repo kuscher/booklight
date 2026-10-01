@@ -66,10 +66,10 @@ def desktop(dark: bool) -> Image.Image:
 def scene(capture: pathlib.Path, dark: bool) -> Image.Image:
     panel = Image.open(capture).convert("RGBA")
     im = desktop(dark)
-    im = Image.blend(im, Image.new("RGB", (W, H), (0, 0, 0)), 0.14)          # the dim behind the panel
+    im = Image.blend(im, Image.new("RGB", (W, H), (0, 0, 0)), 0.22 if dark else 0.10)   # the dim behind the panel (Look.dimDark / dimLight)
     x, y = (W - panel.width) // 2, int(H * 0.16)
     # The glass: what is behind the panel, blurred, shows through the capture's own transparency.
-    region = im.crop((x, y, x + panel.width, y + panel.height)).filter(ImageFilter.GaussianBlur(38))
+    region = im.crop((x, y, x + panel.width, y + panel.height)).filter(ImageFilter.GaussianBlur(12))   # the Balanced glass: a 22 dp blur radius is a sigma of about 12 px here
     mask = Image.new("L", panel.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, panel.width - 1, panel.height - 1), 36, fill=255)
     im.paste(region, (x, y), mask)
