@@ -20,7 +20,7 @@ class Motion(val on: Boolean) {
     /** Sizes and places: the panel's height, a row moving to its new slot. */
     fun <T> place(): FiniteAnimationSpec<T> = if (on) spring(dampingRatio = 0.86f, stiffness = 520f) else snap()
     /** The edge of the selection that leads the way: fast. */
-    fun <T> lead(): FiniteAnimationSpec<T> = if (on) spring(dampingRatio = 0.74f, stiffness = 1100f) else snap()
+    fun <T> lead(): FiniteAnimationSpec<T> = if (on) spring(dampingRatio = 0.82f, stiffness = 1100f) else snap()
     /** The edge that follows: slower, so the pill stretches towards where it is going, then gathers itself. */
     fun <T> trail(): FiniteAnimationSpec<T> = if (on) spring(dampingRatio = 0.9f, stiffness = 420f) else snap()
     /** Small expressive pops: an icon, a chip, the panel arriving. */

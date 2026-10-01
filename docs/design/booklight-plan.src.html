@@ -59,10 +59,12 @@ header { display: flex; flex-direction: column; gap: 1rem }
 .stage { position: relative; height: 46rem; border-radius: 1.6rem; overflow: hidden; background: var(--wall); isolation: isolate; border: 1px solid var(--line); font-family: var(--body) }
 .stage * { box-sizing: border-box }
 /* wallpapers + Material You schemes: [data-wall][data-mode] set the panel's tokens */
-.stage { --p-surface: 227 232 248; --p-on: #171C2B; --p-dim: #454B5E; --p-sel: #C3D2FA; --p-onsel: #0F2A5C; --p-line: #B9C0D6; --p-primary: #3A5BA9; --wall: radial-gradient(120% 90% at 15% 10%, #9DB8F5 0%, #C9D6F7 38%, #E9E6F6 70%, #F6E9E3 100%); --win: #FFFFFF; --win-ink: #C9CEDD; --bar: rgba(255,255,255,.55); --bar-ink: #1C2233 }
+.stage { --tint: .2; --blur: 22px; --dim: .08; --rim: .85; --p-surface: 227 232 248; --p-on: #171C2B; --p-dim: #454B5E; --p-sel: #C3D2FA; --p-onsel: #0F2A5C; --p-line: #B9C0D6; --p-primary: #3A5BA9; --wall: radial-gradient(120% 90% at 15% 10%, #9DB8F5 0%, #C9D6F7 38%, #E9E6F6 70%, #F6E9E3 100%); --win: #FFFFFF; --win-ink: #C9CEDD; --bar: rgba(255,255,255,.55); --bar-ink: #1C2233 }
 .stage[data-wall="clay"] { --p-surface: 248 229 223; --p-on: #261A17; --p-dim: #5A4640; --p-sel: #FFCFC0; --p-onsel: #5B2413; --p-line: #DDC2BA; --p-primary: #9A4A30; --wall: radial-gradient(120% 90% at 85% 5%, #F6B79F 0%, #F4D3C2 40%, #F3E6DA 72%, #E8E2EE 100%) }
 .stage[data-wall="fern"] { --p-surface: 231 236 220; --p-on: #1A1D15; --p-dim: #474B3D; --p-sel: #CFE5AD; --p-onsel: #24360D; --p-line: #C3C9B4; --p-primary: #4B6A27; --wall: radial-gradient(120% 90% at 20% 90%, #A9C88A 0%, #CFDDB8 40%, #E9EBD9 72%, #F2EDE0 100%) }
-.stage[data-mode="dark"] { --p-surface: 37 41 54; --p-on: #E3E6F2; --p-dim: #B4BACD; --p-sel: #33456F; --p-onsel: #D9E3FF; --p-line: #4A5068; --p-primary: #AFC6FF; --wall: radial-gradient(120% 90% at 15% 10%, #2B3F78 0%, #1E2749 40%, #171A2C 72%, #1F1822 100%); --win: #232634; --win-ink: #3A3F52; --bar: rgba(20,22,34,.55); --bar-ink: #E3E6F2 }
+.stage[data-glass="clear"] { --tint: .1; --blur: 14px; --dim: .06 }
+.stage[data-glass="frosted"] { --tint: .34; --blur: 36px; --dim: .1 }
+.stage[data-mode="dark"] { --rim: .5; --p-surface: 37 41 54; --p-on: #E3E6F2; --p-dim: #B4BACD; --p-sel: #33456F; --p-onsel: #D9E3FF; --p-line: #4A5068; --p-primary: #AFC6FF; --wall: radial-gradient(120% 90% at 15% 10%, #2B3F78 0%, #1E2749 40%, #171A2C 72%, #1F1822 100%); --win: #232634; --win-ink: #3A3F52; --bar: rgba(20,22,34,.55); --bar-ink: #E3E6F2 }
 .stage[data-mode="dark"][data-wall="clay"] { --p-surface: 52 40 37; --p-on: #F3E0DA; --p-dim: #D5BDB5; --p-sel: #6A3A2B; --p-onsel: #FFDBD0; --p-line: #5E4A44; --p-primary: #FFB59E; --wall: radial-gradient(120% 90% at 85% 5%, #7A3A27 0%, #45251C 40%, #261A19 72%, #1B1822 100%) }
 .stage[data-mode="dark"][data-wall="fern"] { --p-surface: 41 45 35; --p-on: #E3E5D8; --p-dim: #C3C8B6; --p-sel: #3F4F2A; --p-onsel: #DCEBC2; --p-line: #4A5040; --p-primary: #B3D48A; --wall: radial-gradient(120% 90% at 20% 90%, #3E5A22 0%, #2A3A1C 40%, #1B2016 72%, #1B1A1F 100%) }
 
@@ -76,17 +78,18 @@ header { display: flex; flex-direction: column; gap: 1rem }
 .win b.h { height: 1.1rem; width: 45%; margin-top: 1.3rem }
 .win b.s { width: 60% } .win b.block { height: 6rem; border-radius: 0.8rem; background: color-mix(in srgb, var(--p-primary) 35%, var(--win)) }
 .win.a { left: 4%; top: 12%; width: 46%; height: 70% } .win.b { right: 3%; top: 22%; width: 52%; height: 64% }
-.dim { position: absolute; inset: 0; background: rgba(0,0,0,.16); opacity: 0; transition: opacity .09s; pointer-events: none }
+.dim { position: absolute; inset: 0; background: rgb(0 0 0 / var(--dim)); opacity: 0; transition: opacity .09s; pointer-events: none }
 .stage.open .dim { opacity: 1 }
 
 /* the panel: sizes are the spec's dp, 1dp = 1px */
-.panel { position: absolute; left: 50%; top: 20%; width: min(720px, calc(100% - 24px)); transform: translateX(-50%); border-radius: 32px; background: rgb(var(--p-surface) / .78); backdrop-filter: blur(40px) saturate(1.15); -webkit-backdrop-filter: blur(40px) saturate(1.15); border: 1px solid color-mix(in srgb, var(--p-line) 60%, transparent); color: var(--p-on); overflow: hidden }
-.stage[data-glass="off"] .panel, .panel.solid { background: rgb(var(--p-surface)); backdrop-filter: none; -webkit-backdrop-filter: none }
+.panel { position: absolute; left: 50%; top: 20%; width: min(720px, calc(100% - 24px)); transform: translateX(-50%); border-radius: 32px; background: rgb(var(--p-surface) / var(--tint)); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); border: 1.25px solid rgb(255 255 255 / var(--rim)); color: var(--p-on); overflow: hidden; transition: height .3s cubic-bezier(.3,1.25,.4,1) }
+.panel.solid { background: rgb(var(--p-surface)); backdrop-filter: none; -webkit-backdrop-filter: none }
 .stage:not(.open) .panel { display: none }
 .stage.open .panel { animation: appear .09s ease-out }
 @keyframes appear { from { opacity: 0; transform: translateX(-50%) scale(.98) } }
 .field { height: 68px; display: flex; align-items: center; gap: 16px; padding: 0 20px 0 24px }
 .field svg { width: 26px; height: 26px; flex: none; fill: var(--p-dim) }
+.gmark { flex: none; width: 28px; text-align: center; font-family: var(--display); font-variation-settings: "ROND" 100; font-weight: 700; font-size: 27px; line-height: 1; color: var(--p-primary) }
 .typing { position: relative; flex: 1; min-width: 0; height: 40px; font-size: 24px; font-weight: 450 }
 .typing input, .typing .ghost { position: absolute; inset: 0; font: inherit; letter-spacing: 0; padding: 0; margin: 0; border: 0; line-height: 40px; white-space: pre; overflow: hidden }
 .typing input { width: 100%; background: none; color: var(--p-on); outline: none; caret-color: var(--p-primary) }
@@ -97,7 +100,16 @@ header { display: flex; flex-direction: column; gap: 1rem }
 .chip { flex: none; font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--p-sel); color: var(--p-onsel) }
 .cap { flex: none; font-family: var(--body); font-size: 12px; font-weight: 500; padding: 3px 7px; border-radius: 7px; background: color-mix(in srgb, var(--p-on) 8%, transparent); color: var(--p-dim) }
 .list { position: relative; padding: 8px 8px 0 }
-.hl { position: absolute; left: 8px; right: 8px; top: 0; height: 56px; border-radius: 20px; background: var(--p-sel); transition: transform .22s cubic-bezier(.2,1.35,.35,1), height .22s cubic-bezier(.2,1.35,.35,1); will-change: transform }
+.hl { position: absolute; left: 8px; right: 8px; top: 8px; bottom: 0; border-radius: 20px; background: color-mix(in srgb, var(--p-sel) 62%, transparent); border: 1px solid rgb(255 255 255 / .5); transition: top .3s cubic-bezier(.3,1.2,.4,1), bottom .17s cubic-bezier(.2,1.1,.3,1) }
+.hl.up { transition: top .17s cubic-bezier(.2,1.1,.3,1), bottom .3s cubic-bezier(.3,1.2,.4,1) }
+.row.new { animation: rise .3s cubic-bezier(.2,.9,.3,1.12) both; animation-delay: calc(var(--i, 0) * 22ms) }
+@keyframes rise { from { opacity: 0; transform: translateY(12px) } }
+.fcard { margin: 0 8px 8px; min-height: 88px; border-radius: 24px; background: color-mix(in srgb, var(--p-on) 5%, transparent); display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 16px }
+.fcard .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px }
+.fcard .t b { font-size: 15px; font-weight: 600 } .fcard .t i { font-style: normal; font-size: 13px; line-height: 17px; color: var(--p-dim) }
+.fcard .btns { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none }
+.fcard button { font: inherit; font-size: 14px; font-weight: 500; color: var(--p-dim); background: none; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer; white-space: nowrap }
+.fcard button.on { background: color-mix(in srgb, var(--p-sel) 85%, transparent); color: var(--p-onsel); font-weight: 600 }
 .row { position: relative; height: 56px; display: flex; align-items: center; gap: 14px; padding: 0 14px; border-radius: 28px; cursor: pointer; min-width: 0 }
 .row.ans { height: 92px }
 .row .t { flex: 1; min-width: 0; display: flex; flex-direction: column }
@@ -152,6 +164,7 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap }
 .versions li { font-size: 0.93rem }
 
 .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1.25rem }
+figure .shot img { width: 100%; border-radius: inherit }
 figure { margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0 }
 figure .shot { border-radius: 1rem; padding: 1.25rem; background: radial-gradient(120% 90% at 15% 10%, #9DB8F5 0%, #C9D6F7 38%, #E9E6F6 70%, #F6E9E3 100%); border: 1px solid var(--line); display: grid; place-items: center }
 figure img { display: block; max-width: 100%; height: auto }
@@ -179,7 +192,7 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
 .answers textarea { width: 100%; min-height: 7.5rem; font-family: var(--mono); font-size: 0.82rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 0.7rem; padding: 0.7rem 0.8rem; resize: vertical }
 .btn { align-self: flex-start; font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 0.55rem 1.2rem; cursor: pointer }
 .notice { border-left: 3px solid var(--lamp-fill); padding: 0.2rem 0 0.2rem 1rem; display: flex; flex-direction: column; gap: 0.5rem }
-@media (prefers-reduced-motion: reduce) { .hl, .dim, .toast { transition: none } .stage.open .panel { animation: none } }
+@media (prefers-reduced-motion: reduce) { .hl, .dim, .toast, .panel { transition: none } .stage.open .panel, .row.new { animation: none } }
 @media (max-width: 40rem) { .stage { height: 40rem } .win.a { width: 70% } .win.b { width: 72% } .typing { font-size: 20px } .row .k { display: none } .row.on .k { display: block } }
 </style>
 
@@ -189,19 +202,19 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
     <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="17" fill="#1B1D2E"/><path d="M24 30h16l9 21H15z" fill="#FFC94D" opacity=".38"/><rect x="18" y="17" width="28" height="13" rx="6.5" fill="#FFC94D"/><circle cx="26" cy="23.5" r="2.6" fill="#1B1D2E"/></svg>
     <h1>Booklight</h1>
   </div>
-  <p class="lede">A keyboard launcher for Googlebooks. Press a key, a small glass panel appears over your desktop, type a few letters, press Enter. This page is the plan, the design, and the questions I need answered before building 1.0.</p>
-  <div class="meta"><span>Plan and design proposal</span><span>1 October 2026</span><span>0.1 runs on the HP Googlebook 14</span><span><a href="https://github.com/kuscher/booklight">kuscher/booklight</a> (private)</span></div>
+  <p class="lede">A keyboard launcher for Googlebooks. Press a key, a small glass panel appears over your desktop, type a few letters, press Enter. This page is the plan, the design and the state of version 1.0.</p>
+  <div class="meta"><span>Updated 1 October 2026</span><span>1.0 is built and on your HP</span><span><a href="https://github.com/kuscher/booklight">kuscher/booklight</a></span></div>
   <div class="facts">
-    <div class="fact"><b>0</b><span>permissions. A hotkey and a true overlay both work without any.</span></div>
-    <div class="fact"><b>43 ms</b><span>from Action + K to the panel's first frame when warm; about 260 ms cold.</span></div>
-    <div class="fact"><b>720 dp</b><span>one glass panel in the upper middle of the screen. Nothing else moves.</span></div>
-    <div class="fact"><b>14</b><span>questions at the end. "Default" accepts every recommendation.</span></div>
+    <div class="fact"><b>0</b><span>permission prompts. The hotkey and the overlay both work without any.</span></div>
+    <div class="fact"><b>121 ms</b><span>cold start of the release build on the HP; about 65 ms when warm.</span></div>
+    <div class="fact"><b>39 of 63</b><span>ideas for later versions need no permission at all.</span></div>
+    <div class="fact"><b>2.3 MB</b><span>the whole app. One panel, one list, in your wallpaper's colors.</span></div>
   </div>
 </header>
 
 <section id="try">
   <h2>Try the design</h2>
-  <p class="prose">This is the proposed 1.0 panel, working: matching, learning, sums, actions and keys behave as specified. The desktop behind it and the app icons are stand-ins. Click the panel and type.</p>
+  <p class="prose">A working copy of the 1.0 panel in your browser: matching, learning, sums, actions, keys and motion behave like the app. The desktop behind it, the app icons and the suggestions are stand-ins. Click the panel and type.</p>
   <div class="stagewrap">
     <div class="controls">
       <span class="swatches" role="group" aria-label="Wallpaper">Wallpaper
@@ -210,9 +223,10 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
         <button class="swatch" data-wall="fern" aria-pressed="false" aria-label="Fern" style="background:#A9C88A"></button>
       </span>
       <span class="seg" role="group" aria-label="Device theme"><button data-mode="light" aria-pressed="true">Light</button><button data-mode="dark" aria-pressed="false">Dark</button></span>
-      <span class="seg" role="group" aria-label="Surface"><button data-glass="on" aria-pressed="true">Glass</button><button data-glass="off" aria-pressed="false">Solid fallback</button></span>
+      <span class="seg" role="group" aria-label="Glass"><button data-glass="clear" aria-pressed="false">Clear</button><button data-glass="balanced" aria-pressed="true">Balanced</button><button data-glass="frosted" aria-pressed="false">Frosted</button></span>
+      <span class="seg" role="group" aria-label="Search suggestions"><button data-sug="off" aria-pressed="true">Suggestions off</button><button data-sug="on" aria-pressed="false">On</button></span>
     </div>
-    <div class="stage open" id="stage" data-wall="tide" data-mode="light" data-glass="on">
+    <div class="stage open" id="stage" data-wall="tide" data-mode="light" data-glass="balanced">
       <div class="sbar"><span>Thu 1 Oct  9:41</span><span>Wi-Fi  ·  87%</span></div>
       <div class="win a"><b class="h"></b><b></b><b></b><b class="s"></b><b class="block"></b><b></b><b class="s"></b><b></b><b></b></div>
       <div class="win b"><b class="h"></b><b class="block"></b><b></b><b class="s"></b><b></b><b></b><b class="s"></b></div>
@@ -220,7 +234,7 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
       <div class="dim"></div>
       <div class="panel" id="panel" role="dialog" aria-label="Booklight">
         <div class="field">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"/></svg>
+          <span class="gmark" aria-hidden="true">G</span>
           <div class="typing"><div class="ghost" id="ghost" aria-hidden="true"></div><input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Search apps, settings and the web" aria-label="Search"></div>
           <span class="chip" id="chip" hidden></span>
           <span class="cap">esc</span>
@@ -238,22 +252,22 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
 </section>
 
 <section id="proved">
-  <h2>What 0.1 proved on the HP</h2>
-  <p class="prose">The plan stands on three platform facts. All three are now checked on your HP Googlebook 14 (Android 17, build (build)) with a real build, not read from documentation. The desk research had said the overlay would need the "display over other apps" permission on Android 17; on the device it does not.</p>
+  <h2>What is built and checked on the HP</h2>
+  <p class="prose">Version 1.0 runs on your HP Googlebook 14 as a signed release build. The three platform facts the product stands on were checked there with real builds, not read from documentation.</p>
   <div class="tablewrap"><table>
     <tr><th>Fact</th><th>What happened on the device</th><th>Why it matters</th></tr>
-    <tr><td><b>A hotkey without a permission</b></td><td>Keyboard shortcuts → App shortcuts → Add shortcut lists Booklight. I bound Action + K. It opens the panel from any app, and the same keys close it.</td><td>No accessibility service, no assistant role. The shortcut starts the app's launcher activity, so the launcher activity is the panel.</td></tr>
-    <tr><td><b>A true overlay without a permission</b></td><td>A see-through activity is not turned into a desktop window: no caption bar, the desktop stays visible, the window is exactly the panel, and the system blurs what is behind it.</td><td>The Spotlight look is available to a plain APK. Play's data-safety form is the empty one.</td></tr>
-    <tr><td><b>Fast enough</b></td><td class="n">Warm: 43 ms key to first frame<br>Cold: 257–339 ms<br>A search: 5–16 ms<br><span class="muted">debug build, 80 apps</span></td><td>Feels instant when the process is cached, which is the normal case. A release build with a baseline profile will be faster.</td></tr>
+    <tr><td><b>A hotkey without a permission</b></td><td>Keyboard shortcuts → App shortcuts → Add shortcut lists Booklight. Action + K opens the panel from any app and closes it again. The system accepts only shortcuts with the Action key, one per app: Alt + Space and Ctrl + Space are ignored, Action + Space is Gemini's, Action + Alt + Space works.</td><td>No accessibility service, no assistant role. Booklight suggests Action + Alt + Space, or Action + K. Plain Alt + Space would need the accessibility tier.</td></tr>
+    <tr><td><b>A true overlay without a permission</b></td><td>A see-through activity is not turned into a desktop window: no caption bar, the desktop stays visible, the window is exactly the panel, and the system blurs what is behind it. The window's height follows a spring frame by frame.</td><td>The glass look and the motion are available to a plain app.</td></tr>
+    <tr><td><b>Fast enough</b></td><td class="n">Cold: 121 ms<br>Warm: 61–69 ms<br>A search: 6–15 ms<br><span class="muted">release build, 80 apps</span></td><td>Feels instant. Typing is never held up by an animation.</td></tr>
   </table></div>
   <div class="caps">
-    <figure><div class="shot"><img alt="Booklight 0.1 showing results for the text st: StudioSnap selected, then other apps and settings pages" src="{{CAP1}}" width="810" height="644"></div><figcaption>0.1 on the HP: the panel's own window, captured on the device and set on a stand-in background.</figcaption></figure>
-    <figure><div class="shot"><img alt="Booklight 0.1 answering a sum in place" src="{{CAP2}}" width="810" height="306"></div><figcaption>A sum answered in place. Enter copies it.</figcaption></figure>
+    <figure><div class="shot" style="padding:0;overflow:hidden"><img alt="The Booklight panel over a drawn desktop, listing apps for the letters st" src="{{CAP1}}" width="1600" height="1000"></div><figcaption>1.0 in light: the panel's own window, captured on the HP and set on a drawn desktop (no real screen content).</figcaption></figure>
+    <figure><div class="shot" style="padding:0;overflow:hidden"><img alt="The Booklight panel in the dark theme" src="{{CAP2}}" width="1600" height="1000"></div><figcaption>The same in the dark theme.</figcaption></figure>
   </div>
   <div class="notice prose">
-    <h3>Two things you should know from testing</h3>
-    <p><b>I broke BentoBar for about three minutes, and fixed it.</b> To read the system's Keyboard shortcuts window I used <code>uiautomator dump</code>, which suspends every accessibility service. BentoBar 0.5 throws when its service is unbound, crashed twice, and Android showed "BentoBar keeps stopping". I dismissed the dialog and re-added BentoBar's entry to the enabled services (the other two were kept); its strip is back and all three services are bound. I no longer use that tool on the HP. The crash itself is a BentoBar bug (question 14).</p>
-    <p><b>Action + K is bound to Booklight on your HP.</b> I added it in Keyboard shortcuts so the hotkey could be tested for real. Remove it there under App shortcuts, or tell me to (question 13).</p>
+    <h3>From testing on your HP</h3>
+    <p><b>BentoBar's crash is fixed in its repo.</b> My earlier use of <code>uiautomator dump</code> suspended every accessibility service and BentoBar 0.5 crashed on unbind. The fix is on <code>kuscher/bentobar</code> main (commit 94a952c, with tests), not released and not yet tried on a device. I no longer use that tool on the HP.</p>
+    <p><b>Action + K is still bound to Booklight</b>, as you asked. To try Action + Alt + Space instead, remove the K shortcut under Keyboard shortcuts → App shortcuts and add the new one: the system allows one per app.</p>
   </div>
 </section>
 
@@ -277,44 +291,31 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
 
 <section id="versions">
   <h2>Versions</h2>
-  <div class="versions">
-    <div class="now"><h3>1.0 · the launcher <span class="tag ok">no permissions</span></h3><ul>
-      <li>Summon with Action + a key (guided setup), the taskbar or the Apps list. The same key closes it.</li>
-      <li>Every app, work profile included. Starts, later words, initials, camelCase, loose letters.</li>
-      <li>Learns per typed text, with a four-week memory.</li>
-      <li>Nothing typed: your most-used apps as a strip.</li>
-      <li>The top hit completes in the field as grey text.</li>
-      <li>Tab lists a row's actions: Open, App info, Uninstall, Store page, Copy.</li>
-      <li>Sums in place. About 35 settings pages by name and keyword.</li>
-      <li>Typed addresses, a web search row, keyword searches (<code>g</code> <code>yt</code> <code>w</code> <code>maps</code> <code>gh</code> <code>play</code> and your own).</li>
-      <li>The device's colours and font, light and dark, glass with a solid fallback.</li>
-    </ul></div>
-    <div><h3>2.x · more to find and do <span class="tag later">none or light</span></h3><ul>
-      <li><b>Extensions</b>: other apps offer results and actions. First: Summa (units, money, dates, time zones), BentoBar (timer, keep awake), StudioSnap (capture), PDF Toolbox, HearOn Link.</li>
-      <li>App shortcuts ("New incognito tab", "New sheet").</li>
-      <li>Quick actions through public intents: timer, calendar event, email, navigate.</li>
-      <li>Files in folders you grant. Contacts, when first used.</li>
-      <li>Emoji, snippets, your own quick links.</li>
-      <li>A desktop search pill widget and a Quick Settings tile.</li>
-    </ul></div>
-    <div><h3>3.x · advanced <span class="tag later">each opt-in</span></h3><ul>
-      <li><b>Assistant role</b>: Action + Space and the Assistant key open Booklight. Replaces Gemini as the default assistant, so it is a clear choice, never a default.</li>
-      <li><b>Accessibility tier</b>: a list of open windows, clipboard history, system commands, pasting snippets, any key combination.</li>
-      <li>Usage access: rank by what you use system-wide.</li>
-      <li>On-device AI (Gemini Nano): typed requests turned into actions, still without an internet permission.</li>
-    </ul></div>
-  </div>
+  <p class="prose">1.0 is the launcher. After it, the order follows what each idea needs: of 63 researched ideas, 39 need no permission, 6 an install-time one, 8 one prompt or picker, 3 a Settings switch, and 7 need accessibility or the like. Everything in that last group is switched on together, once, so Play's harder review is paid a single time.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Release</th><th>Theme</th><th>What it adds</th><th>Needs</th></tr>
+    <tr><td class="n"><b>1.0</b> <span class="tag ok">built</span></td><td>The launcher</td><td>Apps, learning, settings pages, sums, web search with keyword searches, opt-in suggestions, actions per row, glass and motion, English and German</td><td>Internet, for suggestions only</td></tr>
+    <tr><td class="n">1.1 Jot</td><td>Capture and make</td><td>Quick email (<code>mail …</code> opens Gmail's compose filled in; closing it leaves a draft). Quick note to a file or to Keep. Calendar event, reminder, timer. New file, new folder, new Doc. Ask Gemini.</td><td>Alarm permission, no prompt</td></tr>
+    <tr><td class="n">1.2 Dials</td><td>Media, device, answers</td><td>Play, pause, next, volume. Settings panels. Emoji, color values, QR, passwords. GitHub jump, localhost ports.</td><td>Nothing</td></tr>
+    <tr><td class="n">1.3 Recipes</td><td>Your own commands</td><td>Quicklinks with placeholders. Multi-step commands ("morning"). Open an app in a place, workspaces. Snippets, clipboard transforms, actions on selected text.</td><td>Nothing</td></tr>
+    <tr><td class="n">2.0 Extensions</td><td>Other apps join in</td><td>A small contract so apps offer results and actions: Summa (units, money, dates), BentoBar (timer, keep awake), StudioSnap (capture), PDF Toolbox, VSCodeBook. App shortcuts.</td><td>Nothing</td></tr>
+    <tr><td class="n">2.1 Reach</td><td>Network and one-time grants</td><td>Webhooks. Sending mail through your own relay, or Gmail once Google has verified the app. Linux commands through a helper in the VM. Files in folders you grant. Contacts.</td><td>A folder grant, a picker</td></tr>
+    <tr><td class="n">2.2 Switches</td><td>Each opt-in</td><td>Do Not Disturb, brightness, keep awake, exact reminders, the assistant role (Action + Space and the Assistant key).</td><td>Settings switches</td></tr>
+    <tr><td class="n">3.0 Power pack</td><td>The hard permissions, together</td><td>One accessibility service: lock, screenshot, a list of open windows, paste in place, clipboard history, any key combination. Now playing. Possibly a separate app that plugs in, so a refused declaration never blocks Booklight.</td><td>Accessibility declaration and video</td></tr>
+  </table></div>
+  <p class="prose muted small">"Directly emailed" has an honest limit: no intent sends mail without showing it. A real send needs Gmail's API and Google's verification of the app, or a small relay you run yourself. The compose window with everything filled in works today.</p>
 </section>
 
 <section id="design">
   <h2>The design</h2>
   <div class="prose" style="display:flex;flex-direction:column;gap:1rem">
-    <p>You asked for the simplicity of Alfred and Spotlight, a light presence with transparency in the middle of the screen, and a Material 3 Expressive look. The design is one panel and one list:</p>
+    <p>You asked for the simplicity of Alfred and Spotlight, a light presence with transparency in the middle of the screen, a Material 3 Expressive look, and motion that makes it feel made with care. After your feedback on the first build, the glass is flat: no bevels or highlights.</p>
     <ul>
-      <li><b>The field never moves.</b> The panel's top edge sits at 20% of the screen; the list grows down from it. The window is exactly the panel, so the blur and the click-outside area are the panel too.</li>
-      <li><b>Glass, not a sheet.</b> The surface is 78% of the wallpaper-derived surface colour over the system's blur, with a hairline border. The desktop dims by 16% and stays readable. When the system turns blur off, the same layout sits on a solid surface.</li>
-      <li><b>Expressive where it carries meaning.</b> Rows are pills. The selected one is a tonal pill with tighter corners that glides between rows on a spring. Answers use the rounded cut of Google Sans Flex. Colour comes from the wallpaper. Nothing else animates: the panel appears and goes in the same frame as the key.</li>
-      <li><b>Row one is always the answer to Enter.</b> No groups, no tabs. A row's kind is a quiet word at its right edge; the selected row shows what Enter will do instead.</li>
+      <li><b>Glass you can see through.</b> A thin tint of the wallpaper's surface color over the system's blur, and a crisp white outline. Three levels in settings: Clear, Balanced (the default) and Frosted. Apps can blur what is behind a window but not bend it, so there is no true refraction; the outline carries a short gleam when the panel arrives.</li>
+      <li><b>The field never moves.</b> The panel's top edge sits at 20% of the screen; the list grows down from it on a spring, and the window is exactly the panel.</li>
+      <li><b>Nothing pops.</b> The glass comes into focus on arrival. Rows rise in as a quick cascade, move to their new places and fade out. One selection pill glides between rows, its leading edge ahead of its trailing edge. Results and actions pass each other sideways. With the system's animations off, everything cuts.</li>
+      <li><b>Row one is always the answer to Enter.</b> No groups, no tabs. Its name completes in the field. A G stands where the magnifier would be while Google is the search engine.</li>
+      <li><b>Nothing typed, nothing shown.</b> Only the first two times: a small card under the field for the shortcut, then for search suggestions.</li>
     </ul>
   </div>
   <h3>States</h3>
@@ -329,7 +330,7 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
     <tr><td><kbd>Ctrl</kbd> + <kbd>1</kbd>…<kbd>9</kbd></td><td>Run that row</td></tr>
     <tr><td><kbd>Esc</kbd>, a click outside, another window</td><td>Close</td></tr>
   </table></div>
-  <p class="prose muted small">0.1 on the device has the panel, glass, rows, answers, actions and keys. Still to build from this design: the completion text, the suggestion strip, the first-run row, keyword searches and the gliding highlight.</p>
+  <p class="prose muted small">All of this is in the 1.0 build on your HP. Motion is easier to judge there than in a browser.</p>
 </section>
 
 <section id="architecture">
@@ -339,7 +340,7 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
     <div><b>OverlayActivity</b>the panel's window; the launcher activity</div><span>→</span>
     <div><b>OverlayModel</b>text, rows, selection</div><span>→</span>
     <div class="core"><b>SearchEngine</b>asks all providers at once, ranks, learns</div><span>→</span>
-    <div class="core"><b>Provider × n</b>apps, sums, settings, commands, web; later extensions</div>
+    <div class="core"><b>Provider × n</b>apps, sums, settings, commands, web, suggestions; later extensions</div>
   </div>
   <div class="flow">
     <div class="core"><b>Result</b>stable id, title, icon, score, actions</div><span>→</span>
@@ -347,14 +348,14 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
     <div><b>Executor</b>the only code that starts activities or writes the clipboard</div><span>+</span>
     <div class="core"><b>History</b>latching and frecency, one JSON file</div>
   </div>
-  <p class="prose small muted">Outlined in blue: <code>core/</code>, plain Kotlin with no Android imports, covered by 28 JUnit tests (matching, ranking, learning, sums, address detection). The rest is the Compose app. Conventions follow Summa and BentoBar: the <code>bl</code> helper script, DUMP-guarded adb hooks, <code>CLAUDE.md</code>, <code>docs/PICKING-UP.md</code>, pinned CI.</p>
+  <p class="prose small muted">Outlined in blue: <code>core/</code>, plain Kotlin with no Android imports, covered by 36 JUnit tests (matching, ranking, learning, sums, addresses, keyword searches, suggestion parsing). The rest is the Compose app. Conventions follow Summa and BentoBar: the <code>bl</code> helper script, DUMP-guarded adb hooks, <code>CLAUDE.md</code>, <code>docs/PICKING-UP.md</code>, pinned CI.</p>
   <h3>Permission tiers</h3>
   <div class="tablewrap"><table>
     <tr><th>Tier</th><th>What you grant</th><th>What it adds</th><th>Play friction</th></tr>
-    <tr><td><span class="tag ok">0 · 1.0</span></td><td>Nothing</td><td>All of 1.0, extensions, app shortcuts, intent actions, emoji, snippets</td><td>None</td></tr>
-    <tr><td><span class="tag later">1</span></td><td>A folder; contacts</td><td>Files in that folder; people</td><td>Standard data-safety answers</td></tr>
-    <tr><td><span class="tag later">2</span></td><td>The digital assistant role</td><td>Action + Space, the Assistant key, the status bar's assistant chip</td><td>None found</td></tr>
-    <tr><td><span class="tag later">3</span></td><td>Accessibility; usage access</td><td>Window list, clipboard history, system commands, any hotkey</td><td>Declaration, disclosure and video, as for BentoBar; blocked under Advanced Protection</td></tr>
+    <tr><td><span class="tag ok">0 · 1.0 to 2.0</span></td><td>Nothing (internet for opt-in suggestions)</td><td>The launcher, Jot, Dials, Recipes, Extensions</td><td>A data-safety entry for suggestions</td></tr>
+    <tr><td><span class="tag later">1 · 2.1</span></td><td>A folder; a contact picker</td><td>Files in that folder; people</td><td>Standard answers</td></tr>
+    <tr><td><span class="tag later">2 · 2.2</span></td><td>Settings switches; the assistant role</td><td>Do Not Disturb, brightness, Action + Space</td><td>None found</td></tr>
+    <tr><td><span class="tag later">3 · 3.0</span></td><td>Accessibility; a notification listener</td><td>Window list, clipboard history, system commands, any hotkey</td><td>Declaration, disclosure and video; blocked under Advanced Protection</td></tr>
   </table></div>
 </section>
 
@@ -373,27 +374,37 @@ figcaption { font-size: 0.85rem; color: var(--muted) }
 </section>
 
 <section id="milestones">
-  <h2>From here to shipping</h2>
+  <h2>Shipping 1.0</h2>
   <div class="tablewrap"><table>
-    <tr><th>Version</th><th>Goal</th><th>Contents</th></tr>
-    <tr><td class="n">0.1 <span class="tag ok">done</span></td><td>Prove it</td><td>Core and tests, glass panel, apps, settings, sums, web, learning, hotkey verified on the HP, private repo with CI</td></tr>
-    <tr><td class="n">0.2</td><td>Feels right</td><td>This design in full, first-run shortcut guide, keyword searches, search engine setting, icon, R8 and a baseline profile, release key</td></tr>
-    <tr><td class="n">0.3</td><td>Actions</td><td>App actions, result-kind switches, app shortcuts, intent quick actions, TalkBack pass</td></tr>
-    <tr><td class="n">0.9</td><td>Ready</td><td>Store kit, privacy page, README pictures, tag-driven release workflow, Play closed testing under Fika Labs</td></tr>
-    <tr><td class="n">1.0</td><td>Ship</td><td>googlebook.studio and Google Play</td></tr>
-    <tr><td class="n">2.0</td><td>Extensions</td><td>The contract, Summa as the first extension, then BentoBar and StudioSnap</td></tr>
+    <tr><th>Step</th><th>State</th></tr>
+    <tr><td>Signing key, with the backup</td><td><span class="tag ok">done</span> the same kind of key as the other apps; it is Play's app signing key too</td></tr>
+    <tr><td>Play app "Booklight" under Fika Labs, closed testing track, testers</td><td><span class="tag ok">done</span> by the session that handles Play, with your OK there</td></tr>
+    <tr><td>Tag-driven release workflow, store kit, privacy text</td><td><span class="tag ok">done</span> in the repo; the same system as the other apps</td></tr>
+    <tr><td>Tag <code>v1.0</code>: GitHub release and the bundle on Play as a draft</td><td>after the look is settled</td></tr>
+    <tr><td>Listing, forms, privacy page, Send for review</td><td>the Play session, once the bundle is up</td></tr>
+    <tr><td>Repo public, which lists it on googlebook.studio as a draft</td><td>with the release</td></tr>
   </table></div>
-  <p class="prose">After your answers I write the 0.2 implementation plan task by task and build it. Nothing beyond 0.1 is approved yet.</p>
 </section>
 
 <section id="questions">
-  <h2>Questions</h2>
-  <p class="prose">Each has a recommended default, already selected. Change what you want, then copy the answers and paste them into the session, or just reply "Default".</p>
-  <div class="qs" id="qs"></div>
-  <div class="answers">
-    <button class="btn" id="copy">Copy answers</button>
-    <textarea id="answers" readonly aria-label="Your answers"></textarea>
-  </div>
+  <h2>Your decisions</h2>
+  <div class="tablewrap"><table>
+    <tr><th>#</th><th>Question</th><th>Decided</th></tr>
+    <tr><td class="n">1</td><td>Name</td><td>Booklight</td></tr>
+    <tr><td class="n">2</td><td>The key</td><td>You wanted the key left of Space plus Space. The system needs the Action key in every shortcut and allows one per app, so the app suggests Action + Alt + Space, or Action + K</td></tr>
+    <tr><td class="n">3</td><td>Nothing typed</td><td>Nothing, plus a small first-run card</td></tr>
+    <tr><td class="n">4</td><td>Esc</td><td>Closes at once</td></tr>
+    <tr><td class="n">5</td><td>Web</td><td>Internet for suggestions, built as off until you turn it on (Play wants typed text that goes to a third party disclosed first)</td></tr>
+    <tr><td class="n">6</td><td>Sums</td><td>Small calculator now, Summa as an extension in 2.0</td></tr>
+    <tr><td class="n">7</td><td>Extensions</td><td>Yes</td></tr>
+    <tr><td class="n">8</td><td>Advanced tiers</td><td>As planned: switches in 2.2, the power pack in 3.0</td></tr>
+    <tr><td class="n">9</td><td>Repo</td><td>Private until the first release, then public</td></tr>
+    <tr><td class="n">10</td><td>Signing key</td><td>Made, backed up</td></tr>
+    <tr><td class="n">11</td><td>Reach</td><td>Android 14 and newer</td></tr>
+    <tr><td class="n">12</td><td>Languages</td><td>English (US and British) and German</td></tr>
+    <tr><td class="n">13</td><td>Action + K on your HP</td><td>Kept</td></tr>
+    <tr><td class="n">14</td><td>BentoBar</td><td>Fixed on its main</td></tr>
+  </table></div>
 </section>
 </main>
 
@@ -407,7 +418,7 @@ const APPS = [
   ['Files','#4C8BF5','F'],['Gmail','#EA4335','M'],['Docs','#4285F4','D'],['Sheets','#0F9D58','S'],['Drive','#1FA463','△'],['Play Store','#00A173','▶'],
   ['Settings','#5C6BC0','⚙'],['Terminal','#263238','>_'],['YouTube','#E62117','▶'],['Maps','#34A853','M'],['Photos','#FBBC04','✿'],['Keep','#F9AB00','K'],
   ['Meet','#00897B','Mt'],['Gemini','#6A5AE0','✦'],['Disco Sweeper','#C2185B','DS'],['Perfect Sound','#1B1B1B','♪'],['HearOn Link','#3949AB','H'],['VSCodeBook','#007ACC','VS'],
-].map(([name, c, g]) => ({ id: 'app:' + name, kind: 'App', title: name, icon: { c, g }, actions: ['Open', 'App info', 'Uninstall', 'Store page'] }));
+].map(([name, c, g]) => ({ id: 'app:' + name, kind: 'App', title: name, icon: { c, g }, actions: ['Open', 'App info', 'Store page'] }));
 const SETTINGS = [
   ['Wi-Fi','wifi,network,internet'],['Bluetooth','pair,headphones'],['Display','brightness,screen'],['Dark theme','dark mode,night,appearance'],['Night Light','blue light'],
   ['Sound','volume,audio'],['Battery','power,charge'],['Storage','disk,space'],['Apps','installed,uninstall'],['Default apps','browser,assistant'],['Notifications','alerts'],
@@ -516,9 +527,12 @@ function search(text) {
   if (isUrl(t)) out.push({ id: 'web:url', kind: 'Web', title: t, sub: 'Open link', sym: 'globe', actions: ['Open link', 'Copy'], rank: 0.95, verb: 'Opening' });
   out.sort((x, y) => y.rank - x.rank || x.title.length - y.title.length || x.title.localeCompare(y.title));
   const top = out.slice(0, 7);
-  top.push({ id: 'web:search', kind: 'Web', title: `Search the web for “${t}”`, sym: 'search', actions: ['Search the web'], verb: 'Searching the web' });
+  top.push({ id: 'web:search', kind: 'Web', title: `Search Google for “${t}”`, sym: 'search', actions: ['Search Google'], verb: 'Searching Google' });
+  // Suggestions (made up here; the app asks the search engine) only take rows that are free, below everything else.
+  if (SUG.on && t.length >= 2 && a === null && !isUrl(t)) for (const w of [t + ' near me', t + ' today', t + ' meaning']) if (top.length < 8 && top.length - 1 < 6) top.push({ id: 'sug:' + w, kind: 'Suggestion', title: w, sym: 'search', actions: ['Search Google'], verb: 'Searching Google' });
   return top;
 }
+const SUG = { on: false };
 const suggestions = () => [...uses.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([id]) => APPS.find(a => a.id === id)).filter(Boolean);
 
 // ---------- drawing ----------
@@ -533,26 +547,32 @@ function rowHTML(r, on, i) {
   const right = on ? `<span class="k">${esc(r.actions[0])}</span>${enterKey}` : `<span class="k">${r.kind}</span>`;
   return `<div class="row${r.answer != null ? ' ans' : ''}${on ? ' on' : ''}" role="option" aria-selected="${on}" data-i="${i}">${pic(r)}<span class="t">${text}</span>${right}</div>`;
 }
+const CARDS = {
+  shortcut: ['Give Booklight a key', 'In Keyboard shortcuts, choose App shortcuts, then Add shortcut. Action + Alt + Space works well.', 'Open Keyboard shortcuts', 'Done'],
+  suggest: ['Search suggestions are off', 'Turn them on and what you type is sent to Google to suggest searches. Sums and web addresses are not sent.', 'Turn on', 'Not now'],
+};
 function bodyHTML(st) {
-  if (st.firstRun && !st.query) {
-    return `<div class="list"><div class="hl"></div><div class="row on" data-i="0"><span class="ic sym">${sym('lamp')}</span><span class="t"><b>Give Booklight a key</b><i>Add a shortcut in Keyboard shortcuts, for example Action + K</i></span><span class="k">Open</span>${enterKey}</div></div><div class="foot"><span class="flash"></span><span class="cap">esc</span><span>Close</span></div>`;
-  }
   if (st.actionsOf) {
     const r = st.actionsOf;
-    return `<div class="list"><div class="hl"></div>${rowHTML(r, false, -1)}${r.actions.map((a, i) => `<div class="row${i === st.ai ? ' on' : ''}" data-a="${i}"><span style="width:36px;flex:none"></span><span class="t"><b>${esc(a)}</b></span>${i === st.ai ? enterKey : ''}</div>`).join('')}</div><div class="foot"><span class="flash">${esc(st.flash || '')}</span><span class="cap">esc</span><span>Back</span></div>`;
+    return `<div class="list"><div class="hl"></div>${rowHTML(r, false, -1)}${r.actions.map((a, i) => `<div class="row new${i === st.ai ? ' on' : ''}" style="--i:${i}" data-a="${i}"><span style="width:36px;flex:none"></span><span class="t"><b>${esc(a)}</b></span>${i === st.ai ? enterKey : ''}</div>`).join('')}</div><div class="foot"><span class="flash">${esc(st.flash || '')}</span><span class="cap">esc</span><span>Back</span></div>`;
   }
   if (!st.query.trim()) {
-    const s = st.strip || [];
-    return s.length ? `<div class="strip">${s.map((a, i) => `<button data-s="${i}" title="Ctrl + ${i + 1}"><span class="ic" style="--c:${a.icon.c}">${a.icon.g}</span><span>${esc(a.title)}</span></button>`).join('')}</div>` : '';
+    const c = CARDS[st.card]; if (!c) return '';
+    return `<div class="fcard"><span class="ic sym" style="color:var(--p-primary)">${sym('lamp')}</span><span class="t"><b>${c[0]}</b><i>${c[1]}</i></span><span class="btns"><button class="on" data-card="1">${c[2]} ${enterKey}</button><button data-card="0">${c[3]}</button></span></div>`;
   }
-  const rows = st.results;
+  const rows = st.results, was = st.was || new Set();
   const more = rows[st.sel] && rows[st.sel].actions.length > 1;
-  return `<div class="list" role="listbox"><div class="hl"></div>${rows.map((r, i) => rowHTML(r, i === st.sel, i)).join('')}</div><div class="foot"><span class="flash">${esc(st.flash || '')}</span>${more ? '<span class="cap">tab</span><span>Actions</span>' : ''}<span class="cap">esc</span><span>Close</span></div>`;
+  let fresh = 0;
+  return `<div class="list" role="listbox"><div class="hl"></div>${rows.map((r, i) => rowHTML(r, i === st.sel, i).replace('class="row', was.has(r.id) ? 'class="row' : `style="--i:${fresh++}" class="row new`)).join('')}</div><div class="foot"><span class="flash">${esc(st.flash || '')}</span>${more ? '<span class="cap">tab</span><span>Actions</span>' : ''}<span class="cap">esc</span><span>Close</span></div>`;
 }
-function placeHighlight(root) {
-  const hl = root.querySelector('.hl'), on = root.querySelector('.row.on');
+// The selection is one pill: the edge that leads moves faster than the edge that follows, so it stretches and settles.
+function placeHighlight(root, from) {
+  const hl = root.querySelector('.hl'), on = root.querySelector('.row.on'), list = root.querySelector('.list');
   if (!hl) return; if (!on) { hl.style.display = 'none'; return; }
-  hl.style.display = ''; hl.style.transform = `translateY(${on.offsetTop}px)`; hl.style.height = on.offsetHeight + 'px';
+  const top = on.offsetTop, bottom = list.offsetHeight - (on.offsetTop + on.offsetHeight);
+  if (from) { hl.style.transition = 'none'; hl.style.top = from.top + 'px'; hl.style.bottom = from.bottom + 'px'; hl.offsetHeight; hl.style.transition = ''; hl.classList.toggle('up', top < from.top); }
+  hl.style.top = top + 'px'; hl.style.bottom = bottom + 'px';
+  return { top, bottom };
 }
 function ghostHTML(st) {
   const r = st.results[st.sel]; const q = st.query;
@@ -563,17 +583,22 @@ function ghostHTML(st) {
 // ---------- the live panel ----------
 const stage = document.getElementById('stage'), input = document.getElementById('q'), body = document.getElementById('body');
 const ghost = document.getElementById('ghost'), chip = document.getElementById('chip'), toast = document.getElementById('toast');
-const st = { query: '', results: [], sel: 0, actionsOf: null, ai: 0, flash: '', strip: suggestions() };
+const panel = document.getElementById('panel');
+const st = { query: '', results: [], sel: 0, actionsOf: null, ai: 0, flash: '', card: 'shortcut', was: new Set(), pill: null };
 function draw(keep) {
+  const view = st.actionsOf ? 'actions' : 'results';
   if (!keep) { st.results = search(st.query); st.sel = 0; }
   body.innerHTML = bodyHTML(st);
+  st.was = new Set(st.actionsOf || !st.query.trim() ? [] : st.results.map(r => r.id));
   ghost.innerHTML = ghostHTML(st);
   const site = st.results[0] && st.results[0].site; chip.hidden = !site; chip.textContent = site || '';
-  placeHighlight(body);
+  // The pill glides from where it was only inside the same list; a new list starts it in place.
+  st.pill = placeHighlight(body, keep && st.view === view ? st.pill : null) || null; st.view = view;
+  panel.style.height = (68 + body.offsetHeight + 2) + 'px';
 }
 function say(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove('show'), 1800); }
 function close(msg) { stage.classList.remove('open'); if (msg) say(msg); }
-function open() { st.query = ''; input.value = ''; st.actionsOf = null; st.flash = ''; st.strip = suggestions(); stage.classList.add('open'); draw(); input.focus({ preventScroll: true }); }
+function open() { st.query = ''; input.value = ''; st.actionsOf = null; st.flash = ''; st.was = new Set(); stage.classList.add('open'); draw(); input.focus({ preventScroll: true }); }
 function run(r, action) {
   if (r.id.startsWith('app:') || r.id.startsWith('setting:') || r.id.startsWith('cmd:')) learn(st.query, r.id);
   if (action === 'Copy') { st.flash = 'Copied'; draw(true); setTimeout(() => close('Copied ' + (r.answer != null ? r.answer : r.title)), 500); return; }
@@ -593,10 +618,10 @@ input.addEventListener('keydown', e => {
     const r = st.results[st.sel];
     if (k === 'ArrowDown') st.sel = Math.min(st.sel + 1, Math.max(0, st.results.length - 1));
     else if (k === 'ArrowUp') st.sel = Math.max(st.sel - 1, 0);
-    else if (k === 'Enter') { e.preventDefault(); if (r) run(r, r.actions[0]); return; }
+    else if (k === 'Enter') { e.preventDefault(); if (!st.query.trim() && st.card) return card(true); if (r) run(r, r.actions[0]); return; }
     else if (k === 'Tab' || (k === 'ArrowRight' && input.selectionEnd === input.value.length && r)) { if (r && r.actions.length > 1) { st.actionsOf = r; st.ai = 0; } else if (k !== 'Tab') used = false; }
     else if (k === 'Escape') { e.preventDefault(); return close('Closed. The same key opens it again.'); }
-    else if (e.ctrlKey && /^[1-9]$/.test(k)) { const list = st.query.trim() ? st.results : st.strip; const x = list[+k - 1]; e.preventDefault(); if (x) run(x, x.actions[0]); return; }
+    else if (e.ctrlKey && /^[1-9]$/.test(k)) { const x = st.results[+k - 1]; e.preventDefault(); if (x) run(x, x.actions[0]); return; }
     else used = false;
   }
   if (used) { e.preventDefault(); draw(true); }
@@ -604,8 +629,14 @@ input.addEventListener('keydown', e => {
 body.addEventListener('mousemove', e => { const row = e.target.closest('.row'); if (!row) return;
   if (row.dataset.i != null && +row.dataset.i >= 0 && +row.dataset.i !== st.sel && !st.actionsOf) { st.sel = +row.dataset.i; draw(true); }
   if (row.dataset.a != null && +row.dataset.a !== st.ai) { st.ai = +row.dataset.a; draw(true); } });
+function card(primary) {
+  if (st.card === 'shortcut') { st.card = 'suggest'; if (primary) say('The system\u2019s Keyboard shortcuts window would open here.'); }
+  else { st.card = null; if (primary) setSug(true); }
+  draw();
+}
+function setSug(on) { SUG.on = on; document.querySelectorAll('.controls [data-sug]').forEach(x => x.setAttribute('aria-pressed', (x.dataset.sug === 'on') === on)); }
 body.addEventListener('click', e => {
-  const s = e.target.closest('[data-s]'); if (s) { const a = st.strip[+s.dataset.s]; return run(a, 'Open'); }
+  const c = e.target.closest('[data-card]'); if (c) return card(c.dataset.card === '1');
   const row = e.target.closest('.row'); if (!row) return;
   if (row.dataset.a != null) return run(st.actionsOf, st.actionsOf.actions[+row.dataset.a]);
   if (st.actionsOf) { st.actionsOf = null; return draw(true); }
@@ -616,61 +647,34 @@ stage.addEventListener('mousedown', e => { if (stage.classList.contains('open') 
 document.getElementById('summon').addEventListener('click', e => { e.stopPropagation(); open(); });
 document.querySelectorAll('[data-try]').forEach(b => b.addEventListener('click', () => { if (!stage.classList.contains('open')) open(); input.value = b.dataset.try; st.query = input.value; st.actionsOf = null; draw(); input.focus({ preventScroll: true }); }));
 document.querySelectorAll('.controls button').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.sug) { setSug(b.dataset.sug === 'on'); if (stage.classList.contains('open')) draw(); return; }
   for (const key of ['wall', 'mode', 'glass']) if (b.dataset[key]) { stage.dataset[key] = b.dataset[key]; document.querySelectorAll(`.controls [data-${key}]`).forEach(x => x.setAttribute('aria-pressed', x === b)); }
-  document.querySelectorAll('.mini').forEach(m => { m.dataset.wall = stage.dataset.wall; m.dataset.mode = stage.dataset.mode; });
+  document.querySelectorAll('.mini').forEach(m => { m.dataset.wall = stage.dataset.wall; m.dataset.mode = stage.dataset.mode; m.dataset.glass = stage.dataset.glass; });
 }));
 draw();
 
 // ---------- the states gallery (the same drawing code, frozen) ----------
-const frozen = (query, extra = {}) => { const results = search(query); return { query, results, sel: 0, actionsOf: null, ai: 0, flash: '', strip: suggestions(), ...extra }; };
+const frozen = (query, extra = {}) => { const sug = SUG.on; SUG.on = !!extra.sug; const results = search(query); SUG.on = sug; return { query, results, sel: 0, actionsOf: null, ai: 0, flash: '', card: null, was: new Set(results.map(r => r.id)), ...extra }; };
 const STATES = [
-  ['Nothing typed, first run', 'One row teaches the shortcut. It goes away after three opens.', frozen('', { firstRun: true })],
-  ['Nothing typed', 'Your most-used apps. Ctrl + 1–7 or a click opens one.', frozen('')],
+  ['First run: the key', 'A small card under the field, once. Enter opens Keyboard shortcuts.', frozen('', { card: 'shortcut' })],
+  ['First run: suggestions', 'Off until you turn them on, with what is sent and to whom.', frozen('', { card: 'suggest' })],
+  ['Nothing typed', 'After that: just the field.', frozen('')],
   ['A top hit', 'Row one is selected, and its name completes in the field.', frozen('chr')],
   ['An answer', 'The sum is the first row. Enter copies it.', frozen('150 + 20%')],
   ['A keyword search', 'A chip names the site; Enter searches it in your browser.', frozen('yt lofi')],
   ['Actions', 'Tab on a row lists what else it can do.', (() => { const s = frozen('snap'); s.actionsOf = s.results[0]; s.ai = 1; return s; })()],
-  ['Nothing found', 'Only the way out to the web.', frozen('zebra crossing rules')],
+  ['Suggestions, when on', 'Below everything else, in rows that are free.', frozen('tide times', { sug: true })],
   ['Solid fallback', 'When the system turns blur off: the same layout, opaque.', frozen('dark', { solid: true })],
 ];
 const states = document.getElementById('states');
 for (const [title, note, s] of STATES) {
   const site = s.results[0] && s.results[0].site;
   const el = document.createElement('div'); el.className = 'state';
-  el.innerHTML = `<div class="mini stage" data-wall="tide" data-mode="light"><div class="panel${s.solid ? ' solid' : ''}"><div class="field">${sym('search')}<div class="typing"><div class="ghost">${ghostHTML(s)}</div><input type="text" value="${esc(s.query)}" placeholder="Search apps, settings and the web" tabindex="-1" readonly aria-hidden="true"></div>${site ? `<span class="chip">${site}</span>` : ''}<span class="cap">esc</span></div>${bodyHTML(s)}</div></div><h3>${title}</h3><p>${note}</p>`;
+  el.innerHTML = `<div class="mini stage" data-wall="tide" data-mode="light"><div class="panel${s.solid ? ' solid' : ''}"><div class="field"><span class="gmark">G</span><div class="typing"><div class="ghost">${ghostHTML(s)}</div><input type="text" value="${esc(s.query)}" placeholder="Search apps, settings and the web" tabindex="-1" readonly aria-hidden="true"></div>${site ? `<span class="chip">${site}</span>` : ''}<span class="cap">esc</span></div>${bodyHTML(s).replace(/ new/g, '')}</div></div><h3>${title}</h3><p>${note}</p>`;
   states.appendChild(el);
 }
 function fitMinis() { document.querySelectorAll('.mini').forEach(m => { const p = m.querySelector('.panel'); m.style.padding = '0'; const pad = 14; const scale = Math.min(1, (m.clientWidth - pad * 2) / 720); p.style.transform = `scale(${scale})`; p.style.margin = pad + 'px'; m.style.height = (p.offsetHeight * scale + pad * 2) + 'px'; placeHighlight(p); }); }
 fitMinis(); addEventListener('resize', fitMinis); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitMinis(); placeHighlight(body); });
 
-// ---------- questions ----------
-const QS = [
-  ['Name', 'Renaming is cheap until the first release.', ['Booklight', 'Searchbeam', 'Lamplit', 'Glowfind', 'Kvick', 'Something else']],
-  ['The key Booklight suggests', 'Free on the device, and K is the command-palette key people know. Action + Space is Gemini’s and needs the assistant role.', ['Action + K', 'Action + J', 'Action + D', 'Another free key']],
-  ['Nothing typed yet', 'A strip keeps the panel small and still gives one-key launches.', ['Strip of most-used apps', 'Nothing at all (Alfred)', 'A short list']],
-  ['Esc', 'Closing at once is faster; the text is gone next time anyway.', ['Closes at once', 'Clears first, then closes']],
-  ['Web', 'No internet permission means no live suggestions, and the promise that nothing leaves the device.', ['No internet; Google by default, changeable', 'Add internet for suggestions']],
-  ['Sums', 'One engine and one set of rates, and it shows what extensions are for.', ['Small calculator now, Summa as an extension in 2.0', 'Copy Summa’s engine into 1.0']],
-  ['Extensions as the way to grow', 'Other apps offer results through a small ContentProvider contract, starting with yours.', ['Yes, extensions', 'Keep everything built in']],
-  ['Advanced tiers', 'Assistant role as an optional switch in 1.x; accessibility tier (windows, clipboard, system commands) in 3.x.', ['As planned', 'Sooner', 'Never add them']],
-  ['Repo', 'A public repo becomes a draft listing on googlebook.studio by itself.', ['Private until 0.2, then public', 'Public now', 'Private until 1.0']],
-  ['Signing key', 'Made in ~/.config/booklight with the backup, like the other apps.', ['Make it when 0.2 is cut', 'Make it now', 'I will make it']],
-  ['Reach', 'Your usual minSdk 34, described as made for Googlebook.', ['Android 14+ (minSdk 34)', 'Googlebook only (minSdk 37)']],
-  ['Languages', 'Like BentoBar.', ['US + British English', 'Add German too']],
-  ['Action + K on your HP', 'I bound it during testing so you can try 0.1.', ['Keep it', 'Remove it']],
-  ['BentoBar crash on unbind', 'BarService.onUnbind throws when the service is suspended; found during testing.', ['Fix it in kuscher/bentobar', 'Leave it, I will look']],
-];
-const qs = document.getElementById('qs'), answers = document.getElementById('answers');
-QS.forEach(([t, why, opts], i) => {
-  const n = i + 1, el = document.createElement('div'); el.className = 'q';
-  el.innerHTML = `<span class="num">${n}</span><div><h3>${t}</h3><div class="opts" role="radiogroup" aria-label="${t}">${opts.map((o, j) => `<label class="${j === 0 ? 'def' : ''}"><input type="radio" name="q${n}" id="q${n}o${j}" value="${esc(o)}"${j === 0 ? ' checked' : ''}>${esc(o)}</label>`).join('')}</div><p class="why">${why}</p></div>`;
-  qs.appendChild(el);
-});
-function writeAnswers() { answers.value = QS.map(([t, , opts], i) => { const v = (document.querySelector(`input[name="q${i + 1}"]:checked`) || {}).value; return `${i + 1}. ${t}: ${v}${v === opts[0] ? ' (default)' : ''}`; }).join('\n'); }
-qs.addEventListener('change', writeAnswers); writeAnswers();
-document.getElementById('copy').addEventListener('click', e => {
-  const done = () => { e.target.textContent = 'Copied'; setTimeout(() => e.target.textContent = 'Copy answers', 1500); };
-  navigator.clipboard.writeText(answers.value).then(done).catch(() => { answers.focus(); answers.select(); });
-});
 })();
 </script>

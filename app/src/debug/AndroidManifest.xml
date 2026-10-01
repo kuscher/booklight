@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug builds only: a window of test content (a white page, a dark terminal, colour) to judge the
+             glass against, so captures never show anyone's real windows. ./bl backdrop -->
+        <activity
+            android:name=".debug.BackdropActivity"
+            android:exported="true"
+            android:label="Booklight backdrop"
+            android:taskAffinity="io.github.kuscher.booklight.backdrop" />
+    </application>
+</manifest>

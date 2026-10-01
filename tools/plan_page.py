@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """Builds docs/design/booklight-plan.html (the published plan page with the interactive prototype)
-from booklight-plan.src.html by inlining the device captures as data URIs.
+from booklight-plan.src.html by inlining two pictures (docs/images/hero.png and dark.png) as data URIs.
   tools/plan_page.py            write the page
   tools/plan_page.py --preview  also write build/plan-preview.html with a document skeleton, for a local look
 """
@@ -10,9 +10,13 @@ import base64, pathlib, sys
 root = pathlib.Path(__file__).resolve().parent.parent
 design = root / "docs" / "design"
 src = (design / "booklight-plan.src.html").read_text()
-for key, name in {"{{CAP1}}": "panel-results.png", "{{CAP2}}": "panel-sum.png"}.items():
-    data = base64.b64encode((design / "captures" / name).read_bytes()).decode()
-    src = src.replace(key, "data:image/png;base64," + data)
+# The pictures are the README's scenes (tools/store_scenes.py), reduced to JPEG so the page stays small.
+import io
+from PIL import Image
+for key, name in {"{{CAP1}}": "hero.png", "{{CAP2}}": "dark.png"}.items():
+    buf = io.BytesIO()
+    Image.open(root / "docs" / "images" / name).convert("RGB").resize((1200, 750), Image.LANCZOS).save(buf, "JPEG", quality=84)
+    src = src.replace(key, "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode())
 (design / "booklight-plan.html").write_text(src)
 print(design / "booklight-plan.html", len(src) // 1024, "KB")
 if "--preview" in sys.argv:

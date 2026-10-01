@@ -50,6 +50,8 @@ class OverlayActivity : ComponentActivity() {
     private lateinit var motion: Motion
     private var lastHeightPx = -1
     private var lastBlur = -1
+    private var dark = false
+    private val dim get() = if (dark) Look.dimDark else Look.dimLight
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,11 +65,11 @@ class OverlayActivity : ComponentActivity() {
         if (BuildConfig.DEBUG) {   // try other glass values from adb: ./bl open stay tint=0.2 blur=24 dim=0.1
             if (intent.hasExtra("tint")) intent.getFloatExtra("tint", 0f).let { Look.tintLight = it; Look.tintDark = it }
             if (intent.hasExtra("blur")) Look.blurDp = intent.getFloatExtra("blur", Look.blurDp)
-            if (intent.hasExtra("dim")) Look.dim = intent.getFloatExtra("dim", Look.dim)
+            if (intent.hasExtra("dim")) intent.getFloatExtra("dim", 0f).let { Look.dimLight = it; Look.dimDark = it }
         }
         val icons = app.icons ?: AppIcons(app).also { app.icons = it }
         // `--ez dark true|false` (debug, for pictures) overrides the system's theme for this panel only.
-        val dark = if (intent.hasExtra(EXTRA_DARK)) intent.getBooleanExtra(EXTRA_DARK, false)
+        dark = if (intent.hasExtra(EXTRA_DARK)) intent.getBooleanExtra(EXTRA_DARK, false)
             else resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         placeWindow()
 
@@ -94,7 +96,7 @@ class OverlayActivity : ComponentActivity() {
         window.setGravity(Gravity.TOP or Gravity.CENTER_HORIZONTAL)
         // A soft dim separates the panel from busy windows; the desktop stays readable.
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        window.setDimAmount(if (motion.on) 0f else Look.dim)
+        window.setDimAmount(if (motion.on) 0f else dim)
         // The background draws nothing; the platform reads the blur region's corner radius from its outline.
         window.setBackgroundDrawable(PanelOutline(dp(Metrics.radius.value)))
         val screen = windowManager.maximumWindowMetrics.bounds
@@ -121,7 +123,7 @@ class OverlayActivity : ComponentActivity() {
     private fun present(amount: Float) {
         val blur = (dp(Look.blurDp) * amount).roundToInt()
         if (blur != lastBlur) { lastBlur = blur; window.setBackgroundBlurRadius(blur) }
-        window.setDimAmount(Look.dim * amount)
+        window.setDimAmount(dim * amount)
     }
 
     override fun onAttachedToWindow() {

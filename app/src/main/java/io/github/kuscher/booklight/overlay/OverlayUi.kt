@@ -55,6 +55,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -112,6 +114,11 @@ import io.github.kuscher.booklight.ui.Symbols
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/** Text on glass is one ink, `onSurface`, at three strengths: an alpha ink follows whatever shows through, a fixed grey would vanish on grey glass. */
+private const val SECOND = 0.68f
+private const val THIRD = 0.48f
+private val LocalDark = staticCompositionLocalOf { false }
+
 /** The panel's sizes. The window is exactly this big, so its blur follows the panel. */
 object Metrics {
     val width = 720.dp
@@ -120,7 +127,7 @@ object Metrics {
     val answer = 92.dp
     val card = 96.dp
     val pad = 8.dp
-    val footer = 40.dp
+    val footer = 36.dp
     val radius = 32.dp
     /** Where the panel's top edge sits, as a share of the screen's height: the field stays put while the list grows down. */
     const val TOP = 0.2f
@@ -189,7 +196,7 @@ fun Panel(
     // On arrival, a short gleam runs along the outline.
     val sweep = remember { Animatable(-400f) }
     LaunchedEffect(Unit) {
-        if (motion.on) sweep.animateTo(with(density) { (Metrics.width * 2f).toPx() }, tween(720, 70, CubicBezierEasing(0.3f, 0f, 0.2f, 1f)))
+        if (motion.on) sweep.animateTo(with(density) { (Metrics.width * 2f).toPx() }, tween(560, 70, CubicBezierEasing(0.3f, 0f, 0.2f, 1f)))
     }
 
     fun keys(e: KeyEvent): Boolean {
@@ -226,12 +233,15 @@ fun Panel(
         Modifier.fillMaxSize()
             .graphicsLayer { scaleX = scale.value; scaleY = scale.value; alpha = presence.value }
             .glass(
-                tint = scheme.surfaceContainerHigh.copy(alpha = if (!glass) 1f else if (dark) Look.tintDark else Look.tintLight),
-                radiusPx = radiusPx, sweep = { sweep.value }, dark = dark, solid = !glass,
+                // The veil is white in light theme and near-black in dark: the most contrast for the least tint.
+                tint = if (glass) scheme.surfaceContainerLowest.copy(alpha = if (dark) Look.tintDark else Look.tintLight) else scheme.surfaceContainerHigh,
+                lead = scheme.tertiary, tail = scheme.primary,
+                radiusPx = radiusPx, density = density.density, sweep = { sweep.value }, dark = dark, solid = !glass,
             )
             .clip(RoundedCornerShape(Metrics.radius))
             .onPreviewKeyEvent(::keys),
     ) {
+      CompositionLocalProvider(LocalDark provides dark) {
         Column(Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true)) {
             Field(model, field, onChange = { field = it; model.type(it.text) }, focus = focus)
 
@@ -268,6 +278,7 @@ fun Panel(
                 }
             }
         }
+      }
     }
 }
 
@@ -280,23 +291,23 @@ private val DIGITS = listOf(Key.One, Key.Two, Key.Three, Key.Four, Key.Five, Key
 private fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue) -> Unit, focus: FocusRequester) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
-    Row(Modifier.fillMaxWidth().height(Metrics.field).padding(start = 24.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().height(Metrics.field).padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         // The search engine's mark where the magnifier would be: Google's G when Google does the searching.
-        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
             AnimatedContent(model.settings.engine == "google", transitionSpec = { (scaleIn(motion.pop(), 0.6f) + fadeIn()) togetherWith (scaleOut() + fadeOut()) }, label = "mark") { google ->
-                if (google) Text("G", color = scheme.primary, style = TextStyle(fontFamily = Fonts.round, fontSize = 27.sp, fontWeight = FontWeight(700)))
-                else Icon(Symbols.search, null, Modifier.size(26.dp), tint = scheme.onSurfaceVariant)
+                if (google) Text("G", color = scheme.primary, style = TextStyle(fontFamily = Fonts.round, fontSize = 24.sp, fontWeight = FontWeight(600)))
+                else Icon(Symbols.search, null, Modifier.size(22.dp), tint = scheme.onSurface.copy(alpha = SECOND))
             }
         }
-        Box(Modifier.weight(1f).padding(start = 14.dp), contentAlignment = Alignment.CenterStart) {
-            val style = TextStyle(fontFamily = Fonts.text, fontSize = 24.sp, fontWeight = FontWeight(450), color = scheme.onSurface)
+        Box(Modifier.weight(1f).padding(start = 16.dp), contentAlignment = Alignment.CenterStart) {
+            val style = TextStyle(fontFamily = Fonts.text, fontSize = 24.sp, fontWeight = FontWeight(500), color = scheme.onSurface)
             if (field.text.isEmpty()) {
-                Text(stringResource(R.string.search_hint), style = style.copy(color = scheme.onSurfaceVariant.copy(alpha = 0.72f)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.search_hint), style = style.copy(color = scheme.onSurface.copy(alpha = THIRD), fontWeight = FontWeight(400)), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             // The rest of the top hit's name, grey, after the cursor: drawn with the text so it sits on the same line.
             val rest = model.completion
-            val ghostAlpha by animateFloatAsState(if (rest != null) 0.62f else 0f, motion.fade(140), label = "ghost")
-            val ghost = scheme.onSurfaceVariant.copy(alpha = ghostAlpha)
+            val ghostAlpha by animateFloatAsState(if (rest != null) THIRD else 0f, motion.fade(140), label = "ghost")
+            val ghost = scheme.onSurface.copy(alpha = ghostAlpha)
             val label = stringResource(R.string.a11y_search_field)
             BasicTextField(
                 value = field,
@@ -316,7 +327,8 @@ private fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFie
                 Text(name, color = scheme.onSecondaryContainer, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight(600)))
             }
         }
-        Keycap("esc")
+        // The footer says "esc Close" once there is one; until then the field does.
+        AnimatedVisibility(model.results.isEmpty() && model.actionsOf == null, enter = fadeIn(motion.fade(120)), exit = fadeOut(motion.fade(120))) { Keycap("esc") }
     }
 }
 
@@ -439,15 +451,16 @@ private fun Pill(top: Dp, height: Dp, visible: Boolean) {
         launch { lower.animateTo(top + height, if (down) motion.lead() else motion.trail()) }
     }
     val shown by animateFloatAsState(if (visible) 1f else 0f, motion.fade(120), label = "pill")
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(24.dp)   // the panel's 32 less the 8 it is inset by: concentric
+    val dark = LocalDark.current
     Box(
         Modifier.offset { IntOffset(0, upper.value.roundToPx()) }
             .fillMaxWidth().height((lower.value - upper.value).coerceAtLeast(12.dp))
             .graphicsLayer { alpha = shown }
             .clip(shape)
-            .background(scheme.secondaryContainer.copy(alpha = 0.62f))
-            // The same white outline as the panel: a second, smaller pane of glass.
-            .border(1.dp, Color.White.copy(alpha = 0.5f), shape),
+            // The only coloured surface, and the densest: that is what says "selected". Flat, with the panel's white outline.
+            .background(scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f))
+            .border(1.dp, Color.White.copy(alpha = if (dark) 0.30f else 0.55f), shape),
     )
 }
 
@@ -455,7 +468,7 @@ private fun Pill(top: Dp, height: Dp, visible: Boolean) {
 private fun RowFrame(height: Dp, selected: Boolean, label: String, onHover: () -> Unit, onClick: () -> Unit, content: @Composable RowScope.() -> Unit) {
     val hover by rememberUpdatedState(onHover)
     Row(
-        Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(20.dp))
+        Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(24.dp))
             // Hover selects only when the pointer moves, so a list growing under a resting pointer doesn't steal the selection.
             .pointerInput(Unit) {
                 awaitPointerEventScope {
@@ -464,7 +477,7 @@ private fun RowFrame(height: Dp, selected: Boolean, label: String, onHover: () -
             }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .semantics(mergeDescendants = true) { this.selected = selected; role = Role.Button; contentDescription = label }
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         content = content,
     )
@@ -475,14 +488,15 @@ private fun ResultRow(r: Result, icons: AppIcons, selected: Boolean, hint: Strin
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val on by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface, motion.fade(120), label = "on")
-    val dim by animateColorAsState(if (selected) scheme.onSecondaryContainer.copy(alpha = 0.76f) else scheme.onSurfaceVariant, motion.fade(120), label = "dim")
-    val pop by animateFloatAsState(if (selected) 1.1f else 1f, motion.pop(), label = "icon")
+    val dim by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface.copy(alpha = SECOND), motion.fade(120), label = "dim")
+    val pop by animateFloatAsState(if (selected) 1.06f else 1f, motion.pop(), label = "icon")
+    val small = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
     val kind = kindLabel(r.kind)
     RowFrame(Metrics.rowHeight(r), selected, stringResource(R.string.a11y_selected, r.title, hint ?: kind), onHover, onClick) {
         Box(Modifier.graphicsLayer { scaleX = pop; scaleY = pop }) { RowPicture(r.icon, icons, dim) }
-        Column(Modifier.weight(1f).padding(start = 14.dp)) {
+        Column(Modifier.weight(1f).padding(start = 16.dp)) {
             if (r.answer != null) {
-                r.subtitle?.let { Text("$it =", color = dim, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                r.subtitle?.let { Text("$it =", color = dim, style = small, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 // A changed answer rolls up into place, like a counter.
                 AnimatedContent(r.answer!!, transitionSpec = {
                     (slideInVertically(motion.place()) { it / 2 } + fadeIn(motion.fade(120))) togetherWith (slideOutVertically(motion.place()) { -it / 2 } + fadeOut(motion.fade(70)))
@@ -491,7 +505,7 @@ private fun ResultRow(r: Result, icons: AppIcons, selected: Boolean, hint: Strin
                 }
             } else {
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                r.subtitle?.let { Text(it, color = dim, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                r.subtitle?.let { Text(it, color = dim, style = small, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             }
         }
         // What Enter does slides in on the selected row; the others say what kind of thing they are.
@@ -500,9 +514,9 @@ private fun ResultRow(r: Result, icons: AppIcons, selected: Boolean, hint: Strin
             else fadeIn(motion.fade(110)) togetherWith (slideOutHorizontally(motion.fade(90)) { it / 4 } + fadeOut(motion.fade(60)))
         }, contentAlignment = Alignment.CenterEnd, label = "trail") { showHint ->
             if (showHint) Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(hint.orEmpty(), color = dim, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(end = 8.dp), maxLines = 1)
+                Text(hint.orEmpty(), color = dim, style = small, modifier = Modifier.padding(end = 8.dp), maxLines = 1)
                 EnterKey()
-            } else Text(kind, color = scheme.onSurfaceVariant.copy(alpha = 0.8f), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight(400)), maxLines = 1)
+            } else Text(kind, color = scheme.onSurface.copy(alpha = SECOND), style = small, maxLines = 1)
         }
     }
 }
@@ -516,7 +530,7 @@ private fun RowPicture(icon: RowIcon, icons: AppIcons, tinted: Color) {
             val bitmap by produceState(icons.cached(icon), icon) { if (value == null) value = icons.load(icon, px) }
             Box(Modifier.size(size)) { bitmap?.let { Image(it, null, Modifier.fillMaxSize()) } }
         }
-        is RowIcon.Symbol -> Box(Modifier.size(size).clip(CircleShape).background(tinted.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+        is RowIcon.Symbol -> Box(Modifier.size(size).clip(CircleShape).background(tinted.copy(alpha = if (LocalDark.current) 0.12f else 0.08f)), contentAlignment = Alignment.Center) {
             Icon(Symbols.of(icon.name), null, Modifier.size(20.dp), tint = tinted)
         }
     }
@@ -538,7 +552,7 @@ private fun ActionsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Ac
                 val selected = i == model.actionIndex
                 SlotRow(head + Metrics.row * i, leaving = false, delayMs = LocalMotion.current.stagger(i), onGone = {}) {
                     RowFrame(Metrics.row, selected, a.label, onHover = { model.selectAction(i) }, onClick = { onRun(of, a) }) {
-                        Spacer(Modifier.width(50.dp))
+                        Spacer(Modifier.width(52.dp))
                         val on by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface, LocalMotion.current.fade(120), label = "action")
                         Text(a.label, Modifier.weight(1f), color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)))
                         AnimatedVisibility(selected, enter = fadeIn(tween(110)) + scaleIn(LocalMotion.current.pop(), 0.7f), exit = fadeOut(tween(60))) { EnterKey() }
@@ -565,15 +579,17 @@ private fun CardBody(card: Card, model: OverlayModel, choice: Int, onChoice: (In
     }
     Row(
         Modifier.padding(horizontal = Metrics.pad).fillMaxWidth().height(Metrics.card)
-            .clip(RoundedCornerShape(24.dp)).background(scheme.onSurface.copy(alpha = 0.05f)).padding(start = 16.dp, end = 12.dp),
+            .clip(RoundedCornerShape(24.dp)).background(scheme.onSurface.copy(alpha = 0.07f))
+            .border(1.dp, Color.White.copy(alpha = if (LocalDark.current) 0.20f else 0.35f), RoundedCornerShape(24.dp))
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(36.dp).clip(CircleShape).background(scheme.primary.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
             Icon(Symbols.booklight, null, Modifier.size(20.dp), tint = scheme.primary)
         }
-        Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+        Column(Modifier.weight(1f).padding(start = 16.dp, end = 14.dp)) {
             Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(text, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, lineHeight = 17.sp), maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(text, color = scheme.onSurface.copy(alpha = SECOND), style = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), lineHeight = 17.sp), maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             CardButton(yes, chosen = choice == 0, onHover = { onChoice(0) }) { onCard(card, true) }
@@ -586,11 +602,13 @@ private fun CardBody(card: Card, model: OverlayModel, choice: Int, onChoice: (In
 private fun CardButton(label: String, chosen: Boolean, onHover: () -> Unit, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
-    val bg by animateColorAsState(if (chosen) scheme.secondaryContainer.copy(alpha = 0.85f) else Color.Transparent, motion.fade(120), label = "button")
-    val on by animateColorAsState(if (chosen) scheme.onSecondaryContainer else scheme.onSurfaceVariant, motion.fade(120), label = "buttonText")
+    val dark = LocalDark.current
+    val bg by animateColorAsState(if (chosen) scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f) else Color.Transparent, motion.fade(120), label = "button")
+    val edge by animateColorAsState(if (chosen) Color.White.copy(alpha = if (dark) 0.30f else 0.55f) else Color.Transparent, motion.fade(120), label = "buttonEdge")
+    val on by animateColorAsState(if (chosen) scheme.onSecondaryContainer else scheme.onSurface.copy(alpha = SECOND), motion.fade(120), label = "buttonText")
     val hover by rememberUpdatedState(onHover)
     Row(
-        Modifier.clip(CircleShape).background(bg)
+        Modifier.clip(CircleShape).background(bg).border(1.dp, edge, CircleShape)
             .pointerInput(Unit) { awaitPointerEventScope { while (true) if (awaitPointerEvent().type == PointerEventType.Move) hover() } }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .semantics { role = Role.Button; selected = chosen }
@@ -611,7 +629,9 @@ private fun CardButton(label: String, chosen: Boolean, onHover: () -> Unit, onCl
 private fun Footer(flash: String?, escLabel: String, actions: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
-    Row(Modifier.fillMaxWidth().height(Metrics.footer + Metrics.pad).padding(start = 24.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+    val hint = TextStyle(fontFamily = Fonts.text, fontSize = 12.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
+    val ink = scheme.onSurface.copy(alpha = SECOND)
+    Row(Modifier.fillMaxWidth().height(Metrics.footer + Metrics.pad).padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f)) {
             AnimatedContent(flash, transitionSpec = { (fadeIn(motion.fade(120)) + scaleIn(motion.pop(), 0.8f)) togetherWith fadeOut(motion.fade(80)) }, contentAlignment = Alignment.CenterStart, label = "flash") { word ->
                 Text(word.orEmpty(), color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight(600)))
@@ -621,11 +641,11 @@ private fun Footer(flash: String?, escLabel: String, actions: Boolean = false) {
             AnimatedVisibility(actions, enter = fadeIn(motion.fade(120)), exit = fadeOut(motion.fade(80))) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Keycap("tab")
-                    Text(stringResource(R.string.hint_actions), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(end = 10.dp))
+                    Text(stringResource(R.string.hint_actions), color = ink, style = hint, modifier = Modifier.padding(end = 10.dp))
                 }
             }
             Keycap("esc")
-            Text(escLabel, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            Text(escLabel, color = ink, style = hint)
         }
     }
 }
@@ -633,8 +653,8 @@ private fun Footer(flash: String?, escLabel: String, actions: Boolean = false) {
 @Composable
 private fun Keycap(label: String) {
     val scheme = MaterialTheme.colorScheme
-    Box(Modifier.clip(RoundedCornerShape(7.dp)).background(scheme.onSurface.copy(alpha = 0.08f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
-        Text(label, color = scheme.onSurfaceVariant, style = TextStyle(fontFamily = Fonts.text, fontSize = 12.sp, fontWeight = FontWeight(500)))
+    Box(Modifier.height(22.dp).clip(RoundedCornerShape(7.dp)).background(scheme.onSurface.copy(alpha = if (LocalDark.current) 0.14f else 0.10f)).padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
+        Text(label, color = scheme.onSurface.copy(alpha = SECOND), style = TextStyle(fontFamily = Fonts.text, fontSize = 12.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp))
     }
 }
 
@@ -642,8 +662,8 @@ private fun Keycap(label: String) {
 @Composable
 private fun EnterKey() {
     val scheme = MaterialTheme.colorScheme
-    Box(Modifier.clip(RoundedCornerShape(7.dp)).background(scheme.onSecondaryContainer.copy(alpha = 0.12f)).padding(horizontal = 6.dp, vertical = 4.dp)) {
-        Icon(Symbols.enter, null, Modifier.size(15.dp), tint = scheme.onSecondaryContainer)
+    Box(Modifier.size(26.dp, 22.dp).clip(RoundedCornerShape(7.dp)).background(scheme.onSecondaryContainer.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+        Icon(Symbols.enter, null, Modifier.size(14.dp), tint = scheme.onSecondaryContainer)
     }
 }
 

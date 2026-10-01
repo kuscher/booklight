@@ -13,6 +13,8 @@
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
 #   ./bl screen [OUT]        the panel as it looks on screen, blur and shadow included: a crop of a
 #                            screenshot around the panel's window (it shows what is behind the panel)
+#   ./bl backdrop            a window of test content (white page, dark terminal, colour) to put behind
+#                            the panel; debug builds. Captures over it show nobody's real windows
 #   ./bl logs [N]            Booklight's log lines
 #   ./bl sh CMD...           adb shell on the device
 #   ./bl idle                seconds since the last user input on the device, and the focused window
@@ -68,6 +70,7 @@ case "$cmd" in
   install) install "${1:-}" ;;
   open) open "$@" ;;
   stop) A shell am force-stop --user current "$PKG" ;;
+  backdrop) A shell am start --user current -n "$PKG/.debug.BackdropActivity" >/dev/null ;;   # debug builds: test content to judge the glass against
   uninstall) A uninstall "$PKG" || true ;;   # every Android user (apps live in user 0 and 10)
   app) build && install && open stay ;;
   debug) dbg "$@" ;;
