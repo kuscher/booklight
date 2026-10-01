@@ -70,6 +70,7 @@ case "$cmd" in
   install) install "${1:-}" ;;
   open) open "$@" ;;
   stop) A shell am force-stop --user current "$PKG" ;;
+  probe) A logcat -c >/dev/null 2>&1 || true; A shell "am broadcast --user current -a $PKG.PROBE -p $PKG --es c '$1'" >/dev/null; sleep 1.2; A shell "logcat -d -s Booklight:I" | grep "probe $1 ->" | tail -1 | sed 's/.*-> //' | tr '|' '\n' ;;   # debug builds: what a plain app may do here (files, state)
   backdrop) A shell am start --user current -n "$PKG/.debug.BackdropActivity" >/dev/null ;;   # debug builds: test content to judge the glass against
   uninstall) A uninstall "$PKG" || true ;;   # every Android user (apps live in user 0 and 10)
   app) build && install && open stay ;;
