@@ -206,7 +206,9 @@ Other names checked on GitHub on 1 October 2026 (account, and the best-known rep
 8. **Advanced tiers** as planned (now: 2.2 and 3.0 above).
 9. **Repo:** private until the first release, then public.
 10. **Signing key:** made on 1 October (`~/.config/booklight`, backup by the Play session).
-11. **Reach:** Android 14+ (minSdk 34).
+11. **Reach:** Android 14+ (minSdk 34). On Play, `android.hardware.type.pc` is required as well, so Play offers
+    it to Googlebooks only (as Alex has started doing for his other apps; the APK from GitHub installs
+    anywhere). Narrow first: it can be widened later without stranding anyone.
 12. **Languages:** US English, British English, German.
 13. **Action + K on his HP:** kept.
 14. **BentoBar:** fixed on its `main` (commit 94a952c, unreleased).

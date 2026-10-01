@@ -22,6 +22,11 @@
 
     <!-- Keyboard and trackpad are enough: laptops without a touchscreen can install it. -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <!-- Google Play offers Booklight to desktop Android devices (Googlebooks) only, like Alex's other apps:
+         it is a keyboard launcher, and the system's custom shortcuts exist there. Android doesn't enforce
+         this at install time, so the APK from GitHub still installs anywhere. Narrow first: widening later
+         strands nobody, narrowing later would. -->
+    <uses-feature android:name="android.hardware.type.pc" android:required="true" />
 
     <application
         android:name=".BooklightApp"

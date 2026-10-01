@@ -11,5 +11,7 @@
 - **Permissions:** `INTERNET` only (search suggestions, off until turned on). No runtime permissions, no
   accessibility service, no overlay permission (the panel is a translucent activity), no foreground
   service. `<queries>`: launcher activities (the app list), the Settings package, https viewers.
+- **Devices:** `android.hardware.type.pc` is required, so Play offers it to desktop Android devices (the Googlebooks)
+  only; `android.hardware.touchscreen` is not required.
 - **Category:** Tools. **Tags:** launcher, productivity.
 - **Contact:** kuscher.projects@gmail.com. **Website:** https://github.com/kuscher/booklight
