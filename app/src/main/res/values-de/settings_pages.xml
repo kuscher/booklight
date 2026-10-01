@@ -36,6 +36,20 @@
         <item>Entwickleroptionen</item>
         <item>Internet-Leiste</item>
         <item>Lautstärke-Leiste</item>
+        <item>NFC</item>
+        <item>Bildschirmschoner</item>
+        <item>Untertitel</item>
+        <item>Energiesparmodus</item>
+        <item>Mein Wörterbuch</item>
+        <item>Sprache und Region</item>
+        <item>Display automatisch ausschalten</item>
+        <item>Anzeigegröße und Text</item>
+        <item>Farbumkehr</item>
+        <item>Farbkontrast</item>
+        <item>App-Benachrichtigungen</item>
+        <item>Installieren unbekannter Apps</item>
+        <item>Nutzungsdatenzugriff</item>
+        <item>Konto hinzufügen</item>
     </string-array>
     <string-array name="settings_words">
         <item>optionen,präferenzen</item>
@@ -73,5 +87,19 @@
         <item>adb,debugging,usb-debugging</item>
         <item>wlan,netzwerk,verbindung</item>
         <item>ton,audio,regler</item>
+        <item>nfc,kontaktlos,tap,contactless</item>
+        <item>bildschirmschoner,screensaver,dream,idle</item>
+        <item>untertitel,captions,subtitles,live caption</item>
+        <item>energiesparmodus,stromsparen,battery saver,power saving,low power</item>
+        <item>wörterbuch,wörter,dictionary,words,spelling</item>
+        <item>region,einheiten,temperatur,wochenbeginn,units,temperature,first day,number format</item>
+        <item>timeout,ruhezustand,bildschirm aus,sleep,screen off,lock after</item>
+        <item>schriftgröße,textgröße,zoom,fett,größer,font size,text size,bold,bigger</item>
+        <item>farbumkehr,invertieren,invert,inversion,negative</item>
+        <item>kontrast,hoher kontrast,contrast,high contrast</item>
+        <item>app-benachrichtigungen,pro app,stumm,app notifications,per app,mute app</item>
+        <item>unbekannte quellen,sideload,apk,installieren,unknown sources,install</item>
+        <item>nutzungsdaten,usage access,usage stats</item>
+        <item>konto hinzufügen,anmelden,google-konto,add account,sign in,google account</item>
     </string-array>
 </resources>

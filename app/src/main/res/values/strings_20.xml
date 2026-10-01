@@ -31,4 +31,32 @@
     <string name="action_more">More</string>
     <string name="action_less">Less</string>
     <string name="hint_less">Less</string>
+    <!-- The system's keys -->
+    <string name="kind_key">Key</string>
+    <string name="action_all_keys">All shortcuts</string>
+    <string name="key_ctrl">Ctrl</string>
+    <string name="key_shift">Shift</string>
+    <string name="key_alt">Alt</string>
+    <string name="key_enter">Enter</string>
+    <string name="key_del">Del</string>
+    <string name="key_tab">Tab</string>
+    <string name="key_esc">Esc</string>
+    <string name="key_overview">Overview</string>
+    <string name="keys_keys">k,keys</string>
+    <string name="keys_name">Shortcuts</string>
+    <string name="keys_title">Search keyboard shortcuts</string>
+    <string name="keys_hint">What you want to do</string>
+    <string name="keys_about">The system’s own keys</string>
+    <string name="keys_all">All shortcuts</string>
+    <string name="keys_all_sub">The system’s Keyboard shortcuts window</string>
+    <string name="set_show_keys">The system’s keys</string>
+    <string name="set_show_keys_text">“snap” answers with the keys that do it. Booklight shows them; it cannot press them.</string>
+    <!-- Settings as a scope -->
+    <string name="settings_keys_list">s,settings</string>
+    <string name="settings_name">Settings</string>
+    <string name="settings_title">Search settings</string>
+    <string name="settings_hint">A settings page</string>
+    <string name="settings_about">Every page Booklight knows</string>
+    <string name="settings_search">Search the Settings app</string>
+    <string name="settings_search_sub">Every setting, in its own search</string>
 </resources>

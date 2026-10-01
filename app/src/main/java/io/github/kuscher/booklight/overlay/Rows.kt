@@ -397,6 +397,10 @@ fun ResultRow(
         val tenth = stops.lastOrNull()?.takeIf { more }?.let { r.actions.getOrNull(it) }
         val slot = when { more && (armed == r.actions.size || r.actions.getOrNull(armed)?.more == true) -> shown.size; else -> shown.indexOf(r.actions.getOrNull(armed)).coerceAtLeast(0) }
         fun full(k: Int) = if (k < shown.size) r.actions.indexOf(shown[k]) else stops.lastOrNull() ?: 0
+        // A key combination: the caps keep one place in every row, selected or not. The strip's room is kept free
+        // after them, and the kind label and the strip trade places inside it.
+        if (body is Body.Keys) { KeyCaps(body.keys, dim); Spacer(Modifier.width(16.dp)) }
+        Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else Modifier, contentAlignment = Alignment.CenterEnd) {
         AnimatedContent(when { selected && r.actions.isNotEmpty() -> 2; opened -> 1; else -> 0 }, transitionSpec = {
             if (targetState == 2) (slideInHorizontally(motion.place()) { it / 4 } + fadeIn(motion.fade(110, 60))) togetherWith fadeOut(motion.fade(60))
             else fadeIn(motion.fade(110)) togetherWith fadeOut(motion.fade(60))
@@ -416,8 +420,12 @@ fun ResultRow(
                 else -> Text(kind, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1)
             }
         }
+        }
     }
 }
+
+/** The room a row of key caps keeps free at its right for its strip ("All shortcuts", Copy), so the caps never move. */
+private val KEYS_ROOM = 200.dp
 
 @Composable
 private fun RowPicture(icon: RowIcon, icons: AppIcons, tinted: Color) {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The system's keyboard shortcuts for KeysProvider: four arrays in the same order. Ids and combinations are
-     fixed; names and keywords are translated. Checked on the HP Googlebook 14 (the Welcome repo's device notes). -->
+     fixed; names and keywords are translated. From the Welcome repo's notes on the HP Googlebook 14 (device notes §2.6). -->
 <resources>
     <string-array name="keys_ids" translatable="false">
         <item>snap_left</item>
@@ -15,13 +15,10 @@
         <item>move_desk_prev</item>
         <item>split_left</item>
         <item>split_right</item>
-        <item>fullscreen</item>
         <item>desktop_windowing</item>
         <item>next_display</item>
         <item>screenshot</item>
         <item>screenshot_part</item>
-        <item>screenshot_overview</item>
-        <item>screenshot_part_overview</item>
         <item>screenshot_window</item>
         <item>apps</item>
         <item>home</item>
@@ -63,13 +60,10 @@
         <item>Action+Shift+[</item>
         <item>Action+Ctrl+Left</item>
         <item>Action+Ctrl+Right</item>
-        <item>Action+Ctrl+Up</item>
         <item>Action+Ctrl+Down</item>
         <item>Action+Ctrl+D</item>
         <item>Action+S</item>
         <item>Action+Ctrl+S</item>
-        <item>Ctrl+Overview</item>
-        <item>Ctrl+Shift+Overview</item>
         <item>Ctrl+Alt+Overview</item>
         <item>Action</item>
         <item>Action+H</item>
@@ -111,11 +105,8 @@
         <item>Move window to the previous desk</item>
         <item>Split screen with the app on the left</item>
         <item>Split screen with the app on the right</item>
-        <item>Use full screen</item>
         <item>Use desktop windowing</item>
         <item>Move window to the next display</item>
-        <item>Screenshot</item>
-        <item>Screenshot of a part of the screen</item>
         <item>Screenshot</item>
         <item>Screenshot of a part of the screen</item>
         <item>Screenshot of a window</item>
@@ -159,11 +150,8 @@
         <item>send,virtual desktop,workspace</item>
         <item>side by side,two apps,multitasking,splitscreen</item>
         <item>side by side,two apps,multitasking,splitscreen</item>
-        <item>fullscreen,whole screen,immersive</item>
         <item>windowed,freeform,window mode,floating</item>
         <item>monitor,external screen,second screen,send</item>
-        <item>capture,screen shot,print screen,snapshot,grab</item>
-        <item>partial,area,region,selection,capture,screen shot,print screen,crop</item>
         <item>capture,screen shot,print screen,snapshot,grab</item>
         <item>partial,area,region,selection,capture,screen shot,print screen,crop</item>
         <item>capture,screen shot,print screen,one app</item>

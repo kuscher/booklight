@@ -55,18 +55,24 @@ class SettingsProvider(private val context: Context, private val prefs: Prefs) :
             .filter { Intent(it.action).resolveActivity(pm) != null }
     }
 
+    // Its name counts in full; a keyword ("dark" for Display) counts a little less.
+    private fun score(text: String, p: Page) = maxOf(Matcher.score(text, p.title), p.words.maxOfOrNull { Matcher.keyword(text, it) } ?: 0.0)
+
+    private fun row(p: Page, score: Double) = Result(
+        id = "setting:${p.key}", provider = id, kind = Kind.SETTING, title = p.title,
+        icon = Icon.Symbol("settings"), score = score,
+        actions = listOf(Action("open", context.getString(R.string.action_open), Effect.OpenSettings(p.action))),
+    )
+
     override suspend fun query(q: Query): List<Result> {
         if (!prefs.now.showSettings) return emptyList()
-        return pages.mapNotNull { p ->
-            // Its name counts in full; a keyword ("dark" for Display) counts a little less.
-            val s = maxOf(Matcher.score(q.text, p.title), p.words.maxOfOrNull { Matcher.keyword(q.text, it) } ?: 0.0)
-            if (s <= 0) null else Result(
-                id = "setting:${p.key}", provider = id, kind = Kind.SETTING, title = p.title,
-                icon = Icon.Symbol("settings"), score = s,
-                actions = listOf(Action("open", context.getString(R.string.action_open), Effect.OpenSettings(p.action))),
-            )
-        }
+        return pages.mapNotNull { p -> score(q.text, p).takeIf { it > 0 }?.let { row(p, it) } }
     }
+
+    /** For the Settings scope: the pages that match, best first; nothing typed, all of them in their own order. */
+    fun find(text: String): List<Result> =
+        if (text.isBlank()) pages.map { row(it, 1.0) }
+        else pages.map { it to score(text, it) }.filter { it.second > 0 }.sortedByDescending { it.second }.map { row(it.first, 1.0) }
 }
 
 /** Booklight's own pages, findable like anything else. */

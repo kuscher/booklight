@@ -16,6 +16,10 @@ import io.github.kuscher.booklight.data.Prefs
 import java.time.LocalDate
 import io.github.kuscher.booklight.data.SiteEntry
 import io.github.kuscher.booklight.providers.Dials
+import io.github.kuscher.booklight.providers.KeysProvider
+import io.github.kuscher.booklight.providers.KeysScope
+import io.github.kuscher.booklight.providers.SettingsProvider
+import io.github.kuscher.booklight.providers.SettingsScope
 import io.github.kuscher.booklight.providers.LevelScope
 import io.github.kuscher.booklight.providers.PlayScope
 
@@ -26,6 +30,7 @@ import io.github.kuscher.booklight.providers.PlayScope
  */
 class Scopes(
     private val context: Context, private val prefs: Prefs, dials: Dials, notes: Notes, private val web: (String) -> Result,
+    settings: SettingsProvider, keys: KeysProvider,
     /** The keywords other apps declare, given the ones already taken. */
     private val others: (Set<String>) -> List<Scope> = { emptyList() },
 ) {
@@ -35,10 +40,19 @@ class Scopes(
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), QrScope(context), ColorScope(context),
         SnipScope(context, prefs), TextScope(context, null, web),
         LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),
+        // `s` and `k`: the two that give their letter up to a link of the user's own with that keyword.
+        SettingsScope(context, settings, ::linkKeywords), KeysScope(context, keys, ::linkKeywords),
     )
 
-    /** The keywords the built-in scopes answer to: a link of the user's can't have one of these. */
-    val reserved: Set<String> = fixed.flatMapTo(HashSet()) { s -> s.keywords.map { it.lowercase() } }
+    /** The keywords of the user's own links: `s` and `k` yield to them. */
+    private fun linkKeywords(): Set<String> = prefs.now.sites.mapTo(HashSet()) { it.keyword.lowercase() }
+
+    /**
+     * The keywords the built-in scopes answer to: a link of the user's can't have one of these. The
+     * one-letter ones are not among them: a user's `s` link keeps working, and Settings is then
+     * reached by `settings`.
+     */
+    val reserved: Set<String> = fixed.flatMapTo(HashSet()) { s -> s.keywords.map { it.lowercase() } }.filterTo(HashSet()) { it.length > 1 || it == "?" }
 
     /** Text sent from another app: a scope of its own for as long as the panel shows it. */
     @Volatile var incoming: Scope? = null; private set
@@ -56,8 +70,7 @@ class Scopes(
         val saved = prefs.now.sites
         if (saved !== sitesFor) {
             sitesFor = saved
-            val taken = fixed.flatMapTo(HashSet()) { it.keywords }
-            sites = saved.filter { Templates.takesArgument(it.url) && it.keyword !in taken }.map { SiteScope(context, it.site()) }
+            sites = saved.filter { Templates.takesArgument(it.url) && it.keyword.lowercase() !in reserved }.map { SiteScope(context, it.site()) }
         }
         // Booklight's own first, then the user's, then other apps': an app never takes a keyword somebody already has.
         val mine = fixed + sites

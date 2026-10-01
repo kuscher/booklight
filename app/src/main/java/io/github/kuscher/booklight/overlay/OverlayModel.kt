@@ -58,6 +58,23 @@ class OverlayModel(
     var opened by mutableStateOf<String?>(null); private set
     /** The list as it was before a row was opened: closing brings it back. */
     private var closed: List<Result> = emptyList()
+    /** The selection or the arming has been moved by hand since the text last changed. */
+    private var touched by mutableStateOf(false)
+
+    /**
+     * The scope the whole text is a keyword of ("s", "yt"), while the selection is where typing left
+     * it: Tab then makes the keyword the chip, as a browser's address bar does. Once the user has
+     * moved to a row or along its actions, Tab is that row's again.
+     */
+    val keyword: Scope? by derivedStateOf { if (chip != null || touched || opened != null) null else app.engine.keywordScope(query) }
+
+    /** Tab on a keyword: it becomes the chip. Only for the list on screen. */
+    fun enterKeyword(): Boolean {
+        val s = keyword ?: return false
+        if (resultsFor != (null to query)) return false
+        enterScope(s, "", query.trim())
+        return true
+    }
 
     /** The word that was typed to make the chip ("meeting" for the event scope); null if its row was used. */
     private var word: String? = null
@@ -98,6 +115,7 @@ class OverlayModel(
     fun type(text: String) {
         if (text == query) return
         shut()                              // typing closes an opened row in the same frame
+        touched = false
         foreign = false                     // edited: it is the user's own text now
         if (chip == null) {
             if (text.isEmpty()) held = null
@@ -111,6 +129,7 @@ class OverlayModel(
 
     /** Makes [s] the chip; [text] is what is already typed for it, [word] the keyword that was typed, if one was. */
     fun enterScope(s: Scope, text: String = "", word: String? = null) {
+        touched = false
         chip = s
         this.word = word
         query = text
@@ -189,6 +208,7 @@ class OverlayModel(
     fun select(index: Int) {
         if (index !in results.indices || index == selected) return
         cancelConfirm()
+        touched = true
         selected = index
         // Another row: its own default again. Back on a row whose actions are listed: its arrow, which now closes them.
         armed = if (opened != null && index == 0) results[0].actions.size else results[index].armed
@@ -220,13 +240,14 @@ class OverlayModel(
         val to = if (wrap) (at + by + n) % n else (at + by).coerceIn(0, n - 1)
         if (st[to] == armed) return false
         cancelConfirm()
+        touched = true
         armed = st[to]
         return true
     }
 
     fun armAt(index: Int) {
         val r = current ?: return
-        if (index in stops(r) && index != armed) { cancelConfirm(); armed = index }
+        if (index in stops(r) && index != armed) { cancelConfirm(); touched = true; armed = index }
     }
 
     private fun actionRows(r: Result): List<Result> = r.actions.filter { it.more }.map { a ->

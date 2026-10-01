@@ -14,6 +14,7 @@ import io.github.kuscher.booklight.providers.User
 import io.github.kuscher.booklight.providers.CalcProvider
 import io.github.kuscher.booklight.providers.CommandsProvider
 import io.github.kuscher.booklight.providers.Dials
+import io.github.kuscher.booklight.providers.KeysProvider
 import io.github.kuscher.booklight.providers.SettingsProvider
 import io.github.kuscher.booklight.providers.SuggestProvider
 import io.github.kuscher.booklight.providers.WebProvider
@@ -60,12 +61,14 @@ class BooklightApp : Application() {
         executor = Executor(this)
         val dials = Dials(this, executor)
         commands = AppCommands(this, prefs, scope, apps)
-        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, others = { commands.scopes(it) })
-        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), SettingsProvider(this, prefs), CommandsProvider(this), dials, User(this, prefs), commands, web)
+        val pages = SettingsProvider(this, prefs)
+        val keys = KeysProvider(this, prefs)
+        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, others = { commands.scopes(it) })
+        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), pages, CommandsProvider(this), dials, User(this, prefs), commands, keys, web)
         engine = SearchEngine(
             providers, historyStore.history,
             scopes = { scopes.all() },
-            enterLabel = { getString(if (it.symbol == "search") R.string.scope_search else R.string.scope_type) },
+            enterLabel = { getString(if (it.symbol == "search" || it.key == "settings" || it.key == "keys") R.string.scope_search else R.string.scope_type) },
             fallback = { listOf(web.search(it)) },
         )
     }

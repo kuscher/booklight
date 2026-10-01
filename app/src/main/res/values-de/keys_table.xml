@@ -13,11 +13,8 @@
         <item>Fenster auf den vorherigen Desktop verschieben</item>
         <item>Splitscreen mit der App links</item>
         <item>Splitscreen mit der App rechts</item>
-        <item>Vollbildmodus verwenden</item>
         <item>Desktop-Fenstermodus verwenden</item>
         <item>Fenster auf das nächste Display verschieben</item>
-        <item>Screenshot</item>
-        <item>Screenshot eines Bildschirmausschnitts</item>
         <item>Screenshot</item>
         <item>Screenshot eines Bildschirmausschnitts</item>
         <item>Screenshot eines Fensters</item>
@@ -61,11 +58,8 @@
         <item>senden,virtueller desktop,arbeitsbereich,move to previous desk,send,virtual desktop,workspace</item>
         <item>geteilter bildschirm,bildschirm teilen,nebeneinander,zwei apps,split screen left,side by side,two apps,multitasking</item>
         <item>geteilter bildschirm,bildschirm teilen,nebeneinander,zwei apps,split screen right,side by side,two apps,multitasking</item>
-        <item>ganzer bildschirm,bildschirmfüllend,full screen,fullscreen,whole screen,immersive</item>
         <item>fenstermodus,freiform,schwebend,desktop windowing,windowed,freeform,window mode,floating</item>
         <item>monitor,externer bildschirm,zweiter bildschirm,senden,move to next display,external screen,second screen,send</item>
-        <item>bildschirmfoto,bildschirmaufnahme,aufnehmen,druck,capture,screen shot,print screen,snapshot,grab</item>
-        <item>bildschirmfoto,ausschnitt,bereich,teil,auswahl,partial,area,region,selection,capture,screen shot,print screen,crop</item>
         <item>bildschirmfoto,bildschirmaufnahme,aufnehmen,druck,capture,screen shot,print screen,snapshot,grab</item>
         <item>bildschirmfoto,ausschnitt,bereich,teil,auswahl,partial,area,region,selection,capture,screen shot,print screen,crop</item>
         <item>bildschirmfoto,aufnehmen,einzelnes fenster,window,capture,screen shot,print screen,one app</item>

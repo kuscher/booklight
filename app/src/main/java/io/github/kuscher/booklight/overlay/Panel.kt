@@ -229,6 +229,8 @@ fun Panel(
             Key.Tab -> {
                 when {
                     card != null -> if (!again) cardChoice = 1 - cardChoice
+                    // The text is exactly a keyword and nothing has been moved: Tab makes it the chip. Text and chip change in one frame.
+                    model.keyword != null && !e.isShiftPressed -> if (!again && model.enterKeyword()) field = TextFieldValue("")
                     entersScope && !e.isShiftPressed -> if (!again) model.fill()
                     // A row is open: Tab is the next of its actions, wrapping inside them.
                     model.opened != null -> model.step(if (e.isShiftPressed) -1 else 1)

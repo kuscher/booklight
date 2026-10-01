@@ -44,6 +44,8 @@ data class Settings(
     val suggestions: Boolean = false,
     val showSettings: Boolean = true,
     val showSums: Boolean = true,
+    /** The system's own keyboard shortcuts as answers ("snap"). */
+    val showKeys: Boolean = true,
     /** Offer "Ask Gemini" for longer text. */
     val showGemini: Boolean = true,
     /** How see-through the panel is: clear, balanced, frosted or solid (`overlay/Glass.kt`). */

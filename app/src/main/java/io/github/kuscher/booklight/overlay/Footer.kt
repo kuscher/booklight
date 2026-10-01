@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -79,6 +80,8 @@ fun Footer(model: OverlayModel) {
         val first: Pair<String, String> = when {
             model.confirming -> "" to ""
             model.opened != null -> "←" to stringResource(R.string.hint_less)
+            // The text is a keyword: Tab makes it the chip. Said with the scope's own words ("Search settings"), not the app's name.
+            model.keyword != null -> "tab" to model.keyword!!.title
             grid != null -> "↑↓←→" to stringResource(R.string.hint_move)
             r?.body is Body.Level -> if ((r.body as Body.Level).locked) "" to "" else "← →" to stringResource(R.string.hint_adjust)
             r?.nudge != null -> "← →" to stringResource(R.string.hint_skip)
@@ -104,14 +107,25 @@ fun Footer(model: OverlayModel) {
 
 /** A key, as on the keyboard. Arrows, Enter and Backspace are drawn as marks: as font glyphs they are hairlines. */
 @Composable
-fun Keycap(label: String) {
+fun Keycap(label: String, /** In a row, where the caps are the answer: a little taller, at full ink. */ strong: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
-    val ink = scheme.onSurface.copy(alpha = SECOND)
-    Box(Modifier.height(22.dp).clip(RoundedCornerShape(7.dp)).background(scheme.onSurface.copy(alpha = if (LocalDark.current) 0.14f else 0.10f)).padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
+    val ink = scheme.onSurface.copy(alpha = if (strong) 1f else SECOND)
+    Box(Modifier.height(if (strong) 24.dp else 22.dp).defaultMinSize(minWidth = if (strong) 24.dp else 0.dp).clip(RoundedCornerShape(7.dp)).background(scheme.onSurface.copy(alpha = if (LocalDark.current) 0.14f else 0.10f)).padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
         val marks = label.filter { it != ' ' }
         if (marks.isNotEmpty() && marks.all { it in MARKS }) Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
             for (c in marks) Icon(Symbols.of(if (c == '⏎') "enter" else if (c == '⌫') "backspace" else "arrow"), null, Modifier.size(13.dp).rotate(MARKS.getValue(c)), tint = ink)
         } else Text(label, color = ink, style = HINT)
+    }
+}
+
+/** A key combination as caps with plus signs between them: Action + Ctrl + ]. The caps never shrink or wrap. */
+@Composable
+fun KeyCaps(keys: List<String>, plus: androidx.compose.ui.graphics.Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        keys.forEachIndexed { i, k ->
+            if (i > 0) Text("+", color = plus, style = HINT, modifier = Modifier.padding(horizontal = 4.dp))
+            Keycap(k, strong = true)
+        }
     }
 }
 

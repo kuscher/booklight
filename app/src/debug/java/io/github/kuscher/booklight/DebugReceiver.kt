@@ -74,7 +74,7 @@ class DebugReceiver : BroadcastReceiver() {
                     "up" -> if (!m.moveCell(0, -1) && !m.restoreLast()) m.move(-1)
                     "right" -> if (!m.moveCell(1, 0) && !m.nudge(1) && m.opened == null) { if (m.onMore) m.open() else m.arm(1, wrap = false) }
                     "left" -> if (m.opened != null) m.close() else if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
-                    "tab" -> if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
+                    "tab" -> if (m.keyword != null) m.enterKeyword() else if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
                     "backtab" -> if (m.opened != null) m.step(-1) else m.arm(-1, wrap = true)
                     "more" -> { m.current?.let { m.armAt(it.actions.size) } }
                     "back" -> m.leaveScope()

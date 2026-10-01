@@ -37,5 +37,19 @@
         <item>Developer options</item>
         <item>Internet panel</item>
         <item>Volume panel</item>
+        <item>NFC</item>
+        <item>Screen saver</item>
+        <item>Captions</item>
+        <item>Battery Saver</item>
+        <item>Personal dictionary</item>
+        <item>Language and region</item>
+        <item>Screen timeout</item>
+        <item>Display size and text</item>
+        <item>Colour inversion</item>
+        <item>Colour contrast</item>
+        <item>App notifications</item>
+        <item>Install unknown apps</item>
+        <item>Usage access</item>
+        <item>Add an account</item>
     </string-array>
 </resources>

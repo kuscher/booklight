@@ -38,6 +38,20 @@
         <item>developer</item>
         <item>panel_internet</item>
         <item>panel_volume</item>
+        <item>nfc</item>
+        <item>screensaver</item>
+        <item>captions</item>
+        <item>saver</item>
+        <item>dictionary</item>
+        <item>region</item>
+        <item>timeout</item>
+        <item>textsize</item>
+        <item>inversion</item>
+        <item>contrast</item>
+        <item>appnotif</item>
+        <item>unknown</item>
+        <item>usage</item>
+        <item>addaccount</item>
     </string-array>
     <string-array name="settings_actions" translatable="false">
         <item>android.settings.SETTINGS</item>
@@ -75,6 +89,20 @@
         <item>android.settings.APPLICATION_DEVELOPMENT_SETTINGS</item>
         <item>android.settings.panel.action.INTERNET_CONNECTIVITY</item>
         <item>android.settings.panel.action.VOLUME</item>
+        <item>android.settings.NFC_SETTINGS</item>
+        <item>android.settings.DREAM_SETTINGS</item>
+        <item>android.settings.CAPTIONING_SETTINGS</item>
+        <item>android.settings.BATTERY_SAVER_SETTINGS</item>
+        <item>android.settings.USER_DICTIONARY_SETTINGS</item>
+        <item>android.settings.REGIONAL_PREFERENCES_SETTINGS</item>
+        <item>android.settings.SCREEN_TIMEOUT_SETTINGS</item>
+        <item>android.settings.TEXT_READING_SETTINGS</item>
+        <item>android.settings.COLOR_INVERSION_SETTINGS</item>
+        <item>android.settings.ACCESSIBILITY_COLOR_CONTRAST_SETTINGS</item>
+        <item>android.settings.ALL_APPS_NOTIFICATION_SETTINGS</item>
+        <item>android.settings.MANAGE_UNKNOWN_APP_SOURCES</item>
+        <item>android.settings.USAGE_ACCESS_SETTINGS</item>
+        <item>android.settings.ADD_ACCOUNT_SETTINGS</item>
     </string-array>
     <string-array name="settings_titles">
         <item>Settings</item>
@@ -112,6 +140,20 @@
         <item>Developer options</item>
         <item>Internet panel</item>
         <item>Volume panel</item>
+        <item>NFC</item>
+        <item>Screen saver</item>
+        <item>Captions</item>
+        <item>Battery Saver</item>
+        <item>Personal dictionary</item>
+        <item>Language and region</item>
+        <item>Screen timeout</item>
+        <item>Display size and text</item>
+        <item>Colour inversion</item>
+        <item>Colour contrast</item>
+        <item>App notifications</item>
+        <item>Install unknown apps</item>
+        <item>Usage access</item>
+        <item>Add an account</item>
     </string-array>
     <string-array name="settings_words">
         <item>preferences,options</item>
@@ -149,5 +191,19 @@
         <item>adb,debugging,usb debugging</item>
         <item>wifi,network,connection,quick</item>
         <item>sound,audio,sliders</item>
+        <item>nfc,tap,contactless</item>
+        <item>screensaver,dream,idle</item>
+        <item>captions,subtitles,live caption</item>
+        <item>battery saver,power saving,low power</item>
+        <item>dictionary,words,spelling</item>
+        <item>region,units,temperature,first day,number format</item>
+        <item>timeout,sleep,screen off,lock after</item>
+        <item>font size,text size,zoom,bold,bigger</item>
+        <item>invert,inversion,negative</item>
+        <item>contrast,high contrast</item>
+        <item>app notifications,per app,mute app</item>
+        <item>unknown sources,sideload,apk,install</item>
+        <item>usage access,usage stats</item>
+        <item>add account,sign in,google account</item>
     </string-array>
 </resources>
