@@ -7,7 +7,9 @@ Material 3 Expressive (material3 1.5.0-alpha, pinned). **No permissions at all i
 
 ## Read first
 - Plan and open questions: `docs/PLAN.md`. Design for 1.0: `docs/superpowers/specs/2026-10-01-booklight-design.md`.
-- Visual contract: `docs/design/booklight-plan.html` (an interactive prototype of the panel).
+- Visual contract: `docs/design/booklight-plan.html`, the plan page with a working prototype of the panel
+  (online: https://claude.ai/artifact/NtWaN2v56XwLLPXtqNtYbW). Edit `booklight-plan.src.html`, then
+  `tools/plan_page.py` inlines the device captures (`--preview` writes a copy that opens locally).
 - Facts: `docs/research/device-findings.md` (checked on the HP; wins over the desk research),
   `android-platform.md`, `launchers.md`.
 - Status: `docs/PICKING-UP.md`.

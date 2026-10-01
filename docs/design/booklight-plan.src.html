@@ -1,0 +1,676 @@
+<title>Booklight Plan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght,ROND@6..144,300..800,0..100&family=Google+Sans+Code:wght@400..600&display=swap">
+<style>
+/* Layout: one reading column (46rem) for prose; the live panel stage and wide tables break out to 66rem. Left-aligned throughout. */
+:root {
+  --bg: #F3F3FA; --surface: #FFFFFF; --surface-2: #E9EAF5; --ink: #181A2A; --muted: #565A70; --line: #D3D5E5;
+  --accent: #3D4FCF; --accent-ink: #FFFFFF; --accent-soft: #E0E4FF; --lamp: #9A6500; --lamp-fill: #FFC94D; --good: #1B7A44;
+  --display: "Google Sans Flex", "Google Sans", "Product Sans", system-ui, sans-serif;
+  --body: "Google Sans Flex", "Google Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Google Sans Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --col: 46rem; --wide: 66rem;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11121B; --surface: #1A1C29; --surface-2: #232538; --ink: #E8E8F3; --muted: #A3A6BC; --line: #31344B;
+  --accent: #B7C0FF; --accent-ink: #141A4A; --accent-soft: #272D5F; --lamp: #FFCB5C; --lamp-fill: #FFC94D; --good: #7BD9A0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11121B; --surface: #1A1C29; --surface-2: #232538; --ink: #E8E8F3; --muted: #A3A6BC; --line: #31344B;
+  --accent: #B7C0FF; --accent-ink: #141A4A; --accent-soft: #272D5F; --lamp: #FFCB5C; --lamp-fill: #FFC94D; --good: #7BD9A0; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 1rem; line-height: 1.55; margin: 0; padding-inline: 1.25rem; padding-block: 2.5rem 5rem; -webkit-font-smoothing: antialiased }
+main { max-width: var(--wide); margin-inline: auto; display: flex; flex-direction: column; gap: 3.5rem }
+section { display: flex; flex-direction: column; gap: 1rem; min-width: 0 }
+.prose { max-width: var(--col) }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.12 }
+h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 740; font-variation-settings: "ROND" 100; letter-spacing: -0.02em }
+h2 { font-size: 1.7rem; font-weight: 680; font-variation-settings: "ROND" 100; letter-spacing: -0.01em }
+h3 { font-size: 1.08rem; font-weight: 650 }
+p { margin: 0 }
+a { color: var(--accent); text-underline-offset: 0.18em }
+a:focus-visible, button:focus-visible, input:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px }
+code, kbd { font-family: var(--mono); font-size: 0.86em }
+code { background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 0.35em }
+kbd { display: inline-block; background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 0.45em; padding: 0.02em 0.42em; font-weight: 500; white-space: nowrap }
+.muted { color: var(--muted) }
+.small { font-size: 0.86rem }
+ul { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.35rem }
+
+/* header */
+header { display: flex; flex-direction: column; gap: 1rem }
+.brand { display: flex; align-items: center; gap: 0.9rem }
+.brand svg { width: 3.4rem; height: 3.4rem; flex: none }
+.lede { font-size: 1.22rem; max-width: 40rem; line-height: 1.45 }
+.meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; color: var(--muted); font-size: 0.9rem }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1.5rem 2rem; border-top: 1px solid var(--line); padding-top: 1.25rem }
+.fact b { display: block; font-family: var(--display); font-variation-settings: "ROND" 100; font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums }
+.fact span { color: var(--muted); font-size: 0.92rem }
+
+/* the stage: a stand-in Googlebook desktop with the live panel */
+.stagewrap { display: flex; flex-direction: column; gap: 0.75rem }
+.controls { display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; align-items: center; font-size: 0.9rem; color: var(--muted) }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface) }
+.seg button { font: inherit; color: var(--muted); background: none; border: 0; padding: 0.3rem 0.85rem; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); font-weight: 600 }
+.swatch { width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0 }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent) }
+.swatches { display: inline-flex; gap: 0.45rem; align-items: center }
+
+.stage { position: relative; height: 46rem; border-radius: 1.6rem; overflow: hidden; background: var(--wall); isolation: isolate; border: 1px solid var(--line); font-family: var(--body) }
+.stage * { box-sizing: border-box }
+/* wallpapers + Material You schemes: [data-wall][data-mode] set the panel's tokens */
+.stage { --p-surface: 227 232 248; --p-on: #171C2B; --p-dim: #454B5E; --p-sel: #C3D2FA; --p-onsel: #0F2A5C; --p-line: #B9C0D6; --p-primary: #3A5BA9; --wall: radial-gradient(120% 90% at 15% 10%, #9DB8F5 0%, #C9D6F7 38%, #E9E6F6 70%, #F6E9E3 100%); --win: #FFFFFF; --win-ink: #C9CEDD; --bar: rgba(255,255,255,.55); --bar-ink: #1C2233 }
+.stage[data-wall="clay"] { --p-surface: 248 229 223; --p-on: #261A17; --p-dim: #5A4640; --p-sel: #FFCFC0; --p-onsel: #5B2413; --p-line: #DDC2BA; --p-primary: #9A4A30; --wall: radial-gradient(120% 90% at 85% 5%, #F6B79F 0%, #F4D3C2 40%, #F3E6DA 72%, #E8E2EE 100%) }
+.stage[data-wall="fern"] { --p-surface: 231 236 220; --p-on: #1A1D15; --p-dim: #474B3D; --p-sel: #CFE5AD; --p-onsel: #24360D; --p-line: #C3C9B4; --p-primary: #4B6A27; --wall: radial-gradient(120% 90% at 20% 90%, #A9C88A 0%, #CFDDB8 40%, #E9EBD9 72%, #F2EDE0 100%) }
+.stage[data-mode="dark"] { --p-surface: 37 41 54; --p-on: #E3E6F2; --p-dim: #B4BACD; --p-sel: #33456F; --p-onsel: #D9E3FF; --p-line: #4A5068; --p-primary: #AFC6FF; --wall: radial-gradient(120% 90% at 15% 10%, #2B3F78 0%, #1E2749 40%, #171A2C 72%, #1F1822 100%); --win: #232634; --win-ink: #3A3F52; --bar: rgba(20,22,34,.55); --bar-ink: #E3E6F2 }
+.stage[data-mode="dark"][data-wall="clay"] { --p-surface: 52 40 37; --p-on: #F3E0DA; --p-dim: #D5BDB5; --p-sel: #6A3A2B; --p-onsel: #FFDBD0; --p-line: #5E4A44; --p-primary: #FFB59E; --wall: radial-gradient(120% 90% at 85% 5%, #7A3A27 0%, #45251C 40%, #261A19 72%, #1B1822 100%) }
+.stage[data-mode="dark"][data-wall="fern"] { --p-surface: 41 45 35; --p-on: #E3E5D8; --p-dim: #C3C8B6; --p-sel: #3F4F2A; --p-onsel: #DCEBC2; --p-line: #4A5040; --p-primary: #B3D48A; --wall: radial-gradient(120% 90% at 20% 90%, #3E5A22 0%, #2A3A1C 40%, #1B2016 72%, #1B1A1F 100%) }
+
+.sbar { position: absolute; inset: 0 0 auto 0; height: 2rem; display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; font-size: 0.78rem; font-weight: 550; color: var(--bar-ink) }
+.sbar span + span { opacity: 0.8 }
+.tbar { position: absolute; left: 50%; bottom: 0.6rem; transform: translateX(-50%); display: flex; gap: 0.5rem; padding: 0.45rem 0.7rem; border-radius: 1.3rem; background: var(--bar); backdrop-filter: blur(12px) }
+.tbar i { width: 2rem; height: 2rem; border-radius: 0.65rem; background: var(--c); display: block }
+.win { position: absolute; border-radius: 1rem; background: var(--win); box-shadow: 0 12px 40px rgba(10,14,40,.18); overflow: hidden }
+.win::before { content: ""; display: block; height: 2rem; background: color-mix(in srgb, var(--win-ink) 55%, var(--win)) }
+.win b { display: block; height: 0.6rem; border-radius: 0.3rem; background: var(--win-ink); margin: 0.85rem 1.2rem 0 }
+.win b.h { height: 1.1rem; width: 45%; margin-top: 1.3rem }
+.win b.s { width: 60% } .win b.block { height: 6rem; border-radius: 0.8rem; background: color-mix(in srgb, var(--p-primary) 35%, var(--win)) }
+.win.a { left: 4%; top: 12%; width: 46%; height: 70% } .win.b { right: 3%; top: 22%; width: 52%; height: 64% }
+.dim { position: absolute; inset: 0; background: rgba(0,0,0,.16); opacity: 0; transition: opacity .09s; pointer-events: none }
+.stage.open .dim { opacity: 1 }
+
+/* the panel: sizes are the spec's dp, 1dp = 1px */
+.panel { position: absolute; left: 50%; top: 20%; width: min(720px, calc(100% - 24px)); transform: translateX(-50%); border-radius: 32px; background: rgb(var(--p-surface) / .78); backdrop-filter: blur(40px) saturate(1.15); -webkit-backdrop-filter: blur(40px) saturate(1.15); border: 1px solid color-mix(in srgb, var(--p-line) 60%, transparent); color: var(--p-on); overflow: hidden }
+.stage[data-glass="off"] .panel, .panel.solid { background: rgb(var(--p-surface)); backdrop-filter: none; -webkit-backdrop-filter: none }
+.stage:not(.open) .panel { display: none }
+.stage.open .panel { animation: appear .09s ease-out }
+@keyframes appear { from { opacity: 0; transform: translateX(-50%) scale(.98) } }
+.field { height: 68px; display: flex; align-items: center; gap: 16px; padding: 0 20px 0 24px }
+.field svg { width: 26px; height: 26px; flex: none; fill: var(--p-dim) }
+.typing { position: relative; flex: 1; min-width: 0; height: 40px; font-size: 24px; font-weight: 450 }
+.typing input, .typing .ghost { position: absolute; inset: 0; font: inherit; letter-spacing: 0; padding: 0; margin: 0; border: 0; line-height: 40px; white-space: pre; overflow: hidden }
+.typing input { width: 100%; background: none; color: var(--p-on); outline: none; caret-color: var(--p-primary) }
+.typing input::placeholder { color: color-mix(in srgb, var(--p-dim) 70%, transparent) }
+.ghost { pointer-events: none; color: transparent }
+.ghost em { font-style: normal; color: color-mix(in srgb, var(--p-dim) 60%, transparent) }
+.ghost small { font-size: 14px; margin-left: 12px; color: color-mix(in srgb, var(--p-dim) 75%, transparent) }
+.chip { flex: none; font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--p-sel); color: var(--p-onsel) }
+.cap { flex: none; font-family: var(--body); font-size: 12px; font-weight: 500; padding: 3px 7px; border-radius: 7px; background: color-mix(in srgb, var(--p-on) 8%, transparent); color: var(--p-dim) }
+.list { position: relative; padding: 8px 8px 0 }
+.hl { position: absolute; left: 8px; right: 8px; top: 0; height: 56px; border-radius: 20px; background: var(--p-sel); transition: transform .22s cubic-bezier(.2,1.35,.35,1), height .22s cubic-bezier(.2,1.35,.35,1); will-change: transform }
+.row { position: relative; height: 56px; display: flex; align-items: center; gap: 14px; padding: 0 14px; border-radius: 28px; cursor: pointer; min-width: 0 }
+.row.ans { height: 92px }
+.row .t { flex: 1; min-width: 0; display: flex; flex-direction: column }
+.row .t b { font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .t i { font-style: normal; font-size: 13px; color: var(--p-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .t .big { font-family: var(--display); font-variation-settings: "ROND" 100; font-size: 34px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums }
+.row .k { flex: none; font-size: 14px; color: color-mix(in srgb, var(--p-dim) 80%, transparent) }
+.row.on { color: var(--p-onsel) } .row.on .t i, .row.on .k { color: color-mix(in srgb, var(--p-onsel) 75%, transparent) }
+.row.on .cap { background: color-mix(in srgb, var(--p-onsel) 12%, transparent); color: var(--p-onsel) }
+.ic { flex: none; width: 36px; height: 36px; border-radius: 11px; background: var(--c); color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 700 }
+.ic.sym { border-radius: 50%; background: color-mix(in srgb, currentColor 12%, transparent); color: var(--p-dim) }
+.row.on .ic.sym { color: var(--p-onsel) }
+.ic.sym svg { width: 20px; height: 20px; fill: currentColor }
+.strip { display: flex; gap: 4px; padding: 4px 12px 10px }
+.strip button { flex: 1; min-width: 0; max-width: 100px; background: none; border: 0; color: var(--p-on); font: inherit; font-size: 12.5px; line-height: 16px; font-variation-settings: "ROND" 100; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px; border-radius: 20px; cursor: pointer }
+.strip button:hover { background: var(--p-sel); color: var(--p-onsel) }
+.strip .ic { width: 44px; height: 44px; border-radius: 14px; font-size: 18px }
+.strip button > span:last-child { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.foot { height: 48px; display: flex; align-items: center; gap: 6px; padding: 0 20px 0 24px; font-size: 12px; color: var(--p-dim) }
+.foot .flash { flex: 1; color: var(--p-primary); font-weight: 600; font-size: 14px }
+.foot .cap + span { margin-right: 10px }
+.summon { position: absolute; left: 50%; top: 24%; transform: translateX(-50%); font: inherit; font-size: 1rem; background: rgb(var(--p-surface) / .85); color: var(--p-on); border: 1px solid var(--p-line); border-radius: 999px; padding: 0.7rem 1.3rem; cursor: pointer; backdrop-filter: blur(20px); display: flex; gap: 0.5rem; align-items: center; white-space: nowrap }
+.stage.open .summon { display: none }
+.toast { position: absolute; left: 50%; bottom: 4.4rem; transform: translateX(-50%); background: var(--bar-ink); color: rgb(var(--p-surface)); padding: 0.45rem 1rem; border-radius: 999px; font-size: 0.9rem; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap }
+.toast.show { opacity: 1 }
+.tryline { display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; align-items: center; font-size: 0.92rem; color: var(--muted) }
+.tryline button { font-family: var(--mono); font-size: 0.82rem; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.15rem 0.5rem; cursor: pointer }
+.tryline button:hover { border-color: var(--accent) }
+
+/* static states */
+.states { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr)); gap: 1.5rem }
+.state { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0 }
+.state .mini { position: relative; border-radius: 1rem; overflow: hidden; background: var(--wall); border: 1px solid var(--line) }
+.state .mini .panel { position: relative; left: 0; top: 0; transform: none; transform-origin: 0 0; width: 720px; display: block !important; animation: none }
+.state h3 { font-size: 0.98rem }
+.state p { font-size: 0.88rem; color: var(--muted) }
+
+/* tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line) }
+tr:last-child td { border-bottom: 0 }
+th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; background: var(--surface-2) }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap }
+.tag { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.08rem 0.5rem; border-radius: 999px; background: var(--accent-soft); color: var(--ink); white-space: nowrap }
+.tag.later { background: var(--surface-2); color: var(--muted) }
+.tag.ok { background: color-mix(in srgb, var(--good) 18%, var(--surface)); color: var(--good) }
+
+.versions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1.25rem 2rem }
+.versions > div { display: flex; flex-direction: column; gap: 0.6rem; border-top: 3px solid var(--line); padding-top: 0.9rem; min-width: 0 }
+.versions > div.now { border-top-color: var(--accent) }
+.versions li { font-size: 0.93rem }
+
+.caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1.25rem }
+figure { margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0 }
+figure .shot { border-radius: 1rem; padding: 1.25rem; background: radial-gradient(120% 90% at 15% 10%, #9DB8F5 0%, #C9D6F7 38%, #E9E6F6 70%, #F6E9E3 100%); border: 1px solid var(--line); display: grid; place-items: center }
+figure img { display: block; max-width: 100%; height: auto }
+figcaption { font-size: 0.85rem; color: var(--muted) }
+
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0.5rem; font-size: 0.86rem }
+.flow > div { flex: 1 1 8.5rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.8rem; padding: 0.7rem 0.8rem; min-width: 0 }
+.flow > div b { display: block; font-family: var(--mono); font-size: 0.82rem }
+.flow > span { align-self: center; color: var(--muted) }
+.flow > div.core { border-color: var(--accent) }
+
+/* questions */
+.qs { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface); overflow: hidden }
+.q { display: grid; grid-template-columns: 2rem 1fr; gap: 0.2rem 0.6rem; padding: 0.95rem 1rem; border-bottom: 1px solid var(--line) }
+.q:last-child { border-bottom: 0 }
+.q > .num { font-family: var(--display); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums }
+.q > div { min-width: 0; display: flex; flex-direction: column; gap: 0.45rem }
+.q p.why { font-size: 0.9rem; color: var(--muted) }
+.opts { display: flex; flex-wrap: wrap; gap: 0.4rem }
+.opts label { position: relative; font-size: 0.88rem; border: 1px solid var(--line); border-radius: 999px; padding: 0.22rem 0.8rem; cursor: pointer; background: var(--bg) }
+.opts input { position: absolute; opacity: 0; pointer-events: none }
+.opts label:has(input:checked) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600 }
+.opts label.def::after { content: " · default"; font-weight: 400; opacity: 0.75 }
+.answers { display: flex; flex-direction: column; gap: 0.6rem }
+.answers textarea { width: 100%; min-height: 7.5rem; font-family: var(--mono); font-size: 0.82rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 0.7rem; padding: 0.7rem 0.8rem; resize: vertical }
+.btn { align-self: flex-start; font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 0.55rem 1.2rem; cursor: pointer }
+.notice { border-left: 3px solid var(--lamp-fill); padding: 0.2rem 0 0.2rem 1rem; display: flex; flex-direction: column; gap: 0.5rem }
+@media (prefers-reduced-motion: reduce) { .hl, .dim, .toast { transition: none } .stage.open .panel { animation: none } }
+@media (max-width: 40rem) { .stage { height: 40rem } .win.a { width: 70% } .win.b { width: 72% } .typing { font-size: 20px } .row .k { display: none } .row.on .k { display: block } }
+</style>
+
+<main>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="17" fill="#1B1D2E"/><path d="M24 30h16l9 21H15z" fill="#FFC94D" opacity=".38"/><rect x="18" y="17" width="28" height="13" rx="6.5" fill="#FFC94D"/><circle cx="26" cy="23.5" r="2.6" fill="#1B1D2E"/></svg>
+    <h1>Booklight</h1>
+  </div>
+  <p class="lede">A keyboard launcher for Googlebooks. Press a key, a small glass panel appears over your desktop, type a few letters, press Enter. This page is the plan, the design, and the questions I need answered before building 1.0.</p>
+  <div class="meta"><span>Plan and design proposal</span><span>1 October 2026</span><span>0.1 runs on the HP Googlebook 14</span><span><a href="https://github.com/kuscher/booklight">kuscher/booklight</a> (private)</span></div>
+  <div class="facts">
+    <div class="fact"><b>0</b><span>permissions. A hotkey and a true overlay both work without any.</span></div>
+    <div class="fact"><b>43 ms</b><span>from Action + K to the panel's first frame when warm; about 260 ms cold.</span></div>
+    <div class="fact"><b>720 dp</b><span>one glass panel in the upper middle of the screen. Nothing else moves.</span></div>
+    <div class="fact"><b>14</b><span>questions at the end. "Default" accepts every recommendation.</span></div>
+  </div>
+</header>
+
+<section id="try">
+  <h2>Try the design</h2>
+  <p class="prose">This is the proposed 1.0 panel, working: matching, learning, sums, actions and keys behave as specified. The desktop behind it and the app icons are stand-ins. Click the panel and type.</p>
+  <div class="stagewrap">
+    <div class="controls">
+      <span class="swatches" role="group" aria-label="Wallpaper">Wallpaper
+        <button class="swatch" data-wall="tide" aria-pressed="true" aria-label="Tide" style="background:#9DB8F5"></button>
+        <button class="swatch" data-wall="clay" aria-pressed="false" aria-label="Clay" style="background:#F6B79F"></button>
+        <button class="swatch" data-wall="fern" aria-pressed="false" aria-label="Fern" style="background:#A9C88A"></button>
+      </span>
+      <span class="seg" role="group" aria-label="Device theme"><button data-mode="light" aria-pressed="true">Light</button><button data-mode="dark" aria-pressed="false">Dark</button></span>
+      <span class="seg" role="group" aria-label="Surface"><button data-glass="on" aria-pressed="true">Glass</button><button data-glass="off" aria-pressed="false">Solid fallback</button></span>
+    </div>
+    <div class="stage open" id="stage" data-wall="tide" data-mode="light" data-glass="on">
+      <div class="sbar"><span>Thu 1 Oct  9:41</span><span>Wi-Fi  ·  87%</span></div>
+      <div class="win a"><b class="h"></b><b></b><b></b><b class="s"></b><b class="block"></b><b></b><b class="s"></b><b></b><b></b></div>
+      <div class="win b"><b class="h"></b><b class="block"></b><b></b><b class="s"></b><b></b><b></b><b class="s"></b></div>
+      <div class="tbar"><i style="--c:#5C6BC0"></i><i style="--c:#4285F4"></i><i style="--c:#EA4335"></i><i style="--c:#F4772A"></i><i style="--c:#263238"></i><i style="--c:#1FA463"></i></div>
+      <div class="dim"></div>
+      <div class="panel" id="panel" role="dialog" aria-label="Booklight">
+        <div class="field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"/></svg>
+          <div class="typing"><div class="ghost" id="ghost" aria-hidden="true"></div><input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Search apps, settings and the web" aria-label="Search"></div>
+          <span class="chip" id="chip" hidden></span>
+          <span class="cap">esc</span>
+        </div>
+        <div id="body"></div>
+      </div>
+      <button class="summon" id="summon">Summon Booklight <kbd>Action</kbd> + <kbd>K</kbd></button>
+      <div class="toast" id="toast" role="status"></div>
+    </div>
+    <div class="tryline">Try
+      <button data-try="chr">chr</button><button data-try="gc">gc</button><button data-try="snap">snap</button><button data-try="150 + 20%">150 + 20%</button><button data-try="dark">dark</button><button data-try="yt lofi">yt lofi</button><button data-try="github.com/kuscher">github.com/kuscher</button><button data-try="">nothing</button>
+      <span>then <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd> <kbd>Tab</kbd> <kbd>Esc</kbd>. Pick Calendar for <code>c</code> twice and it stays first.</span>
+    </div>
+  </div>
+</section>
+
+<section id="proved">
+  <h2>What 0.1 proved on the HP</h2>
+  <p class="prose">The plan stands on three platform facts. All three are now checked on your HP Googlebook 14 (Android 17, build (build)) with a real build, not read from documentation. The desk research had said the overlay would need the "display over other apps" permission on Android 17; on the device it does not.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Fact</th><th>What happened on the device</th><th>Why it matters</th></tr>
+    <tr><td><b>A hotkey without a permission</b></td><td>Keyboard shortcuts → App shortcuts → Add shortcut lists Booklight. I bound Action + K. It opens the panel from any app, and the same keys close it.</td><td>No accessibility service, no assistant role. The shortcut starts the app's launcher activity, so the launcher activity is the panel.</td></tr>
+    <tr><td><b>A true overlay without a permission</b></td><td>A see-through activity is not turned into a desktop window: no caption bar, the desktop stays visible, the window is exactly the panel, and the system blurs what is behind it.</td><td>The Spotlight look is available to a plain APK. Play's data-safety form is the empty one.</td></tr>
+    <tr><td><b>Fast enough</b></td><td class="n">Warm: 43 ms key to first frame<br>Cold: 257–339 ms<br>A search: 5–16 ms<br><span class="muted">debug build, 80 apps</span></td><td>Feels instant when the process is cached, which is the normal case. A release build with a baseline profile will be faster.</td></tr>
+  </table></div>
+  <div class="caps">
+    <figure><div class="shot"><img alt="Booklight 0.1 showing results for the text st: StudioSnap selected, then other apps and settings pages" src="{{CAP1}}" width="810" height="644"></div><figcaption>0.1 on the HP: the panel's own window, captured on the device and set on a stand-in background.</figcaption></figure>
+    <figure><div class="shot"><img alt="Booklight 0.1 answering a sum in place" src="{{CAP2}}" width="810" height="306"></div><figcaption>A sum answered in place. Enter copies it.</figcaption></figure>
+  </div>
+  <div class="notice prose">
+    <h3>Two things you should know from testing</h3>
+    <p><b>I broke BentoBar for about three minutes, and fixed it.</b> To read the system's Keyboard shortcuts window I used <code>uiautomator dump</code>, which suspends every accessibility service. BentoBar 0.5 throws when its service is unbound, crashed twice, and Android showed "BentoBar keeps stopping". I dismissed the dialog and re-added BentoBar's entry to the enabled services (the other two were kept); its strip is back and all three services are bound. I no longer use that tool on the HP. The crash itself is a BentoBar bug (question 14).</p>
+    <p><b>Action + K is bound to Booklight on your HP.</b> I added it in Keyboard shortcuts so the hotkey could be tested for real. Remove it there under App shortcuts, or tell me to (question 13).</p>
+  </div>
+</section>
+
+<section id="research">
+  <h2>What people use a launcher for</h2>
+  <p class="prose">I looked at how Spotlight, Alfred and Google's Quick Search Box (the 2009 Mac one and Android's) were built, plus Raycast, PowerToys Run, the ChromeOS launcher and the Android search launchers. No vendor publishes a usage breakdown, so the ranking below rests on one Microsoft survey, three academic studies and individual usage exports. The full reports with sources are in the repo under <code>docs/research/</code>.</p>
+  <div class="tablewrap"><table>
+    <tr><th>#</th><th>Use</th><th>Evidence</th><th>In Booklight</th></tr>
+    <tr><td class="n">1</td><td><b>Opening apps</b></td><td>PowerToys survey: about 65% type an app name. One Raycast year: 46% of 5,431 opens. <span class="muted">Medium.</span></td><td><span class="tag">1.0</span> the thing to get perfect</td></tr>
+    <tr><td class="n">2</td><td>Clipboard history</td><td>Top of every "beyond launching" list; Apple and Microsoft both added it. <span class="muted">Anecdotal.</span></td><td><span class="tag later">3.x</span> Android blocks background clipboard reads</td></tr>
+    <tr><td class="n">3</td><td>Switching windows</td><td>The largest single command in one Raycast export. <span class="muted">Weak.</span></td><td><span class="tag">1.0</span> opening a running app switches to it. <span class="tag later">3.x</span> a window list</td></tr>
+    <tr><td class="n">4</td><td>Sums and conversions</td><td>In every product. <span class="muted">Weak (ubiquity).</span></td><td><span class="tag">1.0</span> sums. <span class="tag later">2.0</span> Summa as an extension</td></tr>
+    <tr><td class="n">5</td><td>Web search</td><td>Alfred's default fallback; core in QSB and ChromeOS. <span class="muted">Weak.</span></td><td><span class="tag">1.0</span> search row, addresses, keyword searches</td></tr>
+    <tr><td class="n">6</td><td>Settings, system commands</td><td>131 uses in one Raycast year. <span class="muted">Weak.</span></td><td><span class="tag">1.0</span> settings pages. <span class="tag later">3.x</span> lock, screenshot</td></tr>
+    <tr><td class="n">7</td><td>Finding files</td><td>Bergman 2008: search is 4–15% of file retrievals; people navigate folders. <span class="muted">Strong but old.</span></td><td><span class="tag later">2.x</span> behind a folder grant</td></tr>
+    <tr><td class="n">8</td><td>Snippets, emoji</td><td>One user's export. <span class="muted">Weak.</span></td><td><span class="tag later">2.x</span></td></tr>
+    <tr><td class="n">9</td><td>Extensions</td><td>Raycast Store installs in the hundreds of thousands. <span class="muted">Hard numbers, but installs.</span></td><td><span class="tag later">2.0</span> the extension contract</td></tr>
+  </table></div>
+  <p class="prose">What all of them share, and Booklight adopts: one modifier-plus-key toggle, a panel in the upper middle, few rows, the first row always selected and run by Enter, Tab or → for more actions, one ranked list instead of groups, and ranking that learns from picks. From Alfred: the exact text you typed is tied to what you picked for it. From Quick Search Box for Mac: results carry actions, and sources are plug-ins.</p>
+</section>
+
+<section id="versions">
+  <h2>Versions</h2>
+  <div class="versions">
+    <div class="now"><h3>1.0 · the launcher <span class="tag ok">no permissions</span></h3><ul>
+      <li>Summon with Action + a key (guided setup), the taskbar or the Apps list. The same key closes it.</li>
+      <li>Every app, work profile included. Starts, later words, initials, camelCase, loose letters.</li>
+      <li>Learns per typed text, with a four-week memory.</li>
+      <li>Nothing typed: your most-used apps as a strip.</li>
+      <li>The top hit completes in the field as grey text.</li>
+      <li>Tab lists a row's actions: Open, App info, Uninstall, Store page, Copy.</li>
+      <li>Sums in place. About 35 settings pages by name and keyword.</li>
+      <li>Typed addresses, a web search row, keyword searches (<code>g</code> <code>yt</code> <code>w</code> <code>maps</code> <code>gh</code> <code>play</code> and your own).</li>
+      <li>The device's colours and font, light and dark, glass with a solid fallback.</li>
+    </ul></div>
+    <div><h3>2.x · more to find and do <span class="tag later">none or light</span></h3><ul>
+      <li><b>Extensions</b>: other apps offer results and actions. First: Summa (units, money, dates, time zones), BentoBar (timer, keep awake), StudioSnap (capture), PDF Toolbox, HearOn Link.</li>
+      <li>App shortcuts ("New incognito tab", "New sheet").</li>
+      <li>Quick actions through public intents: timer, calendar event, email, navigate.</li>
+      <li>Files in folders you grant. Contacts, when first used.</li>
+      <li>Emoji, snippets, your own quick links.</li>
+      <li>A desktop search pill widget and a Quick Settings tile.</li>
+    </ul></div>
+    <div><h3>3.x · advanced <span class="tag later">each opt-in</span></h3><ul>
+      <li><b>Assistant role</b>: Action + Space and the Assistant key open Booklight. Replaces Gemini as the default assistant, so it is a clear choice, never a default.</li>
+      <li><b>Accessibility tier</b>: a list of open windows, clipboard history, system commands, pasting snippets, any key combination.</li>
+      <li>Usage access: rank by what you use system-wide.</li>
+      <li>On-device AI (Gemini Nano): typed requests turned into actions, still without an internet permission.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="design">
+  <h2>The design</h2>
+  <div class="prose" style="display:flex;flex-direction:column;gap:1rem">
+    <p>You asked for the simplicity of Alfred and Spotlight, a light presence with transparency in the middle of the screen, and a Material 3 Expressive look. The design is one panel and one list:</p>
+    <ul>
+      <li><b>The field never moves.</b> The panel's top edge sits at 20% of the screen; the list grows down from it. The window is exactly the panel, so the blur and the click-outside area are the panel too.</li>
+      <li><b>Glass, not a sheet.</b> The surface is 78% of the wallpaper-derived surface colour over the system's blur, with a hairline border. The desktop dims by 16% and stays readable. When the system turns blur off, the same layout sits on a solid surface.</li>
+      <li><b>Expressive where it carries meaning.</b> Rows are pills. The selected one is a tonal pill with tighter corners that glides between rows on a spring. Answers use the rounded cut of Google Sans Flex. Colour comes from the wallpaper. Nothing else animates: the panel appears and goes in the same frame as the key.</li>
+      <li><b>Row one is always the answer to Enter.</b> No groups, no tabs. A row's kind is a quiet word at its right edge; the selected row shows what Enter will do instead.</li>
+    </ul>
+  </div>
+  <h3>States</h3>
+  <div class="states" id="states"></div>
+  <h3>Keys</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Input</th><th>Does</th></tr>
+    <tr><td><kbd>Action</kbd> + <kbd>K</kbd> (yours to choose)</td><td>Opens the panel; closes it if open</td></tr>
+    <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Move the selection</td></tr>
+    <tr><td><kbd>Enter</kbd></td><td>Run the selected row</td></tr>
+    <tr><td><kbd>Tab</kbd>, or <kbd>→</kbd> at the end of the text</td><td>The row's other actions. <kbd>←</kbd> or <kbd>Esc</kbd> goes back</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>1</kbd>…<kbd>9</kbd></td><td>Run that row</td></tr>
+    <tr><td><kbd>Esc</kbd>, a click outside, another window</td><td>Close</td></tr>
+  </table></div>
+  <p class="prose muted small">0.1 on the device has the panel, glass, rows, answers, actions and keys. Still to build from this design: the completion text, the suggestion strip, the first-run row, keyword searches and the gliding highlight.</p>
+</section>
+
+<section id="architecture">
+  <h2>Built to take new abilities</h2>
+  <p class="prose">Everything Booklight can find comes from a provider, and everything it can do is an effect described as data. A new ability is one provider file and one line of registration. Because results and effects are plain data, an extension in another app can return the same shapes across the process boundary.</p>
+  <div class="flow">
+    <div><b>OverlayActivity</b>the panel's window; the launcher activity</div><span>→</span>
+    <div><b>OverlayModel</b>text, rows, selection</div><span>→</span>
+    <div class="core"><b>SearchEngine</b>asks all providers at once, ranks, learns</div><span>→</span>
+    <div class="core"><b>Provider × n</b>apps, sums, settings, commands, web; later extensions</div>
+  </div>
+  <div class="flow">
+    <div class="core"><b>Result</b>stable id, title, icon, score, actions</div><span>→</span>
+    <div class="core"><b>Action → Effect</b>LaunchApp, OpenUrl, CopyText, OpenSettings…</div><span>→</span>
+    <div><b>Executor</b>the only code that starts activities or writes the clipboard</div><span>+</span>
+    <div class="core"><b>History</b>latching and frecency, one JSON file</div>
+  </div>
+  <p class="prose small muted">Outlined in blue: <code>core/</code>, plain Kotlin with no Android imports, covered by 28 JUnit tests (matching, ranking, learning, sums, address detection). The rest is the Compose app. Conventions follow Summa and BentoBar: the <code>bl</code> helper script, DUMP-guarded adb hooks, <code>CLAUDE.md</code>, <code>docs/PICKING-UP.md</code>, pinned CI.</p>
+  <h3>Permission tiers</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Tier</th><th>What you grant</th><th>What it adds</th><th>Play friction</th></tr>
+    <tr><td><span class="tag ok">0 · 1.0</span></td><td>Nothing</td><td>All of 1.0, extensions, app shortcuts, intent actions, emoji, snippets</td><td>None</td></tr>
+    <tr><td><span class="tag later">1</span></td><td>A folder; contacts</td><td>Files in that folder; people</td><td>Standard data-safety answers</td></tr>
+    <tr><td><span class="tag later">2</span></td><td>The digital assistant role</td><td>Action + Space, the Assistant key, the status bar's assistant chip</td><td>None found</td></tr>
+    <tr><td><span class="tag later">3</span></td><td>Accessibility; usage access</td><td>Window list, clipboard history, system commands, any hotkey</td><td>Declaration, disclosure and video, as for BentoBar; blocked under Advanced Protection</td></tr>
+  </table></div>
+</section>
+
+<section id="name">
+  <h2>The name</h2>
+  <p class="prose"><b>Booklight</b> is Google<i>book</i> plus Spot<i>light</i>, and a book light is a small light you clip on when you need it. The GitHub account name is unclaimed. The largest repo of that name is a 110-star Chrome extension that searches bookmarks Spotlight-style: the same idea in another place, and no obstacle to an Android app. Every dictionary word for light or search is in real use on GitHub, so the alternatives are coinages too.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Name</th><th>Idea</th><th>GitHub, 1 October 2026</th></tr>
+    <tr><td><b>Booklight</b></td><td>Googlebook + Spotlight</td><td>Account free; one 110★ Chrome extension</td></tr>
+    <tr><td>Searchbeam</td><td>Search box + a beam of light</td><td>Account free; three tiny repos</td></tr>
+    <tr><td>Lamplit</td><td>Lit by a lamp</td><td>Account taken; six tiny repos</td></tr>
+    <tr><td>Glowfind</td><td>Glowbar + find</td><td>Free everywhere</td></tr>
+    <tr><td>Kvick</td><td>Swedish "quick", for Fika Labs</td><td>Account taken; a 7★ macOS menu bar tool</td></tr>
+    <tr><td class="muted">Searchlight, Limelight, Beacon, Glint, Quickbeam, Glim, Summon</td><td class="muted">The obvious ones</td><td class="muted">All in real use (500–2,000★ projects)</td></tr>
+  </table></div>
+</section>
+
+<section id="milestones">
+  <h2>From here to shipping</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Version</th><th>Goal</th><th>Contents</th></tr>
+    <tr><td class="n">0.1 <span class="tag ok">done</span></td><td>Prove it</td><td>Core and tests, glass panel, apps, settings, sums, web, learning, hotkey verified on the HP, private repo with CI</td></tr>
+    <tr><td class="n">0.2</td><td>Feels right</td><td>This design in full, first-run shortcut guide, keyword searches, search engine setting, icon, R8 and a baseline profile, release key</td></tr>
+    <tr><td class="n">0.3</td><td>Actions</td><td>App actions, result-kind switches, app shortcuts, intent quick actions, TalkBack pass</td></tr>
+    <tr><td class="n">0.9</td><td>Ready</td><td>Store kit, privacy page, README pictures, tag-driven release workflow, Play closed testing under Fika Labs</td></tr>
+    <tr><td class="n">1.0</td><td>Ship</td><td>googlebook.studio and Google Play</td></tr>
+    <tr><td class="n">2.0</td><td>Extensions</td><td>The contract, Summa as the first extension, then BentoBar and StudioSnap</td></tr>
+  </table></div>
+  <p class="prose">After your answers I write the 0.2 implementation plan task by task and build it. Nothing beyond 0.1 is approved yet.</p>
+</section>
+
+<section id="questions">
+  <h2>Questions</h2>
+  <p class="prose">Each has a recommended default, already selected. Change what you want, then copy the answers and paste them into the session, or just reply "Default".</p>
+  <div class="qs" id="qs"></div>
+  <div class="answers">
+    <button class="btn" id="copy">Copy answers</button>
+    <textarea id="answers" readonly aria-label="Your answers"></textarea>
+  </div>
+</section>
+</main>
+
+<script>
+(() => {
+'use strict';
+// ---------- data (stand-ins for the device's apps) ----------
+const APPS = [
+  ['Chrome','#4285F4','C'],['Chrome Canary','#F2B33D','C'],['Calendar','#1A73E8','31'],['Calculator','#1E8E3E','±'],['Camera','#5F6368','◉'],
+  ['Canvas','#7B4DFF','Cv'],['Summa','#F4772A','Σ'],['StudioSnap','#D93A1E','⌗'],['BentoBar','#20305A','B'],['PDF Toolbox','#C5221F','P'],
+  ['Files','#4C8BF5','F'],['Gmail','#EA4335','M'],['Docs','#4285F4','D'],['Sheets','#0F9D58','S'],['Drive','#1FA463','△'],['Play Store','#00A173','▶'],
+  ['Settings','#5C6BC0','⚙'],['Terminal','#263238','>_'],['YouTube','#E62117','▶'],['Maps','#34A853','M'],['Photos','#FBBC04','✿'],['Keep','#F9AB00','K'],
+  ['Meet','#00897B','Mt'],['Gemini','#6A5AE0','✦'],['Disco Sweeper','#C2185B','DS'],['Perfect Sound','#1B1B1B','♪'],['HearOn Link','#3949AB','H'],['VSCodeBook','#007ACC','VS'],
+].map(([name, c, g]) => ({ id: 'app:' + name, kind: 'App', title: name, icon: { c, g }, actions: ['Open', 'App info', 'Uninstall', 'Store page'] }));
+const SETTINGS = [
+  ['Wi-Fi','wifi,network,internet'],['Bluetooth','pair,headphones'],['Display','brightness,screen'],['Dark theme','dark mode,night,appearance'],['Night Light','blue light'],
+  ['Sound','volume,audio'],['Battery','power,charge'],['Storage','disk,space'],['Apps','installed,uninstall'],['Default apps','browser,assistant'],['Notifications','alerts'],
+  ['Physical keyboard','keyboard,shortcuts,keys'],['Languages','locale,region'],['Date and time','clock,time zone'],['Accessibility','talkback'],['Privacy','permissions'],
+  ['Security','lock,password'],['Wallpaper','background,style'],['System update','software update'],['About this device','model,version'],['Developer options','adb,debugging'],
+  ['Printing','printer'],['VPN',''],['Cast','chromecast,screen mirroring'],
+].map(([t, w]) => ({ id: 'setting:' + t, kind: 'Settings', title: t, words: w, sym: 'gear', actions: ['Open'] }));
+const COMMANDS = [
+  { id: 'cmd:settings', kind: 'Booklight', title: 'Booklight settings', words: 'booklight,preferences', sym: 'lamp', actions: ['Open'] },
+  { id: 'cmd:key', kind: 'Booklight', title: 'Set up the keyboard shortcut', sub: 'Open Keyboard shortcuts', words: 'booklight,hotkey,key,shortcut', sym: 'lamp', actions: ['Open'] },
+];
+const SITES = { g: 'Google', yt: 'YouTube', w: 'Wikipedia', maps: 'Maps', gh: 'GitHub', play: 'Play Store' };
+const SYM = {
+  gear: 'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.32a.5.5 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.5.5 0 0 0-.59.22L2.74 8.87a.5.5 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.5.5 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.5.5 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2',
+  search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14',
+  globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m6.9 6h-2.9a15.6 15.6 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8M12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.800 1.9-4M4.300 14a8.200 8.200 0 0 1 0-4h3.400a16 16 0 0 0 0 4zm.800 2h2.900c.3 1.300.800 2.500 1.400 3.600A8 8 0 0 1 5.100 16m2.900-8H5.100a8 8 0 0 1 4.300-3.600C8.800 5.500 8.300 6.700 8 8m4 12c-.800-1.200-1.500-2.500-1.900-4h3.800c-.4 1.500-1.100 2.800-1.900 4m2.300-6H9.700a14 14 0 0 1 0-4h4.600a14 14 0 0 1 0 4m.300 5.600c.6-1.100 1.100-2.300 1.400-3.600h2.900a8 8 0 0 1-4.300 3.600M16.400 14a16 16 0 0 0 0-4h3.400a8.200 8.200 0 0 1 0 4z',
+  calc: 'M19 3H5a2 2 0 0 0-2 2v14c0 1.100.9 2 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2m-6 4.100L14.100 6l1.400 1.400L16.900 6 18 7.100l-1.400 1.400L18 9.900 16.900 11l-1.400-1.400L14.100 11 13 9.900l1.400-1.400zM6.300 7.700h5v1.500h-5zM11.500 16h-2v2H8v-2H6v-1.500h2v-2h1.500v2h2zm6.500 1.300h-5v-1.500h5zm0-2.500h-5v-1.500h5z',
+  lamp: 'M6 4h12a3 3 0 0 1 0 6H6a3 3 0 0 1 0-6m1.200 8h9.600l3.200 8H4z',
+  enter: 'M19 7v4H5.830l3.580-3.590L8 6l-6 6 6 6 1.410-1.410L5.830 13H21V7z',
+};
+
+// ---------- the matcher (a port of core/Matcher.kt) ----------
+const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const words = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+function one(q, n, ws) {
+  if (q === n) return 1;
+  const brev = 0.05 * q.length / n.length;
+  if (n.startsWith(q)) return 0.9 + brev;
+  if (ws.slice(1).some(w => w.startsWith(q))) return 0.8 + brev;
+  if (q.length >= 2 && initials(q, ws)) return 0.75 + brev;
+  if (n.includes(q)) return 0.6 + brev;
+  if (q.length < 3) return 0;
+  let qi = 0, first = -1, last = -1;
+  for (let i = 0; i < n.length && qi < q.length; i++) if (n[i] === q[qi]) { if (first < 0) first = i; last = i; qi++; }
+  if (qi < q.length) return 0;
+  return 0.45 * (0.4 + 0.6 * q.length / (last - first + 1)) * (first === 0 ? 1 : 0.6);
+}
+function initials(q, ws) {
+  if (ws.length < 2) return false;
+  const go = (qi, wi, used) => {
+    if (qi === q.length) return used >= 2;
+    if (wi === ws.length) return false;
+    const w = ws[wi];
+    for (let k = 0; k < w.length && qi + k < q.length && w[k] === q[qi + k]; ) { k++; if (go(qi + k, wi + 1, used + 1)) return true; }
+    return go(qi, wi + 1, used);
+  };
+  return go(0, 0, 0);
+}
+function score(query, name) {
+  const q = fold(query); if (!q) return 0;
+  const n = fold(name), ws = words(name);
+  const whole = one(q, n, ws); if (whole > 0) return whole;
+  const toks = q.split(' '); if (toks.length < 2) return 0;
+  let sum = 0; for (const t of toks) { const s = one(t, n, ws); if (!s) return 0; sum += s; }
+  return sum / toks.length * 0.95;
+}
+const keyword = (q, w) => { const s = score(q, w); return s >= 0.8 ? s * 0.85 : 0; };
+
+// ---------- sums (a small port of core/Calc.kt) ----------
+function calc(src) {
+  let i = 0, worked = false; const s = src.trim().replace(/^=/, '');
+  const ws = () => { while (s[i] === ' ') i++; };
+  const eat = c => { ws(); if (s[i] === c) { i++; return true; } return false; };
+  const word = w => { ws(); if (s.substr(i, w.length).toLowerCase() === w && !/[a-z]/i.test(s[i + w.length] || '')) { i += w.length; return true; } return false; };
+  const F = { sqrt: Math.sqrt, sin: Math.sin, cos: Math.cos, tan: Math.tan, ln: Math.log, log: Math.log10, abs: Math.abs, round: Math.round };
+  const C = { pi: Math.PI, e: Math.E };
+  function atom() { ws();
+    if (eat('(')) { const v = sum(); if (!eat(')')) throw 0; return v; }
+    const m = /^(\d[\d,]*\.?\d*|\.\d+)/.exec(s.slice(i)); if (m) { i += m[0].length; return parseFloat(m[0].replace(/,/g, '')); }
+    const a = /^[a-z]+/i.exec(s.slice(i)); if (!a) throw 0; i += a[0].length; const n = a[0].toLowerCase();
+    if (n in C) return C[n]; if (!(n in F) || !eat('(')) throw 0; const v = sum(); if (!eat(')')) throw 0; worked = true; return F[n](v); }
+  function post() { let v = atom(); while (eat('%')) v /= 100; return v; }
+  function unary() { if (eat('-')) return -unary(); return post(); }
+  function pow() { const b = unary(); if (eat('^')) { worked = true; return Math.pow(b, pow()); } return b; }
+  function prod() { let v = pow(); for (;;) { ws();
+    if (eat('*') || eat('×')) { v *= pow(); worked = true; } else if (eat('/') || eat('÷')) { v /= pow(); worked = true; }
+    else if (word('of')) { v *= pow(); worked = true; } else if (s[i] === '(' || /[a-z]/i.test(s[i] || '')) { v *= pow(); worked = true; } else return v; } }
+  function sum() { let v = prod(); for (;;) { const plus = eat('+'); if (!plus && !eat('-')) return v;
+    const st = i; const r = prod(); const t = s.slice(st, i).trim(); const pct = /^[\d.,]+%$/.test(t) ? parseFloat(t) : null;
+    const rhs = pct !== null ? v * pct / 100 : r; v = plus ? v + rhs : v - rhs; worked = true; } }
+  try { const v = sum(); ws(); if (i < s.length || !worked || !isFinite(v)) return null;
+    return parseFloat(v.toPrecision(12)).toLocaleString('en-US', { maximumFractionDigits: 10 }); } catch (_) { return null; }
+}
+const isUrl = t => !/\s/.test(t) && (/^https?:\/\/\S+$/i.test(t) || /^([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?(\/\S*)?$/i.test(t));
+
+// ---------- learning (latching + use counts; the app adds a four-week decay) ----------
+const latch = new Map(), uses = new Map([['app:Chrome', 9], ['app:Summa', 7], ['app:Gmail', 6], ['app:Files', 5], ['app:StudioSnap', 4], ['app:Terminal', 3], ['app:Calendar', 2]]);
+const sat = (x, k) => Math.min(1, 1 - Math.exp(-x / k));
+const boost = (q, id) => 0.7 * sat((latch.get(fold(q)) || new Map()).get(id) || 0, 2) + 0.15 * sat(uses.get(id) || 0, 6);
+function learn(q, id) { uses.set(id, (uses.get(id) || 0) + 1); const k = fold(q); if (!k) return; if (!latch.has(k)) latch.set(k, new Map()); const m = latch.get(k); m.set(id, (m.get(id) || 0) + 1); }
+
+// ---------- the engine ----------
+function search(text) {
+  const t = text.trim(); if (!t) return [];
+  const out = [];
+  const site = /^(\S+)\s+(.+)$/.exec(t);
+  if (site && SITES[site[1].toLowerCase()]) {
+    const name = SITES[site[1].toLowerCase()];
+    return [{ id: 'web:site', kind: 'Web', title: `Search ${name} for “${site[2]}”`, sym: 'search', actions: ['Search ' + name], rank: 9, site: name, verb: 'Searching ' + name }];
+  }
+  const a = calc(t);
+  if (a !== null) out.push({ id: 'calc', kind: 'Answer', title: a, answer: a, expr: t.replace(/^=/, '').trim(), sym: 'calc', actions: ['Copy'], rank: 10 });
+  for (const r of APPS) { const s = score(t, r.title); if (s > 0) out.push({ ...r, rank: s + boost(t, r.id), match: s }); }
+  for (const r of SETTINGS) { const s = Math.max(score(t, r.title), ...r.words.split(',').map(w => keyword(t, w))); if (s > 0) out.push({ ...r, rank: s * 0.9 + boost(t, r.id) }); }
+  for (const r of COMMANDS) { const s = Math.max(score(t, r.title), ...r.words.split(',').map(w => keyword(t, w))); if (s > 0) out.push({ ...r, rank: s * 0.92 + boost(t, r.id) }); }
+  if (isUrl(t)) out.push({ id: 'web:url', kind: 'Web', title: t, sub: 'Open link', sym: 'globe', actions: ['Open link', 'Copy'], rank: 0.95, verb: 'Opening' });
+  out.sort((x, y) => y.rank - x.rank || x.title.length - y.title.length || x.title.localeCompare(y.title));
+  const top = out.slice(0, 7);
+  top.push({ id: 'web:search', kind: 'Web', title: `Search the web for “${t}”`, sym: 'search', actions: ['Search the web'], verb: 'Searching the web' });
+  return top;
+}
+const suggestions = () => [...uses.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([id]) => APPS.find(a => a.id === id)).filter(Boolean);
+
+// ---------- drawing ----------
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sym = n => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${SYM[n]}"/></svg>`;
+const pic = r => r.icon ? `<span class="ic" style="--c:${r.icon.c}">${r.icon.g}</span>` : `<span class="ic sym">${sym(r.sym)}</span>`;
+const enterKey = `<span class="cap" style="display:inline-grid;place-items:center;padding:4px 6px"><svg viewBox="0 0 24 24" width="15" height="15" style="fill:currentColor"><path d="${SYM.enter}"/></svg></span>`;
+function rowHTML(r, on, i) {
+  const text = r.answer != null
+    ? `<i>${esc(r.expr)} =</i><span class="big">${esc(r.answer)}</span>`
+    : `<b>${esc(r.title)}</b>${r.sub ? `<i>${esc(r.sub)}</i>` : ''}`;
+  const right = on ? `<span class="k">${esc(r.actions[0])}</span>${enterKey}` : `<span class="k">${r.kind}</span>`;
+  return `<div class="row${r.answer != null ? ' ans' : ''}${on ? ' on' : ''}" role="option" aria-selected="${on}" data-i="${i}">${pic(r)}<span class="t">${text}</span>${right}</div>`;
+}
+function bodyHTML(st) {
+  if (st.firstRun && !st.query) {
+    return `<div class="list"><div class="hl"></div><div class="row on" data-i="0"><span class="ic sym">${sym('lamp')}</span><span class="t"><b>Give Booklight a key</b><i>Add a shortcut in Keyboard shortcuts, for example Action + K</i></span><span class="k">Open</span>${enterKey}</div></div><div class="foot"><span class="flash"></span><span class="cap">esc</span><span>Close</span></div>`;
+  }
+  if (st.actionsOf) {
+    const r = st.actionsOf;
+    return `<div class="list"><div class="hl"></div>${rowHTML(r, false, -1)}${r.actions.map((a, i) => `<div class="row${i === st.ai ? ' on' : ''}" data-a="${i}"><span style="width:36px;flex:none"></span><span class="t"><b>${esc(a)}</b></span>${i === st.ai ? enterKey : ''}</div>`).join('')}</div><div class="foot"><span class="flash">${esc(st.flash || '')}</span><span class="cap">esc</span><span>Back</span></div>`;
+  }
+  if (!st.query.trim()) {
+    const s = st.strip || [];
+    return s.length ? `<div class="strip">${s.map((a, i) => `<button data-s="${i}" title="Ctrl + ${i + 1}"><span class="ic" style="--c:${a.icon.c}">${a.icon.g}</span><span>${esc(a.title)}</span></button>`).join('')}</div>` : '';
+  }
+  const rows = st.results;
+  const more = rows[st.sel] && rows[st.sel].actions.length > 1;
+  return `<div class="list" role="listbox"><div class="hl"></div>${rows.map((r, i) => rowHTML(r, i === st.sel, i)).join('')}</div><div class="foot"><span class="flash">${esc(st.flash || '')}</span>${more ? '<span class="cap">tab</span><span>Actions</span>' : ''}<span class="cap">esc</span><span>Close</span></div>`;
+}
+function placeHighlight(root) {
+  const hl = root.querySelector('.hl'), on = root.querySelector('.row.on');
+  if (!hl) return; if (!on) { hl.style.display = 'none'; return; }
+  hl.style.display = ''; hl.style.transform = `translateY(${on.offsetTop}px)`; hl.style.height = on.offsetHeight + 'px';
+}
+function ghostHTML(st) {
+  const r = st.results[st.sel]; const q = st.query;
+  if (!q || st.actionsOf || !r || r.answer != null || r.kind === 'Web' || !r.title.toLowerCase().startsWith(q.toLowerCase())) return '';
+  return `${esc(q)}<em>${esc(r.title.slice(q.length))}</em><small>${r.kind}</small>`;
+}
+
+// ---------- the live panel ----------
+const stage = document.getElementById('stage'), input = document.getElementById('q'), body = document.getElementById('body');
+const ghost = document.getElementById('ghost'), chip = document.getElementById('chip'), toast = document.getElementById('toast');
+const st = { query: '', results: [], sel: 0, actionsOf: null, ai: 0, flash: '', strip: suggestions() };
+function draw(keep) {
+  if (!keep) { st.results = search(st.query); st.sel = 0; }
+  body.innerHTML = bodyHTML(st);
+  ghost.innerHTML = ghostHTML(st);
+  const site = st.results[0] && st.results[0].site; chip.hidden = !site; chip.textContent = site || '';
+  placeHighlight(body);
+}
+function say(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove('show'), 1800); }
+function close(msg) { stage.classList.remove('open'); if (msg) say(msg); }
+function open() { st.query = ''; input.value = ''; st.actionsOf = null; st.flash = ''; st.strip = suggestions(); stage.classList.add('open'); draw(); input.focus({ preventScroll: true }); }
+function run(r, action) {
+  if (r.id.startsWith('app:') || r.id.startsWith('setting:') || r.id.startsWith('cmd:')) learn(st.query, r.id);
+  if (action === 'Copy') { st.flash = 'Copied'; draw(true); setTimeout(() => close('Copied ' + (r.answer != null ? r.answer : r.title)), 500); return; }
+  const verb = action === 'Open' ? 'Opening ' + r.title : action.startsWith('Search') || action === 'Open link' ? (r.verb || action) : action + ': ' + r.title;
+  close(verb);
+}
+input.addEventListener('input', () => { st.query = input.value; st.actionsOf = null; draw(); });
+input.addEventListener('keydown', e => {
+  const k = e.key; let used = true;
+  if (st.actionsOf) {
+    if (k === 'ArrowDown') st.ai = Math.min(st.ai + 1, st.actionsOf.actions.length - 1);
+    else if (k === 'ArrowUp') st.ai = Math.max(st.ai - 1, 0);
+    else if (k === 'Enter') return e.preventDefault(), run(st.actionsOf, st.actionsOf.actions[st.ai]);
+    else if (k === 'Escape' || k === 'ArrowLeft' || (k === 'Tab' && e.shiftKey)) st.actionsOf = null;
+    else if (k === 'Tab') {} else used = false;
+  } else {
+    const r = st.results[st.sel];
+    if (k === 'ArrowDown') st.sel = Math.min(st.sel + 1, Math.max(0, st.results.length - 1));
+    else if (k === 'ArrowUp') st.sel = Math.max(st.sel - 1, 0);
+    else if (k === 'Enter') { e.preventDefault(); if (r) run(r, r.actions[0]); return; }
+    else if (k === 'Tab' || (k === 'ArrowRight' && input.selectionEnd === input.value.length && r)) { if (r && r.actions.length > 1) { st.actionsOf = r; st.ai = 0; } else if (k !== 'Tab') used = false; }
+    else if (k === 'Escape') { e.preventDefault(); return close('Closed. The same key opens it again.'); }
+    else if (e.ctrlKey && /^[1-9]$/.test(k)) { const list = st.query.trim() ? st.results : st.strip; const x = list[+k - 1]; e.preventDefault(); if (x) run(x, x.actions[0]); return; }
+    else used = false;
+  }
+  if (used) { e.preventDefault(); draw(true); }
+});
+body.addEventListener('mousemove', e => { const row = e.target.closest('.row'); if (!row) return;
+  if (row.dataset.i != null && +row.dataset.i >= 0 && +row.dataset.i !== st.sel && !st.actionsOf) { st.sel = +row.dataset.i; draw(true); }
+  if (row.dataset.a != null && +row.dataset.a !== st.ai) { st.ai = +row.dataset.a; draw(true); } });
+body.addEventListener('click', e => {
+  const s = e.target.closest('[data-s]'); if (s) { const a = st.strip[+s.dataset.s]; return run(a, 'Open'); }
+  const row = e.target.closest('.row'); if (!row) return;
+  if (row.dataset.a != null) return run(st.actionsOf, st.actionsOf.actions[+row.dataset.a]);
+  if (st.actionsOf) { st.actionsOf = null; return draw(true); }
+  const r = st.results[+row.dataset.i]; if (r) run(r, r.actions[0]);
+});
+document.getElementById('panel').addEventListener('mousedown', e => { if (e.target !== input) { e.preventDefault(); input.focus({ preventScroll: true }); } });
+stage.addEventListener('mousedown', e => { if (stage.classList.contains('open') && !e.target.closest('.panel')) close('Closed by a click outside.'); });
+document.getElementById('summon').addEventListener('click', e => { e.stopPropagation(); open(); });
+document.querySelectorAll('[data-try]').forEach(b => b.addEventListener('click', () => { if (!stage.classList.contains('open')) open(); input.value = b.dataset.try; st.query = input.value; st.actionsOf = null; draw(); input.focus({ preventScroll: true }); }));
+document.querySelectorAll('.controls button').forEach(b => b.addEventListener('click', () => {
+  for (const key of ['wall', 'mode', 'glass']) if (b.dataset[key]) { stage.dataset[key] = b.dataset[key]; document.querySelectorAll(`.controls [data-${key}]`).forEach(x => x.setAttribute('aria-pressed', x === b)); }
+  document.querySelectorAll('.mini').forEach(m => { m.dataset.wall = stage.dataset.wall; m.dataset.mode = stage.dataset.mode; });
+}));
+draw();
+
+// ---------- the states gallery (the same drawing code, frozen) ----------
+const frozen = (query, extra = {}) => { const results = search(query); return { query, results, sel: 0, actionsOf: null, ai: 0, flash: '', strip: suggestions(), ...extra }; };
+const STATES = [
+  ['Nothing typed, first run', 'One row teaches the shortcut. It goes away after three opens.', frozen('', { firstRun: true })],
+  ['Nothing typed', 'Your most-used apps. Ctrl + 1–7 or a click opens one.', frozen('')],
+  ['A top hit', 'Row one is selected, and its name completes in the field.', frozen('chr')],
+  ['An answer', 'The sum is the first row. Enter copies it.', frozen('150 + 20%')],
+  ['A keyword search', 'A chip names the site; Enter searches it in your browser.', frozen('yt lofi')],
+  ['Actions', 'Tab on a row lists what else it can do.', (() => { const s = frozen('snap'); s.actionsOf = s.results[0]; s.ai = 1; return s; })()],
+  ['Nothing found', 'Only the way out to the web.', frozen('zebra crossing rules')],
+  ['Solid fallback', 'When the system turns blur off: the same layout, opaque.', frozen('dark', { solid: true })],
+];
+const states = document.getElementById('states');
+for (const [title, note, s] of STATES) {
+  const site = s.results[0] && s.results[0].site;
+  const el = document.createElement('div'); el.className = 'state';
+  el.innerHTML = `<div class="mini stage" data-wall="tide" data-mode="light"><div class="panel${s.solid ? ' solid' : ''}"><div class="field">${sym('search')}<div class="typing"><div class="ghost">${ghostHTML(s)}</div><input type="text" value="${esc(s.query)}" placeholder="Search apps, settings and the web" tabindex="-1" readonly aria-hidden="true"></div>${site ? `<span class="chip">${site}</span>` : ''}<span class="cap">esc</span></div>${bodyHTML(s)}</div></div><h3>${title}</h3><p>${note}</p>`;
+  states.appendChild(el);
+}
+function fitMinis() { document.querySelectorAll('.mini').forEach(m => { const p = m.querySelector('.panel'); m.style.padding = '0'; const pad = 14; const scale = Math.min(1, (m.clientWidth - pad * 2) / 720); p.style.transform = `scale(${scale})`; p.style.margin = pad + 'px'; m.style.height = (p.offsetHeight * scale + pad * 2) + 'px'; placeHighlight(p); }); }
+fitMinis(); addEventListener('resize', fitMinis); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitMinis(); placeHighlight(body); });
+
+// ---------- questions ----------
+const QS = [
+  ['Name', 'Renaming is cheap until the first release.', ['Booklight', 'Searchbeam', 'Lamplit', 'Glowfind', 'Kvick', 'Something else']],
+  ['The key Booklight suggests', 'Free on the device, and K is the command-palette key people know. Action + Space is Gemini’s and needs the assistant role.', ['Action + K', 'Action + J', 'Action + D', 'Another free key']],
+  ['Nothing typed yet', 'A strip keeps the panel small and still gives one-key launches.', ['Strip of most-used apps', 'Nothing at all (Alfred)', 'A short list']],
+  ['Esc', 'Closing at once is faster; the text is gone next time anyway.', ['Closes at once', 'Clears first, then closes']],
+  ['Web', 'No internet permission means no live suggestions, and the promise that nothing leaves the device.', ['No internet; Google by default, changeable', 'Add internet for suggestions']],
+  ['Sums', 'One engine and one set of rates, and it shows what extensions are for.', ['Small calculator now, Summa as an extension in 2.0', 'Copy Summa’s engine into 1.0']],
+  ['Extensions as the way to grow', 'Other apps offer results through a small ContentProvider contract, starting with yours.', ['Yes, extensions', 'Keep everything built in']],
+  ['Advanced tiers', 'Assistant role as an optional switch in 1.x; accessibility tier (windows, clipboard, system commands) in 3.x.', ['As planned', 'Sooner', 'Never add them']],
+  ['Repo', 'A public repo becomes a draft listing on googlebook.studio by itself.', ['Private until 0.2, then public', 'Public now', 'Private until 1.0']],
+  ['Signing key', 'Made in ~/.config/booklight with the backup, like the other apps.', ['Make it when 0.2 is cut', 'Make it now', 'I will make it']],
+  ['Reach', 'Your usual minSdk 34, described as made for Googlebook.', ['Android 14+ (minSdk 34)', 'Googlebook only (minSdk 37)']],
+  ['Languages', 'Like BentoBar.', ['US + British English', 'Add German too']],
+  ['Action + K on your HP', 'I bound it during testing so you can try 0.1.', ['Keep it', 'Remove it']],
+  ['BentoBar crash on unbind', 'BarService.onUnbind throws when the service is suspended; found during testing.', ['Fix it in kuscher/bentobar', 'Leave it, I will look']],
+];
+const qs = document.getElementById('qs'), answers = document.getElementById('answers');
+QS.forEach(([t, why, opts], i) => {
+  const n = i + 1, el = document.createElement('div'); el.className = 'q';
+  el.innerHTML = `<span class="num">${n}</span><div><h3>${t}</h3><div class="opts" role="radiogroup" aria-label="${t}">${opts.map((o, j) => `<label class="${j === 0 ? 'def' : ''}"><input type="radio" name="q${n}" id="q${n}o${j}" value="${esc(o)}"${j === 0 ? ' checked' : ''}>${esc(o)}</label>`).join('')}</div><p class="why">${why}</p></div>`;
+  qs.appendChild(el);
+});
+function writeAnswers() { answers.value = QS.map(([t, , opts], i) => { const v = (document.querySelector(`input[name="q${i + 1}"]:checked`) || {}).value; return `${i + 1}. ${t}: ${v}${v === opts[0] ? ' (default)' : ''}`; }).join('\n'); }
+qs.addEventListener('change', writeAnswers); writeAnswers();
+document.getElementById('copy').addEventListener('click', e => {
+  const done = () => { e.target.textContent = 'Copied'; setTimeout(() => e.target.textContent = 'Copy answers', 1500); };
+  navigator.clipboard.writeText(answers.value).then(done).catch(() => { answers.focus(); answers.select(); });
+});
+})();
+</script>

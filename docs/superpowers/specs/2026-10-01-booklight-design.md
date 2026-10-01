@@ -30,7 +30,7 @@ rework. It must install on any Googlebook with no unusual permissions. Success f
 | Field row | 68 high; search symbol 26; text 24 sp, weight 450 |
 | Result row | 56 high; icon 36; title 17 sp, weight 500; subtitle 13 sp |
 | Answer row | 92 high; answer 34 sp rounded, tabular figures |
-| Suggestion strip (nothing typed) | 96 high; up to seven 48 dp app icons with labels |
+| Suggestion strip (nothing typed) | 96 high; up to seven 44 dp app icons with labels |
 | List padding | 8 around the rows |
 | Footer | 40 high; 12 sp key hints |
 | Rows shown | at most 8; no scrolling |
@@ -74,7 +74,7 @@ Speed first: the panel appears and disappears with no system animation.
    Each row: icon, name, and at the right its kind ("App", "Settings"…). The selected row shows its
    action and the Enter key instead.
 4. **Answer.** A sum shows as the first row: the expression small, the answer large. Enter copies.
-5. **Keyword search.** `yt lofi`: the field shows a "YouTube" chip in place of the keyword, and the
+5. **Keyword search.** `yt lofi`: a "YouTube" chip appears in the field, and the
    first row is "Search YouTube for 'lofi'".
 6. **Actions.** Tab or → on a row with more than one action: the row stays at the top, its actions
    list below. ← or Esc goes back.

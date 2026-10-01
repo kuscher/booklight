@@ -8,6 +8,9 @@
 web search, learning, and the Action + K shortcut (bound by hand in Keyboard shortcuts). The plan,
 the 1.0 design and an interactive prototype are written. Nothing beyond 0.1 is approved.
 
+**The page Alex reads:** https://claude.ai/artifact/NtWaN2v56XwLLPXtqNtYbW (plan, working prototype, questions with a
+"Copy answers" button). Source: `docs/design/booklight-plan.src.html`.
+
 **Waiting on Alex:** the fourteen questions in `docs/PLAN.md` §11 (name, key, empty state, Esc,
 web, sums, extensions, advanced tiers, repo visibility, signing key, reach, languages, the test
 shortcut on his HP, the BentoBar fix).
@@ -22,6 +25,9 @@ shortcut on his HP, the BentoBar fix).
 - No preferences (search engine is fixed to Google), no icon beyond a placeholder.
 - Debug build only: no R8, no baseline profile, no release key.
 - Not checked: TalkBack, dark theme on the device, blur off, a work-profile app, the Acer.
+
+**On the HP now:** the 0.1 debug build, with Action + K bound to it (added by hand in Keyboard shortcuts for
+testing; question 13 decides whether it stays).
 
 **Measured on the HP (debug build):** cold 257–339 ms, warm 43–91 ms, a search 5–16 ms. See
 `docs/research/device-findings.md`.

@@ -23,12 +23,16 @@ class SearchEngine(
         if (q.isEmpty) return zeroState(limit)
         val now = clock()
         val all = ask { it.query(q) }
-        return all.distinctBy { it.id }
+        val ranked = all.distinctBy { it.id }
             .map { it to rank(it, q.text, now) }
             .sortedWith(compareByDescending<Pair<Result, Double>> { it.second }.thenBy { it.first.title.length }.thenBy { it.first.title })
-            .take(limit)
             .map { it.first }
+        // The way out to the web keeps the last row, however many other rows match.
+        val fallback = ranked.filter(::isFallback).take(1)
+        return ranked.filterNot(::isFallback).take(limit - fallback.size) + fallback
     }
+
+    private fun isFallback(r: Result) = r.kind == Kind.WEB && r.score < URL_SCORE
 
     /** Before anything is typed: what you use most, then whatever providers suggest. */
     private suspend fun zeroState(limit: Int): List<Result> {

@@ -82,7 +82,10 @@ class SearchEngineTest {
         assertTrue(r.none { it.title == "Slow" })
     }
 
-    @Test fun limitIsRespected() = runTest {
-        assertEquals(3, engine().search(Query("c"), limit = 3).size)
+    @Test fun limitIsRespectedAndTheWebRowKeepsTheLastPlace() = runTest {
+        val r = engine().search(Query("c"), limit = 3)
+        assertEquals(3, r.size)
+        assertEquals(Kind.WEB, r.last().kind)
+        assertEquals(listOf(Kind.APP, Kind.APP), r.take(2).map { it.kind })
     }
 }
