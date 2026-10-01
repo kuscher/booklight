@@ -1,0 +1,781 @@
+<title>Booklight Next</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght,ROND@6..144,300..800,0..100&family=Google+Sans+Code:wght@400..600&display=swap">
+<style>
+/* Layout: one reading column (46rem) for prose; the live panel stage and wide tables break out to 66rem. Left-aligned throughout. */
+:root {
+  --bg: #F3F3FA; --surface: #FFFFFF; --surface-2: #E9EAF5; --ink: #181A2A; --muted: #565A70; --line: #D3D5E5;
+  --accent: #3D4FCF; --accent-ink: #FFFFFF; --accent-soft: #E0E4FF; --lamp-fill: #FFC94D; --good: #1B7A44; --warn: #A2500A;
+  --display: "Google Sans Flex", "Google Sans", "Product Sans", system-ui, sans-serif;
+  --body: "Google Sans Flex", "Google Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Google Sans Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --col: 46rem; --wide: 66rem;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11121B; --surface: #1A1C29; --surface-2: #232538; --ink: #E8E8F3; --muted: #A3A6BC; --line: #31344B;
+  --accent: #B7C0FF; --accent-ink: #141A4A; --accent-soft: #272D5F; --lamp-fill: #FFC94D; --good: #7BD9A0; --warn: #F0B27A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11121B; --surface: #1A1C29; --surface-2: #232538; --ink: #E8E8F3; --muted: #A3A6BC; --line: #31344B;
+  --accent: #B7C0FF; --accent-ink: #141A4A; --accent-soft: #272D5F; --lamp-fill: #FFC94D; --good: #7BD9A0; --warn: #F0B27A; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 1rem; line-height: 1.55; margin: 0; padding-inline: 1.25rem; padding-block: 2.5rem 5rem; -webkit-font-smoothing: antialiased }
+main { max-width: var(--wide); margin-inline: auto; display: flex; flex-direction: column; gap: 3.5rem }
+section { display: flex; flex-direction: column; gap: 1rem; min-width: 0 }
+.prose { max-width: var(--col) }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.12 }
+h1 { font-size: clamp(2.2rem, 5.5vw, 3.2rem); font-weight: 740; font-variation-settings: "ROND" 100; letter-spacing: -0.02em }
+h2 { font-size: 1.7rem; font-weight: 680; font-variation-settings: "ROND" 100; letter-spacing: -0.01em }
+h3 { font-size: 1.08rem; font-weight: 650 }
+p { margin: 0 }
+a { color: var(--accent); text-underline-offset: 0.18em }
+a:focus-visible, button:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px }
+code, kbd { font-family: var(--mono); font-size: 0.86em }
+code { background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 0.35em }
+kbd { display: inline-block; background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 0.45em; padding: 0.02em 0.42em; font-weight: 500; white-space: nowrap }
+.muted { color: var(--muted) } .small { font-size: 0.86rem }
+ul, ol { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem }
+header { display: flex; flex-direction: column; gap: 1rem }
+.brand { display: flex; align-items: center; gap: 0.9rem }
+.brand svg { width: 3.2rem; height: 3.2rem; flex: none }
+.lede { font-size: 1.2rem; max-width: 42rem; line-height: 1.45 }
+.meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; color: var(--muted); font-size: 0.9rem }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line) }
+tr:last-child td { border-bottom: 0 }
+th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; background: var(--surface-2) }
+td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
+.tag { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.08rem 0.5rem; border-radius: 999px; background: var(--accent-soft); color: var(--ink); white-space: nowrap }
+.tag.ok { background: color-mix(in srgb, var(--good) 18%, var(--surface)); color: var(--good) }
+.tag.warn { background: color-mix(in srgb, var(--warn) 18%, var(--surface)); color: var(--warn) }
+.notice { border-left: 3px solid var(--lamp-fill); padding: 0.2rem 0 0.2rem 1rem; display: flex; flex-direction: column; gap: 0.5rem }
+
+/* controls above the stage */
+.stagewrap { display: flex; flex-direction: column; gap: 0.75rem }
+.controls { display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; align-items: center; font-size: 0.88rem; color: var(--muted) }
+.controls .lbl { font-weight: 600; color: var(--ink); min-width: 4.2rem }
+.replay { font: inherit; font-weight: 600; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 999px; padding: 0.3rem 0.95rem; cursor: pointer }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface) }
+.seg button { font: inherit; color: var(--muted); background: none; border: 0; padding: 0.28rem 0.8rem; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); font-weight: 600 }
+.tryline { display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; align-items: center; font-size: 0.9rem; color: var(--muted) }
+.tryline b { color: var(--ink); font-weight: 600; margin-left: 0.4rem }
+.tryline button { font-family: var(--mono); font-size: 0.8rem; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.15rem 0.5rem; cursor: pointer }
+.tryline button:hover { border-color: var(--accent) }
+
+/* the stage: a stand-in desktop. Panel tokens are the app's (1 dp = 1 px). */
+.stage { position: relative; height: 47rem; border-radius: 1.6rem; overflow: hidden; background: var(--wall); isolation: isolate; border: 1px solid var(--line); font-family: var(--body);
+  --veil: 255 255 255; --pane: .62; --tint: .42; --blur: 22px; --dim: .1; --rim: .8; --hair: .2;
+  --on: 23 28 43; --sel: #C3D2FA; --onsel: #0F2A5C; --primary: #3A5BA9; --tertiary: #8B4A8F; --err: #B3261E; --errc: #F9DEDC; --onerrc: #5F1410;
+  --wall: radial-gradient(120% 90% at 15% 10%, #9DB8F5 0%, #C9D6F7 38%, #E9E6F6 70%, #F6E9E3 100%); --win: #FFFFFF; --win-ink: #C9CEDD; --bar: rgba(255,255,255,.55); --bar-ink: #1C2233 }
+.stage[data-mode="dark"] { --veil: 14 16 22; --pane: .36; --tint: .5; --dim: .22; --rim: .44; --hair: .28;
+  --on: 227 230 242; --sel: #33456F; --onsel: #D9E3FF; --primary: #AFC6FF; --tertiary: #E3B7E6; --err: #F2B8B5; --errc: #8C1D18; --onerrc: #F9DEDC;
+  --wall: radial-gradient(120% 90% at 15% 10%, #2B3F78 0%, #1E2749 40%, #171A2C 72%, #1F1822 100%); --win: #232634; --win-ink: #3A3F52; --bar: rgba(20,22,34,.55); --bar-ink: #E3E6F2 }
+.stage * { box-sizing: border-box }
+.sbar { position: absolute; inset: 0 0 auto 0; height: 2rem; display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; font-size: 0.78rem; font-weight: 550; color: var(--bar-ink) }
+.tbar { position: absolute; left: 50%; bottom: 0.6rem; transform: translateX(-50%); display: flex; gap: 0.5rem; padding: 0.45rem 0.7rem; border-radius: 1.3rem; background: var(--bar) }
+.tbar i { width: 2rem; height: 2rem; border-radius: 0.65rem; background: var(--c); display: block }
+.win { position: absolute; border-radius: 1rem; background: var(--win); box-shadow: 0 12px 40px rgba(10,14,40,.18); overflow: hidden }
+.win::before { content: ""; display: block; height: 2rem; background: color-mix(in srgb, var(--win-ink) 55%, var(--win)) }
+.win b { display: block; height: 0.6rem; border-radius: 0.3rem; background: var(--win-ink); margin: 0.85rem 1.2rem 0 }
+.win b.h { height: 1.1rem; width: 45%; margin-top: 1.3rem } .win b.s { width: 60% }
+.win b.block { height: 6rem; border-radius: 0.8rem; background: color-mix(in srgb, var(--primary) 35%, var(--win)) }
+.win.a { left: 4%; top: 12%; width: 46%; height: 70% } .win.b { right: 3%; top: 22%; width: 52%; height: 64% }
+.win.dk { background: #101216 } .win.dk::before { background: #1c1f26 } .win.dk b { background: #2b5f3a }
+.dim { position: absolute; inset: 0; background: rgb(0 0 0 / var(--dim)); opacity: 0; transition: opacity .16s; pointer-events: none }
+.stage.open .dim { opacity: 1 }
+
+.panel { position: absolute; left: 50%; top: 18%; width: min(720px, calc(100% - 24px)); transform: translateX(-50%); border-radius: 32px; background: rgb(var(--veil) / var(--tint)); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); border: 1.25px solid rgb(255 255 255 / var(--rim)); box-shadow: 0 0 0 1px rgb(0 0 0 / var(--hair)); color: rgb(var(--on)); overflow: hidden }
+.stage:not(.open) .panel { display: none }
+/* the glass may be narrower or wider than its contents for a moment (arriving); the contents never reflow */
+.inner { width: var(--pw, 100%); margin-left: calc(50% - var(--pw, 100%) / 2) }
+.ink2 { color: rgb(var(--on) / .8) } .ink3 { color: rgb(var(--on) / .6) }
+.field { height: 68px; display: flex; align-items: center; gap: 16px; padding: 0 20px }
+.mark { flex: none; width: 36px; height: 36px; display: grid; place-items: center; font-family: var(--display); font-variation-settings: "ROND" 100; font-weight: 600; font-size: 24px }
+.schip { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 10px; border-radius: 18px; background: rgb(var(--on) / .1); border: 1px solid rgb(255 255 255 / .55); color: rgb(var(--on)); font-size: 15px; font-weight: 600; white-space: nowrap; cursor: pointer; transform-origin: 0 50% }
+.schip svg { width: 18px; height: 18px; fill: currentColor }
+.typing { position: relative; flex: 1; min-width: 0; height: 40px; font-size: 24px; font-weight: 500 }
+.typing input, .typing .ghost { position: absolute; inset: 0; font: inherit; letter-spacing: 0; padding: 0; margin: 0; border: 0; line-height: 40px; white-space: pre; overflow: hidden }
+.typing input { width: 100%; background: none; color: rgb(var(--on)); outline: none; caret-color: var(--primary) }
+.typing input::placeholder { color: rgb(var(--on) / .6); font-weight: 400 }
+.ghost { pointer-events: none; color: transparent }
+.ghost em { font-style: normal; color: rgb(var(--on) / .6) }
+.cap { flex: none; display: inline-grid; place-items: center; height: 22px; min-width: 26px; font-size: 12px; font-weight: 500; padding: 0 7px; border-radius: 7px; background: rgb(var(--on) / .1); color: rgb(var(--on) / .8) }
+.cap svg { width: 14px; height: 14px; fill: currentColor }
+
+.list { position: relative; padding: 8px 8px 0 }
+.hl { position: absolute; left: 8px; right: 8px; top: 8px; bottom: 0; border-radius: 24px; background: color-mix(in srgb, var(--sel) 78%, transparent); border: 1px solid rgb(255 255 255 / .55); pointer-events: none }
+.stage[data-mode="dark"] .hl { background: color-mix(in srgb, var(--sel) 66%, transparent); border-color: rgb(255 255 255 / .3) }
+.row { position: relative; min-height: 56px; display: flex; flex-wrap: wrap; align-items: center; column-gap: 16px; padding: 0 12px; border-radius: 24px; cursor: pointer; min-width: 0; overflow: hidden }
+.row > .line { display: flex; align-items: center; gap: 16px; width: 100%; height: 56px; min-width: 0 }
+.row.tall > .line { height: 92px }
+.row .t { flex: 1; min-width: 0; display: flex; flex-direction: column }
+.row .t b { font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .t i { font-style: normal; font-size: 13px; font-weight: 500; color: rgb(var(--on) / .8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .big { font-family: var(--display); font-variation-settings: "ROND" 100; font-size: 34px; font-weight: 600; line-height: 1.15 }
+.row .kind { flex: none; font-size: 13px; font-weight: 500; color: rgb(var(--on) / .8) }
+.row.on { color: var(--onsel) } .row.on .t i { color: var(--onsel) }
+.ic { flex: none; width: 36px; height: 36px; border-radius: 11px; background: var(--c); color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 700 }
+.ic.sym { border-radius: 50%; background: rgb(var(--on) / .08); color: rgb(var(--on) / .8) }
+.row.on .ic.sym { color: var(--onsel); background: color-mix(in srgb, var(--onsel) 10%, transparent) }
+.ic.sym svg { width: 20px; height: 20px; fill: currentColor }
+
+/* the option strip: chips never change size; one highlight glides between them; Enter has a fixed home */
+.strip { position: relative; flex: none; display: flex; align-items: center; height: 28px }
+.row > .arm { position: absolute; height: 28px; border-radius: 14px; background: rgb(var(--veil) / var(--pane)); border: 1px solid rgb(255 255 255 / .55); box-shadow: 0 0 0 1px rgb(var(--on) / .2); pointer-events: none }
+.row > .arm.danger { background: var(--errc); border-color: transparent; box-shadow: none }
+.chipx { position: relative; height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px 0 12px; border-radius: 14px; font-size: 13px; font-weight: 500; letter-spacing: .1px; color: var(--onsel); white-space: nowrap; cursor: pointer; background: none; border: 0; font-family: inherit }
+/* the Enter mark has a home in every chip; only the armed one shows it, so no chip ever changes width */
+.chipx .mk { width: 14px; height: 14px; opacity: 0 } .chipx .mk svg { display: block; width: 14px; height: 14px; fill: currentColor }
+.chipx.armed .mk { opacity: 1; transition: opacity .12s .08s }
+.chipx.danger { color: var(--err) } .chipx.danger.armed { color: var(--onerrc) }
+.chipx.more { opacity: .8; padding: 0 12px }
+.enter { flex: none; display: inline-grid; place-items: center; width: 26px; height: 22px; border-radius: 7px; background: color-mix(in srgb, var(--onsel) 12%, transparent); color: var(--onsel) }
+.enter svg { width: 14px; height: 14px; fill: currentColor }
+.row .line2 { width: 100%; display: flex; justify-content: flex-end; align-items: center; padding: 0 0 12px 0; height: 40px }
+.confirm { position: relative; overflow: hidden }
+.confirm::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 4px; height: 2px; background: var(--onerrc); transform-origin: 100% 50%; animation: drain 3s linear forwards }
+@keyframes drain { to { transform: scaleX(0) } }
+
+/* preview slots */
+.slots { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 }
+.slots .l { display: flex; gap: 14px; min-width: 0; font-size: 15px; font-weight: 500; white-space: nowrap }
+.slot { min-width: 0; overflow: hidden; text-overflow: ellipsis }
+.slot u { text-decoration: none; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .62; margin-right: 6px }
+.slot.empty { opacity: .45 }
+
+/* controls */
+.track { position: relative; flex: none; width: 200px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--onsel) 16%, transparent) }
+.track .fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--onsel) }
+.track .knob { position: absolute; top: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px; border-radius: 2px; background: var(--onsel) }
+.val { flex: none; width: 46px; text-align: right; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums }
+.sw { position: relative; flex: none; width: 46px; height: 26px; border-radius: 13px; background: color-mix(in srgb, var(--onsel) 16%, transparent); border: 1px solid color-mix(in srgb, var(--onsel) 30%, transparent) }
+.sw .th { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 9px; background: color-mix(in srgb, var(--onsel) 70%, transparent) }
+.sw.onn { background: var(--onsel); border-color: transparent } .sw.onn .th { left: 23px; background: var(--sel) }
+.sw.need, .track.need { opacity: .4 }
+.media { display: flex; gap: 6px; flex: none }
+.media span { width: 34px; height: 28px; display: grid; place-items: center; border-radius: 14px; font-size: 14px }
+.media span.mid { background: color-mix(in srgb, var(--onsel) 14%, transparent) }
+
+/* tall rows */
+.grid { position: relative; display: grid; grid-template-columns: repeat(14, 48px); justify-content: center; padding: 8px 0 4px }
+.grid .cell { width: 48px; height: 48px; display: grid; place-items: center; font-size: 26px; border-radius: 14px; cursor: pointer; position: relative }
+.grid .gh { position: absolute; width: 48px; height: 48px; border-radius: 14px; background: color-mix(in srgb, var(--sel) 78%, transparent); border: 1px solid rgb(255 255 255 / .55); pointer-events: none }
+.swatch { flex: none; width: 52px; height: 52px; border-radius: 16px; border: 1px solid rgb(255 255 255 / .6) }
+.qr { flex: none; width: 176px; height: 176px; padding: 12px; border-radius: 16px; background: #fff; display: grid; grid-template-columns: repeat(21, 1fr); gap: 0 }
+.qr i { background: #111 } .qr i.o { background: #fff }
+.mono { font-family: var(--mono); font-size: 20px; font-weight: 500; letter-spacing: .01em }
+
+/* the edge light: only ever on the outline */
+@property --ga { syntax: "<angle>"; inherits: false; initial-value: 0deg }
+.gleam { position: absolute; inset: 0; border-radius: 31px; padding: 2px; pointer-events: none; opacity: 0; z-index: 3;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude }
+.gleam[data-kind="sweep"] { background: linear-gradient(112deg, transparent 0%, var(--tertiary) 30%, #fff 50%, var(--primary) 70%, transparent 100%) no-repeat; background-size: 260px 100% }
+.gleam[data-kind="around"] { background: conic-gradient(from var(--ga), transparent 0 58%, var(--tertiary) 76%, #fff 90%, var(--primary) 96%, transparent 100%) }
+.foot { height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 20px; font-size: 12px; font-weight: 500; color: rgb(var(--on) / .8) }
+.foot .flash { flex: 1; color: var(--primary); font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.foot .cap + span { margin-right: 10px }
+.summon { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); font: inherit; font-size: 1rem; background: rgb(var(--veil) / .7); color: rgb(var(--on)); border: 1px solid rgb(255 255 255 / .7); border-radius: 999px; padding: 0.7rem 1.3rem; cursor: pointer; backdrop-filter: blur(20px); display: flex; gap: 0.5rem; align-items: center; white-space: nowrap }
+.stage.open .summon { display: none }
+.toast { position: absolute; left: 50%; bottom: 4.4rem; transform: translateX(-50%); background: var(--bar-ink); color: rgb(var(--veil)); padding: 0.45rem 1rem; border-radius: 999px; font-size: 0.9rem; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.toast.show { opacity: 1 }
+
+.rules { counter-reset: r; list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 1rem 2rem }
+.rules li { counter-increment: r; padding-left: 2.2rem; position: relative; font-size: 0.95rem }
+.rules li::before { content: counter(r); position: absolute; left: 0; top: 0; font-family: var(--display); font-weight: 700; font-size: 1.3rem; line-height: 1.2; color: var(--muted) }
+
+.qs { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface); overflow: hidden }
+.q { display: grid; grid-template-columns: 2rem 1fr; gap: 0.2rem 0.6rem; padding: 0.95rem 1rem; border-bottom: 1px solid var(--line) }
+.q:last-child { border-bottom: 0 }
+.q > .num { font-family: var(--display); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums }
+.q > div { min-width: 0; display: flex; flex-direction: column; gap: 0.45rem }
+.q p.why { font-size: 0.9rem; color: var(--muted) }
+.opts { display: flex; flex-wrap: wrap; gap: 0.4rem }
+.opts label { position: relative; font-size: 0.88rem; border: 1px solid var(--line); border-radius: 999px; padding: 0.22rem 0.8rem; cursor: pointer; background: var(--bg) }
+.opts input { position: absolute; opacity: 0; pointer-events: none }
+.opts label:has(input:checked) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600 }
+.opts label.def::after { content: " · recommended"; font-weight: 400; opacity: 0.75 }
+.answers { display: flex; flex-direction: column; gap: 0.6rem }
+.answers textarea { width: 100%; min-height: 9rem; font-family: var(--mono); font-size: 0.82rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 0.7rem; padding: 0.7rem 0.8rem; resize: vertical }
+.btn { align-self: flex-start; font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 0.55rem 1.2rem; cursor: pointer }
+@media (prefers-reduced-motion: reduce) { .dim, .toast { transition: none } .confirm::after { animation: none } }
+@media (max-width: 46rem) { .stage { height: 42rem } .typing { font-size: 20px } .strip .chipx:not(.armed):not(.more) { display: none } .grid { grid-template-columns: repeat(7, 44px) } .grid .cell, .grid .gh { width: 44px; height: 44px } .track { width: 110px } .qr { width: 132px; height: 132px } }
+</style>
+
+<main>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="17" fill="#1B1D2E"/><path d="M24 30h16l9 21H15z" fill="#FFC94D" opacity=".38"/><rect x="18" y="17" width="28" height="13" rx="6.5" fill="#FFC94D"/><circle cx="26" cy="23.5" r="2.6" fill="#1B1D2E"/></svg>
+    <h1>Booklight Next</h1>
+  </div>
+  <p class="lede">The plan for 1.1, 1.2, 1.3 and 2.2, and the new way of acting on a row. Try the model below, then answer the questions at the end. Nothing here is built into the app yet.</p>
+  <div class="meta"><span>Proposal, 1 October 2026</span><span>1.0 is in review on Google Play</span><span><a href="https://github.com/kuscher/booklight">kuscher/booklight</a></span></div>
+</header>
+
+<section id="try">
+  <h2>Try the model</h2>
+  <p class="prose">A browser copy of the proposed panel. Rows show their actions as chips; <kbd>Tab</kbd> moves between them; a keyword then <kbd>Tab</kbd> (or <kbd>Space</kbd>) becomes a chip in the field; <kbd>←</kbd> <kbd>→</kbd> work a control. The first line of switches compares ways for the panel to arrive. Apps, results and numbers are stand-ins, and nothing leaves this page.</p>
+  <div class="stagewrap">
+    <div class="controls">
+      <span class="lbl">Opening</span>
+      <span class="seg" role="group" aria-label="Opening"><button data-o="opening" data-v="unfold" aria-pressed="true">Unfold</button><button data-o="opening" data-v="bloom" aria-pressed="false">Bloom</button><button data-o="opening" data-v="bounce" aria-pressed="false">Bigger bounce</button><button data-o="opening" data-v="v1" aria-pressed="false">As in 1.0</button></span>
+      <span class="seg" role="group" aria-label="Edge light"><button data-o="gleam" data-v="slow" aria-pressed="true">Edge light: slow</button><button data-o="gleam" data-v="quick" aria-pressed="false">As in 1.0</button><button data-o="gleam" data-v="around" aria-pressed="false">Runs around</button><button data-o="gleam" data-v="off" aria-pressed="false">Off</button></span>
+      <span class="seg" role="group" aria-label="Speed"><button data-o="speed" data-v="1" aria-pressed="true">Real speed</button><button data-o="speed" data-v="4" aria-pressed="false">Quarter speed</button></span>
+      <button class="replay" id="replay">Replay</button>
+    </div>
+    <div class="controls">
+      <span class="lbl">Panel</span>
+      <span class="seg" role="group" aria-label="Theme"><button data-o="mode" data-v="light" aria-pressed="true">Light</button><button data-o="mode" data-v="dark" aria-pressed="false">Dark</button></span>
+      <span class="seg" role="group" aria-label="Actions"><button data-o="inline" data-v="1" aria-pressed="true">Actions in the row</button><button data-o="inline" data-v="0" aria-pressed="false">Own list (1.0)</button></span>
+      <span class="seg" role="group" aria-label="Scope entry"><button data-o="space" data-v="1" aria-pressed="true">Tab or Space</button><button data-o="space" data-v="0" aria-pressed="false">Tab only</button></span>
+      <span class="seg" role="group" aria-label="Backdrop"><button data-o="back" data-v="light" aria-pressed="true">Light windows</button><button data-o="back" data-v="dark" aria-pressed="false">Terminal</button></span>
+    </div>
+    <div class="stage open" id="stage" data-mode="light">
+      <div class="sbar"><span>Thu 1 Oct  9:41</span><span>Wi-Fi  ·  87%</span></div>
+      <div class="win a" id="wina"><b class="h"></b><b></b><b></b><b class="s"></b><b class="block"></b><b></b><b class="s"></b><b></b><b></b></div>
+      <div class="win b"><b class="h"></b><b class="block"></b><b></b><b class="s"></b><b></b><b></b><b class="s"></b></div>
+      <div class="tbar"><i style="--c:#5C6BC0"></i><i style="--c:#4285F4"></i><i style="--c:#EA4335"></i><i style="--c:#F4772A"></i><i style="--c:#263238"></i><i style="--c:#1FA463"></i></div>
+      <div class="dim"></div>
+      <div class="panel" id="panel" role="dialog" aria-label="Booklight">
+        <div class="inner" id="inner">
+        <div class="field" id="field">
+          <span class="mark" id="mark" aria-hidden="true">G</span>
+          <div class="typing"><div class="ghost" id="ghost" aria-hidden="true"></div><input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Search apps, settings and the web" aria-label="Search"></div>
+          <span class="cap" id="esc">esc</span>
+        </div>
+        <div id="body"></div>
+        </div>
+        <span class="gleam" id="gleam" data-kind="sweep"></span>
+      </div>
+      <button class="summon" id="summon">Summon Booklight <kbd>Action</kbd> + <kbd>K</kbd></button>
+      <div class="toast" id="toast" role="status"></div>
+    </div>
+    <div class="tryline"><b>Rows</b>
+      <button data-try="chr">chr</button><button data-try="chrome uninstall">chrome uninstall</button><button data-try="uninstall sp">uninstall sp</button><button data-try="summa new window">summa new window</button>
+      <b>Scopes</b>
+      <button data-try="yt" data-tab="1">yt ⇥</button><button data-try="mail anna@example.com Lunch? / See you at 1" data-scope="1">mail …</button><button data-try="note buy milk / and coffee" data-scope="1">note …</button><button data-try="timer 10m tea" data-scope="1">timer 10m tea</button><button data-try="event Fri 3pm Dentist @ Main St" data-scope="1">event …</button><button data-try="new file ideas.md" data-scope="1">new file …</button><button data-try="emoji" data-tab="1">emoji ⇥</button><button data-try="snip" data-tab="1">snip ⇥</button>
+    </div>
+    <div class="tryline"><b>Controls</b>
+      <button data-try="vol">vol</button><button data-try="dnd">dnd</button><button data-try="brightness">brightness</button><button data-try="pause">pause</button>
+      <b>Answers</b>
+      <button data-try="#3d4fcf">#3d4fcf</button><button data-try="qr github.com/kuscher/booklight" data-scope="1">qr …</button><button data-try="password 20">password 20</button><button data-try="150 + 20%">150 + 20%</button>
+      <b>Gemini</b>
+      <button data-try="how do I convince my team to try a four day week?">a long question</button>
+    </div>
+  </div>
+</section>
+
+<section id="model">
+  <h2>The model in seven rules</h2>
+  <ol class="rules">
+    <li><b>One field over one list.</b> The field holds at most one chip, then text. Row one is selected.</li>
+    <li><b>A row shows what it can do.</b> The selected row carries its actions as chips at its right end. One is armed and shows the Enter mark; Enter runs it.</li>
+    <li><b>Tab moves to the next thing the row offers.</b> Its next action, or, if the row takes text, typing into it. <kbd>→</kbd> at the end of the text does the same.</li>
+    <li><b>A typed verb arms an action.</b> "chrome uninstall" and "uninstall chrome" are the Chrome row with Uninstall armed. Never a second row.</li>
+    <li><b>A scope is a row that takes text.</b> Entering it turns its keyword into a chip where the G is. Backspace on an empty field turns it back.</li>
+    <li><b>A control is a row with a state.</b> <kbd>←</kbd> <kbd>→</kbd> change it live and the panel stays; Enter commits and closes.</li>
+    <li><b>Reversible things are live; permanent or outward things wait.</b> Delete needs Enter twice. Uninstall is never armed by default and Android asks before it happens.</li>
+  </ol>
+  <p class="prose muted small">The full model with the key map and the sources it draws on (Chrome's omnibox, Raycast, Alfred, Spotlight, PowerToys) is in the repo: <code>docs/design/ux-model.md</code>.</p>
+</section>
+
+<section id="releases">
+  <h2>What gets built</h2>
+  <p class="prose">Everything below uses the same four kinds of row, so the interaction work is done once and each feature is a provider. "Checked" means verified on your HP today.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Release</th><th>Features</th><th>How</th><th>Needs</th></tr>
+    <tr><td class="n"><b>Foundation</b></td><td>Actions in the row, typed verbs, scopes as chips, previews, controls, grids, Enter-again confirmation, the unfold opening, the icon-launch fix, the Booklight window</td><td>Engine and panel work; no new access</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td class="n"><b>1.1 Jot</b></td><td>Mail, note, event, reminder, timer, new file / folder / Doc, Ask Gemini, Uninstall on app rows</td><td>Gmail compose opens filled in <span class="tag ok">checked</span>. Notes file in Documents/Booklight <span class="tag ok">checked</span>, or Keep. Calendar and Clock intents <span class="tag ok">checked</span>. Gemini opens with the text filled in, not sent <span class="tag ok">checked</span></td><td>Two install-time permissions, no prompt: set alarm, request uninstall</td></tr>
+    <tr><td class="n"><b>1.2 Dials</b></td><td>Volume, play / pause / next, settings panels, emoji and symbols, colour values, QR, passwords and UUIDs, GitHub jump, localhost ports</td><td>Audio and media-key APIs (volume must change while the panel is visible on Android 17). Emoji data from Unicode</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td class="n"><b>1.3 Recipes</b></td><td>Quicklinks with placeholders, snippets, multi-step commands, open an app in a place or a new window, clipboard transforms, actions on text sent from other apps, a search-pill widget and a Quick Settings tile</td><td>An editor window for your own commands. Launch bounds and new-window flags (to be checked per app on the HP)</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td class="n"><b>2.2 Switches</b></td><td>Do Not Disturb, brightness, keep awake, reminders at an exact time, the assistant role</td><td>Each row shows "Allow…" until you flip its switch in Settings once</td><td>Settings switches <span class="tag warn">see below</span></td></tr>
+  </table></div>
+  <div class="notice prose">
+    <h3>Three limits the research found</h3>
+    <p><b>Do Not Disturb</b> is narrower than it sounds: an app built for Android 15 or later can only switch its own mode on and off. It cannot switch off Do Not Disturb that you or another app turned on.</p>
+    <p><b>Notes in a plain file</b> don't survive a reinstall: Android stops treating the old file as Booklight's. A folder you grant once avoids that.</p>
+    <p><b>Keep awake</b> without a background service (which Play reviews with a video) means raising the screen timeout while it is on, using the same Settings switch as brightness.</p>
+  </div>
+</section>
+
+<section id="permissions">
+  <h2>Uninstall, and what Play asks for</h2>
+  <p class="prose"><b>Uninstall needs <code>REQUEST_DELETE_PACKAGES</code></b>: an install-time permission with no prompt. Android still shows its own "Do you want to uninstall this app?" dialog every time. <b>Play asks for nothing extra</b>: no form, no declaration; other launchers on Play declare it. Without the permission the uninstall silently does nothing, so it can't be done "for free".</p>
+  <div class="tablewrap"><table>
+    <tr><th>Feature</th><th>Access</th><th>What you see</th><th>Play</th></tr>
+    <tr><td>Uninstall an app</td><td><code>REQUEST_DELETE_PACKAGES</code></td><td>Nothing at install; Android's confirm dialog per uninstall</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td>Timer, alarm, reminder through Clock</td><td><code>SET_ALARM</code></td><td>Nothing</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td>Volume, media keys, files in Documents, widget, tile, window placement, text from other apps</td><td>none</td><td>Nothing</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td>Do Not Disturb</td><td>Notification policy access</td><td>One switch in Settings</td><td>No form; must be clearly your choice and easy to undo</td></tr>
+    <tr><td>Brightness, keep awake</td><td>Modify system settings</td><td>One switch in Settings</td><td>No form; same rule</td></tr>
+    <tr><td>Reminder at an exact time, by Booklight itself</td><td>Alarms and reminders, plus notifications</td><td>One switch and one prompt</td><td>No form this way. The no-switch variant is reserved for alarm and calendar apps <span class="tag warn">avoid</span></td></tr>
+    <tr><td>Assistant role</td><td>Chosen in Settings</td><td>You pick Booklight as the assistant</td><td><span class="tag ok">nothing</span></td></tr>
+    <tr><td>Keep awake through a background service</td><td>Foreground service</td><td>A permanent notification</td><td>Declaration form and video <span class="tag warn">avoid</span></td></tr>
+  </table></div>
+  <p class="prose muted small">Sources and quotes: <code>docs/research/permissions.md</code>. None of the four releases needs an accessibility service.</p>
+</section>
+
+<section id="ideas">
+  <h2>Your three additions</h2>
+  <div class="prose" style="display:flex;flex-direction:column;gap:1rem">
+    <p><b>Four openings to compare.</b> <i>Unfold</i> is your idea: a line grows up and down, then the glass opens out of it to both sides and settles with a small bounce. The contents are laid out once and only uncovered, so nothing reflows. <i>Bloom</i> grows the glass out of a small pill in every direction at once. <i>Bigger bounce</i> is 1.0's arrival with about twice the bounce. The edge light can run as in 1.0, about half as fast, or once around the outline. Use Replay and Quarter speed above the panel. Typing is live from the first frame in all of them, and a setting turns the animation off.</p>
+    <p><b>A Booklight window for the app icon.</b> Today the icon appears to do nothing. I found why: started from the Apps list, the panel opens and closes itself within a moment, because the Apps list closing takes focus away. That is a bug to fix either way. The proposal: the icon opens a normal window that says what Booklight is, shows how to give it a key, and holds the settings, drawn with the panel's own components and motion. The keyboard shortcut still opens the panel (Android tells the app who started it, so the two can be told apart).</p>
+    <p><b>Ask Gemini.</b> Checked on the HP: handing text to the Gemini app opens it with your text in the prompt, not sent, so one more Enter there sends it. No permission needed. In Booklight a long or question-like text gets "Ask Gemini" as its first row; for anything else it is one row under "Search Google". <code>ask</code> then Tab makes it a scope. Gemini's own actions (new chat, Live, notebooks) can't be listed by another app today; the ones with public links can be added as rows.</p>
+  </div>
+</section>
+
+<section id="order">
+  <h2>Build order</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Step</th><th>What</th><th>Ships as</th></tr>
+    <tr><td class="n">1</td><td>Foundation: the option strip (which also fixes the janky first-run buttons), verbs, scopes, previews, controls, grids, confirmation, unfold, the icon fix, the Booklight window, the privacy link</td><td class="n">1.1</td></tr>
+    <tr><td class="n">2</td><td>Jot, with Uninstall and Ask Gemini</td><td class="n">1.1</td></tr>
+    <tr><td class="n">3</td><td>Dials</td><td class="n">1.2</td></tr>
+    <tr><td class="n">4</td><td>Recipes and the editor window</td><td class="n">1.3</td></tr>
+    <tr><td class="n">5</td><td>Switches</td><td class="n">1.4 (the plan's "2.2", renumbered because 2.0 and 2.1 come later)</td></tr>
+  </table></div>
+  <p class="prose">Each step is tested on the HP, reviewed by the design and code reviewers as 1.0 was, and released by tag. The design system and motion specification the build follows are in the repo: <code>docs/design/design-system.md</code> (tokens, every component and state, a 20-line motion table, and the rules that keep things from jumping).</p>
+</section>
+
+<section id="questions">
+  <h2>Questions</h2>
+  <p class="prose">Each has a recommendation, already selected. Change what you want, then copy the answers into the session, or reply "Default".</p>
+  <div class="qs" id="qs"></div>
+  <div class="answers"><button class="btn" id="copy">Copy answers</button><textarea id="answers" readonly aria-label="Your answers"></textarea></div>
+</section>
+</main>
+
+<script>
+(() => {
+'use strict';
+// ---------------------------------------------------------------- data (stand-ins)
+const A = (label, o = {}) => ({ label, ...o });
+const APP_ACTIONS = () => [A('Open'), A('New window'), A('App info'), A('Left half'), A('Right half'), A('Store page'), A('Uninstall', { danger: true, say: 'Android asks: uninstall' })];
+const APPS = [
+  ['Chrome','#4285F4','C'],['Chrome Canary','#F2B33D','C'],['Calendar','#1A73E8','31'],['Calculator','#1E8E3E','±'],['Camera','#5F6368','◉'],['Canvas','#7B4DFF','Cv'],
+  ['Summa','#F4772A','Σ'],['StudioSnap','#D93A1E','⌗'],['BentoBar','#20305A','B'],['PDF Toolbox','#C5221F','P'],['Files','#4C8BF5','F'],['Gmail','#EA4335','M'],
+  ['Docs','#4285F4','D'],['Sheets','#0F9D58','S'],['Drive','#1FA463','△'],['Play Store','#00A173','▶'],['Settings','#5C6BC0','⚙'],['Terminal','#263238','>_'],
+  ['YouTube','#E62117','▶'],['Maps','#34A853','M'],['Photos','#FBBC04','✿'],['Keep','#F9AB00','K'],['Spotify','#1DB954','♫'],['Gemini','#6A5AE0','✦'],
+  ['Disco Sweeper','#C2185B','DS'],['HearOn Link','#3949AB','H'],['VSCodeBook','#007ACC','VS'],['Info Reader','#00838F','i'],
+].map(([name, c, g]) => ({ id: 'app:' + name, kind: 'App', title: name, icon: { c, g }, actions: APP_ACTIONS() }));
+const SETTINGS = [['Wi-Fi','wifi,network'],['Bluetooth','pair'],['Display','screen'],['Dark theme','dark mode,night'],['Sound','audio'],['Battery','power'],['Storage','disk'],['Physical keyboard','keyboard,shortcuts'],['Wallpaper','background'],['About this device','version']]
+  .map(([t, w]) => ({ id: 'set:' + t, kind: 'Settings', title: t, words: w, sym: 'gear', actions: [A('Open')] }));
+const SCOPES = [
+  { key: 'yt', name: 'YouTube', sym: 'search', ph: 'Search YouTube', site: true }, { key: 'g', name: 'Google', sym: 'search', ph: 'Search Google', site: true },
+  { key: 'w', name: 'Wikipedia', sym: 'search', ph: 'Search Wikipedia', site: true }, { key: 'gh', name: 'GitHub', sym: 'search', ph: 'Search GitHub, or owner/repo', site: true },
+  { key: 'mail', name: 'Mail', sym: 'mail', ph: 'to  subject / message' }, { key: 'note', name: 'Note', sym: 'note', ph: 'what to remember' },
+  { key: 'timer', name: 'Timer', sym: 'timer', ph: '10m tea' }, { key: 'event', name: 'Event', sym: 'event', ph: 'Fri 3pm Dentist' },
+  { key: 'new', name: 'New', sym: 'plus', ph: 'file ideas.md · folder Projects · doc' }, { key: 'ask', name: 'Gemini', sym: 'spark', ph: 'Ask Gemini' },
+  { key: 'emoji', name: 'Emoji', sym: 'smile', ph: 'Find an emoji' }, { key: 'qr', name: 'QR', sym: 'qr', ph: 'text or link' },
+  { key: 'snip', name: 'Snippets', sym: 'note', ph: 'find, or: add name / text' },
+];
+const EMOJI = '😀 grinning,😂 joy,🥲 smiling tear,😍 heart eyes,😎 cool,🤔 thinking,😴 sleeping,🥳 party,😇 halo,🙃 upside down,😉 wink,😭 crying,😡 angry,🤯 mind blown,👍 thumbs up,👎 thumbs down,👏 clap,🙏 thanks,💪 strong,👀 eyes,🎉 party popper,🔥 fire,✨ sparkles,💡 idea,❤️ heart,💔 broken heart,⭐ star,🌙 moon,☀️ sun,🌧️ rain,⚡ lightning,🌈 rainbow,🍕 pizza,🍣 sushi,🍱 bento,☕ coffee,🍺 beer,🍰 cake,🍎 apple,🥑 avocado,🚀 rocket,✈️ plane,🚲 bike,🚗 car,🏠 home,🏔️ mountain,🌊 wave,🌳 tree,📚 books,💻 laptop,⌨️ keyboard,🖱️ mouse,📱 phone,🔦 flashlight,🔍 search,🔒 lock,🔑 key,📎 paperclip,✏️ pencil,📌 pin,✅ check,❌ cross,⚠️ warning,❓ question,💬 speech,📅 calendar,⏰ alarm,🎵 music,🎮 game,🪩 disco'.split(',').map(s => { const i = s.indexOf(' '); return { e: s.slice(0, i), n: s.slice(i + 1) }; });
+const SNIPS = [{ k: 'sig', v: 'Best, Alex' }, { k: 'addr', v: '1 Infinite Loop, Cupertino' }, { k: 'zoom', v: 'https://zoom.us/j/1234567890' }];
+const SYM = {
+  gear: 'M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.32a.5.5 0 0 0-.59-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54A.48.48 0 0 0 13.92 2h-3.84a.48.48 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.5.5 0 0 0-.59.22L2.74 8.87a.5.5 0 0 0 .12.61l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.5.5 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2',
+  search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14',
+  enter: 'M19 7v4H5.83l3.58-3.59L8 6l-6 6 6 6 1.41-1.41L5.83 13H21V7z',
+  mail: 'M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 4-8 5-8-5V6l8 5 8-5z',
+  note: 'M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9l7-7V5a2 2 0 0 0-2-2M7 8h10v2H7zm0 4h5v2H7zm7 7.5V14h5.5z',
+  timer: 'M15 1H9v2h6zm-4 13h2V8h-2zm8.03-6.61 1.42-1.42a11 11 0 0 0-1.41-1.41l-1.42 1.42A9 9 0 1 0 19.03 7.39M12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14',
+  event: 'M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V10h14zM7 12h5v5H7z',
+  plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z', spark: 'M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9zM19 15l.9 2.6 2.6.9-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9z',
+  smile: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m3.5 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3m-7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3M12 17.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5',
+  qr: 'M3 11h8V3H3zm2-6h4v4H5zM3 21h8v-8H3zm2-6h4v4H5zm8-12v8h8V3zm6 6h-4V5h4zm-6 4h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2z',
+  vol: 'M3 9v6h4l5 5V4L7 9zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4M14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6',
+  moon: 'M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.4 5.4 0 0 1-7.54-7.54A9 9 0 0 0 12 3', sun: 'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10M2 13h2a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2m18 0h2a1 1 0 0 0 0-2h-2a1 1 0 0 0 0 2M11 2v2a1 1 0 0 0 2 0V2a1 1 0 0 0-2 0m0 18v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-2 0',
+  play: 'M8 5v14l11-7z', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m7 9h-3a15 15 0 0 0-1.4-5.5A8 8 0 0 1 19 11M12 4c1 1.4 1.8 3.8 2 7h-4c.2-3.2 1-5.600 2-7M5 13h3c.1 2 .6 3.900 1.400 5.500A8 8 0 0 1 5 13m3-2H5a8 8 0 0 1 4.400-5.500A15 15 0 0 0 8 11m4 9c-1-1.400-1.800-3.800-2-7h4c-.2 3.200-1 5.600-2 7m2.600-1.500c.8-1.600 1.300-3.500 1.400-5.500h3a8 8 0 0 1-4.400 5.500',
+  key: 'M12.65 10A6 6 0 1 0 12.65 14H17v4h4v-4h2v-4zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4', calc: 'M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2M6.3 7.700h5v1.500h-5zM11.500 16h-2v2H8v-2H6v-1.500h2v-2h1.500v2h2zm6.500 1.300h-5v-1.500h5zm0-2.500h-5v-1.500h5zM14 9.900l1.400-1.400L14 7.100 15.100 6l1.400 1.400L17.900 6 19 7.100l-1.400 1.400L19 9.900 17.900 11l-1.400-1.400L15.100 11z',
+};
+const svg = n => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${SYM[n]}"/></svg>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---------------------------------------------------------------- matching (as in the app's core)
+const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const words = s => s.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+function score(query, name) {
+  const q = fold(query); if (!q) return 0; const n = fold(name), ws = words(name);
+  if (q === n) return 1; const b = 0.05 * q.length / n.length;
+  if (n.startsWith(q)) return 0.9 + b; if (ws.slice(1).some(w => w.startsWith(q))) return 0.8 + b;
+  if (q.length >= 2 && ws.length > 1 && ws.map(w => w[0]).join('').startsWith(q)) return 0.75 + b;
+  if (n.includes(q)) return 0.6 + b; if (q.length < 3) return 0;
+  let i = 0; for (const c of n) if (c === q[i]) i++; return i === q.length ? 0.3 : 0;
+}
+function calc(s) { if (!/^[\d\s.+\-*/()%^]+$/.test(s) || !/[+\-*/^]/.test(s)) return null;
+  try { let e = s.replace(/(\d+(?:\.\d+)?)\s*([+\-])\s*(\d+(?:\.\d+)?)%/g, '($1$2$1*$3/100)').replace(/\^/g, '**').replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+    const v = Function('"use strict";return (' + e + ')')(); return Number.isFinite(v) ? String(parseFloat(v.toPrecision(12))) : null; } catch (_) { return null; } }
+
+// verbs: a word at the end (may be abbreviated) or at the start (whole word) arms an action
+const VERBS = [['Uninstall', ['uninstall', 'remove', 'delete'], 3], ['App info', ['info', 'details'], 2], ['New window', ['new window', 'window', 'nw'], 2], ['Store page', ['store', 'update'], 2], ['Left half', ['left'], 2], ['Right half', ['right'], 2], ['Open', ['open', 'launch', 'start'], 2]];
+function verbReading(t) {
+  const out = []; const lower = t.toLowerCase().trim();
+  for (const [label, syns, min] of VERBS) for (const s of syns) {
+    if (lower.startsWith(s + ' ') && lower.length > s.length + 1) out.push({ label, rest: t.trim().slice(s.length + 1), atStart: true });
+    const parts = lower.split(/\s+/); if (parts.length < 2) continue;
+    for (const take of [2, 1]) { if (parts.length <= take) continue; const tail = parts.slice(-take).join(' '); if (tail.length >= min && s.startsWith(tail)) out.push({ label, rest: parts.slice(0, -take).join(' ') }); }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- state
+const $ = id => document.getElementById(id);
+const stage = $('stage'), panel = $('panel'), input = $('q'), body = $('body'), ghost = $('ghost'), toast = $('toast'), field = $('field');
+const opts = { inline: true, space: true, opening: 'unfold', gleam: 'slow' };
+const st = { scope: null, rows: [], sel: 0, arm: 0, open: false, confirm: 0, cell: 0, listOf: null, flash: '', vol: 40, muted: false, dnd: false, awake: false, bright: 60, granted: false, playing: true, last: null };
+const prev = new Map();          // where things were, so they move instead of jumping
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// The app's springs (Motion.kt), sampled into CSS linear() so the page moves as the panel does.
+const canSpring = CSS.supports('transition-timing-function', 'linear(0, 1)');
+function spring(z, k) {
+  const w = Math.sqrt(k), wd = w * Math.sqrt(1 - z * z), T = 6.9 / (z * w), n = 48, pts = [];
+  for (let i = 0; i <= n; i++) { const t = T * i / n; pts.push((1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t))).toFixed(4)); }
+  pts[n] = 1; return { duration: Math.round(T * 1000), easing: canSpring ? `linear(${pts.join(',')})` : 'cubic-bezier(.3,1.2,.4,1)' };
+}
+const PLACE = spring(.86, 520), LEADS = spring(.82, 1100), TRAIL = spring(.9, 420), POP = spring(.62, 700), BOUNCE = spring(.48, 420), OUT = spring(.7, 1100), GROW = spring(.72, 620);
+let speed = 1;
+const anim = (el, kf, o) => el.animate(kf, { ...o, duration: (o.duration || 0) * speed, delay: (o.delay || 0) * speed });
+function setSpeed() { panel.style.transition = reduce ? 'none' : `height ${PLACE.duration * speed}ms ${PLACE.easing}`; }
+setSpeed();
+
+// ---------------------------------------------------------------- rows for what is typed
+function looksLikeAQuestion(t) { const w = t.trim().split(/\s+/); return w.length >= 5 || /\?\s*$/.test(t) || /^(how|what|why|when|who|write|explain|summari[sz]e|draft|translate|compare|should)\b/i.test(t) && w.length >= 3; }
+function geminiRow(t) { return { id: 'gemini', kind: 'Gemini', title: 'Ask Gemini', sub: t, sym: 'spark', actions: [A('Ask', { say: 'Gemini opens with your text in the prompt' }), A('Copy')] }; }
+function webRow(t) { return { id: 'web', kind: 'Web', title: `Search Google for “${t}”`, sym: 'search', actions: [A('Search', { say: 'Searching Google' })] }; }
+function controlRows(t) {
+  const out = [], m = /^(\S+)\s*(\d+)?/.exec(t.toLowerCase()) || [], k = m[1] || '', n = m[2];
+  if ('volume'.startsWith(k) && k.length >= 3 || k === 'mute') out.push({ id: 'c:vol', kind: '', title: 'Volume', sym: 'vol', control: 'vol', target: n ? +n : null, actions: [A(st.muted ? 'Unmute' : 'Mute', { stay: true, fn: () => { st.muted = !st.muted; } }), A('Sound settings')] });
+  if ('brightness'.startsWith(k) && k.length >= 3) out.push({ id: 'c:bright', kind: '', title: 'Brightness', sym: 'sun', control: 'bright', need: !st.granted, target: n ? +n : null, actions: st.granted ? [A('Done'), A('Display settings')] : [A('Allow…', { stay: true, say: 'Settings opens at “Modify system settings”', fn: () => { st.granted = true; } })] });
+  if ('dnd'.startsWith(k) && k.length >= 2 || 'do not disturb'.startsWith(t.toLowerCase()) && t.length >= 3) out.push({ id: 'c:dnd', kind: '', title: 'Do Not Disturb', sub: st.dnd ? 'On, Booklight’s mode' : 'Off', sym: 'moon', control: 'dnd', actions: [A(st.dnd ? 'Turn off' : 'Turn on', { fn: () => { st.dnd = !st.dnd; }, say: 'Do Not Disturb ' }), A('Modes settings')] });
+  if ('awake'.startsWith(k) && k.length >= 3 || 'keep awake'.startsWith(t.toLowerCase()) && t.length >= 3) out.push({ id: 'c:awake', kind: '', title: 'Keep awake', sub: st.awake ? 'On until 16:00' : 'Off', sym: 'sun', control: 'awake', actions: [A(st.awake ? 'Turn off' : 'Turn on', { fn: () => { st.awake = !st.awake; } })] });
+  if (/^(pause|play|next|prev|previous|media)$/.test(k)) out.push({ id: 'c:media', kind: '', title: st.playing ? 'Pause' : 'Play', sub: 'Whatever is playing', sym: 'play', control: 'media', actions: [A(st.playing ? 'Pause' : 'Play', { stay: true, fn: () => { st.playing = !st.playing; } })] });
+  return out;
+}
+function plainRows(t) {
+  const out = [];
+  const a = calc(t); if (a !== null) out.push({ id: 'calc', kind: 'Answer', tall: true, big: a, sub: t + ' =', sym: 'calc', actions: [A('Copy'), A('Copy with the sum')], rank: 10 });
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(t)) { const h = t.length === 4 ? '#' + [...t.slice(1)].map(c => c + c).join('') : t; const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    out.push({ id: 'color', kind: 'Colour', tall: true, swatch: h, vals: [h.toUpperCase(), `rgb(${r}, ${g}, ${b})`, hsl(r, g, b)], actions: [A('HEX'), A('RGB'), A('HSL')], rank: 10 }); }
+  if (/^(password|pw|uuid)(\s+\d+)?$/i.test(t)) { const n = +(/\d+/.exec(t) || [16])[0]; const u = /^uuid/i.test(t);
+    out.push({ id: 'secret', kind: u ? 'UUID' : 'Password', tall: true, mono: u ? uuid() : pass(Math.min(40, Math.max(8, n))), sym: 'key', actions: [A('Copy'), A('New one', { stay: true })], rank: 10 }); }
+  if (/^:\d{2,5}$/.test(t)) out.push({ id: 'port', kind: 'Link', title: 'localhost' + t, sub: 'Open in the browser', sym: 'globe', actions: [A('Open'), A('Copy link')], rank: 5 });
+  if (/^([a-z0-9-]+\.)+[a-z]{2,}(\/\S*)?$/i.test(t)) out.push({ id: 'url', kind: 'Link', title: t, sub: 'Open link', sym: 'globe', actions: [A('Open'), A('Copy link'), A('Save as quicklink…')], rank: 0.95 });
+  out.push(...controlRows(t).map(r => ({ ...r, rank: 2 })));
+  const exact = SCOPES.find(s => s.key === t.toLowerCase());
+  for (const s of SCOPES) { const sc = Math.max(s.key === t.toLowerCase() ? 1.2 : 0, s.key.startsWith(t.toLowerCase()) && t.length >= 2 ? 0.7 : 0, score(t, s.name) * 0.7); if (sc > 0.45) out.push({ id: 'scope:' + s.key, kind: 'Tab', title: s.site ? 'Search ' + s.name : s.name, sub: s.site ? '' : s.ph, sym: s.sym, scope: s, actions: [A(s.site ? 'Search…' : 'Type…')], rank: sc }); }
+  const whole = APPS.map(r => ({ r, s: score(t, r.title) })).filter(x => x.s > 0);
+  const strong = whole.some(x => x.s >= 0.8);
+  for (const x of whole) out.push({ ...x.r, actions: APP_ACTIONS(), rank: x.s });
+  if (!strong) for (const v of verbReading(t)) for (const r of APPS) { const s = score(v.rest, r.title); if (s >= 0.8) { const acts = APP_ACTIONS(); out.push({ ...r, id: r.id + '|' + v.label, base: r.id, actions: acts, armLabel: v.label, rank: s * 0.95 + 0.2 }); } }
+  for (const r of SETTINGS) { const s = Math.max(score(t, r.title), ...r.words.split(',').map(w => score(t, w) >= 0.8 ? score(t, w) * 0.85 : 0)); if (s > 0) out.push({ ...r, rank: s * 0.9 }); }
+  const seen = new Set(), uniq = [];
+  out.sort((x, y) => (y.rank || 0) - (x.rank || 0));
+  for (const r of out) { const key = r.base || r.id; if (seen.has(key)) continue; seen.add(key); uniq.push(r); }
+  const top = uniq.slice(0, 6), gem = looksLikeAQuestion(t);
+  if (gem && !strong) top.unshift(geminiRow(t));
+  top.push(webRow(t)); if (!gem && /\s/.test(t) && !exact && !(top[0] && top[0].kind === 'App')) top.push(geminiRow(t));
+  return top.slice(0, 8);
+}
+function hsl(r, g, b) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; let h = 0, s = 0; if (d) { s = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = Math.round(h * 60 + 360) % 360; } return `hsl(${h}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`; }
+const pass = n => { const c = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!#$%&*+-=?'; return Array.from({ length: n }, () => c[Math.floor(Math.random() * c.length)]).join(''); };
+const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : r & 3 | 8).toString(16); });
+
+// ---------------------------------------------------------------- rows inside a scope
+const slot = (label, v, guess) => `<span class="slot${v ? '' : ' empty'}"${guess ? ' style="opacity:.6"' : ''}><u>${label}</u>${esc(v || '…')}</span>`;
+function scopeRows(s, t) {
+  const k = s.key, web = () => webRow((k + ' ' + t).trim());
+  if (s.site) { if (!t) return []; if (k === 'gh' && /^[\w.-]+\/[\w.-]+$/.test(t)) return [{ id: 'gh', kind: 'Link', title: 'github.com/' + t, sub: 'Open the repository', sym: 'globe', actions: [A('Open'), A('Copy link'), A('Save as quicklink…')] }, web()];
+    return [{ id: 'site', kind: 'Web', title: `Search ${s.name} for “${t}”`, sym: 'search', actions: [A('Search', { say: 'Searching ' + s.name }), A('Copy link')] }, web()]; }
+  if (k === 'mail') { const parts = t.split(' / '), head = parts[0].split(/\s+/).filter(Boolean), to = []; while (head.length && /@/.test(head[0])) to.push(head.shift().replace(/,$/, ''));
+    return [{ id: 'mail', kind: '', tall: true, sym: 'mail', slots: `<div class="l">${slot('To', to.join(', '))}${slot('Subject', head.join(' '))}</div><div class="l">${slot('Message', parts.slice(1).join(' / '))}</div>`, actions: [A('Compose', { say: 'Gmail opens with the message filled in. Nothing is sent.' }), A('Copy text')] }, web()]; }
+  if (k === 'note') return [{ id: 'note', kind: '', tall: true, sym: 'note', slots: `<div class="l">${slot('Add to', 'Notes.md')}${slot('At', 'Thu 1 Oct, 9:41', true)}</div><div class="l">${slot('Text', t.split(' / ').join(' ⏎ '))}</div>`, actions: [A('Add', { say: 'Added to Notes' }), A('Keep', { say: 'Keep opens with the note' }), A('Copy')] }, web()];
+  if (k === 'timer') { const m = /^(\d+)\s*(h|m|s)?\s*(\d+)?\s*(.*)$/i.exec(t.trim()); let secs = 0, label = '';
+    if (m) { const n = +m[1], u = (m[2] || 'm').toLowerCase(); secs = u === 'h' ? n * 3600 + (+m[3] || 0) * 60 : u === 's' ? n : n * 60; label = m[4] || ''; }
+    const mm = Math.floor(secs / 60), ss = secs % 60, at = new Date(Date.now() + secs * 1000);
+    return [{ id: 'timer', kind: '', tall: true, sym: 'timer', big: secs ? `${mm}:${String(ss).padStart(2, '0')}` : '0:00', sub: secs ? `${label || 'Timer'} · rings at ${at.getHours()}:${String(at.getMinutes()).padStart(2, '0')}` : 'How long?', actions: [A('Start', { say: 'Timer started' })] }, web()]; }
+  if (k === 'event') { const day = /\b(today|tomorrow|mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/i.exec(t), time = /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?:\s*-\s*(\d{1,2})(?::(\d{2}))?)?\b/i.exec(t.replace(day ? day[0] : '', '')), place = /@\s*(.+)$/.exec(t);
+    let title = t; for (const x of [day, time, place]) if (x) title = title.replace(x[0], ''); title = title.replace(/\s+/g, ' ').trim();
+    let hr = time ? +time[1] + (/pm/i.test(time[3] || '') && +time[1] < 12 ? 12 : 0) : null;
+    const when = (day ? day[0][0].toUpperCase() + day[0].slice(1, 3).toLowerCase() : 'Today') + (hr !== null ? `, ${hr}:${time[2] || '00'}–${time[4] ? time[4] + ':' + (time[5] || '00') : (hr + 1) + ':' + (time[2] || '00')}` : ', all day');
+    return [{ id: 'event', kind: '', tall: true, sym: 'event', slots: `<div class="l">${slot('When', when, !time)}${slot('Where', place ? place[1] : '')}</div><div class="l">${slot('Title', title)}</div>`, actions: [A('Create', { say: 'Calendar opens with the event filled in' }), A('Copy')] }, web()]; }
+  if (k === 'new') { const m = /^(file|folder|doc|sheet|slides)?\s*(.*)$/i.exec(t.trim()), kind = (m[1] || (/\.\w+$/.test(m[2]) ? 'file' : '')).toLowerCase(), name = m[2];
+    if (!kind && !name) return ['File', 'Folder', 'Doc', 'Sheet', 'Slides'].map(x => ({ id: 'new:' + x, kind: 'New', title: 'New ' + x.toLowerCase(), sym: 'plus', actions: [A('Create')] }));
+    const online = /doc|sheet|slides/.test(kind);
+    return [{ id: 'new', kind: '', tall: true, sym: 'plus', slots: `<div class="l">${slot('New', kind || 'file')}${slot('In', online ? 'Google Drive' : 'Documents/', !online)}</div><div class="l">${slot('Name', name)}</div>`, actions: online ? [A('Create', { say: 'Opens a new ' + kind })] : [A('Create', { say: 'Created and opened' }), A('Create in…')] }, web()]; }
+  if (k === 'ask') return t ? [geminiRow(t)] : [];
+  if (k === 'emoji') { const f = EMOJI.filter(e => !t || e.n.includes(t.toLowerCase())).slice(0, 70); return [{ id: 'grid', kind: '', grid: f, actions: [A('Copy'), A('Copy name')] }]; }
+  if (k === 'qr') return t ? [{ id: 'qr', kind: '', qr: t, actions: [A('Copy image'), A('Save'), A('Share')] }] : [];
+  if (k === 'snip') { const add = /^add\s+(\S+)(?:\s*\/\s*(.*))?$/i.exec(t);
+    if (add) return [{ id: 'snipadd', kind: '', tall: true, sym: 'note', slots: `<div class="l">${slot('Save snippet', add[1])}</div><div class="l">${slot('Text', add[2] || '')}</div>`, actions: [A('Save', { say: 'Snippet saved' })] }];
+    return SNIPS.filter(x => !t || x.k.includes(t.toLowerCase())).map(x => ({ id: 'snip:' + x.k, kind: 'Snippet', title: x.k, sub: x.v, sym: 'note', actions: [A('Copy'), A('Edit…'), A('Delete', { danger: true, confirm: true, fn: () => { SNIPS.splice(SNIPS.indexOf(x), 1); }, say: 'Snippet deleted' })] })); }
+  return [];
+}
+
+// ---------------------------------------------------------------- drawing
+const ENTER = `<span class="enter">${svg('enter')}</span>`;
+function pic(r) { if (r.swatch) return `<span class="swatch" style="background:${r.swatch}"></span>`; return r.icon ? `<span class="ic" style="--c:${r.icon.c}">${r.icon.g}</span>` : `<span class="ic sym">${svg(r.sym || 'search')}</span>`; }
+const MK = `<span class="mk">${svg('enter')}</span>`;
+function chipHTML(a, i) { const on = i === st.arm, sure = st.confirm && on; return `<button class="chipx${on ? ' armed' : ''}${a.danger ? ' danger' : ''}${sure ? ' confirm' : ''}" data-act="${i}" tabindex="-1"${a.danger ? ' style="margin-left:12px"' : ''}>${sure ? 'Press again to ' + a.label.toLowerCase() : esc(a.label)}${MK}</button>`; }
+function visible(r) { const n = r.actions.length; return n <= 3 ? n : 3; }
+function strip(r) {
+  const n = visible(r), more = r.actions.length - n;
+  return `<span class="strip">${r.actions.slice(0, n).map((a, i) => chipHTML(a, i)).join('')}${more > 0 ? `<button class="chipx more" data-more="1" tabindex="-1">⋯ ${more}</button>` : ''}</span>`;
+}
+function line2(r) { const n = visible(r); return `<div class="line2"><span class="strip">${r.actions.slice(n).map((a, j) => chipHTML(a, n + j)).join('')}</span></div>`; }
+function controlHTML(r) {
+  if (r.control === 'vol' || r.control === 'bright') { const v = r.control === 'vol' ? (st.muted ? 0 : st.vol) : st.bright; const mark = r.target != null ? `<span class="knob" style="left:${r.target}%;opacity:.5"></span>` : '';
+    return `<span class="track${r.need ? ' need' : ''}" data-k="track"><span class="fill" data-k="fill" style="width:${v}%"></span>${mark}</span><span class="val" data-k="val">${r.need ? '' : (r.control === 'vol' && st.muted ? 'Muted' : v + ' %')}</span>`; }
+  if (r.control === 'dnd' || r.control === 'awake') { const on = r.control === 'dnd' ? st.dnd : st.awake; return `<span class="sw${on ? ' onn' : ''}" data-k="sw"><span class="th" data-k="th"></span></span>`; }
+  if (r.control === 'media') return `<span class="media"><span>⏮</span><span class="mid">${st.playing ? '⏸' : '▶'}</span><span>⏭</span></span>`;
+  return '';
+}
+function rowHTML(r, i) {
+  const on = i === st.sel;
+  if (r.grid) return `<div class="row" data-i="${i}" data-id="${r.id}" style="display:block;padding:0;cursor:default"><div class="grid" id="grid"><span class="gh"></span>${r.grid.map((e, j) => `<span class="cell" data-cell="${j}" title="${esc(e.n)}">${e.e}</span>`).join('')}</div></div>`;
+  if (r.qr) return `<div class="row on" data-i="${i}" data-id="${r.id}" style="height:208px;flex-wrap:nowrap"><span class="arm"></span><div class="line" style="height:208px"><span class="qr">${qrCells(r.qr)}</span><span class="t"><i>QR code for</i><b style="white-space:normal;overflow-wrap:anywhere">${esc(r.qr)}</b></span>${opts.inline ? strip(r) : ENTER}</div></div>`;
+  const text = r.slots ? `<span class="slots">${r.slots}</span>` : r.big != null ? `<span class="t"><i>${esc(r.sub || '')}</i><span class="big">${esc(r.big)}</span></span>`
+    : r.mono ? `<span class="t"><i>${r.kind}</i><span class="mono">${esc(r.mono)}</span></span>` : r.vals ? `<span class="t"><i>${r.vals.filter((_, j) => j !== Math.min(st.arm, 2)).join('  ·  ')}</i><span class="big" style="font-size:26px">${r.vals[Math.min(on ? st.arm : 0, 2)]}</span></span>`
+    : `<span class="t"><b>${esc(r.title)}</b>${r.sub ? `<i>${esc(r.need ? 'Needs one switch in Settings, once' : r.sub)}</i>` : r.need ? '<i>Needs one switch in Settings, once</i>' : ''}</span>`;
+  const right = on ? (r.control ? controlHTML(r) : '') + (opts.inline ? strip(r) : `<span class="kind" style="color:inherit">${esc(r.actions[0].label)}</span>${ENTER}`) : (r.control ? controlHTML(r).replace(/data-k="[^"]*"/g, '') : '') + `<span class="kind">${r.kind === 'Tab' ? '<span class="cap">tab</span>' : esc(r.kind)}</span>`;
+  const opened = on && st.open && opts.inline && r.actions.length > 3;
+  return `<div class="row${on ? ' on' : ''}${r.tall ? ' tall' : ''}" data-i="${i}" data-id="${esc(r.id)}">${on ? '<span class="arm"></span>' : ''}<div class="line">${pic(r)}${text}${right}</div>${opened ? line2(r) : ''}</div>`;
+}
+function qrCells(text) { let h = 2166136261; for (const c of text) h = Math.imul(h ^ c.charCodeAt(0), 16777619); const cells = []; const finder = (x, y) => [[0, 0], [14, 0], [0, 14]].some(([fx, fy]) => x >= fx && x < fx + 7 && y >= fy && y < fy + 7 && (x === fx || x === fx + 6 || y === fy || y === fy + 6 || (x >= fx + 2 && x <= fx + 4 && y >= fy + 2 && y <= fy + 4)));
+  const inFinder = (x, y) => [[0, 0], [14, 0], [0, 14]].some(([fx, fy]) => x >= fx - 1 && x < fx + 8 && y >= fy - 1 && y < fy + 8);
+  for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) { h = Math.imul(h ^ (x * 31 + y * 17), 16777619); cells.push(`<i class="${inFinder(x, y) ? (finder(x, y) ? '' : 'o') : (h >>> 13) & 1 ? '' : 'o'}"></i>`); } return cells.join(''); }
+function footHTML() {
+  const r = st.rows[st.sel]; let hints = '';
+  if (st.listOf) hints = '<span class="cap">esc</span><span>Back</span>';
+  else if (st.confirm) hints = '<span class="cap">esc</span><span>Cancel</span>';
+  else { if (r && r.grid) hints += '<span class="cap">←↑↓→</span><span>Move</span>'; else if (r && r.control && !r.need) hints += '<span class="cap">← →</span><span>Change</span>';
+    if (r && r.scope) hints += '<span class="cap">tab</span><span>Type into it</span>'; else if (r && r.actions.length > 1) hints += `<span class="cap">tab</span><span>${opts.inline ? 'Next action' : 'Actions'}</span>`;
+    hints += '<span class="cap">esc</span><span>Close</span>'; }
+  const name = r && r.grid && r.grid[st.cell] ? r.grid[st.cell].n : '';
+  return `<div class="foot"><span class="flash">${esc(st.flash || name)}</span>${hints}</div>`;
+}
+function bodyHTML() {
+  if (st.listOf) { const r = st.listOf; return `<div class="list"><div class="hl" data-k="hl"></div><div class="row" data-id="head"><div class="line">${pic(r)}<span class="t"><b class="ink2">${esc(r.title || r.big || '')}</b></span></div></div>${r.actions.map((a, i) => `<div class="row${i === st.arm ? ' on' : ''}" data-la="${i}" data-id="la${i}"><div class="line"><span style="width:36px;flex:none"></span><span class="t"><b${a.danger ? ' style="color:var(--err)"' : ''}>${esc(a.label)}</b></span>${i === st.arm ? ENTER : ''}</div></div>`).join('')}</div>${footHTML()}`; }
+  if (!st.rows.length) return '';
+  return `<div class="list" role="listbox"><div class="hl" data-k="hl"></div>${st.rows.map(rowHTML).join('')}</div>${footHTML()}`;
+}
+// Things keep their place between draws: where an element was is where it starts from.
+function glide(el, key, props, spec = PLACE) {
+  if (!el) return; const now = {}; for (const p of props) now[p] = el.style[p] || getComputedStyle(el)[p];
+  const was = prev.get(key); prev.set(key, now);
+  if (!was || reduce) return; if (props.every(p => was[p] === now[p])) return;
+  anim(el, [was, now], spec);
+}
+// A highlight is two edges. The edge that leads moves on a faster spring than the edge that follows,
+// so the pill stretches towards where it is going and then gathers itself (lead and trail in Motion.kt).
+function edges(el, key, a, b, was0, now0, was1, now1, fwd) {
+  if (was0 !== now0) anim(el, { [a]: [was0 + 'px', now0 + 'px'] }, fwd ? TRAIL : LEADS);
+  if (was1 !== now1) anim(el, { [b]: [was1 + 'px', now1 + 'px'] }, fwd ? LEADS : TRAIL);
+}
+function place() {
+  const list = body.querySelector('.list'), hl = body.querySelector('.hl'), on = body.querySelector('.row.on');
+  if (hl) { if (on && !(st.rows[st.sel] && st.rows[st.sel].grid && !st.listOf)) { const H = list.offsetHeight, top = on.offsetTop, end = top + on.offsetHeight;
+      hl.style.display = ''; hl.style.top = top + 'px'; hl.style.bottom = (H - end) + 'px';
+      const was = prev.get('hl'); prev.set('hl', { top, end });
+      if (was && !reduce) edges(hl, 'hl', 'top', 'bottom', was.top, top, H - was.end, H - end, top > was.top || (top === was.top && end > was.end));
+    } else { hl.style.display = 'none'; prev.delete('hl'); } }
+  // the armed action: one highlight per row, gliding between chips, and down to the second line when the row opens
+  const arm = on && on.querySelector(':scope > .arm'), chip = on && on.querySelector('.chipx.armed');
+  if (arm && chip) { const sp = chip.offsetParent, left = sp.offsetLeft + chip.offsetLeft, top = sp.offsetTop + chip.offsetTop, end = left + chip.offsetWidth, W = on.offsetWidth, id = on.dataset.id;
+    arm.style.left = left + 'px'; arm.style.right = (W - end) + 'px'; arm.style.top = top + 'px';
+    arm.classList.toggle('danger', chip.classList.contains('danger') || chip.classList.contains('confirm'));
+    const was = prev.get('arm'); prev.set('arm', { id, left, end, top });
+    if (reduce) {} else if (!was || was.id !== id) anim(arm, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 });
+    else { edges(arm, 'arm', 'left', 'right', was.left, left, W - was.end, W - end, left > was.left); if (was.top !== top) anim(arm, { top: [was.top + 'px', top + 'px'] }, PLACE); }
+  } else { if (arm) arm.style.display = 'none'; prev.delete('arm'); }
+  const l2 = body.querySelector('.line2'), openId = l2 ? on.dataset.id : null;
+  if (l2 && prev.get('open') !== openId && !reduce) anim(l2, [{ opacity: 0, transform: 'translateY(-10px)' }, { opacity: 1, transform: 'none' }], PLACE);
+  prev.set('open', openId);
+  glide(body.querySelector('[data-k="fill"]'), 'fill', ['width']);
+  glide(body.querySelector('[data-k="th"]'), 'th', ['left'], LEADS);
+  const g = body.querySelector('#grid'); if (g) { const c = g.querySelector(`[data-cell="${st.cell}"]`), gh = g.querySelector('.gh'); if (c) { gh.style.left = c.offsetLeft + 'px'; gh.style.top = c.offsetTop + 'px'; glide(gh, 'gh', ['left', 'top'], LEADS); } else gh.style.display = 'none'; }
+  // rows that are new rise in as a cascade; rows that stay slide to their new place
+  if (!reduce) { let fresh = 0; for (const el of body.querySelectorAll('.row[data-id]')) { const id = el.dataset.id, top = el.offsetTop, was = prev.get('row:' + id);
+      if (was == null) anim(el, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { ...PLACE, delay: fresh++ * 22, fill: 'backwards' });
+      else if (was !== top) anim(el, [{ transform: `translateY(${was - top}px)` }, { transform: 'none' }], PLACE); } }
+  for (const k of [...prev.keys()]) if (k.startsWith('row:')) prev.delete(k);
+  for (const el of body.querySelectorAll('.row[data-id]')) prev.set('row:' + el.dataset.id, el.offsetTop);
+  panel.style.height = (68 + body.offsetHeight + 2) + 'px';
+}
+function fieldDraw() {
+  const s = st.scope, cur = field.querySelector('.schip'), mark = $('mark');
+  if (s && !cur) { const chip = document.createElement('span'); chip.className = 'schip'; chip.innerHTML = svg(s.sym) + `<span>${esc(s.name)}</span>`; chip.title = 'Leave ' + s.name;
+    chip.addEventListener('mousedown', e => { e.preventDefault(); leaveScope(); }); mark.replaceWith(chip);
+    // the typed keyword becomes the chip: it grows from where the text began, the caret travels left
+    if (!reduce) anim(chip, [{ transform: 'translateX(40px) scale(.7)', opacity: .2 }, { transform: 'none', opacity: 1 }], POP);
+  } else if (!s && cur) { const m = document.createElement('span'); m.className = 'mark'; m.id = 'mark'; m.textContent = 'G'; cur.replaceWith(m); if (!reduce) anim(m, [{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], POP); }
+  else if (s && cur) cur.innerHTML = svg(s.sym) + `<span>${esc(s.name)}</span>`;
+  input.placeholder = s ? s.ph : 'Search apps, settings and the web';
+  const r = st.rows[st.sel], t = input.value;
+  ghost.innerHTML = !s && t && r && r.title && !r.scope && r.kind !== 'Web' && r.kind !== 'Gemini' && r.title.toLowerCase().startsWith(t.toLowerCase()) ? `${esc(t)}<em>${esc(r.title.slice(t.length))}</em>` : '';
+  $('esc').style.display = st.rows.length ? 'none' : '';
+}
+function compute() { const t = input.value; st.rows = st.scope ? scopeRows(st.scope, t.trim()) : t.trim() ? plainRows(t.trim()) : []; }
+function draw(keep) {
+  if (!keep) { compute(); st.sel = 0; st.arm = 0; st.open = false; st.confirm = 0; st.cell = 0; st.listOf = null; const r = st.rows[0]; if (r && r.armLabel) { st.arm = r.actions.findIndex(a => a.label === r.armLabel); if (st.arm >= visible(r)) st.open = true; } }
+  else { const id = st.rows[st.sel] && st.rows[st.sel].id; compute(); const j = st.rows.findIndex(r => r.id === id); if (j >= 0) st.sel = j; else st.sel = Math.min(st.sel, Math.max(0, st.rows.length - 1)); }
+  body.innerHTML = bodyHTML(); fieldDraw(); place();
+}
+function say(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove('show'), 2200); }
+
+// ---------------------------------------------------------------- opening and closing
+function close(msg) { if (!stage.classList.contains('open')) return;
+  const done = () => { stage.classList.remove('open'); if (msg) say(msg); };
+  if (reduce) return done(); anim(panel, [{ opacity: 1 }, { opacity: 0, transform: 'translateX(-50%) scale(.975)' }], { duration: 110, easing: 'ease-in' }).onfinish = done; }
+function open(keep) {
+  if (!keep) { st.last = null; st.scope = null; input.value = ''; }
+  prev.clear(); stage.classList.add('open'); draw(keep);
+  input.focus({ preventScroll: true }); arrive();
+}
+// Four ways to arrive. Typing is live from the first frame in all of them.
+function arrive() {
+  if (reduce) return; panel.getAnimations().forEach(a => a.cancel()); $('gleam').getAnimations().forEach(a => a.cancel());
+  const T = 'translateX(-50%)', o = opts.opening, inner = $('inner'), W = panel.offsetWidth, H = parseFloat(panel.style.height); let light = 70;
+  if (o === 'unfold') {        // a line grows up and down, then the glass opens out of it to both sides and settles; the contents come last
+    const up = 90, total = up + OUT.duration;
+    anim(panel, [{ width: '4px', clipPath: 'inset(50% 0 50% 0)', easing: 'cubic-bezier(.2,.9,.2,1)' }, { width: '4px', clipPath: 'inset(0 0 0 0)', offset: up / total, easing: OUT.easing }, { width: W + 'px', clipPath: 'inset(0 0 0 0)' }], { duration: total });
+    anim(inner, [{ opacity: 0 }, { opacity: 0, offset: .38 }, { opacity: 1 }], { duration: 280 });
+    light = 190;
+  } else if (o === 'bloom') {  // the glass grows out of a small pill where the text will be, in every direction at once
+    anim(panel, [{ width: '132px', height: '36px', transform: T + ' translateY(16px)' }, { width: W + 'px', height: H + 'px', transform: T }], GROW);
+    anim(inner, [{ opacity: 0 }, { opacity: 0, offset: .3 }, { opacity: 1 }], { duration: 240 });
+    light = 170;
+  } else if (o === 'bounce') { // 1.0's arrival with about twice the bounce
+    anim(panel, [{ transform: T + ' scale(.9)' }, { transform: T }], BOUNCE);
+    anim(panel, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 });
+  } else {                     // as shipped: a small settle and a fade
+    anim(panel, [{ transform: T + ' scale(.96)' }, { transform: T }], POP);
+    anim(panel, [{ opacity: 0 }, { opacity: 1 }], { duration: 170 });
+  }
+  const g = $('gleam'), m = opts.gleam, w = panel.offsetWidth; if (m === 'off') return;
+  if (m === 'around') { g.dataset.kind = 'around'; anim(g, [{ '--ga': '-54deg', opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .82 }, { '--ga': '306deg', opacity: 0 }], { duration: 1300, delay: light, easing: 'cubic-bezier(.3,0,.2,1)' }); }
+  else { g.dataset.kind = 'sweep'; anim(g, [{ backgroundPosition: '-280px 0', opacity: 1 }, { backgroundPosition: (w + 40) + 'px 0', opacity: 1 }], { duration: m === 'slow' ? 1150 : 560, delay: light, easing: 'cubic-bezier(.3,0,.2,1)' }); }
+}
+function measure() { panel.style.setProperty('--pw', (Math.min(720, stage.clientWidth - 24) - 2.5) + 'px'); }
+measure(); addEventListener('resize', measure);
+function replay() { stage.classList.remove('open'); open(true); }
+
+// ---------------------------------------------------------------- scopes
+function enterScope(s, rest = '') { st.scope = s; input.value = rest; draw(); input.focus({ preventScroll: true }); }
+function leaveScope() { if (!st.scope) return; const k = st.scope.key; st.scope = null; input.value = k; draw(); input.setSelectionRange(k.length, k.length); input.focus({ preventScroll: true }); }
+
+// ---------------------------------------------------------------- running
+function run(r, i) {
+  const a = r.actions[i]; if (!a) return;
+  if (a.confirm && !st.confirm) { st.confirm = Date.now(); body.innerHTML = bodyHTML(); place(); clearTimeout(run.t); run.t = setTimeout(() => { if (st.confirm) { st.confirm = 0; draw(true); } }, 3000); return; }
+  if (a.confirm && Date.now() - st.confirm < 350) return;
+  st.confirm = 0; if (a.fn) a.fn();
+  if (r.scope) return enterScope(r.scope);
+  const what = r.title || r.big || r.mono || (r.qr ? 'the code' : '') || (r.vals ? r.vals[Math.min(i, 2)] : '') || '';
+  const word = a.say ? (a.say.endsWith(' ') ? a.say + (st.dnd ? 'on' : 'off') : a.say + (a.danger && !a.confirm ? ' ' + what + '?' : '')) : a.label === 'Open' ? 'Opening ' + what : /^(Copy|HEX|RGB|HSL)/.test(a.label) ? 'Copied ' + (r.grid ? r.grid[st.cell].e : what) : a.label + ': ' + what;
+  if (a.stay || r.control && a.fn && !a.say) { st.flash = a.say || ''; draw(true); if (a.say) say(a.say); return; }
+  if (r.control) { draw(true); return setTimeout(() => close(word), 400); }
+  close(word);
+}
+function nudge(r, d) {       // Left and Right on a control: live, the panel stays
+  if (r.need) { st.flash = 'Allow it first'; body.innerHTML = bodyHTML(); place(); return; }
+  if (r.control === 'vol') { st.muted = false; st.vol = Math.max(0, Math.min(100, st.vol + d * 5)); }
+  else if (r.control === 'bright') st.bright = Math.max(5, Math.min(100, st.bright + d * 5));
+  else if (r.control === 'dnd') st.dnd = d > 0; else if (r.control === 'awake') st.awake = d > 0;
+  else if (r.control === 'media') { st.flash = d > 0 ? 'Next track' : 'Previous track'; }
+  draw(true);
+}
+function tab(dir) {
+  const r = st.rows[st.sel]; if (!r) return;
+  if (r.scope) return enterScope(r.scope);
+  if (!opts.inline) { if (r.actions.length > 1) { st.listOf = r; st.arm = 0; body.innerHTML = bodyHTML(); place(); } return; }
+  const n = r.actions.length; if (n < 2) return; st.confirm = 0;
+  st.arm = (st.arm + dir + n) % n; st.open = st.arm >= visible(r) || (st.open && dir < 0 && st.arm >= visible(r));
+  if (st.arm < visible(r) && dir > 0) st.open = false;
+  body.innerHTML = bodyHTML(); fieldDraw(); place();
+}
+
+input.addEventListener('input', () => {
+  const t = input.value;
+  if (!st.scope && opts.space) { const m = /^(\S+) $/.exec(t) || /^(\S+) (.+)$/.exec(t); const s = m && SCOPES.find(x => x.key === m[1].toLowerCase()); if (s) return enterScope(s, m[2] || ''); }
+  draw();
+});
+input.addEventListener('keydown', e => {
+  const k = e.key, r = st.rows[st.sel], atEnd = input.selectionEnd === input.value.length; let used = true;
+  if (st.listOf) { const n = st.listOf.actions.length;
+    if (k === 'ArrowDown') st.arm = Math.min(st.arm + 1, n - 1); else if (k === 'ArrowUp') st.arm = Math.max(st.arm - 1, 0);
+    else if (k === 'Enter') { e.preventDefault(); const rr = st.listOf; st.listOf = null; return run(rr, st.arm); }
+    else if (k === 'Escape' || k === 'ArrowLeft') { st.listOf = null; st.arm = 0; } else if (k !== 'Tab') used = false;
+    if (used) { e.preventDefault(); body.innerHTML = bodyHTML(); place(); } return; }
+  if (st.confirm && k !== 'Enter') { st.confirm = 0; if (k === 'Escape') { e.preventDefault(); return draw(true); } }
+  if (r && r.grid && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(k)) { const cols = matchMedia('(max-width: 46rem)').matches ? 7 : 14, n = r.grid.length; e.preventDefault();
+    st.cell = Math.max(0, Math.min(n - 1, st.cell + (k === 'ArrowLeft' ? -1 : k === 'ArrowRight' ? 1 : k === 'ArrowUp' ? -cols : cols))); body.innerHTML = bodyHTML(); place(); return; }
+  if (k === 'ArrowDown') { st.sel = Math.min(st.sel + 1, Math.max(0, st.rows.length - 1)); st.arm = 0; st.open = false; }
+  else if (k === 'ArrowUp') { if (!input.value && !st.rows.length && st.last) { st.scope = st.last.scope; input.value = st.last.text; return draw(); } st.sel = Math.max(st.sel - 1, 0); st.arm = 0; st.open = false; }
+  else if (k === 'Enter') { e.preventDefault(); if (r) { st.last = { scope: st.scope, text: input.value }; run(r, st.arm); } return; }
+  else if (k === 'Tab') { e.preventDefault(); return tab(e.shiftKey ? -1 : 1); }
+  else if (k === 'ArrowRight' && atEnd && r) { e.preventDefault(); if (r.control) return nudge(r, 1); if (r.scope) return enterScope(r.scope); if (opts.inline && st.arm < r.actions.length - 1) return tab(1); return; }
+  else if (k === 'ArrowLeft' && r && (r.control && atEnd || st.arm > 0)) { e.preventDefault(); if (r.control && st.arm === 0) return nudge(r, -1); return tab(-1); }
+  else if (k === 'Backspace' && st.scope && !input.value) { e.preventDefault(); return leaveScope(); }
+  else if (k === 'Escape') { e.preventDefault(); st.last = { scope: st.scope, text: input.value }; return close('Closed. ↑ on the empty field brings the text back.'); }
+  else used = false;
+  if (used) { e.preventDefault(); body.innerHTML = bodyHTML(); fieldDraw(); place(); }
+});
+body.addEventListener('mousemove', e => { const row = e.target.closest('.row[data-i]'); if (!row || st.listOf) return; const i = +row.dataset.i; const cell = e.target.closest('[data-cell]');
+  if (cell && +cell.dataset.cell !== st.cell) { st.cell = +cell.dataset.cell; body.innerHTML = bodyHTML(); place(); return; }
+  if (i !== st.sel) { st.sel = i; st.arm = 0; st.open = false; st.confirm = 0; body.innerHTML = bodyHTML(); fieldDraw(); place(); } });
+body.addEventListener('click', e => {
+  if (st.listOf) { const la = e.target.closest('[data-la]'); const rr = st.listOf; st.listOf = null; if (la) return run(rr, +la.dataset.la); return draw(true); }
+  const row = e.target.closest('.row[data-i]'); if (!row) return; const r = st.rows[+row.dataset.i]; if (!r) return;
+  const chip = e.target.closest('[data-act]'), more = e.target.closest('[data-more]'), cell = e.target.closest('[data-cell]');
+  if (more) { st.arm = visible(r); st.open = true; body.innerHTML = bodyHTML(); place(); return; }
+  if (cell) { st.cell = +cell.dataset.cell; return run(r, 0); }
+  if (chip) { st.arm = +chip.dataset.act; return run(r, st.arm); }
+  run(r, 0);
+});
+panel.addEventListener('mousedown', e => { if (e.target !== input && !e.target.closest('.schip')) { e.preventDefault(); input.focus({ preventScroll: true }); } });
+stage.addEventListener('mousedown', e => { if (stage.classList.contains('open') && !e.target.closest('.panel')) close('Closed by a click outside.'); });
+$('summon').addEventListener('click', e => { e.stopPropagation(); open(); });
+$('replay').addEventListener('click', replay);
+document.querySelectorAll('[data-try]').forEach(b => b.addEventListener('click', () => {
+  if (!stage.classList.contains('open')) open(); st.scope = null; const t = b.dataset.try;
+  if (b.dataset.scope) { const i = t.indexOf(' '); const s = SCOPES.find(x => x.key === t.slice(0, i)); enterScope(s, t.slice(i + 1)); }
+  else { input.value = t; draw(); if (b.dataset.tab) tab(1); }
+  input.focus({ preventScroll: true });
+}));
+document.querySelectorAll('.controls button').forEach(b => b.addEventListener('click', () => {
+  const o = b.dataset.o, v = b.dataset.v; document.querySelectorAll(`.controls [data-o="${o}"]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+  if (o === 'mode') stage.dataset.mode = v; else if (o === 'back') $('wina').classList.toggle('dk', v === 'dark'); else if (o === 'speed') { speed = +v; setSpeed(); } else if (o === 'opening' || o === 'gleam') opts[o] = v; else opts[o] = v === '1';
+  if (o === 'opening' || o === 'gleam' || o === 'speed') replay(); else if (stage.classList.contains('open')) draw(true);
+}));
+draw();
+
+// ---------------------------------------------------------------- questions
+const QS = [
+  ['Acting on a row', 'One pattern from first action to last, and no change of view for the common case.', ['Chips in the row; more open in place', 'Chips in the row; more in a list', 'Keep the separate list (1.0)']],
+  ['Entering a scope', 'Chrome does both. Space lets “yt lofi” be typed straight through; Backspace on an empty field undoes it.', ['Tab or Space', 'Tab only']],
+  ['Esc inside a scope', 'You decided Esc always closes. Up on an empty field brings back the last text.', ['Closes', 'First leaves the scope']],
+  ['Controls (volume, brightness, switches)', 'Left and Right act at once and the panel stays; Enter commits and closes.', ['Live on the selected row', 'Tab into the control first']],
+  ['Arguments (mail, event, note)', 'One line with “ / ” between parts and a preview row that shows what was understood.', ['One line', 'A small form, Tab between fields']],
+  ['Uninstall on app rows', 'Needs the install-time permission REQUEST_DELETE_PACKAGES. No prompt; Play asks for nothing; Android confirms each uninstall.', ['Add it', 'Leave it out; App info has the button']],
+  ['What should a typed “chr” + Tab choice teach?', 'Learning actions only from typed verbs keeps plain “chr” + Enter always opening.', ['Only typed verbs teach an action', 'Tab choices teach too']],
+  ['Where the Enter mark sits', 'Inside the armed chip it says which action Enter runs, and no chip ever changes width. The cost: chips sit further apart.', ['Inside the armed chip', 'At the row’s right end']],
+  ['The opening', 'Unfold is your idea: a line, then the glass opens out of it and settles, in about a third of a second. A setting turns it off, whichever you pick.', ['Unfold', 'Bloom', 'Bigger bounce', 'Keep 1.0’s']],
+  ['The edge light', 'You liked it, so it stays. Slower reads better after an unfold. (The design agent would drop it when the panel unfolds; I would not.)', ['Slower, about 1.1 s', 'As in 1.0', 'Once around the outline', 'Off when the panel unfolds']],
+  ['The app icon', 'The shortcut opens the panel. The icon opens a Booklight window: what it is, the key, settings.', ['Icon opens the Booklight window', 'Icon opens the panel; settings stay behind a command', 'A setting chooses']],
+  ['Ask Gemini', 'First row for long or question-like text, otherwise one row under “Search Google”. Opens Gemini with the text filled in.', ['As described', 'Always a late row, never first', 'Only through “ask”']],
+  ['Quick notes go to', 'A plain file needs nothing but stops being writable after a reinstall. A folder you grant once avoids that; Keep opens a window.', ['Notes.md in a folder I grant once', 'Documents/Booklight/Notes.md, no grant', 'Keep']],
+  ['Reminders at a time', 'Through the Clock app’s alarm with your text as its label: no switch needed. Booklight’s own notification needs a Settings switch and a prompt.', ['Clock alarm with a label', 'Booklight’s own reminder notification', 'Both']],
+  ['Do Not Disturb', 'Android only lets an app switch its own mode on and off; it can’t switch off Do Not Disturb you turned on elsewhere.', ['Build it with that limit, and say so', 'Leave it out', 'Just open the Modes panel']],
+  ['Keep awake', 'Raising the screen timeout while it is on uses the same Settings switch as brightness and avoids Play’s service review.', ['Screen timeout, restored afterwards', 'Leave it to BentoBar’s keep-awake']],
+  ['The “play” keyword', '“play” searches the Play Store today, and would also be the natural word for “play some music”.', ['“play” plays music; “store” searches the Play Store', 'Keep “play” for the Play Store']],
+  ['Release steps', 'Four tagged releases, each reviewed and sent to Play as it is ready.', ['1.1, 1.2, 1.3, 1.4 in turn', 'One big 1.1 with everything', 'Build all, release when I say']],
+];
+const qs = $('qs'), answers = $('answers');
+QS.forEach(([t, why, o], i) => { const n = i + 1, el = document.createElement('div'); el.className = 'q';
+  el.innerHTML = `<span class="num">${n}</span><div><h3>${t}</h3><div class="opts" role="radiogroup" aria-label="${esc(t)}">${o.map((x, j) => `<label class="${j === 0 ? 'def' : ''}"><input type="radio" name="q${n}" id="q${n}o${j}" value="${esc(x)}"${j === 0 ? ' checked' : ''}>${esc(x)}</label>`).join('')}</div><p class="why">${why}</p></div>`; qs.appendChild(el); });
+function writeAnswers() { answers.value = QS.map(([t, , o], i) => { const v = (document.querySelector(`input[name="q${i + 1}"]:checked`) || {}).value; return `${i + 1}. ${t}: ${v}${v === o[0] ? ' (recommended)' : ''}`; }).join('\n'); }
+qs.addEventListener('change', writeAnswers); writeAnswers();
+$('copy').addEventListener('click', e => { const done = () => { e.target.textContent = 'Copied'; setTimeout(() => e.target.textContent = 'Copy answers', 1500); };
+  navigator.clipboard.writeText(answers.value).then(done).catch(() => { answers.focus(); answers.select(); }); });
+})();
+</script>
