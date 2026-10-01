@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="place_full">Voll</string>
+    <string name="place_full">Maximiert</string>
     <string name="place_p3l">Links ⅓</string>
     <string name="place_p3m">Mitte ⅓</string>
     <string name="place_p3r">Rechts ⅓</string>
@@ -29,11 +29,11 @@
     <string name="action_less">Weniger</string>
     <string name="hint_less">Weniger</string>
     <string name="kind_key">Taste</string>
-    <string name="action_all_keys">Alle Kürzel</string>
+    <string name="action_all_keys">Alle Tastenkürzel</string>
     <string name="key_ctrl">Strg</string>
     <string name="key_shift">Umschalt</string>
     <string name="key_alt">Alt</string>
-    <string name="key_enter">Eingabe</string>
+    <string name="key_enter">Enter</string>
     <string name="key_del">Entf</string>
     <string name="key_tab">Tab</string>
     <string name="key_esc">Esc</string>
@@ -45,7 +45,7 @@
     <string name="keys_about">Die Tasten des Systems</string>
     <string name="keys_all">Alle Tastenkürzel</string>
     <string name="keys_all_sub">Das Fenster „Tastenkürzel“ des Systems</string>
-    <string name="set_show_keys">Tasten des Systems</string>
+    <string name="set_show_keys">Tastenkürzel</string>
     <string name="set_show_keys_text">„andocken“ zeigt die Tasten dafür. Booklight zeigt sie; drücken kann es sie nicht.</string>
     <string name="settings_keys_list">s,settings,einstellungen</string>
     <string name="settings_name">Einstellungen</string>
@@ -57,7 +57,7 @@
     <string name="notes_keys">notes,find,notizen,finde</string>
     <string name="notes_name">Notizen</string>
     <string name="notes_title">In deinen Notizen suchen</string>
-    <string name="notes_hint">Ein Wort zum Finden</string>
+    <string name="notes_hint">Ein Suchwort</string>
     <string name="notes_about">Zeilen aus Notes.md, neueste zuerst</string>
     <string name="notes_empty">Noch nichts in Notes.md</string>
     <string name="notes_empty_sub">„note Milch kaufen“ fügt eine Zeile hinzu</string>
@@ -104,7 +104,7 @@
     <string name="win_prompts">Prompts</string>
     <string name="win_prompt_add">Prompt hinzufügen …</string>
     <string name="win_prompt_text">Prompt</string>
-    <string name="win_prompt_help">{text} steht dort, wo dein Text hinkommt; ohne {text} folgt der Text dem Prompt. Im Fenster tippst du das Kürzel und dann den Text, oder nichts für das Kopierte. Die Antwort kommt vom Modell auf diesem Gerät, wenn das System eines hat; sonst öffnet sich die Gemini-App mit Prompt und Text.</string>
+    <string name="win_prompt_help">{text} steht dort, wo dein Text hinkommt; ohne {text} folgt der Text dem Prompt. Im Panel tippst du das Stichwort und dann den Text, oder nichts für das Kopierte. Die Antwort kommt vom Modell auf diesem Gerät, wenn das System eines hat; sonst öffnet sich die Gemini-App mit Prompt und Text.</string>
     <string name="win_prompt_name_hint">Freundlicher</string>
     <string name="win_prompt_text_hint">Formuliere diesen Text freundlicher. Antworte nur mit dem neuen Text.</string>
     <string-array name="prompt_seeds" translatable="false">
@@ -117,7 +117,7 @@
 
     <!-- Der Schatten um das Fenster -->
     <string name="set_shadow">Schatten</string>
-    <string name="set_shadow_text">Ein breiter, weicher Schatten um das Fenster, damit es sich klar von den Fenstern dahinter abhebt. Er liegt nie unter dem Glas.</string>
+    <string name="set_shadow_text">Ein breiter, weicher Schatten um das Panel, damit es sich klar von den Fenstern dahinter abhebt. Er liegt nie unter dem Glas.</string>
     <string name="set_shadow_off">Aus</string>
     <string name="set_shadow_low">Leicht</string>
     <string name="set_shadow_medium">Mittel</string>
@@ -131,11 +131,12 @@
     <string name="pin_none_sub">„pin Gate B22, 14:05“ hält eine Zeile über deinen Fenstern</string>
     <string name="pin_sub">Bleibt über deinen Fenstern</string>
     <string name="pin_replaces">Ersetzt „%1$s“</string>
+    <string name="pin_replaced">„%1$s“ ersetzt</string>
     <string name="action_unpin">Lösen</string>
-    <string name="done_unpinned">Gelöst</string>
+    <string name="done_unpinned">Nicht mehr angeheftet</string>
     <string name="action_start_pin">Starten und anheften</string>
     <string name="pin_set_for">gestellt auf %1$s</string>
-    <string name="pin_kind_text">Notiz</string>
+    <string name="pin_kind_text">Text</string>
     <string name="pin_kind_answer">Ergebnis</string>
     <string name="pin_kind_color">Farbe</string>
     <string name="pin_kind_qr">QR-Code</string>
@@ -145,7 +146,7 @@
     <string name="help_name">Alles</string>
     <string name="help_title">Alles, was Booklight kann</string>
     <string name="help_hint">Was du tun möchtest</string>
-    <string name="help_about">Jedes Kürzel, mit einem Beispiel zum Ausprobieren</string>
+    <string name="help_about">Jedes Stichwort, mit einem Beispiel zum Ausprobieren</string>
     <string name="help_all">Alle Befehle</string>
     <string name="action_try">Ausprobieren</string>
     <string name="guide_link_text">lofi</string>
@@ -160,10 +161,10 @@
     <string-array name="guide">
         <item>apps|open|open||chrome|Apps|Einen Namen tippen; die Symbole in der Zeile zeigen, was noch geht</item>
         <item>places|open|left||chrome links|Eine App, an einem Platz|links, rechtes Drittel, oben links, voll … für eine App, die noch nicht offen ist</item>
-        <item>commands|open|bolt||{command}|Was andere Apps anbieten|Ihre eigenen Kurzbefehle, als Zeilen</item>
+        <item>commands|open|bolt||{command}|Was andere Apps anbieten|Die Kurzbefehle der Apps, als Zeilen</item>
         <item>settings|open|settings|settings|s wlan|Einstellungen|s, dann Tab: jede Einstellungsseite</item>
         <item>keys|open|key|keys|k andocken|Tastenkürzel|k, dann Tab: was die Tasten des Systems tun</item>
-        <item>links|open|search||{link}|Deine Links|Ein Kürzel, dann der Suchtext</item>
+        <item>links|open|search||{link}|Deine Links|Ein Stichwort, dann der Suchtext</item>
         <item>web|open|globe||wetter berlin|Das Web|Die letzte Zeile sucht nach dem, was du getippt hast</item>
         <item>note|write|note|note|notiz Milch kaufen|Notiz|Eine Zeile mit Datum in Notes.md</item>
         <item>notes|write|note|notes|notizen Milch|Notiz finden|Zeilen aus Notes.md, die neuesten zuerst</item>
@@ -175,7 +176,7 @@
         <item>timer|time|timer|timer|timer 10m Tee|Timer|Die Uhr startet ihn; „Starten und anheften“ hält den Countdown oben</item>
         <item>alarm|time|bell|alarm|wecker 7:30 Sport|Wecker|Die Uhr stellt ihn</item>
         <item>sums|answers|calc||12*3.5|Rechnen|Enter kopiert das Ergebnis</item>
-        <item>color|answers|edit||#3478f6|Farben|Ihre anderen Schreibweisen, jede zum Kopieren</item>
+        <item>color|answers|edit||#3478f6|Farben|Dieselbe Farbe in HEX, RGB, HSL und OKLCH, jede zum Kopieren</item>
         <item>password|answers|key||passwort 20|Passwörter|Jedes Mal ein neues</item>
         <item>qr|answers|qr|qr|qr https://example.com|QR-Code|Zum Scannen vom Bildschirm, Kopieren, Speichern oder Teilen</item>
         <item>emoji|answers|smile|emoji|emoji party|Emoji|Ein Raster zum Auswählen; Enter kopiert</item>
@@ -195,22 +196,23 @@
     <string name="tips_turn_off">Tipps ausschalten</string>
     <string name="tips_off">Tipps sind aus. Du schaltest sie in Booklights Fenster wieder ein.</string>
     <string name="set_tips">Tipps</string>
-    <string name="set_tips_text">Eine Sache, die Booklight kann, unter dem leeren Feld, wenn du es geöffnet und nichts getippt hast. Jeder ist einmal dran.</string>
+    <string name="set_tips_text">Wenn du Booklight öffnest und nichts tippst, zeigt es eine Sache, die es kann. Jeder Tipp kommt einmal.</string>
+    <string name="set_tips_show">Tipps zeigen</string>
     <string name="set_tips_again">Tipps noch einmal zeigen</string>
     <string name="set_tips_again_done">Ab dem ersten</string>
     <string-array name="tips">
         <item>help|list|?|Alles|listet alles auf, was Booklight kann, jedes mit einem Beispiel</item>
-        <item>places|left|chrome links|Eine App, an einem Platz|öffnet Chrome in der linken Hälfte. Auch: rechtes Drittel, oben links, voll</item>
+        <item>places|left|chrome links|Eine App, an einem Platz|öffnet Chrome links, wenn es noch nicht offen ist. Auch: oben links, voll</item>
         <item>settings|settings|s wlan|Einstellungen|führt zu einer Einstellungsseite. s, Tab, dann ihr Name</item>
         <item>keys|key|k andocken|Tastenkürzel|zeigt die Tasten dafür. k, Tab, dann was du tun möchtest</item>
         <item>todo|check|todo Bank anrufen|Aufgaben|fügt Todo.md eine Aufgabe hinzu. todo allein zeigt, was offen ist</item>
-        <item>prompts|spark|{prompt}|Prompts|wird auf diesem Gerät beantwortet, in seiner Zeile. Enter kopiert</item>
+        <item>prompts|spark|{prompt}|Prompts|wird auf diesem Gerät korrigiert oder an Gemini übergeben</item>
         <item>pin|pin|pin Gate B22, 14:05|Anheften|hält eine Zeile in einem kleinen Fenster über den anderen</item>
-        <item>timer|timer|timer 10m Tee|Timer|startet ihn in der Uhr. „Starten und anheften“ hält den Countdown im Blick</item>
+        <item>timer|timer|timer 10m Tee|Timer|startet einen Timer in der Uhr. „Starten und anheften“ zeigt den Countdown</item>
         <item>note|note|notiz Milch kaufen|Notiz|fügt Notes.md eine Zeile mit Datum hinzu</item>
         <item>clip|clip|clip |Zwischenablage|zeigt, was du kopiert hast und was sich damit tun lässt</item>
         <item>sums|calc|12*3.5|Rechnen|wird beim Tippen beantwortet. Enter kopiert</item>
-        <item>emoji|smile|emoji party|Emoji|ist ein Raster zum Auswählen. Enter kopiert</item>
+        <item>emoji|smile|emoji party|Emoji|zeigt ein Raster zum Auswählen. Enter kopiert</item>
     </string-array>
 
     <!-- Das Booklight-Fenster: seine Bereiche -->
@@ -229,6 +231,6 @@
     <string name="set_app_commands">Befehle deiner Apps</string>
     <string name="set_app_commands_text">Was deine anderen Apps anbieten, wird zu Zeilen: „neuer termin“ öffnet den Editor des Kalenders. Booklight startet nichts von ihnen, bevor du Enter drückst, und sie sehen nie, was du tippst.</string>
     <string name="win_apps_none">Noch bietet keine deiner Apps etwas an.</string>
-    <string name="win_link_letter">Dieser Link nimmt Booklight das %1$s. „%2$s“ führt weiter dorthin, wohin %1$s führte.</string>
+    <string name="win_link_letter">Ersetzt Booklights %1$s. „%2$s“ funktioniert weiter.</string>
     <string name="about_device">Prompts beantwortet das Modell des Systems auf diesem Gerät, wenn es eines hat; dein Text bleibt hier. Die Bibliothek, die es erreicht, meldet Google, wie sie genutzt wird (nicht, was du tippst): Die Datenschutzerklärung sagt, was.</string>
 </resources>

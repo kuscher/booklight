@@ -41,12 +41,13 @@ class HelpScope(private val context: Context, private val guide: Guide, private 
             .filter { it.second > 0 }.sortedByDescending { it.second }.map { it.first }
         val tryIt = context.getString(R.string.action_try)
         val rows = found.take(ROWS).map { e ->
-            val type = Action("try", tryIt, Effect.Type(e.example), keepOpen = true, symbol = "play")
+            // The armed action is named by what it types: on the selected row the strip stands where the example stood.
+            val type = Action("try", e.example.trim().ifEmpty { tryIt }, Effect.Type(e.example), keepOpen = true, symbol = "play")
             Result(
                 id = "guide:${e.id}", provider = key, kind = Kind.OTHER, title = e.name, subtitle = e.line.ifEmpty { null }, icon = Icon.Symbol(e.symbol), score = 1.0, learnable = false,
                 label = e.example,
                 // A keyword: Enter (and Tab) makes it the chip, ready for the user's own text. Anything else: Booklight shows how it is typed.
-                actions = listOf(if (e.scope != null) Action("enter", context.getString(R.string.scope_type), Effect.EnterScope(e.scope), keepOpen = true, symbol = "edit") else type),
+                actions = listOf(if (e.scope != null) Action("enter", e.example.substringBefore(' ') + " …", Effect.EnterScope(e.scope), keepOpen = true, symbol = "edit") else type),
             )
         }
         return rows + Result(

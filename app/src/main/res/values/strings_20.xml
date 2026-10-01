@@ -49,7 +49,7 @@
     <string name="keys_about">The system’s own keys</string>
     <string name="keys_all">All shortcuts</string>
     <string name="keys_all_sub">The system’s Keyboard shortcuts window</string>
-    <string name="set_show_keys">The system’s keys</string>
+    <string name="set_show_keys">Keyboard shortcuts</string>
     <string name="set_show_keys_text">“snap” answers with the keys that do it. Booklight shows them; it cannot press them.</string>
     <!-- Settings as a scope -->
     <string name="settings_keys_list">s,settings</string>
@@ -85,7 +85,7 @@
     <string name="action_undo">Undo</string>
     <string name="done_todo">Added to Todo</string>
     <string name="done_ticked">Done</string>
-    <string name="done_unticked">Open again</string>
+    <string name="done_unticked">Not done</string>
     <string name="day_today">Today</string>
     <string name="day_yesterday">Yesterday</string>
     <string name="action_pin">Pin</string>
@@ -118,7 +118,7 @@
         <item>fix|Fix spelling|Fix the spelling and grammar of this text. Keep its language and its wording. Reply with only the corrected text.\n\n{text}</item>
         <item>shorter|Shorter|Rewrite this text to be shorter and clearer, in the same language. Reply with only the rewritten text.\n\n{text}</item>
         <item>de|In German|Translate this text into German. Reply with only the translation.\n\n{text}</item>
-        <item>sum|Summary|Summarize this text in one or two sentences, in the language it is written in. Reply with only the summary.\n\n{text}</item>
+        <item>sum|Summary|Summarise this text in one or two sentences, in the language it is written in. Reply with only the summary.\n\n{text}</item>
         <item>explain|Explain|Explain this in two short, plain sentences.\n\n{text}</item>
     </string-array>
 
@@ -138,13 +138,14 @@
     <string name="pin_none_sub">“pin gate B22, 14:05” keeps a line on top of your windows</string>
     <string name="pin_sub">Stays on top of your windows</string>
     <string name="pin_replaces">Replaces “%1$s”</string>
+    <string name="pin_replaced">Replaced “%1$s”</string>
     <string name="action_unpin">Unpin</string>
     <string name="done_unpinned">Unpinned</string>
     <string name="action_start_pin">Start and pin</string>
     <string name="pin_set_for">set for %1$s</string>
-    <string name="pin_kind_text">Note</string>
+    <string name="pin_kind_text">Text</string>
     <string name="pin_kind_answer">Answer</string>
-    <string name="pin_kind_color">Color</string>
+    <string name="pin_kind_color">Colour</string>
     <string name="pin_kind_qr">QR code</string>
     <string name="pin_kind_timer">Timer</string>
 
@@ -179,16 +180,16 @@
         <item>todo|write|check|todo|todo call the bank|To-do|A task for Todo.md; todo alone shows what is open</item>
         <item>mail|write|mail|mail|mail anna@example.com Lunch? / See you at 1|Mail|The compose window, filled in</item>
         <item>event|write|event|event|event Fri 3pm Dentist|Event|The calendar’s editor, filled in</item>
-        <item>remind|write|bell|remind|remind 5pm call the bank|Reminder|A timer, an alarm or an event, by when it is</item>
+        <item>remind|write|bell|remind|remind 5pm call the bank|Reminder|A timer, an alarm or an event, depending on when</item>
         <item>new|write|plus|new|new doc Q3 plan|New|A file, a folder, a doc, a sheet or slides</item>
         <item>timer|time|timer|timer|timer 10m tea|Timer|The Clock starts it; Start and pin keeps the countdown on top</item>
         <item>alarm|time|bell|alarm|alarm 7:30 gym|Alarm|The Clock sets it</item>
         <item>sums|answers|calc||12*3.5|Sums|Enter copies the answer</item>
-        <item>color|answers|edit||#3478f6|Colors|Its other ways of being written, each to copy</item>
+        <item>color|answers|edit||#3478f6|Colours|The same colour in HEX, RGB, HSL and OKLCH, each to copy</item>
         <item>password|answers|key||password 20|Passwords|A new one each time</item>
         <item>qr|answers|qr|qr|qr https://example.com|QR code|To scan from the screen, copy, save or share</item>
         <item>emoji|answers|smile|emoji|emoji party|Emoji|A grid to pick from; Enter copies</item>
-        <item>sym|answers|text|sym|sym arrow|Symbols|Arrows, math, currency</item>
+        <item>sym|answers|text|sym|sym arrow|Symbols|Arrows, maths, currency</item>
         <item>prompts|text|spark||{prompt}|Prompts|Your text, answered by the model on this device</item>
         <item>ask|text|spark|ask|ask how do I fold a fitted sheet|Ask Gemini|Hands the text to the Gemini app</item>
         <item>clip|text|clip|clip|clip |Clipboard|What you copied: upper case, a note, a QR code…</item>
@@ -204,23 +205,24 @@
     <string name="tips_turn_off">Turn off tips</string>
     <string name="tips_off">Tips are off. Turn them on again in Booklight’s window.</string>
     <string name="set_tips">Tips</string>
-    <string name="set_tips_text">One thing Booklight can do, under the empty field, when you have opened it and not typed. Each has its turn once.</string>
+    <string name="set_tips_text">When you open Booklight and type nothing, it shows one thing it can do. Each tip is shown once.</string>
+    <string name="set_tips_show">Show tips</string>
     <string name="set_tips_again">Show the tips again</string>
     <string name="set_tips_again_done">From the first one</string>
     <!-- id|symbol|example|name|what happens. The line reads: example, a space, what happens; 90 characters at most. -->
     <string-array name="tips">
         <item>help|list|?|Everything|lists all that Booklight does, each with an example to try</item>
-        <item>places|left|chrome left|An app, in a place|opens Chrome in the left half. Also: right third, top left, full</item>
+        <item>places|left|chrome left|An app, in a place|opens Chrome in the left half if it is not open yet. Also: top left, full</item>
         <item>settings|settings|s wifi|Settings|goes to a settings page. s, Tab, then its name</item>
         <item>keys|key|k snap|Keyboard shortcuts|shows the keys for it. k, Tab, then what you want to do</item>
         <item>todo|check|todo call the bank|To-do|adds a task to Todo.md. todo alone shows what is open</item>
-        <item>prompts|spark|{prompt}|Prompts|is answered on this device, in its row. Enter copies</item>
+        <item>prompts|spark|{prompt}|Prompts|is corrected on this device, or handed to Gemini where it cannot be</item>
         <item>pin|pin|pin gate B22, 14:05|Pin|keeps a line in a small window on top of the others</item>
-        <item>timer|timer|timer 10m tea|Timer|starts it in the Clock. Start and pin keeps the countdown in view</item>
+        <item>timer|timer|timer 10m tea|Timer|starts a timer in the Clock. Start and pin keeps the countdown in view</item>
         <item>note|note|note buy milk|Note|adds a dated line to Notes.md</item>
         <item>clip|clip|clip |Clipboard|shows what you copied and what can be done with it</item>
         <item>sums|calc|12*3.5|Sums|is answered as you type. Enter copies</item>
-        <item>emoji|smile|emoji party|Emoji|is a grid to pick from. Enter copies</item>
+        <item>emoji|smile|emoji party|Emoji|shows a grid to pick from. Enter copies</item>
     </string-array>
 
     <!-- The Booklight window: its sections -->
@@ -239,6 +241,6 @@
     <string name="set_app_commands">Commands from your apps</string>
     <string name="set_app_commands_text">What your other apps offer becomes rows: “new event” opens the calendar’s editor. Booklight starts nothing of theirs before you press Enter, and they never see what you type.</string>
     <string name="win_apps_none">None of your apps offers anything yet.</string>
-    <string name="win_link_letter">This link takes %1$s from Booklight. “%2$s” still reaches what %1$s did.</string>
+    <string name="win_link_letter">Replaces Booklight’s %1$s. “%2$s” still works.</string>
     <string name="about_device">Prompts are answered by the system’s own model on this device, where it has one; your text stays here. The library that reaches it reports how it is used to Google (not what you type): the privacy policy says what.</string>
 </resources>

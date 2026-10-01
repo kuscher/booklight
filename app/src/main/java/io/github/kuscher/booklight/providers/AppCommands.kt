@@ -279,7 +279,11 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
 
     /** The keywords apps' files declare, as scopes. One the user has entered before is entered by its keyword and a Space, like Booklight's own. */
     /** Something another app offers, as it would be typed: an example for the list of everything. Null when no app offers anything. */
-    fun example(): String? = commands.firstOrNull { allowed(it.owner) && it.owner != context.packageName }?.title?.lowercase()
+    fun example(): String? = commands.filter { allowed(it.owner) && it.owner != context.packageName }.let { all ->
+        // "new event" says more than "my apps": something that makes a new thing, if any app offers one; else two words.
+        val short = all.filter { it.title.length <= 24 }
+        (short.firstOrNull { t -> NEW.any { t.title.trim().startsWith(it, ignoreCase = true) } } ?: short.firstOrNull { ' ' in it.title.trim() } ?: all.firstOrNull())?.title?.lowercase()
+    }
 
     fun scopes(taken: Set<String>): List<Scope> {
         val s = prefs.now
@@ -322,6 +326,8 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
         const val SEP = "\u0001"
         /** Found only by the app's name: under everything that matched by its own. */
         const val BY_NAME = 0.45
+        /** How the title of a command that makes a new thing begins, in the languages Booklight speaks. */
+        private val NEW = listOf("new ", "neue", "neu ")
         // What one app may put in: enough for any honest file, little enough that a hostile one costs nothing.
         const val MAX_EVENTS = 4000
         const val MAX_COMMANDS = 40

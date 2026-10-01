@@ -33,7 +33,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
@@ -78,8 +88,12 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
     LaunchedEffect(edit) { if (edit != null) { open = edit; page.selected = "${edit.first}:${edit.second}"; delay(1600); onEdited() } }
     // A link can't have a keyword one of Booklight's own scopes answers to: it would never be reached. Nor one a prompt has.
     val words = s.prompts.mapNotNull { it.keyword.lowercase().takeIf { k -> k.isNotEmpty() } }.toSet()
-    val taken = s.sites.map { it.keyword.lowercase() }.toSet() + app.scopes.reserved + words
-    fun close() { open = null; onTyping(false) }
+    val recipeWords = s.recipes.mapNotNull { it.keyword.lowercase().takeIf { k -> k.isNotEmpty() } }.toSet()
+    val taken = s.sites.map { it.keyword.lowercase() }.toSet() + app.scopes.reserved + words + recipeWords
+    fun close() { open = null }
+    // While an editor is open the keys are its own (Tab goes from field to field and to its buttons, Esc closes it);
+    // when it closes, the page has them again.
+    LaunchedEffect(open) { onTyping(open != null) }
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
 
     Column {
@@ -89,28 +103,28 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
             PageRow(page, "quicklink:${link.keyword}", link.name, link.url, mark = { Icon(Symbols.of(if (takes) "search" else "link"), null, tint = it) }, onEnter = { open = "quicklink" to link.keyword }) {
                 Cap(link.keyword, it)
             }
-            Editor(open == ("quicklink" to link.keyword)) {
+            Editor(open == ("quicklink" to link.keyword), ::close) {
                 LinkEditor(link, taken, onTyping,
                     onSave = { new -> set { st -> st.copy(sites = st.sites.map { if (it.keyword == link.keyword) new else it }) }; close() },
                     onDelete = { set { st -> st.copy(sites = st.sites.filter { it.keyword != link.keyword }) }; close() }, onClose = ::close)
             }
         }
         Add(page, "quicklink:", stringResource(R.string.win_link_add)) { open = "quicklink" to "" }
-        Editor(open == ("quicklink" to "")) {
+        Editor(open == ("quicklink" to ""), ::close) {
             LinkEditor(null, taken, onTyping, onSave = { new -> set { it.copy(sites = it.sites + new) }; close() }, onDelete = null, onClose = ::close)
         }
 
         Label(stringResource(R.string.snip_name))
         for (snip in s.snippets) {
             PageRow(page, "snippet:${snip.key}", snip.key, snip.text.lineSequence().first(), mark = { Icon(Symbols.of("text"), null, tint = it) }, onEnter = { open = "snippet" to snip.key })
-            Editor(open == ("snippet" to snip.key)) {
+            Editor(open == ("snippet" to snip.key), ::close) {
                 SnippetEditor(snip, s.snippets.map { it.key.lowercase() }.toSet(), onTyping,
                     onSave = { new -> set { st -> st.copy(snippets = st.snippets.map { if (it.key == snip.key) new else it }) }; close() },
                     onDelete = { set { st -> st.copy(snippets = st.snippets.filter { it.key != snip.key }) }; close() }, onClose = ::close)
             }
         }
         Add(page, "snippet:", stringResource(R.string.win_snippet_add)) { open = "snippet" to "" }
-        Editor(open == ("snippet" to "")) {
+        Editor(open == ("snippet" to ""), ::close) {
             SnippetEditor(null, s.snippets.map { it.key.lowercase() }.toSet(), onTyping, onSave = { new -> set { it.copy(snippets = it.snippets + new) }; close() }, onDelete = null, onClose = ::close)
         }
 
@@ -119,15 +133,15 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
             PageRow(page, "recipe:${recipe.id}", recipe.name, Recipes.describe(app, recipe), mark = { Icon(Symbols.of("bolt"), null, tint = it) }, onEnter = { open = "recipe" to recipe.id }) {
                 if (recipe.keyword.isNotEmpty()) Cap(recipe.keyword, it)
             }
-            Editor(open == ("recipe" to recipe.id)) {
-                RecipeEditor(app, recipe, onTyping,
+            Editor(open == ("recipe" to recipe.id), ::close) {
+                RecipeEditor(app, recipe, taken, onTyping,
                     onSave = { new -> set { st -> st.copy(recipes = st.recipes.map { if (it.id == recipe.id) new else it }) }; close() },
                     onDelete = { set { st -> st.copy(recipes = st.recipes.filter { it.id != recipe.id }) }; close() }, onClose = ::close)
             }
         }
         Add(page, "recipe:", stringResource(R.string.win_recipe_add)) { open = "recipe" to "" }
-        Editor(open == ("recipe" to "")) {
-            RecipeEditor(app, null, onTyping, onSave = { new -> set { it.copy(recipes = it.recipes + new) }; close() }, onDelete = null, onClose = ::close)
+        Editor(open == ("recipe" to ""), ::close) {
+            RecipeEditor(app, null, taken, onTyping, onSave = { new -> set { it.copy(recipes = it.recipes + new) }; close() }, onDelete = null, onClose = ::close)
         }
 
         Label(stringResource(R.string.win_prompts))
@@ -138,14 +152,14 @@ fun Commands(page: Page, app: BooklightApp, s: Settings, edit: Pair<String, Stri
                 mark = { Icon(Symbols.of("spark"), null, tint = it) }, onEnter = { open = "prompt" to prompt.id }) {
                 if (prompt.keyword.isNotEmpty()) Cap(prompt.keyword, it)
             }
-            Editor(open == ("prompt" to prompt.id)) {
+            Editor(open == ("prompt" to prompt.id), ::close) {
                 PromptEditor(prompt, used, onTyping,
                     onSave = { new -> set { st -> st.copy(prompts = st.prompts.map { if (it.id == prompt.id) new else it }) }; close() },
                     onDelete = { set { st -> st.copy(prompts = st.prompts.filter { it.id != prompt.id }) }; close() }, onClose = ::close)
             }
         }
         Add(page, "prompt:", stringResource(R.string.win_prompt_add)) { open = "prompt" to "" }
-        Editor(open == ("prompt" to "")) {
+        Editor(open == ("prompt" to ""), ::close) {
             PromptEditor(null, used, onTyping, onSave = { new -> set { it.copy(prompts = it.prompts + new) }; close() }, onDelete = null, onClose = ::close)
         }
     }
@@ -164,13 +178,15 @@ private fun Add(page: Page, key: String, title: String, onEnter: () -> Unit) {
 
 /** An editor opens under its row and closes back into it: the page makes room, nothing pops over it. */
 @Composable
-private fun Editor(visible: Boolean, content: @Composable () -> Unit) {
+private fun Editor(visible: Boolean, onEscape: () -> Unit = {}, content: @Composable () -> Unit) {
     val motion = LocalMotion.current
     AnimatedVisibility(visible, enter = expandVertically(motion.place()) + fadeIn(motion.fade(140, 60)), exit = shrinkVertically(motion.place()) + fadeOut(motion.fade(80))) {
         val scheme = MaterialTheme.colorScheme
         val dark = LocalDark.current
         Column(
-            Modifier.fillMaxWidth().padding(start = GUTTER, end = GUTTER, top = 4.dp, bottom = 12.dp).clip(RoundedCornerShape(24.dp))
+            Modifier.fillMaxWidth().padding(start = GUTTER, end = GUTTER, top = 4.dp, bottom = 12.dp)
+                .onPreviewKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.Escape) { onEscape(); true } else false }
+                .clip(RoundedCornerShape(24.dp))
                 .background(scheme.surfaceContainerLowest.copy(alpha = if (dark) 0.36f else 0.62f))
                 .border(with(LocalDensity.current) { 1f.toDp() }, Color.White.copy(alpha = if (dark) 0.20f else 0.55f), RoundedCornerShape(24.dp))
                 .padding(18.dp),
@@ -181,14 +197,20 @@ private fun Editor(visible: Boolean, content: @Composable () -> Unit) {
 
 /** A labelled line (or a few) of text to edit. While it has the keyboard, the page's arrow keys are its own. */
 @Composable
-private fun Input(label: String, value: String, onChange: (String) -> Unit, onTyping: (Boolean) -> Unit, modifier: Modifier = Modifier, lines: Int = 1, hint: String = "") {
+private fun Input(label: String, value: String, onChange: (String) -> Unit, @Suppress("UNUSED_PARAMETER") onTyping: (Boolean) -> Unit, modifier: Modifier = Modifier, lines: Int = 1, hint: String = "", /** The editor's first field: it has the keys when the editor opens. */ first: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
+    val focus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    if (first) LaunchedEffect(Unit) { withFrameNanos { }; runCatching { focus.requestFocus() } }
     Column(modifier) {
         Text(label, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, modifier = Modifier.padding(bottom = 4.dp))
         val style = TextStyle(fontFamily = Fonts.text, fontSize = 16.sp, color = scheme.onSurface)
         Box(Modifier.fillMaxWidth().heightIn(min = if (lines == 1) 44.dp else 96.dp).clip(RoundedCornerShape(14.dp)).background(scheme.onSurface.copy(alpha = 0.07f)).padding(horizontal = 14.dp, vertical = 11.dp)) {
             if (value.isEmpty() && hint.isNotEmpty()) Text(hint, style = style.copy(color = scheme.onSurface.copy(alpha = THIRD)))
-            BasicTextField(value, onChange, Modifier.fillMaxWidth().onFocusChanged { onTyping(it.isFocused) }, singleLine = lines == 1, minLines = lines, textStyle = style, cursorBrush = SolidColor(scheme.primary))
+            // Tab leaves the field for the next one (and at last for the buttons), also where the field has several lines.
+            BasicTextField(value, onChange, Modifier.fillMaxWidth().focusRequester(focus).onPreviewKeyEvent { e ->
+                if (e.type == KeyEventType.KeyDown && e.key == Key.Tab) { focusManager.moveFocus(if (e.isShiftPressed) FocusDirection.Previous else FocusDirection.Next); true } else false
+            }, singleLine = lines == 1, minLines = lines, textStyle = style, cursorBrush = SolidColor(scheme.primary))
         }
     }
 }
@@ -225,7 +247,7 @@ private fun LinkEditor(initial: SiteEntry?, taken: Set<String>, onTyping: (Boole
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var url by remember { mutableStateOf(initial?.url ?: "https://") }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Input(stringResource(R.string.set_site_keyword), keyword, { keyword = it.trim().take(16) }, onTyping, Modifier.weight(1f), hint = "jira")
+        Input(stringResource(R.string.set_site_keyword), keyword, { keyword = it.trim().take(16) }, onTyping, Modifier.weight(1f), hint = "jira", first = true)
         Input(stringResource(R.string.set_site_name), name, { name = it.take(40) }, onTyping, Modifier.weight(2f), hint = "Jira")
     }
     Input(stringResource(R.string.win_link_address), url, { url = it.trim() }, onTyping, hint = "https://example.com/browse/{argument}")
@@ -242,7 +264,7 @@ private fun LinkEditor(initial: SiteEntry?, taken: Set<String>, onTyping: (Boole
 private fun SnippetEditor(initial: SnippetEntry?, taken: Set<String>, onTyping: (Boolean) -> Unit, onSave: (SnippetEntry) -> Unit, onDelete: (() -> Unit)?, onClose: () -> Unit) {
     var key by remember { mutableStateOf(initial?.key.orEmpty()) }
     var text by remember { mutableStateOf(initial?.text.orEmpty()) }
-    Input(stringResource(R.string.slot_name), key, { key = it.trim().take(24) }, onTyping, hint = "sig")
+    Input(stringResource(R.string.slot_name), key, { key = it.trim().take(24) }, onTyping, hint = "sig", first = true)
     Input(stringResource(R.string.slot_text), text, { text = it }, onTyping, lines = 3)
     val ok = key.isNotEmpty() && ' ' !in key && (key.lowercase() !in taken || key.equals(initial?.key, ignoreCase = true)) && text.isNotBlank()
     Buttons(ok, { onSave(SnippetEntry(key, text)) }, onDelete, onClose)
@@ -255,7 +277,7 @@ private fun PromptEditor(initial: PromptEntry?, taken: Set<String>, onTyping: (B
     var keyword by remember { mutableStateOf(initial?.keyword.orEmpty()) }
     var text by remember { mutableStateOf(initial?.text.orEmpty()) }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Input(stringResource(R.string.slot_name), name, { name = it.take(28) }, onTyping, Modifier.weight(2f), hint = stringResource(R.string.win_prompt_name_hint))
+        Input(stringResource(R.string.slot_name), name, { name = it.take(28) }, onTyping, Modifier.weight(2f), hint = stringResource(R.string.win_prompt_name_hint), first = true)
         Input(stringResource(R.string.set_site_keyword), keyword, { keyword = it.trim().take(16) }, onTyping, Modifier.weight(1f), hint = "nice")
     }
     Input(stringResource(R.string.win_prompt_text), text, { text = it.take(2000) }, onTyping, lines = 4, hint = stringResource(R.string.win_prompt_text_hint))
@@ -271,7 +293,7 @@ private fun PromptEditor(initial: PromptEntry?, taken: Set<String>, onTyping: (B
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RecipeEditor(app: BooklightApp, initial: RecipeEntry?, onTyping: (Boolean) -> Unit, onSave: (RecipeEntry) -> Unit, onDelete: (() -> Unit)?, onClose: () -> Unit) {
+private fun RecipeEditor(app: BooklightApp, initial: RecipeEntry?, taken: Set<String>, onTyping: (Boolean) -> Unit, onSave: (RecipeEntry) -> Unit, onDelete: (() -> Unit)?, onClose: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var keyword by remember { mutableStateOf(initial?.keyword.orEmpty()) }
@@ -287,7 +309,7 @@ private fun RecipeEditor(app: BooklightApp, initial: RecipeEntry?, onTyping: (Bo
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Input(stringResource(R.string.slot_name), name, { name = it.take(40) }, onTyping, Modifier.weight(2f), hint = stringResource(R.string.win_recipe_name_hint))
+        Input(stringResource(R.string.slot_name), name, { name = it.take(40) }, onTyping, Modifier.weight(2f), hint = stringResource(R.string.win_recipe_name_hint), first = true)
         Input(stringResource(R.string.set_site_keyword), keyword, { keyword = it.trim().take(16) }, onTyping, Modifier.weight(1f), hint = "work")
     }
     Text(stringResource(R.string.win_recipe_steps), color = scheme.onSurface.copy(alpha = SECOND), style = SMALL)
@@ -309,6 +331,7 @@ private fun RecipeEditor(app: BooklightApp, initial: RecipeEntry?, onTyping: (Bo
             }
         }
     }
-    val ok = name.isNotBlank() && steps.isNotEmpty() && ' ' !in keyword
+    // A recipe can do without a keyword; one it has is its own alone.
+    val ok = name.isNotBlank() && steps.isNotEmpty() && ' ' !in keyword && (keyword.isEmpty() || keyword.lowercase() !in taken || keyword.equals(initial?.keyword, ignoreCase = true))
     Buttons(ok, { onSave(RecipeEntry(initial?.id ?: "r${System.currentTimeMillis()}", name.trim(), keyword, steps)) }, onDelete, onClose)
 }

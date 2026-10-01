@@ -84,6 +84,7 @@ class OverlayModel(
         val s = keyword ?: return false
         if (resultsFor != (null to query)) return false
         enterScope(s, "", query.trim())
+        if (!demo && !s.spaceEnters) change { st -> if (s.key in st.usedScopes) st else st.copy(usedScopes = st.usedScopes + s.key) }
         return true
     }
 
@@ -119,10 +120,13 @@ class OverlayModel(
 
     val current: Result? get() = results.getOrNull(selected)
 
+    /** The panel was opened to have an example typed into it (a row of the window's Commands page): no card and no tip come first. */
+    var guided by mutableStateOf(false)
+
     /** The first-run step to show, if any is left and nothing is typed. */
     val card: Card? by derivedStateOf {
         when {
-            demo || query.isNotEmpty() || chip != null -> null
+            demo || guided || query.isNotEmpty() || chip != null -> null
             // "Give Booklight a key": not for someone whose key has already opened the panel.
             settings.shortcutCard && !settings.keySeen -> Card.SHORTCUT
             settings.suggestionsCard && !settings.suggestions -> Card.SUGGESTIONS
@@ -145,7 +149,7 @@ class OverlayModel(
      * it is. Never as part of the opening, and never while a first-run card is to be shown.
      */
     fun offerTip() {
-        if (demo || typedYet || tip != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || !settings.tips || card != null) return
+        if (demo || guided || typedYet || tip != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || !settings.tips || card != null) return
         tip = app.tips.next(settings) ?: return
         tipArmed = 0; tipOff = false
         tipSince = SystemClock.uptimeMillis()
@@ -520,9 +524,10 @@ class OverlayModel(
         // On the row's arrow: Enter opens its other actions, or closes them again.
         if (onMore) { if (opened == null) open() else close(); return }
         val (r, a) = chosen() ?: return
-        // A prompt's row: the model is asked now, without waiting for a pause in typing. While its answer is still
-        // arriving, Enter waits for all of it.
-        if (a.effect == PromptScope.ASK) { if (thinking) whenAnswered = run else ask(now = true); return }
+        // A prompt's row that reads "Ask": the model is asked now, without waiting for a pause in typing. Asked again
+        // while it has not said a word yet, nothing more happens: an Enter on "Ask" never becomes a copy of an answer
+        // nobody has read. Once words arrive the row reads "Copy", and Enter then waits for all of them.
+        if (a.effect == PromptScope.ASK) { if (!thinking) ask(now = true); return }
         if ((r.body as? Body.Stream)?.busy == true) { whenAnswered = run; return }
         if (a.confirm) {
             val now = SystemClock.uptimeMillis()

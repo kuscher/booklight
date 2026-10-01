@@ -127,7 +127,7 @@ class OverlayActivity : ComponentActivity() {
             }
         }
         // A row of the window's Commands page: Booklight types its example, once the panel has opened.
-        intent.getStringExtra(EXTRA_TYPE)?.let { text -> lifecycleScope.launch { delay(motion.hold(TYPE_AFTER_MS)); if (!leaving) model.typeOut(text) } }
+        intent.getStringExtra(EXTRA_TYPE)?.let { text -> model.guided = true; lifecycleScope.launch { delay(motion.hold(TYPE_AFTER_MS)); if (!leaving) model.typeOut(text) } }
         window.decorView.post {
             Log.i(BooklightApp.TAG, "panel shown ${SystemClock.uptimeMillis() - created} ms after onCreate, ${SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()} ms after process start")
         }
@@ -269,6 +269,9 @@ class OverlayActivity : ComponentActivity() {
     fun run(r: Result, a: Action, keep: Boolean = false) {
         if (leaving || settled) return   // a second Enter or click while the panel is on its way out
         val app = application as BooklightApp
+        // A pinned text exists nowhere else: when another pin takes its place, the footer says which one went.
+        fun pins(e: Effect): Boolean = e is Effect.Pin || (e is Effect.Steps && e.steps.any(::pins))
+        val replaced = app.pinned.value?.takeIf { it.kind == "text" && pins(a.effect) }?.title(this)?.let { getString(R.string.pin_replaced, if (it.length > 24) it.take(23) + "…" else it) }
         if (!app.executor.run(a.effect, this)) { say(getString(R.string.failed), bad = true); return }
         // Asking for a grant runs nothing yet: what was typed (the first note) is kept, in case the picker is cancelled.
         ran = a.effect !is Effect.Grant
@@ -276,7 +279,7 @@ class OverlayActivity : ComponentActivity() {
         model.used(r, a)
         // An emoji that was picked comes first next time.
         if (r.body is Body.Grid && r.provider == "emoji") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(emojiRecent = (listOf(c.text) + (it.emojiRecent - c.text)).take(14)) } }
-        val word = a.done ?: if (a.effect is Effect.CopyText) getString(R.string.copied) else null
+        val word = a.done ?: if (a.effect is Effect.CopyText) getString(R.string.copied) else replaced
         if (word != null) say(word)
         when {
             a.keepOpen || keep -> model.refresh()

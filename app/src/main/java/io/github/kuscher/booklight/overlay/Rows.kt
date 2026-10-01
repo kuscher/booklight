@@ -379,7 +379,8 @@ fun ResultRow(
                 } else {
                     // Laid out once at its own width and covered by a fade where the strip takes its room: a name unrolling
                     // beside it never makes the title swap letters for an ellipsis.
-                    Box(Modifier.fillMaxWidth().fadeEnd()) {
+                    if (body is Body.Keys) Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500), lineHeight = 21.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    else Box(Modifier.fillMaxWidth().fadeEnd()) {
                         if (body is Body.Task) TaskTitle(r.title, body.done, on)
                         else Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
                     }
@@ -425,7 +426,7 @@ fun ResultRow(
                 }
                 body is Body.Level -> Spacer(Modifier.width(0.dp))
                 r.kind == Kind.SCOPE -> Keycap("tab")
-                else -> Text(kind, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1)
+                else -> Text(kind, color = scheme.onSurface.copy(alpha = if (r.provider == "help") 1f else SECOND), style = SMALL, maxLines = 1)
             }
         }
         }
@@ -457,7 +458,7 @@ private fun TaskBox(done: Boolean, ink: Color) {
 private fun TaskTitle(title: String, done: Boolean, on: Color) {
     val motion = LocalMotion.current
     val struck by animateFloatAsState(if (done) 1f else 0f, motion.lead(), label = "strike")
-    val ink by animateColorAsState(if (done) on.copy(alpha = THIRD) else on, motion.fade(120), label = "task")
+    val ink by animateColorAsState(if (done) on.copy(alpha = SECOND) else on, motion.fade(120), label = "task")
     var width by remember { mutableStateOf(0f) }
     Text(
         title, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,

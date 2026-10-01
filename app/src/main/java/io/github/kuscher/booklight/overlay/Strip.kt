@@ -341,7 +341,8 @@ fun OptionStrip(
                 val x0 = if (vertical) 0 else slots.x[k]
                 val y0 = if (vertical) slots.x[k] else 0
                 marks[k].place(x0 + w - edge + 4.dp.roundToPx() - marks[k].width, y0 + (h - marks[k].height) / 2)
-                labels[k].place(x0 + w - edge + 4.dp.roundToPx() - marks[k].width - gap - labels[k].width, y0 + (h - labels[k].height) / 2)
+                // One under the other, the names start on one edge; side by side each stands before its mark.
+                labels[k].place(if (vertical) x0 + edge else x0 + w - edge + 4.dp.roundToPx() - marks[k].width - gap - labels[k].width, y0 + (h - labels[k].height) / 2)
             }
         }
     }

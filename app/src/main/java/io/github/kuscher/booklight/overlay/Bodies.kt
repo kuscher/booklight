@@ -124,7 +124,7 @@ fun RowScope.StreamBody(b: Body.Stream, ink: Color, onGrow: () -> Unit) {
             Text(c, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Box(Modifier.padding(top = 3.dp).fillMaxWidth().height(room).clipToBounds()) {
-            if (answer < 1f) Text(own, color = ink.copy(alpha = ink.alpha * SECOND), style = style, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.graphicsLayer { alpha = 1f - answer })
+            if (answer < 1f) Text(own, color = ink, style = style, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.graphicsLayer { alpha = 1f - answer })
             if (b.answer || answer > 0f) Written(said, ink, style, Modifier.graphicsLayer { alpha = answer }, onGrow)
         }
     }

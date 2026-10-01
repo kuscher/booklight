@@ -172,7 +172,7 @@
     <string name="win_assistant_text">Choose Booklight as the digital assistant and the assistant key opens the panel. Gemini then no longer answers that key.</string>
     <string name="win_forget_again">Press again to forget</string>
     <string name="win_commands_title">Your commands</string>
-    <string name="win_commands_text">Links you reach by a keyword, pieces of text you paste often, and recipes that do several things at once.</string>
+    <string name="win_commands_text">Links you reach by a keyword, pieces of text you paste often, recipes that do several things at once, and prompts for the model on this device.</string>
     <string name="win_links">Links</string>
     <string name="win_link_add">Add a link…</string>
     <string name="win_link_address">Address</string>

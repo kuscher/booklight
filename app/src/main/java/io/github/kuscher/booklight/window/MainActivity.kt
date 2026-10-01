@@ -56,6 +56,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -174,8 +176,13 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
     val scrolls = remember { Part.entries.associateWith { ScrollState(0) } }
     LaunchedEffect(Unit) { focus.requestFocus() }
     // What needs a look when the window comes back from Settings, the folder picker or the panel.
+    // (A desktop window that stays in view behind the panel is not paused: getting the keys back counts as well.)
     var resumed by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) { resumed++; onPauseOrDispose { } }
+    val windowFocus = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
+    LaunchedEffect(windowFocus) { if (windowFocus) resumed++ }
+    /** "Open Keyboard shortcuts" was pressed: the line under Your key says what to do next, whichever section was looked at in between. */
+    val askedForKey = remember { mutableStateOf(false) }
 
     fun go(to: Part) {
         if (to == part) return
@@ -202,17 +209,23 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
         }
         scope.launch { scroll.animateScrollTo(to.toInt().coerceIn(0, scroll.maxValue), motion.place()) }
     }
-    // Into the page: the row that was selected there, else the first one.
-    LaunchedEffect(entering, shown, page.placed) {
-        if (!entering || shown != part || page.rows.values.none { it.height > 0 }) return@LaunchedEffect
+    // Into the page: the row that was selected there, else the first one. Not before the page that was there has
+    // gone (it fades for 70 ms and its rows are still known until then) and the new one has its rows.
+    LaunchedEffect(entering, shown) {
+        if (!entering || shown != part) return@LaunchedEffect
+        delay(motion.hold(100))
+        snapshotFlow { page.placed }.first { page.rows.values.any { it.height > 0 } }
         entering = false
         val want = picked[part]
         if (want != null && page.rows[want] != null) page.selected = want else { page.selected = null; page.move(1) }
         page.current?.let(::reveal)
     }
 
+    // A row of the page chosen with the pointer while the keys were in the column: the keys are in the page now.
+    LaunchedEffect(page.selected) { if (page.selected != null && inColumn && !entering) inColumn = false }
+
     BoxWithConstraints(
-        Modifier.fillMaxSize().background(scheme.surfaceContainerHigh).safeDrawingPadding()
+        Modifier.fillMaxSize().background(scheme.surfaceContainerLow).safeDrawingPadding()
             .onGloballyPositioned { viewport = it.size.height }
             .focusRequester(focus).focusable()
             .onPreviewKeyEvent { e ->
@@ -221,7 +234,7 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                 val at = part.ordinal
                 when (e.key) {
                     // Tab goes between the column and the page; so does Left from a row that has nothing to step through.
-                    Key.Tab -> { if (inColumn) { inColumn = false; entering = true } else { picked[part] = page.selected; inColumn = true }; true }
+                    Key.Tab -> { if (!again) { if (inColumn) { inColumn = false; entering = true } else { picked[part] = page.selected; inColumn = true } }; true }
                     Key.DirectionDown -> { if (inColumn) Part.entries.getOrNull(at + 1)?.let(::go) else page.move(1)?.let(::reveal); true }
                     Key.DirectionUp -> { if (inColumn) Part.entries.getOrNull(at - 1)?.let(::go) else page.move(-1)?.let(::reveal); true }
                     Key.DirectionLeft -> if (inColumn) true else page.current?.step?.let { it(-1); true } ?: run { picked[part] = page.selected; inColumn = true; true }
@@ -259,7 +272,7 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                         Column(Modifier.fillMaxWidth().padding(bottom = 64.dp)) {
                             Rise(arrive, 0, from) { PageTitle(stringResource(if (p == Part.START) R.string.app_name else p.title), lead(p)) }
                             when (p) {
-                                Part.START -> StartPage(page, app, s, resumed, arrive, from)
+                                Part.START -> StartPage(page, app, s, resumed, askedForKey, arrive, from)
                                 Part.COMMANDS -> Rise(arrive, 1, from) { CommandsPage(page, app) }
                                 Part.YOURS -> Rise(arrive, 1, from) { Commands(page, app, s, edit, onEdited, onTyping = { typing = it; if (!it) focus.requestFocus() }) }
                                 Part.LOOK -> Rise(arrive, 1, from) { LookPage(page, s, app) }
@@ -312,7 +325,7 @@ fun GroupLabel(text: String) {
 
 /** Start: what Booklight is, shown; the key that opens it; the tips. */
 @Composable
-private fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, arrive: Animatable<Float, *>, from: Float) {
+private fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, askedForKey: androidx.compose.runtime.MutableState<Boolean>, arrive: Animatable<Float, *>, from: Float) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val activity = LocalActivity.current as ComponentActivity
@@ -324,7 +337,7 @@ private fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, 
             // Whether a key has ever opened the panel. It changes while the panel is in front; here it is read when the
             // window has the keys again, and then the line changes in place: nothing under it moves.
             val seen = remember(resumed) { app.prefs.now.keySeen }
-            var asked by remember { mutableStateOf(false) }
+            var asked by askedForKey
             Row(Modifier.padding(start = GUTTER, bottom = 12.dp).height(20.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(16.dp), contentAlignment = Alignment.Center) {
                     val dot by androidx.compose.animation.core.animateFloatAsState(if (seen) 0f else 1f, motion.fade(80), label = "dot")
@@ -349,7 +362,7 @@ private fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, 
     Rise(arrive, 3, from) {
         Column {
             GroupLabel(stringResource(R.string.set_tips))
-            Toggle(page, "tips", stringResource(R.string.set_tips), stringResource(R.string.set_tips_text), s.tips, mark = "spark") { v -> set { it.copy(tips = v) } }
+            Toggle(page, "tips", stringResource(R.string.set_tips_show), stringResource(R.string.set_tips_text), s.tips, mark = "spark") { v -> set { it.copy(tips = v) } }
             var again by remember { mutableStateOf(false) }
             PageRow(page, "tips-again", stringResource(R.string.set_tips_again), null, mark = { Icon(Symbols.of("again"), null, tint = it) },
                 onEnter = { set { it.copy(tips = true, tipsSeen = emptyList(), tipId = "", tipMs = 0) }; again = true }) {
@@ -498,7 +511,7 @@ private fun AboutPage(page: Page, app: BooklightApp) {
                 else if (!sure && !done) { sure = true; asked = now }
             }) {
             Text(stringResource(if (done) R.string.set_forgotten else if (sure) R.string.win_forget_again else R.string.action_delete),
-                color = if (sure) scheme.error else it, style = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(600)))
+                color = if (done) it else scheme.error, style = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(600)))
         }
     }
 }

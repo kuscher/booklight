@@ -290,7 +290,7 @@ private fun PinWindow(p: Pinned, pip: Boolean, copied: Long, onCopy: () -> Unit,
                         // The colour as it was pinned, then its other ways of being written.
                         val c = remember(now) { Colors.parse(now.text) }
                         Column(Modifier.padding(start = 16.dp)) {
-                            Text(now.text, color = scheme.onSurface, style = FIGURE.copy(fontSize = 24.sp, fontFeatureSettings = "tnum, zero"), maxLines = 1)
+                            Text(now.text, color = scheme.onSurface, style = FIGURE.copy(fontSize = 26.sp, fontFeatureSettings = "tnum, zero"), maxLines = 1)
                             if (c != null) for (form in listOf(c.rgb(), c.hsl(), c.oklch())) Text(form, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL.copy(fontFeatureSettings = "tnum, zero"), maxLines = 1, modifier = Modifier.height(20.dp))
                         }
                     }

@@ -174,8 +174,8 @@ sealed interface Body {
     data class Task(val done: Boolean) : Body
     /**
      * A text under a caption, on up to four lines: what a prompt will be asked about, and then the
-     * answer of the device's own model as it arrives. [answer]: [text] is the model's (shown at full
-     * ink; before that it is the user's own text, a step back). [busy] while more is coming.
+     * answer of the device's own model as it arrives. [answer]: [text] is the model's; before that
+     * it is the user's own text (the caption says which). [busy] while more is coming.
      * [ask]: what the device's own model would be asked for this row (the prompt with the text in
      * it); null when there is nothing to ask or nobody to ask. [tall]: the answer needed a third
      * line, and the row has grown, once, to hold four.

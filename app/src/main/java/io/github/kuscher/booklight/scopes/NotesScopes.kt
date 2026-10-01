@@ -147,10 +147,12 @@ class PinScope(private val context: Context, private val pinned: () -> io.github
                 icon = Icon.Symbol("pin"), score = 1.0, learnable = false, actions = emptyList(),
             ) else Result(
                 id = "pin:now", provider = key, kind = Kind.OTHER, title = now.title(context), subtitle = now.label(context), icon = Icon.Symbol("pin"), score = 1.0, learnable = false,
-                actions = listOfNotNull(
-                    Action("unpin", context.getString(R.string.action_unpin), Effect.Unpin, keepOpen = true, symbol = "trash", done = context.getString(R.string.done_unpinned)),
-                    Action("copy", context.getString(R.string.action_copy), Effect.CopyText(now.text)).takeIf { now.kind != "timer" && now.kind != "qr" },
-                ),
+                // What is pinned may exist nowhere else: taking it away is never the first thing Enter does where there is
+                // something else to do, and never runs by a digit.
+                actions = (now.kind != "timer" && now.kind != "qr").let { copies -> listOfNotNull(
+                    Action("copy", context.getString(R.string.action_copy), Effect.CopyText(now.text)).takeIf { copies },
+                    Action("unpin", context.getString(R.string.action_unpin), Effect.Unpin, keepOpen = true, symbol = "trash", danger = copies, done = context.getString(R.string.done_unpinned)),
+                ) },
             ),
         )
         val old = now?.takeIf { it.kind == "text" }?.title(context)?.let { if (it.length > 24) it.take(23) + "…" else it }
