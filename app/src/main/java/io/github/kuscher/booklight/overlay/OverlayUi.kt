@@ -115,8 +115,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Text on glass is one ink, `onSurface`, at three strengths: an alpha ink follows whatever shows through, a fixed grey would vanish on grey glass. */
-private const val SECOND = 0.68f
-private const val THIRD = 0.48f
+private const val SECOND = 0.80f
+private const val THIRD = 0.60f
 private val LocalDark = staticCompositionLocalOf { false }
 
 /** The panel's sizes. The window is exactly this big, so its blur follows the panel. */
@@ -295,7 +295,7 @@ private fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFie
         // The search engine's mark where the magnifier would be: Google's G when Google does the searching.
         Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
             AnimatedContent(model.settings.engine == "google", transitionSpec = { (scaleIn(motion.pop(), 0.6f) + fadeIn()) togetherWith (scaleOut() + fadeOut()) }, label = "mark") { google ->
-                if (google) Text("G", color = scheme.primary, style = TextStyle(fontFamily = Fonts.round, fontSize = 24.sp, fontWeight = FontWeight(600)))
+                if (google) Text("G", color = scheme.onSurface, style = TextStyle(fontFamily = Fonts.round, fontSize = 24.sp, fontWeight = FontWeight(600)))
                 else Icon(Symbols.search, null, Modifier.size(22.dp), tint = scheme.onSurface.copy(alpha = SECOND))
             }
         }
@@ -460,7 +460,7 @@ private fun Pill(top: Dp, height: Dp, visible: Boolean) {
             .clip(shape)
             // The only coloured surface, and the densest: that is what says "selected". Flat, with the panel's white outline.
             .background(scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f))
-            .border(1.dp, Color.White.copy(alpha = if (dark) 0.30f else 0.55f), shape),
+            .border(with(LocalDensity.current) { 1f.toDp() }, Color.White.copy(alpha = if (dark) 0.30f else 0.55f), shape),
     )
 }
 
@@ -484,10 +484,11 @@ private fun RowFrame(height: Dp, selected: Boolean, label: String, onHover: () -
 }
 
 @Composable
-private fun ResultRow(r: Result, icons: AppIcons, selected: Boolean, hint: String?, onHover: () -> Unit, onClick: () -> Unit) {
+private fun ResultRow(r: Result, icons: AppIcons, selected: Boolean, hint: String?, onHover: () -> Unit, onClick: () -> Unit, head: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
-    val on by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface, motion.fade(120), label = "on")
+    // As the head of the actions view a row is context, not a choice: quieter, and without its kind.
+    val on by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface.copy(alpha = if (head) SECOND else 1f), motion.fade(120), label = "on")
     val dim by animateColorAsState(if (selected) scheme.onSecondaryContainer else scheme.onSurface.copy(alpha = SECOND), motion.fade(120), label = "dim")
     val pop by animateFloatAsState(if (selected) 1.06f else 1f, motion.pop(), label = "icon")
     val small = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
@@ -501,7 +502,7 @@ private fun ResultRow(r: Result, icons: AppIcons, selected: Boolean, hint: Strin
                 AnimatedContent(r.answer!!, transitionSpec = {
                     (slideInVertically(motion.place()) { it / 2 } + fadeIn(motion.fade(120))) togetherWith (slideOutVertically(motion.place()) { -it / 2 } + fadeOut(motion.fade(70)))
                 }, label = "answer") { a ->
-                    Text(a, color = on, style = TextStyle(fontFamily = Fonts.round, fontSize = 34.sp, fontWeight = FontWeight(600), fontFeatureSettings = "tnum"), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(a, color = on, style = TextStyle(fontFamily = Fonts.round, fontSize = 34.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             } else {
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -516,7 +517,7 @@ private fun ResultRow(r: Result, icons: AppIcons, selected: Boolean, hint: Strin
             if (showHint) Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(hint.orEmpty(), color = dim, style = small, modifier = Modifier.padding(end = 8.dp), maxLines = 1)
                 EnterKey()
-            } else Text(kind, color = scheme.onSurface.copy(alpha = SECOND), style = small, maxLines = 1)
+            } else if (!head) Text(kind, color = scheme.onSurface.copy(alpha = SECOND), style = small, maxLines = 1)
         }
     }
 }
@@ -547,7 +548,7 @@ private fun ActionsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Ac
     Column {
         Box(Modifier.padding(horizontal = Metrics.pad).padding(top = Metrics.pad).fillMaxWidth().height(head + Metrics.row * of.actions.size)) {
             Pill(head + Metrics.row * model.actionIndex, Metrics.row, visible = true)
-            ResultRow(of, icons, selected = false, hint = null, onHover = {}, onClick = { model.closeActions() })
+            ResultRow(of, icons, selected = false, hint = null, onHover = {}, onClick = { model.closeActions() }, head = true)
             of.actions.forEachIndexed { i, a ->
                 val selected = i == model.actionIndex
                 SlotRow(head + Metrics.row * i, leaving = false, delayMs = LocalMotion.current.stagger(i), onGone = {}) {
@@ -579,8 +580,7 @@ private fun CardBody(card: Card, model: OverlayModel, choice: Int, onChoice: (In
     }
     Row(
         Modifier.padding(horizontal = Metrics.pad).fillMaxWidth().height(Metrics.card)
-            .clip(RoundedCornerShape(24.dp)).background(scheme.onSurface.copy(alpha = 0.07f))
-            .border(1.dp, Color.White.copy(alpha = if (LocalDark.current) 0.20f else 0.35f), RoundedCornerShape(24.dp))
+            // No plate of its own: a box inside the glass would read as a second rim.
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -608,7 +608,7 @@ private fun CardButton(label: String, chosen: Boolean, onHover: () -> Unit, onCl
     val on by animateColorAsState(if (chosen) scheme.onSecondaryContainer else scheme.onSurface.copy(alpha = SECOND), motion.fade(120), label = "buttonText")
     val hover by rememberUpdatedState(onHover)
     Row(
-        Modifier.clip(CircleShape).background(bg).border(1.dp, edge, CircleShape)
+        Modifier.clip(CircleShape).background(bg).border(with(LocalDensity.current) { 1f.toDp() }, edge, CircleShape)
             .pointerInput(Unit) { awaitPointerEventScope { while (true) if (awaitPointerEvent().type == PointerEventType.Move) hover() } }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .semantics { role = Role.Button; selected = chosen }

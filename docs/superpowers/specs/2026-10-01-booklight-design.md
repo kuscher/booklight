@@ -210,9 +210,17 @@ This spec was written before he answered. Where it differs, this section and the
 
 - **Nothing typed** shows nothing: no suggestion strip (§2.1, §2.4 state 2). The first-run row became a
   small card under the field with two steps: the shortcut, then the opt-in for search suggestions.
-- **Glass** (§2.2): flat and visibly see-through. Three levels the user picks from: Clear (tint 0.10,
-  blur 14 dp), Balanced (0.20, 22 dp, the default) and Frosted (0.34, 36 dp); a crisp white outline; no
-  bevel, glow or highlights. Dim 6–10 %. The exact values are in `overlay/Glass.kt`.
+- **Glass** (§2.2): flat and visibly see-through. A veil of white (light theme) or near-black (dark)
+  over the system blur, in three levels the user picks from: Clear (veil 0.28 light / 0.38 dark, blur
+  14 dp), Balanced (0.42 / 0.50, 22 dp, the default) and Frosted (0.58 / 0.64, 32 dp). The rest of the
+  screen dims by 10 % in light theme and 22 % in dark. The edge is two flat rings: a black hairline, then
+  a 1.25 dp white outline, even all the way round. No bevel, glow or highlights. Text is one ink
+  (`onSurface`) at three strengths (1.0, 0.80, 0.60), so it follows whatever shows through. Marks are
+  centred at 38 dp and text starts at 72 dp in every row. The selection pill is the only coloured
+  surface. On arrival one gleam runs along the outline. Values: `overlay/Glass.kt`, `OverlayUi.kt`.
+  Measured on the HP over a white page and a black terminal: titles 10:1 and 3.2:1 in light theme,
+  5.6:1 and 15:1 in dark; the selected row stays above 4.5:1 everywhere. Small grey text over a window
+  of the opposite colour is the price of the transparency; Frosted is there for that.
 - **Motion** (§2.3) is everywhere, not only the selection: the glass comes into focus on arrival, the
   window's height follows a spring, rows rise in as a cascade, move to their new places and fade out, the
   selection pill stretches towards its target, results and actions pass each other sideways, an answer

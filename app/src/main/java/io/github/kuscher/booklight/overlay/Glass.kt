@@ -40,8 +40,8 @@ object Look {
 /**
  * The panel's glass, as a shader over the system's window blur: a flat veil (white in light theme,
  * near-black in dark: the most contrast for the least tint), two flat rings at the edge (a black
- * hairline that holds the edge on a white page, then the white outline, a little brighter along
- * the top), and fine grain so the blur doesn't band. Nothing is modelled in 3D: no bevel, no
+ * hairline that holds the edge on a white page, then the white outline, even all the way round),
+ * and fine grain so the blur doesn't band. Nothing is modelled in 3D: no bevel, no
  * highlights on the surface. On arrival one gleam runs along the outline and splits into the
  * device's colours, like light through the edge of a pane. Android blurs what is behind a window
  * but doesn't let an app bend it, so the see-through look comes from the veil and blur amounts.
@@ -73,15 +73,14 @@ half4 main(float2 xy) {
     float3 pm = (tint.rgb + (hash(xy) - 0.5) * 0.012) * a;       // premultiplied glass
 
     // The outermost pixel: a black hairline, so the edge holds on a white page.
-    float hair = (1.0 - smoothstep(0.6, 1.2, depth)) * mix(0.14, 0.28, dark);
+    float hair = (1.0 - smoothstep(0.6, 1.2, depth)) * mix(0.20, 0.28, dark);
     pm *= 1.0 - hair;
     a = mix(a, 1.0, hair);
 
-    // Then the white outline, 1.25 dp, brighter along the top.
+    // Then the white outline, 1.25 dp.
     float w = 1.25 * density;
     float line = smoothstep(0.6, 1.2, depth) * (1.0 - smoothstep(1.0 + w - 0.5, 1.0 + w + 0.5, depth));
-    float up = 1.0 - clamp(xy.y / max(size.y, 1.0), 0.0, 1.0);
-    float base = mix(mix(0.65, 0.90, up), mix(0.34, 0.50, up), dark);
+    float base = mix(0.80, 0.44, dark);       // the same all the way round: no light from above
     // The arrival gleam lives only in this line: white at its core, the device's colours at its edges.
     float t = (xy.x + 0.6 * xy.y - sweep) / (110.0 * density / 1.125);
     float core = exp(-t * t);

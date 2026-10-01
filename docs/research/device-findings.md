@@ -36,9 +36,12 @@ over Wi-Fi adb. Each item says how it was checked. Desk research is in
 - `Window.setBackgroundBlurRadius` and `setDimAmount` can be animated per frame (the glass "comes into
   focus" over about 170 ms on arrival).
 - An AGSL `RuntimeShader` draws the surface (tint, outline, grain) over the system blur.
-- **See-through needs restraint in both tint and blur.** Tint 0.46 over a 64 dp blur read as an opaque
-  frosted slab (Alex: "I don't think the app is transparent at all"). Tint 0.20 over a 22 dp blur shows
-  recognisable shapes behind and keeps text readable; 0.10 / 14 dp is the clearest that still reads.
+- **See-through needs restraint in both tint and blur.** A surface-colour tint of 0.46 with a lit bevel
+  over a 64 dp blur read as an opaque frosted slab (Alex: "I don't think the app is transparent at all").
+  What reads as see-through is mostly the blur radius: at 22 dp shapes behind stay recognisable. A white
+  veil (near-black in dark theme) gives the most contrast per unit of tint; 0.42 over a black terminal
+  leaves titles at 3.2:1, which is why Balanced isn't thinner. `./bl backdrop` (debug builds) opens a
+  window with a white page, a dark terminal and colour to judge it against without showing real windows.
 - Apps live in Android users 0 and 10: `pm uninstall --user current` leaves the user-0 copy, and a
   build signed with another key then fails with INSTALL_FAILED_UPDATE_INCOMPATIBLE. `adb uninstall`
   removes both.
