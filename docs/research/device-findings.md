@@ -147,6 +147,9 @@ Tried with a throwaway build (local branch `spike/unfold`), recorded and stepped
 - Opening the panel takes the keyboard from whoever is typing. Check `./bl idle` first and keep each
   test short. Key and tap injection only into Booklight's own focused window.
 - The Debian VM (Terminal app) is off limits: no launch, no force-stop, no reboot, no adbd changes.
+- `am task resize` only on a task whose own line in `dumpsys activity activities` names Booklight. On 1 October a
+  helper took the wrong task id from that dump and resized another app's window (it was put back from the bounds the
+  dump still held).
 - A timer started for real keeps ringing in Clock after it ends. After any test that presses Enter on a timer:
   `adb shell am start --user current -a android.intent.action.DISMISS_TIMER` (it stops every expired timer and
   opens nothing).
@@ -279,4 +282,26 @@ whether the Googlebook's screenshot puts one there.
 pin were still ringing in Clock two hours later. `adb shell am start --user current -a
 android.intent.action.DISMISS_TIMER` stops every expired timer without opening Clock. Do that after any test
 that presses Enter on a timer.
+
+## Why Chrome's "New tab" is not offered (Lenovo Googlebook 15, 1 October 2026)
+
+Alex: "it doesnt show the actions for apps like chrome which has new tab as one."
+
+- Booklight reads the shortcuts an app declares in its manifest and shows the ones it may start as rows
+  (`providers/AppCommands.kt`): on the Lenovo "New event" (Calendar), Keep's four, YouTube's three, Play Store's
+  "My apps".
+- Chrome has two (`dumpsys shortcut`): "New tab" (manifest) and "New Incognito window" (dynamic). Both lead to
+  `org.chromium.chrome.browser.LauncherShortcutActivity`, and that activity is **not open to other apps**
+  (`./bl debug activity com.android.chrome/org.chromium.chrome.browser.LauncherShortcutActivity` says
+  `exported=false`). `AppCommands.safe()` drops such a shortcut, rightly: starting it would throw. Gmail shows
+  none for the same kind of reason (not looked at in detail).
+- Who may start it: the system, on behalf of an app that is a "shortcut host". In the Android 17 source
+  (`ShortcutService.hasShortcutHostPermission`, `VoiceInteractionManagerService`) that is the home screen app,
+  holders of a signature permission, and **the package of the device's digital assistant**
+  (`setShortcutHostPackage` is called for the current voice interaction service). So as the assistant, Booklight
+  could list every app's shortcuts, the dynamic ones too, and start them through `LauncherApps.startShortcut`.
+  Read in the source, not tried on a device.
+- Without that: Booklight's own "New window" on Chrome's row opens a new Chrome window with a new tab, and a
+  typed address or search opens in a new tab already. Chrome has no public way to ask for an empty new tab
+  (it ignores its own `chrome://` addresses from outside).
 

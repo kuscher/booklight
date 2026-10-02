@@ -24,6 +24,8 @@ import java.io.FileOutputStream
  *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted|solid | pref opening off|fast|medium|slow
  *   ai none|downloadable|downloading|ready|real (what the rows of a prompt show on a device in that state; `real` asks the device again)
  *   pref theme auto|light|dark | pref tint on|off | pref dim on|off | pref cards (show the first-run cards again) | pref nocards
+ *   activity PKG/CLASS (is that activity open to other apps: why an app's shortcut is or is not offered)
+ *   think on|off (the light of the model at work, without the model) | turn MS (close, and the key again MS later)
  */
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -106,6 +108,14 @@ class DebugReceiver : BroadcastReceiver() {
                 }
                 out(sb.toString().take(3500))
             }
+            // `activity PKG/CLS`: what the system says about an activity (is it open to other apps): why an app's shortcut is or is not offered.
+            "activity" -> out(runCatching {
+                val i = context.packageManager.getActivityInfo(android.content.ComponentName.unflattenFromString(arg)!!, 0)
+                "exported=${i.exported} enabled=${i.enabled} permission=${i.permission} target=${i.targetActivity}"
+            }.getOrElse { "not found: ${it.javaClass.simpleName}" })
+            // The panel is put away and the key comes again MS later: the turn, at a moment adb could never hit.
+            "turn" -> main.post { act?.let { a -> a.close(); main.postDelayed({ a.turn(Intent()) }, arg.toLongOrNull() ?: 60L) }; out("ok") }
+            "think" -> main.post { act?.model?.pretendThinking(arg == "on"); out("ok") }
             "ai" -> app.scope.launch {
                 app.onDevice.pretend = when (arg) {
                     "none" -> io.github.kuscher.booklight.ai.OnDevice.State.NONE

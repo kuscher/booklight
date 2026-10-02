@@ -266,11 +266,8 @@ fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false) {
     }
     val shape = RoundedCornerShape(24.dp)   // the panel's 32 less the 8 it is inset by: concentric
     val dark = LocalDark.current
-    // The only coloured surface, and the densest: that is what says "selected". Flat, with the panel's white outline.
-    val fill by animateColorAsState(
-        if (danger) scheme.errorContainer.copy(alpha = if (dark) 0.70f else 0.85f) else scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f),
-        motion.fade(120), label = "fill",
-    )
+    // The only coloured surface: that is what says "selected". Flat, with the panel's white outline.
+    val fill by animateColorAsState(selectionFill(scheme, dark, LocalGlass.current, danger), motion.fade(120), label = "fill")
     Box(
         Modifier.offset { IntOffset(0, upper.value.roundToPx()) }
             .fillMaxWidth().height((lower.value - upper.value).coerceAtLeast(12.dp))
@@ -332,7 +329,8 @@ private fun ActionRow(r: Result, selected: Boolean, modifier: Modifier, onHover:
     ) {
         // The glyph sits in the icon column, the name on the title's edge.
         Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) { Icon(Symbols.of((r.icon as? RowIcon.Symbol)?.name ?: "app"), null, Modifier.size(18.dp), tint = ink) }
-        Text(r.title, color = ink, style = LABEL, maxLines = 1, modifier = Modifier.padding(start = 16.dp).weight(1f))
+        // The names are what is chosen from: full ink, selected or not (over a white window second ink is the faintest text in the panel).
+        Text(r.title, color = if (bad) ink else scheme.onSurface, style = LABEL, maxLines = 1, modifier = Modifier.padding(start = 16.dp).weight(1f))
         // Where the row's arrow stands: the Enter mark of the action the pill is on.
         Box(Modifier.width(32.dp), contentAlignment = Alignment.Center) { Icon(Symbols.enter, null, Modifier.size(14.dp).graphicsLayer { alpha = mark }, tint = ink) }
     }

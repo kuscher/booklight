@@ -1,5 +1,21 @@
 # Changelog
 
+## On main, after 2.1 (not released)
+
+Alex's notes on 2.1, each taken through a visual and a motion designer (`docs/design/design-system.md` §12).
+
+- **The opening is at Medium speed** unless chosen otherwise; whoever had Fast stored (everybody) gets Medium once.
+- **The opening's curve**: the glass opens slowly, quickly through the middle, and lands over a long stretch, with
+  no rebound. The blur comes with the landing. Leaving takes 155 ms at Fast and Medium alike.
+- **The seam the panel opens out of is seen again**: since 2.0's shadow nothing showed until the glass widened.
+- **The light on the edge is a white reflection**: it comes 2.4 s after the panel has opened, in a quiet moment,
+  runs once round from the middle of the top edge, and gives way to any key. The model's "thinking" light is the
+  same light, steady and dimmer.
+- **An app's row has six icons**: Open, New window, App info, Maximise, Left half, Right half; the other places
+  are in the list under the arrow. "Full" is "Maximise"; "Left ⅔" is "Left two thirds".
+- **The selection in dark theme is see-through** (the same colour at 42 % on glass).
+- Found, not changed: Chrome's "New tab" is closed to other apps (`docs/research/device-findings.md`).
+
 ## 2.1 (1 October 2026)
 
 - **Letters** (`abc`): the letters of sixteen languages in the picker's grid, to copy. By language

@@ -2,6 +2,36 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (late night): on main after 2.1, not released
+
+Alex used 2.1 and asked for small improvements on main, each to go through a visual designer and a motion
+designer (his words are at the top of `docs/design/reviews-after-2.1/plan.md`). Built, reviewed over one visual
+round and its confirmation and four motion rounds of recordings on the Lenovo, approved by both, committed.
+**Not tagged: no release was asked for.** The version is still 2.1 / code 5; a release needs 2.2, code 6 and notes.
+
+- What changed: `docs/design/design-system.md` §12 (the opening at Medium and its curve, the leaving's time,
+  the turn, the white reflection, the dark selection, six icons on an app's row). `CHANGELOG.md` has the short form.
+- **A fault found on the way, older than this work:** since 2.0's shadow the seam the panel opens out of was
+  never on screen (the root view shows nothing while its outline is empty). Fixed in `PanelOutline.caster`.
+- **Chrome's "New tab" cannot be offered** by a plain app: `device-findings.md`, last section. The digital
+  assistant may start such shortcuts (read in the Android 17 source, not tried).
+- Settings schema 4: a stored `fast` becomes `medium` once.
+- Debug hooks added: `./bl debug activity PKG/CLASS`, `think on|off`, `turn MS`.
+- Release build checked on the Lenovo (a prompt answers; frame times: the opening 56 frames with only the
+  window's first one to three late, the reflection's lap one late in 249). The Lenovo has this release build.
+- Not done: nothing of it on the HP; German was not looked at on the device for the two renamed places.
+
+**Two plans wait for Alex** (nothing of either is built):
+- `docs/design/window-redesign.md` and its page (`docs/design/booklight-window.html`,
+  https://claude.ai/artifact/Qp9U7LtwivskDF1dNTmouf): the Booklight window as a desktop window, navigation on
+  the leading edge, five sections, Material 3 Expressive parts; nine decisions for him; about nine days.
+- The four milestones (the copy, the picture, the selection, your language): `docs/design/milestones.md` and
+  its page, once the team's page is in.
+
+**Device mishaps of this session, both put right:** six test timers had been ringing in Clock for two hours
+(stopped; rule in `device-findings.md`); a recording helper resized another app's window on the Lenovo by mistake
+(put back to its exact bounds; a task is now resized only after its line is checked to be Booklight's).
+
 ## 2026-10-01 (night): 2.1
 
 Alex, after 2.0: "Fix the German decimal point. Add a new function to the app which lets me ask for e.g. German
@@ -19,6 +49,9 @@ or danish letters like umlauts or ß and have them in my copy paste. Make a rele
   beside it until the Play session sends it.
 - **Released:** tag `v2.1`, workflow green, GitHub release "Booklight 2.1"; the published APK was checked against
   its sums and is on the Lenovo.
+- **On Play** (the Play session, on Alex's word to it): 2.0 was approved at 17:54 PDT and 2.1 is live to the closed
+  testers since 18:56 PDT. Production is prepared there and not sent: Alex decides. The store's eight screenshots
+  still show 1.1; nothing of 2.0 or 2.1 is in them.
 
 **What to build next: research, nothing decided.** Alex asked for the unbuilt ideas, ten new ones, his own
 (a screenshot asked about with the device's model; acting on the copy; a suggestion with nothing typed) and a

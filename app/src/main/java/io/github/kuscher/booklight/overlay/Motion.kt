@@ -23,8 +23,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
  * height, rows finding their place) ride springs; things that only appear or go (fades) use short
  * tweens. With the system's animations off, everything cuts and only the holds remain.
  *
- * The feel: quick to start, a small settle at the end, never a wait. Nothing here is longer than
- * about a third of a second, and typing is never held up by any of it.
+ * The feel: quick to start, a small settle at the end, never a wait. What answers a key is never
+ * longer than about a third of a second; the two things that are (the panel's own arrival at the
+ * speed the user chose, and the reflection that runs round its edge) hold nothing up: the field has
+ * the keys from the first frame, and typing is never held up by any of it.
  *
  * [slow] stretches every spring and tween (debug builds: `./bl open stay slow=4`), so that a
  * recording can be stepped through frame by frame. It is 1 for everyone else.
@@ -42,8 +44,17 @@ class Motion(val on: Boolean, val slow: Float = 1f) {
     fun <T> pop(): FiniteAnimationSpec<T> = s(0.62f, 700f)
     /** The arming gliding along a row's actions: the highlight, and how much of each name shows, ride this one spring. */
     fun <T> arm(): FiniteAnimationSpec<T> = s(0.78f, 560f)
-    /** The glass opening out of its seam; [by] is the opening's own speed setting (1, 2 or 4). */
-    fun <T> open(by: Float = 1f): FiniteAnimationSpec<T> = s(0.72f, 1000f / (by * by))
+    /**
+     * The glass opening out of its seam, over [ms]: slowly at first, quickly through the middle, and a long way of
+     * slowing down, so that the arrival is what one sees. No overshoot: the glass cannot pass its own edge.
+     */
+    fun <T> opens(ms: Int): FiniteAnimationSpec<T> = fade(ms, easing = OPENS)
+    /**
+     * The glass opening again from part of the way, when the key is pressed while it is closing: a spring, because
+     * it takes over the speed the glass has; without overshoot, because the glass cannot pass its own edge.
+     * [by] is how much the leaving is stretched (1, or 2 at the Slow setting).
+     */
+    fun <T> open(by: Float = 1f): FiniteAnimationSpec<T> = s(1f, 1000f / (by * by))
     /** Appearing and going. */
     fun <T> fade(ms: Int = 110, delay: Int = 0, easing: Easing = FastOutSlowInEasing): FiniteAnimationSpec<T> =
         if (on) tween((ms * slow).toInt(), (delay * slow).toInt(), easing) else snap()
@@ -78,6 +89,27 @@ class Motion(val on: Boolean, val slow: Float = 1f) {
         const val LEAVE_MS = 110L
         /** How far the glass is open (0 to 1) before the panel may grow past the field's height: what is under the field arrives after the opening, never as part of it. */
         const val GATE = 0.85f
+
+        /** The glass's way from its seam to its width. */
+        val OPENS = CubicBezierEasing(0.55f, 0f, 0.1f, 1f)
+
+        // The reflection: one white light that runs once round the panel's outline, a while after it has opened.
+        /** How long after the opening it comes, and how long everything must have stood still. */
+        const val REFLECTION_AFTER_MS = 2400L
+        const val REFLECTION_QUIET_MS = 700L
+        /** Its lap takes this long for each dp of outline (the same speed round a field and round a full list), and never longer than [REFLECTION_MAX_MS]. */
+        const val REFLECTION_MS_PER_DP = 1f
+        const val REFLECTION_MAX_MS = 2200
+        /** It gathers speed over the first third and eases off over the last: its fastest is 1.68 times its average. */
+        val REFLECTS = CubicBezierEasing(0.3f, 0f, 0.5f, 1f)
+        /** How fast it is at its fastest, in dp a second: where its tail is longest. */
+        const val REFLECTION_CRUISE = 1680f
+        /** Its tail, in dp: at rest and at its fastest. It is born as a small even glint, stretches as it gathers speed and gathers itself again. */
+        const val REFLECTION_TAIL = 36f
+        const val REFLECTION_TAIL_LONG = 140f
+        /** While the device's own model works the same light goes round steadily and slower, and less bright. */
+        const val THINKING_MS_PER_DP = 1.5f
+        const val THINKING_GLOW = 0.75f
     }
 }
 

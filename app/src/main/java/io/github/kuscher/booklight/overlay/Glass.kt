@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 
@@ -54,6 +55,21 @@ object Look {
     var dimDark = 0.22f
 
     fun use(level: GlassLevel) { tintLight = level.tintLight; tintDark = level.tintDark; blurDp = level.blurDp }
+
+}
+
+/**
+ * The selection's colour: the one coloured surface of the panel, the scheme's secondary container. Dense in light
+ * theme (over a dark window it is what makes the chosen row readable). In dark theme on glass it is see-through
+ * like the panel: at 42 % the page behind still reads through it, it keeps its colour, and it is the same step from
+ * the glass over a white window and over a dark one. On solid ground there is nothing behind it to show, and it
+ * stays dense. [danger]: the row removes something.
+ */
+fun selectionFill(scheme: ColorScheme, dark: Boolean, glass: Boolean, danger: Boolean = false): Color = when {
+    danger -> scheme.errorContainer.copy(alpha = if (!dark) 0.85f else if (glass) 0.50f else 0.70f)
+    !dark -> scheme.secondaryContainer.copy(alpha = 0.78f)
+    glass -> scheme.secondaryContainer.copy(alpha = 0.42f)
+    else -> scheme.secondaryContainer.copy(alpha = 0.66f)
 }
 
 /**
@@ -61,19 +77,20 @@ object Look {
  * near-black in dark: the most contrast for the least tint), two flat rings at the edge (a black
  * hairline that holds the edge on a white page, then the white outline, even all the way round),
  * and fine grain so the blur doesn't band. Nothing is modelled in 3D: no bevel, no
- * highlights on the surface. On arrival one light runs once around the outline and splits into the
- * device's colours, like light through the edge of a pane. Android blurs what is behind a window
- * but doesn't let an app bend it, so the see-through look comes from the veil and blur amounts.
+ * highlights on the surface. A while after the panel has opened one white reflection runs once
+ * around the outline, as if a light had passed over the pane's edge: the outline is brighter and a
+ * little wider where it is, and a little of it falls on the glass beside it. Android blurs what is
+ * behind a window but doesn't let an app bend it, so the see-through look comes from the veil and
+ * blur amounts.
  */
 private const val GLASS = """
 uniform float2 size;
 uniform float radius;
 uniform float density;    // px per dp
 uniform float4 tint;      // straight rgb, alpha
-uniform float3 cLead;     // the gleam's leading colour
-uniform float3 cTail;     // and its trailing one
-uniform float run;        // the light's head: how far it has come round the outline, in px, clockwise from the top's middle
-uniform float glow;       // how bright the light is, 0..1
+uniform float run;        // the reflection's head: how far it has come round the outline, in laps, clockwise from the top's middle
+uniform float glow;       // how bright the reflection is, 0..1
+uniform float tail;       // how long its tail is, in dp
 uniform float dark;       // 0 light theme, 1 dark
 uniform float solid;      // 1: no blur behind, so stay opaque
 
@@ -97,38 +114,55 @@ half4 main(float2 xy) {
     pm *= 1.0 - hair;
     a = mix(a, 1.0, hair);
 
-    // Then the white outline, 1.25 dp.
-    float w = 1.25 * density;
-    float line = smoothstep(0.6, 1.2, depth) * (1.0 - smoothstep(1.0 + w - 0.5, 1.0 + w + 0.5, depth));
-    float base = mix(0.80, 0.44, dark);       // the same all the way round: no light from above
-    // The arrival light lives only in this line: white at its core, the device's colours ahead and behind.
-    // Where this pixel is along the outline, measured the way the light travels.
+    // The reflection: how far along the outline this pixel is, clockwise from the top's middle, following the
+    // corners' arcs; and how much of the reflection is here. A short front and a tail behind it: something passing.
     float2 p = xy - size * 0.5;
     float2 h = size * 0.5;
-    float2 e = abs(p) - h;
-    float s = e.x > e.y
-        ? (p.x > 0.0 ? size.x + p.y + h.y : 2.0 * size.x + size.y + h.y - p.y)
-        : (p.y < 0.0 ? p.x + h.x : size.x + size.y + h.x - p.x);
-    float around = 2.0 * (size.x + size.y);
-    s = mod(s - h.x + around, around);
-    float t = (run - s) / (120.0 * density);
-    float core = glow * exp(-t * t);
-    float lead = glow * exp(-(t + 0.9) * (t + 0.9));
-    float tail = glow * exp(-(t - 0.9) * (t - 0.9));
-    float3 lineCol = (float3(1.0) * (base + core) + cLead * lead + cTail * tail) / (base + core + lead + tail);
-    float la = line * clamp(base + 0.35 * core + 0.30 * (lead + tail), 0.0, 1.0);
-    pm = mix(pm, lineCol, la);
+    float2 c = h - radius;                       // the corners' centres are at (±c.x, ±c.y)
+    float q = 1.5707963 * radius;                // a quarter turn
+    float top = 2.0 * c.x;
+    float side = 2.0 * c.y;
+    float total = 2.0 * (top + side) + 4.0 * q;
+    float2 k = abs(p) - c;
+    float s;
+    if (k.x > 0.0 && k.y > 0.0) {                // in a corner: by its angle
+        if (p.x > 0.0 && p.y < 0.0) { s = c.x + atan(k.x, k.y) * radius; }
+        else if (p.x > 0.0) { s = c.x + q + side + atan(k.y, k.x) * radius; }
+        else if (p.y > 0.0) { s = c.x + 2.0 * q + side + top + atan(k.x, k.y) * radius; }
+        else { s = c.x + 3.0 * q + 2.0 * side + top + atan(k.y, k.x) * radius; }
+    } else if (abs(p.x) - h.x > abs(p.y) - h.y) {
+        s = p.x > 0.0 ? c.x + q + (p.y + c.y) : c.x + 3.0 * q + side + top + (c.y - p.y);
+    } else {
+        s = p.y < 0.0 ? p.x : c.x + 2.0 * q + side + (c.x - p.x);
+    }
+    float lap = total / density;                 // dp
+    float t = (run * total - s) / density;       // dp behind the head (negative: ahead of it)
+    t = mod(t + 0.25 * lap, lap) - 0.25 * lap;   // the outline is a loop: the tail lies across the starting point too
+    float shape = t < 0.0 ? exp(-t * t / (40.0 * 40.0)) : exp(-t * t / (tail * tail));
+    float refl = glow * shape;
+
+    // Then the white outline, 1.25 dp, the same all the way round: no light from above. Where the reflection is it
+    // is full white and a little wider (more so in light theme, where it has less brightness to gain).
+    float w = (1.25 + mix(0.75, 0.5, dark) * refl) * density;
+    float line = smoothstep(0.6, 1.2, depth) * (1.0 - smoothstep(1.0 + w - 0.5, 1.0 + w + 0.5, depth));
+    float base = mix(0.80, 0.44, dark);
+    float la = line * mix(base, 1.0, refl);
+    pm = mix(pm, float3(1.0), la);
     a = mix(a, 1.0, la);
+    // Its inner edge is soft: a little of it over the next 3 dp of glass. Enough to soften the line, not a band of light.
+    float spill = refl * exp(-max(depth - 1.0 - w, 0.0) / (3.0 * density)) * (1.0 - line) * mix(0.16, 0.12, dark);
+    pm = pm + float3(spill) * (1.0 - pm);
+    a = a + spill * (1.0 - a);
 
     return half4(half3(clamp(pm, 0.0, 1.0)) * aa, a * aa);
 }
 """
 
 /**
- * Draws the glass behind the content. [run] is how far round the outline the arrival light has come, 0 to 1
- * (and a little beyond, so its tail leaves too); [glow] its brightness.
+ * Draws the glass behind the content. [run] is how far round the outline the reflection has come, in laps
+ * from the middle of the top edge; [glow] its brightness; [tail] the length of its tail in dp.
  */
-fun Modifier.glass(tint: Color, lead: Color, tail: Color, radiusPx: Float, density: Float, run: () -> Float, glow: () -> Float, dark: Boolean, solid: Boolean): Modifier = composed {
+fun Modifier.glass(tint: Color, radiusPx: Float, density: Float, run: () -> Float, glow: () -> Float, tail: () -> Float, dark: Boolean, solid: Boolean): Modifier = composed {
     val shader = remember { RuntimeShader(GLASS) }
     drawWithCache {
         val brush = ShaderBrush(shader)
@@ -137,10 +171,9 @@ fun Modifier.glass(tint: Color, lead: Color, tail: Color, radiusPx: Float, densi
             shader.setFloatUniform("radius", minOf(radiusPx, size.width / 2f, size.height / 2f))
             shader.setFloatUniform("density", density)
             shader.setFloatUniform("tint", tint.red, tint.green, tint.blue, tint.alpha)
-            shader.setFloatUniform("cLead", lead.red, lead.green, lead.blue)
-            shader.setFloatUniform("cTail", tail.red, tail.green, tail.blue)
-            shader.setFloatUniform("run", run() * 2f * (size.width + size.height))
+            shader.setFloatUniform("run", run())
             shader.setFloatUniform("glow", glow())
+            shader.setFloatUniform("tail", tail())
             shader.setFloatUniform("dark", if (dark) 1f else 0f)
             shader.setFloatUniform("solid", if (solid) 1f else 0f)
             drawRect(brush)

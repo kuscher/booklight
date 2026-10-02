@@ -63,7 +63,7 @@ data class Settings(
     /** The shadow around the panel: `off`, `low`, `medium` or `high` (`overlay/Glass.kt`). */
     val shadow: String = "medium",
     /** How the panel arrives: `off` (a small settle and a fade), or unfolding `fast`, `medium` or `slow`. */
-    val opening: String = "fast",
+    val opening: String = "medium",
     /** The keyword searches and links: 1.0's sites, now with placeholders. */
     val sites: List<SiteEntry> = Sites.defaults.map { SiteEntry(it.keyword, it.name, it.url) },
     val snippets: List<SnippetEntry> = emptyList(),
@@ -91,7 +91,7 @@ data class Settings(
     val keySeen: Boolean = false,
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
-    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0. */
+    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2. */
     val schema: Int = 1,
 ) {
     fun engine(): Engine = Engines.byId(engine)
@@ -103,7 +103,7 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "settings.json")
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val writing = Mutex()
-    private companion object { const val SCHEMA = 3 }
+    private companion object { const val SCHEMA = 4 }
     private val _state = MutableStateFlow(load())
     val state: StateFlow<Settings> = _state
     val now: Settings get() = _state.value
@@ -134,6 +134,8 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
         // 2.0: the five prompts to start with. And whoever answered 1.1's first card, or has picked anything, has a key:
         // the window must not tell them "No key yet".
         if (s.schema < 3) s = started(s).copy(keySeen = !s.shortcutCard || File(context.filesDir, "history.json").length() > 8)
+        // 2.2: the opening is at medium speed unless chosen otherwise. Fast was what everyone had, chosen or not.
+        if (s.schema < 4 && s.opening == "fast") s = s.copy(opening = "medium")
         return s.copy(schema = SCHEMA)
     }
 

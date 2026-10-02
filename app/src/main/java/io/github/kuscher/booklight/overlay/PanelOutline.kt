@@ -56,7 +56,9 @@ class PanelOutline(private val radius: Float) : Drawable() {
     val caster = object : ViewOutlineProvider() {
         override fun getOutline(view: View, outline: Outline) {
             val bottom = minOf(glass.bottom, view.height)
-            if (!shaded || cast <= 0f || glass.width() <= 0 || bottom <= glass.top) { outline.setEmpty(); return }
+            if (!shaded || glass.width() <= 0 || bottom <= glass.top) { outline.setEmpty(); return }
+            // Never an empty outline while there is glass: the root view shows nothing at all while its outline is
+            // empty, and the seam the glass opens out of (and draws back into) casts no shadow yet. No shadow is alpha 0.
             outline.setRoundRect(glass.left, glass.top, glass.right, bottom, corner(glass.width(), bottom - glass.top))
             outline.alpha = cast.coerceIn(0f, 1f)
         }

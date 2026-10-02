@@ -92,13 +92,13 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     private class Spot(val id: String, val place: Place, val label: Int, val words: Int, val more: Boolean)
 
     private val spots = listOf(
+        Spot("full", Place.FULL, R.string.place_full, R.string.verb_full, false),
         Spot("left", Place.LEFT, R.string.action_left_half, R.string.verb_left, false),
         Spot("right", Place.RIGHT, R.string.action_right_half, R.string.verb_right, false),
-        Spot("full", Place.FULL, R.string.place_full, R.string.verb_full, false),
-        Spot("p3l", Place.LEFT_THIRD, R.string.place_p3l, R.string.verb_p3l, false),
-        Spot("p3m", Place.MIDDLE_THIRD, R.string.place_p3m, R.string.verb_p3m, false),
-        Spot("p3r", Place.RIGHT_THIRD, R.string.place_p3r, R.string.verb_p3r, false),
         // The rest wait behind the row's arrow; typed, they are there at once.
+        Spot("p3l", Place.LEFT_THIRD, R.string.place_p3l, R.string.verb_p3l, true),
+        Spot("p3m", Place.MIDDLE_THIRD, R.string.place_p3m, R.string.verb_p3m, true),
+        Spot("p3r", Place.RIGHT_THIRD, R.string.place_p3r, R.string.verb_p3r, true),
         Spot("p23l", Place.LEFT_TWO_THIRDS, R.string.place_p23l, R.string.verb_p23l, true),
         Spot("p23r", Place.RIGHT_TWO_THIRDS, R.string.place_p23r, R.string.verb_p23r, true),
         Spot("ptl", Place.TOP_LEFT, R.string.place_ptl, R.string.verb_ptl, true),
@@ -168,8 +168,9 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
         provider = id, kind = Kind.APP, title = a.label,
         subtitle = if (display > 0) context.getString(R.string.place_on_display, display) else null,
         icon = Icon.App(a.pkg, a.cls, a.user), score = score,
-        // A fixed order, never rearranged by use: 1.1's first five, then the places. Nine are icons on the row; the
-        // rest wait behind its arrow. What removes the app is last and never armed unless asked for by name.
+        // A fixed order, never rearranged by use. Six are icons on the row: Open, New window, App info, and the three
+        // places people use (maximised, the left half, the right half); the other places wait behind its arrow.
+        // What removes the app is last and never armed unless asked for by name.
         actions = listOfNotNull(
             Action("open", context.getString(R.string.action_open), Effect.LaunchApp(a.pkg, a.cls, a.user, display = display)),
             Action("window", context.getString(R.string.action_new_window), Effect.LaunchApp(a.pkg, a.cls, a.user, newWindow = true, display = display)).takeIf { a.user == me },

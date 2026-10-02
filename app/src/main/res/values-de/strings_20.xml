@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="place_full">Maximiert</string>
+    <string name="place_full">Maximieren</string>
     <string name="place_p3l">Links ⅓</string>
     <string name="place_p3m">Mitte ⅓</string>
     <string name="place_p3r">Rechts ⅓</string>

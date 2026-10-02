@@ -1,6 +1,7 @@
 package io.github.kuscher.booklight.overlay
 
 import androidx.compose.animation.AnimatedContent
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.animation.AnimatedVisibility
@@ -77,6 +78,9 @@ import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.Fonts
 import io.github.kuscher.booklight.ui.Symbols
+import android.os.SystemClock
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableFloatStateOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -84,17 +88,28 @@ import kotlin.math.roundToInt
 
 /** How the panel arrives. [slow] stretches every time in it: 1 = as designed, 2 and 4 for people who want to watch it. */
 data class Arrival(val unfold: Boolean, val slow: Float) {
-    /** How long the panel takes to leave, for the activity to wait before finishing. Folding is unfolding backwards, and takes as long. */
-    val leaveMs: Long get() = if (unfold) ((FOLD_MS + WAIT_MS) * slow).toLong() + 20 else Motion.LEAVE_MS
+    /**
+     * How much the leaving is stretched. It is the arrival backwards in shape, but not in time: the window keeps the
+     * keyboard until it is gone, so at Fast and at Medium it leaves in the same 155 ms, and only Slow is slower.
+     */
+    val leave: Float get() = if (slow >= 4f) 2f else 1f
+    /** How long the panel takes to leave, for the activity to wait before finishing. */
+    val leaveMs: Long get() = if (unfold) ((FOLD_MS + LEAVE_WAIT_MS) * leave).toLong() + 20 else Motion.LEAVE_MS
 
     companion object {
         /** From the setting: `off` is 1.0's small settle and fade; `fast`, `medium` and `slow` unfold. */
         fun of(setting: String, motion: Motion) = Arrival(motion.on && setting != "off", when (setting) { "medium" -> 2f; "slow" -> 4f; else -> 1f })
 
-        /** The unfold's times before [slow]: the seam grows for [SEAM_MS]; the glass starts to open [WAIT_MS] in and first reaches its width [FOLD_MS] later. */
+        /**
+         * The unfold's times before [slow]: the seam grows for [SEAM_MS]; the glass starts to open [WAIT_MS] in (its own
+         * slow start is the rest of the pause) and takes [OPEN_MS] to its width: 210 ms in all, 420 at Medium.
+         */
         const val SEAM_MS = 80
-        const val WAIT_MS = 50
+        const val WAIT_MS = 30
+        const val OPEN_MS = 180
+        /** Leaving, before [leave]: the glass folds to its seam in [FOLD_MS]; the seam starts to draw in [LEAVE_WAIT_MS] before the fold would be as long as the seam. */
         const val FOLD_MS = 105
+        const val LEAVE_WAIT_MS = 50
         /** The last of the seam fades as it goes, so nothing is switched off. */
         const val GONE_MS = 40
     }
@@ -173,60 +188,144 @@ fun Panel(
     // On the way out the blur and the contents let go early: the glass closes slowly at first, and a
     // blurred band would stand beside it for those frames.
     var folding by remember { mutableStateOf(false) }
-    fun focused() = if (folding) smooth(0.75f, 1f, opened()) else smooth(0.5f, 1f, opened())
+    /** How fast the glass was closing, last frame (widths a second): a turn takes it over. A cancelled animation forgets its own. */
+    var foldSpeed by remember { mutableFloatStateOf(0f) }
+    // On the way in the blur belongs to the landing: the pane arrives clear and frosts over in its last stretch. The
+    // blur is the whole window's, and the glass spends a long time nearly open: a blur that came sooner would stand
+    // beside the glass as a ghost of where it is going.
+    fun focused() = if (folding) smooth(0.75f, 1f, opened()) else smooth(0.88f, 1f, opened())
     fun shown() = if (folding) smooth(0.55f, 0.95f, opened()) else smooth(0.35f, 0.85f, opened())
+    // The mark at the field's start and the cap at its end come last: the glass's edge passes them slowly, and would cut them.
+    fun ends() = smooth(0.92f, 1f, opened())
     LaunchedEffect(leaving) {
         if (!arrival.unfold) {
             launch { presence.animateTo(if (leaving) 0f else 1f, motion.fade(if (leaving) 90 else 170)) }
             launch { scale.animateTo(if (leaving) 0.975f else 1f, if (leaving) motion.fade(100) else motion.pop()) }
         } else if (!leaving) {
             // Also the way back, when the key is pressed again while the panel is leaving: it opens from wherever it had got to.
-            val fromSeam = high.value < 1f
+            val seamGrowing = high.value < 1f
+            val fromSeam = wide.value <= w0 + 0.02f
             launch { presence.animateTo(1f, motion.fade((Arrival.GONE_MS * slow).toInt())) }
             launch { high.animateTo(1f, motion.fade((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_GROWS)) }
-            if (fromSeam) delay(motion.hold((Arrival.WAIT_MS * slow).toLong()))
-            wide.animateTo(1f, motion.open(slow))
+            if (fromSeam) {
+                if (seamGrowing) delay(motion.hold((Arrival.WAIT_MS * slow).toLong()))
+                wide.animateTo(1f, motion.opens((Arrival.OPEN_MS * slow).toInt()))
+            } else {
+                // Turned round part of the way: a spring takes over the speed the glass has, where a curve would
+                // stop it dead and start again. It is as stiff as the leaving is quick (not as the opening is slow):
+                // the glass is closing fast, and a soft spring would let it go on closing long after the key.
+                wide.animateTo(1f, motion.open(arrival.leave), initialVelocity = foldSpeed)
+            }
+            foldSpeed = 0f
             folding = false
         } else {
             folding = true
             // Leaving is arriving backwards: the glass closes to its seam from both sides and covers the contents,
             // the blur lets go on the way, then the seam draws in and is gone.
+            val by = arrival.leave
             wide.snapTo(landed(wide.value))
-            launch { wide.animateTo(w0, motion.fade((Arrival.FOLD_MS * slow).toInt(), easing = FOLDS)) }
-            delay(motion.hold(((Arrival.FOLD_MS + Arrival.WAIT_MS - Arrival.SEAM_MS) * slow).toLong()))
-            launch { high.animateTo(0.1f, motion.fade((Arrival.SEAM_MS * slow).toInt(), easing = SEAM_DRAWS_IN)) }
-            delay(motion.hold(((Arrival.SEAM_MS - Arrival.GONE_MS) * slow).toLong()))
-            presence.animateTo(0f, motion.fade((Arrival.GONE_MS * slow).toInt(), easing = LinearEasing))
+            launch { wide.animateTo(w0, motion.fade((Arrival.FOLD_MS * by).toInt(), easing = FOLDS)) { foldSpeed = velocity } }
+            delay(motion.hold(((Arrival.FOLD_MS + Arrival.LEAVE_WAIT_MS - Arrival.SEAM_MS) * by).toLong()))
+            launch { high.animateTo(0.1f, motion.fade((Arrival.SEAM_MS * by).toInt(), easing = SEAM_DRAWS_IN)) }
+            delay(motion.hold(((Arrival.SEAM_MS - Arrival.GONE_MS) * by).toLong()))
+            presence.animateTo(0f, motion.fade((Arrival.GONE_MS * by).toInt(), easing = LinearEasing))
         }
     }
-    // The blur covers the whole window, so it waits until the glass is more than half open.
+    // The blur covers the whole window, so it waits until the glass is all but open.
     LaunchedEffect(Unit) { snapshotFlow { presence.value * opened() to presence.value * focused() }.collect { (dim, blur) -> onPresence(dim, blur) } }
 
-    // Once the glass is open, one light runs once around the outline.
-    val run = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        if (!motion.on) return@LaunchedEffect
-        delay(motion.hold(((if (arrival.unfold) 190 else 70) * slow).toLong()))
-        run.animateTo(1.15f, motion.fade((1100 * slow).toInt(), easing = CubicBezierEasing(0.3f, 0f, 0.2f, 1f)))
+    // The reflection. A while after the panel has opened, in a quiet moment, one white light runs once round the
+    // outline: from the middle of the top edge, clockwise, and back to it. It is there for the pleasure of it. It is
+    // born as a small glint, stretches as it gathers speed, and dims along the last stretch so that it is gone
+    // before it stops. Any key, or the list changing under it, and it fades while it goes on; it does not come again.
+    val run = remember { Animatable(0f) }                       // how far round, in laps
+    val flourish = remember { Animatable(1f) }                  // 1, until something happens during its lap
+    val think = remember { Animatable(0f) }                     // the same light while the device's model works
+    val present = remember { Animatable(1f) }                   // 0 as the panel leaves
+    var lapping by remember { mutableStateOf(false) }
+    var thought by remember { mutableStateOf(false) }           // the model's light has run in this opening
+    var stir by remember { mutableIntStateOf(0) }               // any key at all
+    val laps = rememberCoroutineScope()
+    fun outlineDp() = 2f * (Metrics.width.value + height.value)
+    LaunchedEffect(gate, leaving) {
+        if (!motion.on || !gate || leaving) return@LaunchedEffect
+        val since = SystemClock.uptimeMillis()
+        var came = false
+        var first = true
+        snapshotFlow { Triple(model.query, model.results, stir) }.collectLatest {
+            val acted = !first; first = false
+            if (lapping) { if (acted) flourish.animateTo(0f, motion.fade(160)); return@collectLatest }
+            // Once the model's light has gone round, the lap does not come: the same light again would read as more work.
+            if (came || thought) return@collectLatest
+            // The panel has been open a while, and everything has stood still for a moment: both in real time.
+            val open = SystemClock.uptimeMillis() - since
+            delay(motion.hold(maxOf(Motion.REFLECTION_QUIET_MS, Motion.REFLECTION_AFTER_MS - open)))
+            if (model.thinking || think.value > 0f || thought) return@collectLatest
+            came = true
+            // Its own job: what happens next must not stop it where it stands.
+            laps.launch {
+                lapping = true
+                try {
+                    flourish.snapTo(1f); run.snapTo(0f)
+                    val ms = (outlineDp() * Motion.REFLECTION_MS_PER_DP).toInt().coerceAtMost(Motion.REFLECTION_MAX_MS)
+                    run.animateTo(1f, motion.fade(ms, easing = Motion.REFLECTS))
+                    run.snapTo(0f)
+                } finally { lapping = false }
+            }
+        }
     }
+    LaunchedEffect(leaving) { present.animateTo(if (leaving) 0f else 1f, motion.fade(if (leaving) 90 else 160)) }
+    /** The lap's own brightness: in over its first twentieth, out over its last fifth. */
+    fun once(): Float = if (lapping) run.value.let { smooth(0f, 0.05f, it) * (1f - smooth(0.82f, 1f, it)) } * flourish.value else 0f
 
-    // While the device's own model works on an answer the light runs again, slowly. When the first word lands it
-    // finishes its lap and is gone: it is never switched off where it stands.
+    // While the device's own model works on an answer the same light goes round steadily, slower and less bright: a
+    // flourish must not read as "working". When the first word lands it fades while it goes on.
     LaunchedEffect(model.thinking) {
         if (!motion.on) return@LaunchedEffect
-        fun left() = (1.15f - run.value) / 1.15f
-        if (model.thinking) while (true) {
-            if (run.value >= 1.15f) run.snapTo(0f)
-            run.animateTo(1.15f, motion.fade((2400 * left()).toInt().coerceAtLeast(1), easing = LinearEasing))
-        } else if (run.value > 0f && run.value < 1.15f) {
-            run.animateTo(1.15f, motion.fade((700 * left()).toInt().coerceAtLeast(1), easing = CubicBezierEasing(0.2f, 0.058f, 0.2f, 1f)))
+        suspend fun round() {
+            while (true) {
+                if (run.value >= 1f) run.snapTo(0f)
+                run.animateTo(1f, motion.fade(((1f - run.value) * outlineDp() * Motion.THINKING_MS_PER_DP).toInt().coerceAtLeast(1), easing = LinearEasing))
+            }
         }
+        if (model.thinking) {
+            thought = true
+            if (lapping) {
+                // The lap is on its way: the light it is becomes the model's, in the same place. Its brightness goes one
+                // way from what it has to the model's, and its speed changes evenly from the lap's to the model's over
+                // the rest of this lap (a curve whose slope falls in a straight line from the one to the other).
+                val v0 = abs(run.velocity)                                                          // laps a second, now
+                val v1 = 1000f / (outlineDp() * Motion.THINKING_MS_PER_DP * motion.slow)            // and the model's
+                val rest = 1f - run.value
+                think.snapTo(once() / Motion.THINKING_GLOW)
+                launch { think.animateTo(1f, motion.fade(200, easing = LinearEasing)) }
+                if (rest > 0f && v0 + v1 > 0f) {
+                    val m0 = 2f * v0 / (v0 + v1)
+                    val m1 = 2f * v1 / (v0 + v1)
+                    run.animateTo(1f, tween((2000f * rest / (v0 + v1)).toInt().coerceAtLeast(1), easing = CubicBezierEasing(1f / 3f, m0 / 3f, 2f / 3f, 1f - m1 / 3f)))
+                }
+            } else launch { think.animateTo(1f, motion.fade(200, easing = LinearEasing)) }
+            round()
+        } else if (think.value > 0f) {
+            val going = launch { round() }
+            think.animateTo(0f, motion.fade(240, easing = LinearEasing))
+            going.cancel()
+            run.snapTo(0f)
+        }
+    }
+    /** How bright the light is: the lap's own coming and going (in over its first twentieth, out over its last fifth), or the steady light of the model at work. */
+    fun glow(): Float = maxOf(once(), Motion.THINKING_GLOW * think.value) * present.value
+    /** How long its tail is: it grows with its speed. */
+    fun tail(): Float {
+        val speed = abs(run.velocity) * outlineDp() * motion.slow     // (a debug build's slow motion must not shorten it)
+        return Motion.REFLECTION_TAIL + (Motion.REFLECTION_TAIL_LONG - Motion.REFLECTION_TAIL) * (speed / Motion.REFLECTION_CRUISE).coerceIn(0f, 1f)
     }
 
     fun go(r: Result, a: Action, stay: Boolean) = onRun(r, a, stay)
 
     fun keys(e: KeyEvent): Boolean {
         if (e.type != KeyEventType.KeyDown) return false
+        stir++   // any key is something happening: the reflection waits for quiet, and gives way
         val card = model.card
         val atEnd = field.selection.collapsed && field.selection.end == field.text.length
         val enter = e.key == Key.Enter || e.key == Key.NumPadEnter
@@ -316,21 +415,20 @@ fun Panel(
                 .glass(
                     // The veil is white in light theme and near-black in dark: the most contrast for the least tint.
                     tint = if (glass) scheme.surfaceContainerLowest.copy(alpha = if (dark) Look.tintDark else Look.tintLight) else scheme.surfaceContainerHigh,
-                    lead = scheme.tertiary, tail = scheme.primary,
                     radiusPx = radiusPx, density = density.density,
-                    run = { run.value }, glow = { smooth(0f, 0.06f, run.value) * (1f - smooth(0.92f, 1.12f, run.value)) },
+                    run = { run.value }, glow = ::glow, tail = ::tail,
                     dark = dark, solid = !glass,
                 )
                 .clip(RoundedCornerShape(Metrics.radius)),
         ) {
-            CompositionLocalProvider(LocalDark provides dark) {
+            CompositionLocalProvider(LocalDark provides dark, LocalGlass provides glass) {
                 // Laid out once at the panel's width and only uncovered: it never moves on screen while the glass grows.
                 Column(
                     Modifier.wrapContentSize(Alignment.TopCenter, unbounded = true).requiredWidth(full)
                         .offset { IntOffset(0, -glassTop()) }
                         .graphicsLayer { alpha = shown() },
                 ) {
-                    Field(model, field, focus = focus, onChange = { v ->
+                    Field(model, field, focus = focus, ends = ::ends, onChange = { v ->
                         model.type(v.text)
                         field = if (model.query == v.text) v else TextFieldValue(model.query, TextRange(model.query.length))
                     })

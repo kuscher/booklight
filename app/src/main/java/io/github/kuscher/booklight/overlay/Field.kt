@@ -37,6 +37,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -67,7 +68,11 @@ import io.github.kuscher.booklight.ui.Symbols
  * comes in from where the keyword stood, and the text slides over to make room.
  */
 @Composable
-fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue) -> Unit, focus: FocusRequester) {
+fun Field(
+    model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue) -> Unit, focus: FocusRequester,
+    /** How much of the mark at the field's start and of the cap at its end shows, 0 to 1: they come when the glass is all but open, so its edge never cuts them. */
+    ends: () -> Float = { 1f },
+) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     Row(Modifier.fillMaxWidth().height(Metrics.field).padding(start = 20.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -78,7 +83,7 @@ fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue)
                 val exit = if (targetState != null) scaleOut(targetScale = 0.6f) + fadeOut(motion.fade(80)) else fadeOut(motion.fade(80))
                 (enter togetherWith exit).using(SizeTransform(clip = false) { _, _ -> motion.place() })
             },
-            contentKey = { it?.key }, contentAlignment = Alignment.CenterStart, label = "mark",
+            contentKey = { it?.key }, contentAlignment = Alignment.CenterStart, label = "mark", modifier = Modifier.graphicsLayer { alpha = ends() },
         ) { chip ->
             if (chip != null) ScopeChip(chip) { model.leaveScope(withText = true) }
             // The search engine's mark where the magnifier would be: Google's G when Google does the searching.
@@ -115,7 +120,7 @@ fun Field(model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue)
             )
         }
         // The footer says "esc Close" once there is one; until then the field does.
-        AnimatedVisibility(model.results.isEmpty(), enter = fadeIn(motion.fade(120)), exit = fadeOut(motion.fade(120))) { Keycap("esc") }
+        AnimatedVisibility(model.results.isEmpty(), Modifier.graphicsLayer { alpha = ends() }, enter = fadeIn(motion.fade(120)), exit = fadeOut(motion.fade(120))) { Keycap("esc") }
     }
 }
 

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Booklight 2.0. Keyword lists are comma-separated; the German lists keep the English keywords. -->
 <resources>
-    <!-- Places. Names are short (12 characters at most): the armed one is unrolled beside nine icons. -->
-    <string name="place_full">Full</string>
+    <!-- Places. The three on an app's row (Maximise, Left half, Right half) are short: the armed one is unrolled beside the other icons. The rest stand in the list under the row. -->
+    <string name="place_full">Maximise</string>
     <string name="place_p3l">Left third</string>
     <string name="place_p3m">Middle third</string>
     <string name="place_p3r">Right third</string>
-    <string name="place_p23l">Left ⅔</string>
-    <string name="place_p23r">Right ⅔</string>
+    <string name="place_p23l">Left two thirds</string>
+    <string name="place_p23r">Right two thirds</string>
     <string name="place_ptl">Top left</string>
     <string name="place_ptr">Top right</string>
     <string name="place_pbl">Bottom left</string>

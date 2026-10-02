@@ -64,6 +64,8 @@ class OverlayModel(
     private var closed: List<Result> = emptyList()
     /** The device's own model has been asked and has not said a word yet: the panel's edge light runs while it works. */
     var thinking by mutableStateOf(false); private set
+    /** Debug builds: the light of the model at work, without the model (`./bl debug think on|off`), to watch it go round. */
+    fun pretendThinking(on: Boolean) { thinking = on }
     private var answering: Job? = null
     /** The last answer and what was asked for it: the same thing is not asked twice in a row. */
     private var answered: Pair<String, Result>? = null

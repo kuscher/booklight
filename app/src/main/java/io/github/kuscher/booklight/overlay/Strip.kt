@@ -281,7 +281,7 @@ fun OptionStrip(
     val a = remember { Animatable(chosen.toFloat()) }
     val choose by rememberUpdatedState(onChoose)
     val run by rememberUpdatedState(onRun)
-    val fill = if (quiet) scheme.surfaceContainerLowest.copy(alpha = if (dark) 0.36f else 0.62f) else scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f)
+    val fill = if (quiet) scheme.surfaceContainerLowest.copy(alpha = if (dark) 0.36f else 0.62f) else selectionFill(scheme, dark, LocalGlass.current)
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
     val hair = if (!quiet) Color.Transparent else if (dark) Color.Black.copy(alpha = 0.28f) else scheme.onSurface.copy(alpha = 0.20f)
     LaunchedEffect(chosen) { a.animateTo(chosen.toFloat(), motion.arm()) }

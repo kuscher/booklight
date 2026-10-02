@@ -31,7 +31,7 @@
 | Ink | strong · second · third | 1.0 · 0.80 · 0.60. On the pill: 1.0 for content and actions, 0.80 only for slot labels and guessed values, never 0.60 |
 | Fill | veil | `surfaceContainerLowest` 0.42 L / 0.50 D (Clear 0.28 / 0.38, Frosted 0.58 / 0.64) |
 | | solid ground (no blur; the Booklight window) | `surfaceContainerHigh` |
-| | pill | `secondaryContainer` 0.78 / 0.66 |
+| | pill | `secondaryContainer` 0.78 L / 0.42 D on glass, 0.66 D on solid ground (the Booklight window, glass set to Solid). Red: `errorContainer` 0.85 L / 0.50 D on glass, 0.70 D on solid ground (§12) |
 | | pane (armed chip on the pill) | `surfaceContainerLowest` 0.62 / 0.36 |
 | | scope chip, key cap · symbol disc | `onSurface` 0.10 / 0.14 · ink 0.08 / 0.12 |
 | | track at rest · fill, thumb, tick, switch on | ink 0.20 / 0.24 · ink 1.0 |
@@ -263,6 +263,8 @@ The gliding highlight itself is never cut.
 
 ## 11. What 2.0 changed (1 October 2026)
 
+*§12 replaces what this section says about the opening's spring, the edge light, the nine icons and the pill.*
+
 The specs for 2.0's components and motion are the three reviews in `reviews-2.0/` (visual §5, motion rows 21 to
 55); this section says where the built app differs from them and from the sections above. `Motion.kt` is the
 source for every spring: `place` 0.86/520, `lead` 0.82/1100, `trail` 0.9/420, `pop` 0.62/700, `arm` 0.78/560,
@@ -295,3 +297,59 @@ letter. A debug build stretches all of them: `./bl open stay slow=4`.
   one piece when the user makes the window larger. Its arrival is the system's; the content then fades in once.
 - **Not as specified:** the keyword does not travel into the chip (it grows where the mark was, as in 1.1); the
   pill returns to a closing row on `lead` and `trail`, not as one rigid piece; a pin has no Copy of its own.
+
+## 12. After 2.1 (October 2026)
+
+Alex's notes on the app as released, taken through a visual designer and a motion designer (three rounds of
+recordings on the Lenovo). `Motion.kt` holds every number below. Where this section and §4, §6 or §11 disagree,
+this one is the app.
+
+- **The opening is at Medium unless chosen otherwise.** Times at Fast / Medium / Slow:
+
+  | Part | What | Numbers |
+  | --- | --- | --- |
+  | Seam | grows up and down on the field's centre line | 80 / 160 / 320 ms, cubic-bezier(0.2, 0, 0, 1) |
+  | Wait | before the glass starts; the curve's own slow start is the rest of the pause | 30 / 60 / 120 ms |
+  | Glass | from the seam to its width on `opens`: slow, fast, and a long way of slowing down. No overshoot | 180 / 360 / 720 ms, cubic-bezier(0.55, 0, 0.1, 1) |
+  | Contents | fade in | smooth(0.35, 0.85) of how far the glass is open |
+  | The G and the esc cap | fade on their own, last: the glass's edge passes them slowly and would cut them | smooth(0.92, 1.0) |
+  | Blur | belongs to the landing: the pane arrives clear and frosts over | smooth(0.88, 1.0) (was 0.5 to 1.0: a ghost of the full panel stood beside the glass) |
+  | Under the field | may arrive | at 85 % open, as before |
+  | In all | from the key to rest | 210 / 420 / 840 ms |
+
+  At Medium the field is readable 258 ms after the key (the old spring: 257) and nothing rebounds; the old spring
+  reached its width and then shrank back 14 dp a side for 240 ms.
+- **Leaving** keeps its shape (the glass folds on cubic-bezier(0.45, 0, 0.4, 1), then the seam draws in) but not
+  the opening's time: the window keeps the keyboard until it is gone, so Fast and Medium both leave in 155 ms and
+  Slow in 310. The key pressed again part of the way opens on a spring without overshoot that takes over the
+  speed the glass has (damping 1.0; stiffness 1000 at Fast and Medium, 250 at Slow: as stiff as the leaving is
+  quick, or the glass would go on closing long after the key). From the seam it is the curve.
+- **The seam is seen again.** Since the shadow came (2.0) nothing of the panel showed until the glass began to
+  widen: the root view had an empty outline while the shadow's strength was 0. The outline is now the glass's
+  shape at alpha 0. The seam grows from its first frame and is seen to draw in at the end.
+- **The reflection** (replaces "the edge light" of §4 and §11). One white light runs once round the outline:
+  - *When:* 2.4 s after the panel has opened and 0.7 s after the last key of any kind or change of the list,
+    both in real time; once per opening; never while leaving; not at all with the system's animations off.
+  - *Where:* from the middle of the top edge, clockwise, exactly one lap. Its brightness comes in over the first
+    5 % of the lap and goes out over the last 18 %: it dims along the top left and is gone before it stops.
+  - *How fast:* 1 ms for each dp of outline (1.6 s round the bare field), at most 2.2 s, on
+    cubic-bezier(0.3, 0, 0.5, 1): about 1,700 dp a second at its fastest, the same round a field and a full list.
+  - *What it is:* the outline at full white, widened from 1.25 dp to 1.75 (dark) or 2.0 (light), its inner edge
+    softened over 3 dp at 12 % (dark) or 16 % (light). A front of 40 dp and a tail that grows with its speed, from
+    36 dp at rest to 140 dp. Measured along the rounded outline, as a loop. White only: no colours.
+  - *Giving way:* any key, or the list changing under it, and it fades in 160 ms while it goes on; it does not
+    come again. Leaving fades it in 90 ms.
+  - *The model at work* is the same light with another motion, so that a flourish is not read as "working":
+    steady laps at 1.5 ms per dp (2.4 s round the field), 75 % as bright, in over 200 ms, out over 240 ms while
+    it goes on. If it starts during the lap, the lap's light becomes it: the brightness goes one way from what
+    it has to the model's, and the speed changes evenly from the lap's to the model's over the rest of that lap.
+    Once it has run, the lap does not come in that opening.
+  - In light theme over a white window it cannot be seen. Accepted: a white reflection has nothing to show on white.
+- **The selection in dark theme** is see-through like the panel: `secondaryContainer` at 0.42 on glass (0.66
+  before; measured over a white window and a dark one it is the same step from the glass, about 9 L*, and the
+  title on it is 5.6:1 and 12.6:1). On solid ground (the Booklight window, glass set to Solid) it stays 0.66. The
+  red pill is 0.50 on glass. Rim, the strip's pane and light theme are unchanged (`selectionFill`, `LocalGlass`).
+- **An app's row** has six icons: Open, New window, App info, Maximise, Left half, Right half, then the arrow.
+  The list under the arrow: the three thirds, the two "two thirds", the four quarters, Centre, then Uninstall
+  after its gap. Names in that list are full ink; their glyphs second ink.
+

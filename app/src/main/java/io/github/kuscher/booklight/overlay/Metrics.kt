@@ -11,6 +11,8 @@ import io.github.kuscher.booklight.core.Result
 const val SECOND = 0.80f
 const val THIRD = 0.60f
 val LocalDark = staticCompositionLocalOf { false }
+/** True where what is drawn lies on see-through glass (the panel with the window's blur behind it); false on solid ground (the Booklight window, the Solid setting). */
+val LocalGlass = staticCompositionLocalOf { false }
 
 /** The panel's sizes. The window is exactly this big, so its blur follows the panel. */
 object Metrics {

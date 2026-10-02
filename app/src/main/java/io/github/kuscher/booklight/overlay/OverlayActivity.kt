@@ -208,12 +208,14 @@ class OverlayActivity : ComponentActivity() {
     }
 
     /** The shortcut again while the panel is open: put it away. */
+    /** The key again while the panel is still leaving: it turns round and opens again (unless it is leaving because something ran). */
+    fun turn(intent: Intent) { if (leaving && !ran && !isFinishing) { leaveJob?.cancel(); leaving = false; take(intent) } }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)) { stay = true; return }
         if (fromIcon(intent)) { startActivity(Intent(this, MainActivity::class.java)); close(); return }
-        // The key again while the panel is still leaving: it turns round and opens again (unless it is leaving because something ran).
-        if (leaving) { if (!ran && !isFinishing) { leaveJob?.cancel(); leaving = false; take(intent) }; return }
+        if (leaving) { turn(intent); return }
         (application as BooklightApp).let { app -> app.example?.let { app.example = null; model.typeOut(it); return } }
         if (!take(intent)) close()
     }
@@ -334,7 +336,7 @@ class OverlayActivity : ComponentActivity() {
         if (!ran) model.keep()
         leaving = true
         if (!motion.on) { finishNow(); return }
-        leaveJob = lifecycleScope.launch { delay(arrival.leaveMs); finishNow() }
+        leaveJob = lifecycleScope.launch { delay(motion.hold(arrival.leaveMs)); finishNow() }   // (a debug build's slow motion stretches the wait with the fold)
     }
 
     private fun finishNow() {

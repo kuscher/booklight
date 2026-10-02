@@ -263,7 +263,7 @@ fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, 
     LaunchedEffect(Unit) { wave.animateTo(1f, motion.fade(240)) }
     val pick by rememberUpdatedState(onPick)
     val hover by rememberUpdatedState(onCell)
-    val fill = scheme.secondaryContainer.copy(alpha = if (dark) 0.66f else 0.78f)
+    val fill = selectionFill(scheme, dark, LocalGlass.current)
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
     val count = shown.size
     fun at(o: Offset): Int? {
