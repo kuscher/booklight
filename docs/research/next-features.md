@@ -535,7 +535,7 @@ The data-safety answers do not change, since nothing leaves the device through B
 | **Windowcast** | `cast` and a known host or window | 2 catalog | Later: the Mac host is in design |
 | **Welcome** | Lessons as rows, by what people ask ("snap a window", "screenshot") | 2 catalog, or a generated XML file | A day: titles and keywords exist as content. A private prototype; whether it ships is not Booklight's call |
 | **Disco Sweeper** | `sweeper beginner`, `expert` | 1 | An hour |
-| **Script, OfficeBook, Gmail Book, Perfect Sound** | New note, new document, compose, play a file: mostly what their filters and shortcuts already declare | 0 | Nothing |
+| **Script, OfficeBook, Perfect Sound** | New note, new document, compose, play a file: mostly what their filters and shortcuts already declare | 0 | Nothing |
 | **govee** | `strip red`, `strip disco` against its page on `localhost:8765` | Links today; A7 later | Nothing |
 | **Missing Link Labs** | Phone rows (X10) from whichever sibling app holds the link | 2 | After its milestones 2 and 3 |
 
