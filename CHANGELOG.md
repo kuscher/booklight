@@ -1,6 +1,6 @@
 # Changelog
 
-## On main, after 2.1 (not released)
+## 2.2 (1 October 2026)
 
 Alex's notes on 2.1, each taken through a visual and a motion designer (`docs/design/design-system.md` §12).
 

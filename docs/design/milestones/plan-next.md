@@ -240,6 +240,10 @@ After these two, the parked three come back in the order they had, unless Alex s
 
 The recommended answer is what happens if he says only "go".
 
+**Answered on 1 October 2026** (asked as four questions): decision 1, the order M1 then M5: yes. Decision 2,
+release 2.2 now: yes. Decision 4, the times through a key of his own: yes. Decision 5, ask after a short pause:
+yes. The others are open at their recommended answers.
+
 | # | For | Decision | Recommended | If he says the other thing |
 | --- | --- | --- | --- | --- |
 | 1 | All | This plan: 2.2, the device session, M1, then M5; the picture, the selection and your language stay parked | Yes | Name what comes back in, or what goes first |

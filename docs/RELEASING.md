@@ -12,7 +12,7 @@ A release is a tag. Pushing `v<version>` makes GitHub Actions build, sign and pu
 
 **The key.** `~/.config/booklight/keystore.jks` + `keystore.pass` on the Mac (alias `booklight`, RSA 4096,
 SHA-256 `61:30:F1:F9:11:56:11:56:5D:20:60:08:48:59:02:2C:E8:12:A4:35:E7:BC:62:76:69:D5:C3:66:86:90:A7:F6`),
-backed up in a private folder, and in the repo's
+backed up outside the repo (the private notes say where), and in the repo's
 `release` environment as `SIGNING_KEYSTORE_B64` / `SIGNING_KEYSTORE_PASS` (set with googlebook-tech's
 `setup-secrets.sh booklight ~/.config/booklight/keystore.jks ~/.config/booklight/keystore.pass`). It is
 Play's app signing key and upload key too. Never committed.

@@ -2,7 +2,20 @@
 
 *Living status. Newest first.*
 
-## 2026-10-01 (night, later): the plan is M1 and a new M5; the window is being built
+## 2026-10-01 (night, later): 2.2 released; the plan is M1 and a new M5; the window is being built
+
+- **2.2 (versionCode 6) is released** on Alex's word ("Yes, release 2.2 now"): everything that was "on main after
+  2.1" (the entry below). Before the tag the release build was installed on the Lenovo: a prompt was answered
+  on the device, an app's row has its six icons, and the opening drew every frame 8.3 ms apart. Not looked at
+  for this release: the HP, German on a device. On Play it is a draft on closed testing; sending it for review
+  is the Play session's, on Alex's word. Play's production is empty on purpose.
+- **Answered by Alex** (four questions): M1 then M5; 2.2 now; a flight's times through a key of his own; the
+  service is asked after a short pause. The other decisions of `plan-next.md` §6 are open at their recommended
+  answers.
+- **Seen during the release check, not a fault:** `adb shell input text` with a keyword and its text in one go
+  leaves the keyword in the field beside its chip; typed key by key it does not. And a typed prompt is asked
+  after a pause in typing (2.0's behaviour), which the M1 plan's rule "the model is asked on Enter, never after
+  a pause" would change: to be settled when M1's designs are made final.
 
 - **The plan in force is `docs/design/milestones/plan-next.md`** (page: `docs/design/booklight-milestones.html`,
   https://claude.ai/artifact/YWPmPVwvSFiY1keZCbyCYt). Alex: "adjust the plan for the main ux by doing M1. Let's add a
@@ -19,7 +32,7 @@
   names taken out; see "This repo is public" in `CLAUDE.md`). Commit ids named in older entries below are from
   before it. No tag until Alex says so: a tag's upload also sends what is waiting unsent on Play.
 
-## 2026-10-01 (late night): on main after 2.1, not released
+## 2026-10-01 (late night): on main after 2.1 (released as 2.2 later that night)
 
 Alex used 2.1 and asked for small improvements on main, each to go through a visual designer and a motion
 designer (his words are at the top of `docs/design/reviews-after-2.1/plan.md`). Built, reviewed over one visual
