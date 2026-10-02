@@ -349,7 +349,7 @@ unless a full URL is given.
 
 **Device notes (d)**
 - `docs/research/device-findings.md` (this repo)
-- `Welcome's device notes` (Glowbar, system shortcuts, Files, Gemini)
+- Welcome's device notes (a private repo; the path is in the private notes) (Glowbar, system shortcuts, Files, Gemini)
 - `kuscher/vscodebook`, `docs/GOOGLEBOOK.md` (Linux VM, port forwarding, launch bounds, wireless debugging)
 
 ## 9. Not verified

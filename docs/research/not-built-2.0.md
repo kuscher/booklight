@@ -145,7 +145,7 @@
 | X5 · PDF Toolbox | type `merge pdf`, `compress pdf`; get "Send to" on a PDF | Medium to high | S to M: a way to open a tool by name | 0 | better | **Partly built**, as X4 for the rows. "Send to" on a PDF also needs F3 |
 | X6 · VSCodeBook | type `code booklight` for a recent folder; New window; Start Linux | High for developers | M: the recent folders live in the VM | 0 for Booklight | only | Never decided. Needs the catalog layer (EX2) |
 | X7 · HearOn Link | type `airpods` for the battery; choose noise control from a row | Medium | M: needs a "choice" body in the contract | 0 for Booklight | better | Never decided. Needs live rows and the Choice body (EX6) |
-| X8 · Welcome and another app | type "how do I snap a window" and open the lesson; `scene hero` | Medium | S to M | 0 | only | **Partly built**, as X4, for the route through a generated file only |
+| X8 · Welcome | type "how do I snap a window" and open the lesson; `scene hero` | Medium | S to M | 0 | only | **Partly built**, as X4, for the route through a generated file only |
 | X9 · The rest | type `new image 1920x1080`, `cast`, `sweeper expert`, `strip red` | Low to medium each | S each | 0 | better | **Partly built.** Any app's exported manifest shortcuts are rows already (Script, Summa). The rest needs each app's file |
 | X10 · The phone | ring the phone, send it the clipboard or a link, run a recipe from it | Medium | L: the SDK is at milestone 1 | 0 for Booklight | only | Never decided. §4.4: "After its milestones 2 and 3" |
 
@@ -242,7 +242,7 @@ What 2.0 built of it is layer 0 in part (manifest shortcuts) and layer 1 in part
 - **P6 Share….** The QR code row shares its picture. Missing: Share on text, link and file rows.
 - **S1 Settings rows that land on the switch.** Three of the seven named searches reach a page of their own. Missing: opening a page scrolled to the item; rows for modifier keys, Play Protect, Glowbar, Magic Pointer.
 - **I5 Translate and define.** `de` or `en` translates through the on-device model. Missing: a `tr` keyword with any language; define; translation where there is no model.
-- **X4 StudioSnap, X5 PDF Toolbox, X8 Welcome and another app, X9 the rest.** Booklight reads an app's commands file and its manifest shortcuts. Missing: the file in each app (one small release each); for X5 also "Send to" on a PDF (F3); for X8 the catalog route.
+- **X4 StudioSnap, X5 PDF Toolbox, X8 Welcome, X9 the rest.** Booklight reads an app's commands file and its manifest shortcuts. Missing: the file in each app (one small release each); for X5 also "Send to" on a PDF (F3); for X8 the catalog route.
 
 **From elsewhere (4)**
 

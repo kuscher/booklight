@@ -203,7 +203,7 @@ Other names checked on GitHub on 1 October 2026 (account, and the best-known rep
   public; Play closed testing under Fika Labs at 0.9 with a store kit like the other apps; 1.0 to
   Play production.
 - Play data-safety is the simplest possible: nothing collected, nothing shared, no permissions.
-- A signing key in `~/.config/booklight/` plus the backup, made when 0.2 is cut (question 10).
+- A signing key in `~/.config/booklight/` plus a backup, made when 0.2 is cut (question 10).
 
 ## 10. Milestones after the go-ahead
 
@@ -232,7 +232,7 @@ Other names checked on GitHub on 1 October 2026 (account, and the best-known rep
 7. **Extensions** are the way to grow.
 8. **Advanced tiers** as planned (now: 2.2 and 3.0 above).
 9. **Repo:** private until the first release, then public.
-10. **Signing key:** made on 1 October (`~/.config/booklight`, backup by the Play session).
+10. **Signing key:** made on 1 October (`~/.config/booklight`, backed up by the Play session).
 11. **Reach:** Android 14+ (minSdk 34). On Play, `android.hardware.type.pc` is required as well, so Play offers
     it to Googlebooks only (as Alex has started doing for his other apps; the APK from GitHub installs
     anywhere). Narrow first: it can be widened later without stranding anyone.

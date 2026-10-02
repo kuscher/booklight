@@ -202,7 +202,7 @@ If the icon routing guesses wrong the panel opens, as in 1.0.
 
 **Loose ends**
 - The HP still has a throwaway spike build that draws a blurred band around the panel (it went offline
-  before 1.0 could be put back). When it is online: `ANDROID_SERIAL=adb-HP-SERIAL-… ./bl install` with the
+  before 1.0 could be put back). When it is online: `ANDROID_SERIAL=<the HP> ./bl install` with the
   1.1 build, or the 1.0 APK from the GitHub release.
 - On the Lenovo: a test file `Documents/booklight-test.md`, a Text editor window, a Gemini window with a test
   question typed in (not sent) and two Chrome custom tabs are left from the tests; a 45-minute test timer was
@@ -237,7 +237,7 @@ him read it, write the plan, build in the order on the page (foundation, Jot, Di
 
 **Where it stands.** Booklight 1.0 (versionCode 1) is built, signed with the Booklight release key and
 installed on the HP (release build; Action + K is bound to it). The Play app exists (id
-4972005003444967962, Fika Labs) with app signing set to our key, the backup done and closed testing
+4972005003444967962, Fika Labs) with app signing set to our key, the key backed up and closed testing
 configured; the session in ~/googlebook-tech ("googlebookstudiowebsite") does the Play Console work and
 sends it for review, with Alex's OK given there. `v1.0` is the tag that publishes the GitHub release and
 puts the bundle on closed testing as a draft.

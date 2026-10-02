@@ -1,6 +1,6 @@
 # Device findings: HP Googlebook 14
 
-Checked on Alex's HP Googlebook 14 (Android 17, SDK 37, build (build),
+Checked on Alex's HP Googlebook 14 (Android 17, SDK 37,
 1920 × 1200 at 180 dpi, Android user 10) on 1 October 2026 with Booklight 0.1 debug builds
 over Wi-Fi adb. Each item says how it was checked. Desk research is in
 [android-platform.md](android-platform.md); where the two differ, this file wins.
@@ -72,7 +72,7 @@ over Wi-Fi adb. Each item says how it was checked. Desk research is in
   preselect an app or a category.
 - Taken Action combinations on this build: A B C E F G H I L N P Q S U V W, Space, Tab, Enter, Esc,
   /, -, =, [ ], arrows, Backspace, and several Ctrl/Alt/Shift variants (list: Welcome's
-  `device notes` §2.6). Free letters: D J K M O R T X Y Z.
+  device notes §2.6). Free letters: D J K M O R T X Y Z.
 - Up to 10 custom app shortcuts per user (SystemUI strings; not counted here).
 - **What the capture dialog accepts** (tried in the dialog for another app, then cancelled): Alt + Space
   and Ctrl + Space alone are ignored (the dialog has a fixed "Action +" in front); Action + Space says
@@ -88,8 +88,8 @@ over Wi-Fi adb. Each item says how it was checked. Desk research is in
 - Touchpad **three-finger tap → Open another app**, and **corner shortcuts**.
 - Pinning Booklight to the taskbar; the Apps list.
 - The digital assistant role would give Action + Space, the Assistant key and the status bar's
-  assistant chip, but it replaces Gemini there (`ACTION_ASSIST` handlers present on this unit: the
-  Google app, ChatGPT, Firefox). Kept for the "advanced" tier.
+  assistant chip, but it replaces Gemini there (several other apps on this unit answer
+  `ACTION_ASSIST` as well). Kept for the "advanced" tier.
 
 ## Data without permissions
 

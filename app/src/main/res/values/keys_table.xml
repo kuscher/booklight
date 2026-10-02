@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The system's keyboard shortcuts for KeysProvider: four arrays in the same order. Ids and combinations are
-     fixed; names and keywords are translated. From the Welcome repo's notes on the HP Googlebook 14 (device notes §2.6). -->
+     fixed; names and keywords are translated. From Welcome's device notes on the HP Googlebook 14 (§2.6). -->
 <resources>
     <string-array name="keys_ids" translatable="false">
         <item>snap_left</item>

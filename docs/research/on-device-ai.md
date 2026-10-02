@@ -577,7 +577,7 @@ the row says what it is and how large.
 
 **Googlebook**
 - https://blog.google/products-and-platforms/devices/googlebook/googlebook-built-in-intelligence/ · https://www.androidauthority.com/googlebooks-hands-on-impressions-3713390/ (Quick Insert) · https://www.pcworld.com/article/3238878/the-googlebooks-most-compelling-ai-feature-isnt-even-ai.html
-- `Welcome's device notes` §5 (Magic Pointer, AICore, `AICORE_QC_HAMOA` on the HP)
+- Welcome's device notes (a private repo; the path is in the private notes) §5 (Magic Pointer, AICore, `AICORE_QC_HAMOA` on the HP)
 
 **This repo**
 - `app/build/outputs/apk/release/app-release.apk` (2,474,057 bytes) · `app/src/main/AndroidManifest.xml` · `store-submission/forms/app-content.md` (target audience) · `core/…/SearchEngine.kt` (the 150 ms budget) · `app/…/overlay/OverlayActivity.kt` (text handed over is taken, not yet returned)

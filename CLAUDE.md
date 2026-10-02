@@ -13,6 +13,12 @@ AICore's `BIND_SERVICE` and `ACCESS_NETWORK_STATE`, and the library's usage repo
 permissions, no accessibility service, nothing of Booklight's own in the background (the user's rule: adding a
 permission needs his say-so and a place in docs/PLAN.md §4/§6).
 
+## This repo is public
+The Play listing links here. Keep out of every file, commit message and release note: device serial numbers and
+adb names, build numbers and codenames, what else is installed or open on Alex's devices, the names of his
+private projects and paths into their repos, and where keys are backed up. Those live in
+`~/.config/booklight/NOTES.md` on the Mac (not in any repo); read it when a note here says "the private notes".
+
 ## Read first
 - Plan, decisions and roadmap: `docs/PLAN.md`. Design: `docs/superpowers/specs/2026-10-01-booklight-2.0-design.md`
   (2.0; §1 and §2 are Alex's decisions, §4 has what the device changed) on top of `…-booklight-1.1-design.md`
@@ -87,13 +93,13 @@ permission needs his say-so and a place in docs/PLAN.md §4/§6).
   `$ANDROID_SERIAL`), or VSCodeBook's Unix socket inside the Googlebook's Linux VM. Android user 10
   → `--user current` everywhere. `local.properties` (not committed): `sdk.dir=$HOME/Library/Android/sdk`.
 - Release key: `~/.config/booklight/keystore.jks` + `keystore.pass` (alias `booklight`, SHA-256 61:30:F1:F9…90:A7:F6;
-  Play's app signing and upload key too; backup exists). Debug builds are signed with it as well, so
+  Play's app signing and upload key too; it is backed up). Debug builds are signed with it as well, so
   debug and release replace each other. `./bl uninstall` removes the app for every Android user (0 and 10).
 - Release: a `v*` tag (docs/RELEASING.md). Play app id 4972005003444967962; the Play Console work is done by
   the session in ~/googlebook-tech.
 
 ## Device rules (Alex's HP Googlebook 14; the Lenovo Googlebook 15 is the test device)
-- Two Googlebooks may be attached: set `ANDROID_SERIAL` (HP `adb-HP-SERIAL-…`, Lenovo `adb-LENOVO-SERIAL-…`). The HP's
+- Two Googlebooks may be attached: set `ANDROID_SERIAL` (`adb devices` lists them; which is which is in the private notes). The HP's
   transport drops when its lid closes. The Lenovo is for tests; what is said below for the HP is the safe default there too.
 - **Never touch the Debian VM**: don't launch or force-stop the Terminal app, no `vm` commands, no
   reboot, no adbd or Wireless-debugging changes.
@@ -101,7 +107,7 @@ permission needs his say-so and a place in docs/PLAN.md §4/§6).
   (docs/research/device-findings.md). Read system screens from `screencap` crops.
 - Opening the panel takes the keyboard. `./bl idle` first; keep tests short; inject keys and taps
   only into Booklight's own focused window.
-- `./bl screen` shows what is behind the panel (other people's mail). Never commit or publish one;
+- `./bl screen` shows what is behind the panel, private things included. Never commit or publish one;
   use `./bl shot`.
 - Action + K is bound to Booklight on the HP (Keyboard shortcuts → App shortcuts); Alex said to keep it.
   The system accepts only shortcuts with the Action key, and one per app (docs/research/device-findings.md).

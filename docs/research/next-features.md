@@ -2,7 +2,7 @@
 
 *Desk research, 1 October 2026, after 1.1 went to testers. Read for it: this repo's plan, design and research
 files and `core/Model.kt`; Alex's other repos (BentoBar, Summa, StudioSnap, PDF Toolbox, Canvas, HearOn Link,
-VSCodeBook, Welcome and another app, Windowcast, Missing Link Labs, googlebook.studio); AOSP `android17-release`;
+VSCodeBook, Welcome, Windowcast, Missing Link Labs, googlebook.studio); AOSP `android17-release`;
 developer.android.com; Play Console Help; the manuals of the launchers named below. No device was touched and
 no code was changed.*
 
@@ -219,7 +219,7 @@ Each row is another app's contribution through §4. The effort is the other app'
 | X5 | **PDF Toolbox.** Each of its hundred tools as a row (`merge pdf`, `compress pdf`); on a PDF, as Send to | — | Medium to high | S to M: a way to open a tool by name | 0 | none | better | docs |
 | X6 | **VSCodeBook.** `code booklight` opens a recent folder; New window; Start Linux; Wireless debugging on | Raycast VS Code, PowerToys workspaces | High for developers | M: the recent folders live in the VM | 0 for Booklight | — (private repo) | only | docs |
 | X7 | **HearOn Link.** `airpods` answers with the battery; noise control as a row of options | — | Medium | M: needs a "choice" body in the contract | 0 for Booklight | none | better | docs |
-| X8 | **Welcome and another app.** "how do I snap a window" opens the lesson; `scene hero` sets the desktop | Tips apps | Medium | S to M | 0 | none | only | docs |
+| X8 | **Welcome.** "how do I snap a window" opens the lesson | Tips apps | Medium | S to M | 0 | none | only | docs |
 | X9 | **The rest.** Canvas (`new image 1920x1080`), Windowcast (`cast` and a window), Disco Sweeper (`sweeper expert`), govee (`strip red`), Script and Summa's shortcuts (free through L1) | — | Low to medium each | S each | 0 | none | better | docs |
 | X10 | **The phone.** With the Link SDK: ring it, send the clipboard or a link to it, a button on the phone that runs a Booklight recipe | Alfred Remote, phone hubs | Medium | L: the SDK is at milestone 1 | 0 for Booklight | — | only | docs |
 
@@ -534,7 +534,6 @@ The data-safety answers do not change, since nothing leaves the device through B
 | **HearOn Link** | `airpods`: battery of each bud and the case as an answer; listening mode as a row of options; conversation awareness as a switch | 2 live | A day or two; it needs the `Choice` body. Only while the AirPods are connected |
 | **Windowcast** | `cast` and a known host or window | 2 catalog | Later: the Mac host is in design |
 | **Welcome** | Lessons as rows, by what people ask ("snap a window", "screenshot") | 2 catalog, or a generated XML file | A day: titles and keywords exist as content. A private prototype; whether it ships is not Booklight's call |
-| **another app** | `scene hero`, filming mode on and off, facts as answers | 1 and 2 | A day; on hold on Play |
 | **Disco Sweeper** | `sweeper beginner`, `expert` | 1 | An hour |
 | **Script, OfficeBook, Gmail Book, Perfect Sound** | New note, new document, compose, play a file: mostly what their filters and shortcuts already declare | 0 | Nothing |
 | **govee** | `strip red`, `strip disco` against its page on `localhost:8765` | Links today; A7 later | Nothing |
@@ -624,7 +623,7 @@ URL is given. Web pages were read on 1 October 2026.
 
 **This repo and Alex's others (device facts)**
 - `docs/research/device-findings.md`, `permissions.md`, `android-platform.md`, `launchers.md`, `use-cases.md`; `docs/design/ux-model.md`; `docs/superpowers/specs/2026-10-01-booklight-1.1-design.md`; `core/…/Model.kt`
-- `Welcome's device notes` (system shortcuts §2.6, hot corners §4, Magic Pointer and Gemini §5, Files §6, desktop and widgets §8, clipboard and Quick Insert §10) and `platform notes` (settings deep links A.4.6, Android 17 windowing and permissions A.6)
+- Welcome's device notes (a private repo; the path is in the private notes): system shortcuts §2.6, hot corners §4, Magic Pointer and Gemini §5, Files §6, desktop and widgets §8, clipboard and Quick Insert §10; and its platform notes (settings deep links A.4.6, Android 17 windowing and permissions A.6)
 - `~/bentobar/docs/research/android-docs.md` (accessibility policy, Advanced Protection, restricted settings, Live Updates), `CLAUDE.md`, `items/ToolItems.kt`, `items/Timers.kt`
 - `kuscher/vscodebook` `docs/GOOGLEBOOK.md` (the VM, port forwarding, adb, Android 17 permissions)
 - `kuscher/summa` `CLAUDE.md` and manifest (engine, mini window, pinned layer, shortcuts, `PROCESS_TEXT`); `kuscher/studiosnap` `CaptureActivity.kt` and manifest; `kuscher/hearonlink`, `kuscher/canvas`, `kuscher/disco-sweeper` (`docs/WINDOWING.md`), `~/pdf-toolbox`, `~/windowcast`, `~/missing-link-labs`
