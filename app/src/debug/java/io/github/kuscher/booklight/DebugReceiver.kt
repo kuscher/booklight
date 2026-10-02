@@ -42,7 +42,8 @@ class DebugReceiver : BroadcastReceiver() {
             "forget" -> { app.historyStore.clear(); out("ok") }
             "pref" -> {
                 val (k, v) = (arg.split(' ') + "").let { it[0] to it[1] }
-                when (k) {
+                // A name alone only prints: without a value it would store an empty one (`pref glass` once did).
+                if (v.isNotEmpty() || k == "cards" || k == "nocards") when (k) {
                     "suggestions" -> app.prefs.update { it.copy(suggestions = v == "on", suggestionsCard = false) }
                     "engine" -> app.prefs.update { it.copy(engine = v) }
                     "glass" -> app.prefs.update { it.copy(glass = v) }
