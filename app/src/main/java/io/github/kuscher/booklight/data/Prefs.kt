@@ -110,6 +110,8 @@ data class Settings(
     val keySeen: Boolean = false,
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
+    /** The section the Booklight window was left on (`window/Nav.kt`): it opens there again. */
+    val windowPart: String = "start",
     /** How many of the ready-made prompts this installation has been given: a version that brings a new one adds it once. */
     val seeded: Int = 0,
     /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference. */

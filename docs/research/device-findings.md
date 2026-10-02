@@ -402,3 +402,110 @@ while the glass grew and came in over the last stretch, because the blur was tak
 - Not tried: the HP. A system that does not put its blur in the root view would show a blurred rectangle
   around the growing glass; the code cannot detect that, so look at the first opening on any new device.
 
+## The Booklight window as a desktop window (Lenovo Googlebook 15, October 2026)
+
+`docs/design/window-redesign.md` §9 named nine things a device had to show before the window could be called
+right. What the Lenovo showed, with debug builds of the redesign. Pictures are of the window's own content
+(`./bl wshot`, PixelCopy); keys and clicks were injected with `adb shell input` into Booklight's own focused
+window; sizes were set with `am task resize` on Booklight's own task. The display is 1920 × 1200 dp at 1.5 px
+per dp; the taskbar takes the lowest 56 dp.
+
+1. **The caption bar.** With `APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND` the system draws its chip (the
+   app's icon and a chevron) and its three controls straight on the window's ground (`surfaceContainer`), 40 dp
+   high, and both are readable in the light and in the dark theme (`results-engine-*-open.png` in
+   `docs/design/captures/window-redesign/` are cut from the screen and show it). The marks are light or dark
+   as `APPEARANCE_LIGHT_CAPTION_BARS` says, so they follow Booklight's theme and not the system's: with the
+   system light and Booklight dark the marks are white. The other way round (system dark, Booklight light)
+   was not tried.
+2. **The minimum size.** `<layout android:minWidth="400dp" android:minHeight="480dp"/>` reaches the task
+   (`minWidth=600 minHeight=720` px in `dumpsys activity activities`). `am task resize` to 300 × 400 dp is
+   not refused: the task's bounds become 450 × 600 px, **but the window is still laid out at 600 × 720 px**
+   (400 × 480 dp: the bar, a title, a row with its control at the trailing end all fit). What the screen
+   shows of a window that is larger than its task was not looked at. Not tried: a drag with the pointer below
+   the minimum, and so the desktop's own smallest width.
+3. **The default size, and the last bounds.** A new window opens at 1053 × 888 dp. Closed and opened again
+   it has that size again: the system does not bring the last bounds back. A task whose process was killed
+   keeps its bounds when it comes back. Not tried: the HP's default size.
+4. **Title and rail on one line.** The caption bar's inset is 40 dp; the centre of the rail's first mark is
+   80 dp below the window's top at both rail widths (120 px in the pictures), and the title's capitals are
+   centred on 119 to 120 px. Measured in the pictures, at 1053 and at 720 dp of window.
+5. **Keys in the rail.** A `WideNavigationRailItem` and a `ShortNavigationBarItem` are focus stops of their
+   own if left alone; arrows and Tab then move Compose's focus among them while the page has its own order.
+   With `focusProperties { canFocus = false }` on every Material part and the window's root holding the keys,
+   every key of the plan's §6 does what the table says (injected, on the last build): F6; Up and Down in the
+   rail (the section changes at once); Right or Enter into the page; Left on a row without a choice, on a
+   switch and on a choice at its first option back to the rail; Left and Right on a choice; Enter and Space (a switch, the engine's menu, a
+   command's example typed into the panel); Home, End, Page Up, Page Down; Tab and Shift + Tab through the
+   stops and round through the rail; Ctrl + 1 … 5; Ctrl + F from any section, at the compact width too;
+   letters on Commands; Ctrl + N; Delete once on one of the user's own (it asks; the second press was done on
+   an earlier build with a link made for the test); the Menu key; Escape (a menu, an editor, Find; never the
+   window); Ctrl + W; Shift + F10 for a row's menu. In the bar: Left and Right change the section, Up goes
+   into the page; Down on the page's last stop goes to the bar. In an editor: Tab round its fields and buttons
+   and never out of it, Enter saves, Escape asks once when something was changed.
+6. **Material's own focus mark.** A list item that is told it has the focus (through its interaction source)
+   takes its focused shape and would draw a focus mark of its own; that mark is switched off for the rows
+   (`LocalRippleThemeConfiguration`), so the window's ring is the only one, and it is put back inside menus,
+   where Material moves the focus itself. Not tried: the system's "remove animations" (a system setting of
+   the device; Booklight's own motion asks `Motion.on`).
+7. **`surfaceBright` on `surfaceContainer`.** Rows against the ground, read from the pictures: light with the
+   wallpaper's colours `#fef7fe` on `#f3ebf5`; light with Booklight's own `#f9f9ff` on `#ededf4`; dark with
+   the wallpaper's `#2e2a33` on `#1b181f`; dark with Booklight's own `#2f313a` on `#1d1f27`. The step is 11
+   or 12 levels in the light themes and 18 or 19 in the dark ones: visible and quiet in all four.
+8. **Across 600, 840 and 1332.** The task was resized in steps of 4 dp (each step holds about three frames)
+   while the window logged its layout every frame (`./bl debug window trace`), and across each breakpoint in
+   one step while it took a picture of itself every second frame (`./bl debug window film`; no recording of
+   the screen). 1332, both ways: the column's start and the title's line do not move by a pixel; the second
+   pane fades and slides 24 dp at the trailing edge; the demo or the preview opens from its top in the column
+   (closes towards it) while the rows under it move on the same spring; the panel in it is the same one, as it
+   was. 840, narrowing: Material moves each name from beside its mark to under it, the indicator goes with it,
+   the column follows the rail's width frame by frame. 600, narrowing: the rail fades while its width closes
+   and the bar opens from the bottom; for a few frames both are there, each partly (a cross-fade), never both
+   in full. The title's line keeps its height in all three. Not filmed on the last build: 840 and 600
+   widening. Not tried: a drag with the pointer (adb cannot drag a window's edge without touching the
+   system's part of it).
+9. **Unseen 48 dp targets.** With `LocalMinimumInteractiveComponentSize` unspecified in the window, a click
+   3 dp above a button of a choice did not choose it, and a click 5 dp inside it did. (On the first build the
+   row took the click and stepped the choice; a choice's row is no longer pressed, and the same click now
+   changes nothing.) With Material's default the same click was not tried.
+
+What else it showed:
+
+- **The Keyboard Shortcuts Helper.** `requestShowKeyboardShortcuts()` from the window opens the system's
+  helper as a dialog over the desktop (a `SystemUIDialog` window has the keys). The system asks the window
+  for its keys once (`onProvideKeyboardShortcuts`), and the helper lists "Booklight", with the app's icon,
+  under System, Multitasking, App shortcuts, Input and Accessibility: the five sections with Ctrl + 1 … 5,
+  Find a command, New link, Navigation or page (F6), Close the window. `dismissKeyboardShortcutsHelper()`
+  closes it and the keys are the window's again.
+- **A new window is laid out twice.** A Booklight window that opens at the default 1053 dp is first composed
+  with a pane 1162 dp wide (a window of some 1380) and about 30 ms later with its own 833. For that one frame
+  the window had a second pane: the editor that the panel's "Edit…" opens was drawn there, took the keys, and
+  lost them when that copy went. Nothing moves between column and pane in a window's first half second now.
+- **The minimum size in German** (400 × 480): the bar's five names fit ("Datenschutz" ends 3 dp from the
+  window's edge); "Eingebaut · Eigenes" and the full "Neuer Link" button leave about 5 dp between them, so New is
+  only its plus there; Start's title, lead and demo filled the pane, so the demo gives way and the key's row
+  shows.
+- **A row that stayed three lines high.** Material's list item takes a row for a three-line one (88 dp) when the
+  first and the last baseline of what stands under its name differ. While the rail closes from 220 to 96 dp the
+  column is narrow for a few frames and a command's example stands under its text, in one `Column` with it;
+  when the example went back to the row's end, that column kept its old last baseline and every command's row
+  stayed 88 dp high at 720 dp of window (logged: one line of text, `first=22 last=22`, row 132 px). With the
+  text alone in that place when nothing stands under it (no column), the rows are 72 dp again.
+- **A build installed under an open Booklight window** leaves its task in an odd state: the desktop puts its
+  own "package update" activity into the task, and an `am start` that arrives meanwhile leaves the window
+  full screen. Close the window first.
+- **A menu is a window of its own** (`mCurrentFocus` is "Pop-Up Window" while Booklight stays the focused
+  app). It is not in a picture of the activity's window; a picture with a menu in it is a screen capture cut
+  to the window's bounds.
+- **What adb can and cannot inject:** keys, key combinations (`input keycombination CTRL_LEFT KEYCODE_4`: a
+  bare `4` is key code 4, Back), text, a primary click (`input mouse tap`), the wheel (`input mouse scroll`),
+  a drag inside the window (the scrollbar's thumb follows it). No hover and no secondary click: a row under
+  the pointer was looked at through a debug hook that tells the row it is hovered, a row's menu through the
+  Menu key. Not tried: hover and right-click with the real pointer.
+- **material3 1.5.0-alpha29:** a `WideNavigationRailItem` keeps the label style it was first composed with
+  (a rail that starts expanded keeps the large style when it collapses); the expanded rail's item draws its
+  hover and press round its mark and name, not across the rail; a text field with no width cannot take the
+  focus.
+- **Two Googlebooks on adb:** the one that attaches later can be listed first. A script that takes "the first
+  device that is not an emulator" then talks to the other one. Choose by model.
+- Not tried at all: the HP.
+

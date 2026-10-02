@@ -102,7 +102,6 @@
     <string name="model_waiting">Das System lädt es</string>
     <string name="model_progress">%1$d von %2$d MB</string>
     <string name="win_prompts">Prompts</string>
-    <string name="win_prompt_add">Prompt hinzufügen …</string>
     <string name="win_prompt_text">Prompt</string>
     <string name="win_prompt_help">{text} steht dort, wo dein Text hinkommt; ohne {text} folgt der Text dem Prompt. Im Panel tippst du das Stichwort und dann den Text, oder nichts für das Kopierte. Die Antwort kommt vom Modell auf diesem Gerät, wenn das System eines hat; sonst öffnet sich die Gemini-App mit Prompt und Text.</string>
     <string name="win_prompt_name_hint">Freundlicher</string>
@@ -117,7 +116,7 @@
 
     <!-- Der Schatten um das Fenster -->
     <string name="set_shadow">Schatten</string>
-    <string name="set_shadow_text">Ein breiter, weicher Schatten um das Panel, damit es sich klar von den Fenstern dahinter abhebt. Er liegt nie unter dem Glas.</string>
+    <string name="set_shadow_text">Ein weicher Schatten um das Panel.</string>
     <string name="set_shadow_off">Aus</string>
     <string name="set_shadow_low">Leicht</string>
     <string name="set_shadow_medium">Mittel</string>
@@ -226,8 +225,6 @@
     <string name="nav_yours">Eigenes</string>
     <string name="nav_look">Aussehen</string>
     <string name="nav_results">Ergebnisse</string>
-    <string name="nav_access">Zugriff</string>
-    <string name="nav_about">Info</string>
     <string name="key_none">Noch keine Taste</string>
     <string name="key_press">Jetzt die Taste einmal drücken</string>
     <string name="key_works">Deine Taste funktioniert</string>

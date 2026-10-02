@@ -172,24 +172,109 @@ A seam of outline grows up and down to the field's height, then the glass opens 
 
 ## 5. The Booklight window
 
-The panel without blur: ground `surfaceContainerHigh` (the panel's own solid fallback), the same grid, rows, pill and controls.
+*As built in October 2026 (`docs/design/window-redesign.md` has the reasons, `booklight-window.html` the drawn
+layouts, `docs/research/device-findings.md` what the Lenovo showed). It replaces "the panel without blur".*
 
-- **Layout.** One scrolling column 720 dp wide (the panel's measure) and a section index: What it is · Your key · Look · Search · Results · Privacy · About.
-- **No boxes.** A section is a title and rows on the one ground, 48 dp from the next. Rows are the panel's: 56 dp, mark at 38, text at 72, control flush right. Only the stage is framed.
-- **What it is.** "Booklight" in the display style, one sentence, then the **stage**: 720 × 300 dp, radius 32, ground `surfaceContainerLowest`, a flat drawn desk (two window shapes in `primaryContainer` and `tertiaryContainer`, text bars at `onSurface` 0.12). On it runs the real panel composable at 0.75 scale over an in-app blur of the stage, in the user's glass level: a 9 s loop (unfold, "st" typed, rows cascade, the pill moves, the pane glides twice, close) while the window is focused; a still with animations off.
-- **Your key.** Two sentences, the suggested keys as key caps (28 dp, 14 sp), and "Open Keyboard shortcuts ⏎" as a strip of one.
-- **Controls.** A choice (engine, glass, opening) is an option strip at the row's right end: 32 dp slots, pill-recipe highlight, a check in the mark's home. Switches and tracks are (d)'s. A keyword search is a row with its keyword as a key cap in the mark column and a destructive "Remove" chip that confirms as (f).
-- **Selection.** One pill for the page follows the arrow keys and pointer movement; Left and Right change the row's control live; Enter flips or runs. Keyboard focus adds the 2 dp ring.
+An ordinary desktop window in Material 3 Expressive. It keeps Booklight's colour scheme, type, symbols and key
+caps, the panel's selection colour for what is open or chosen, the panel itself on Start and Look, and motion from
+`Motion.kt`. What stays the panel's alone: glass, the white outline, and the one pill that follows pointer and keys.
 
-| Window width | Layout | Display | Lead | Section title |
-| --- | --- | --- | --- | --- |
-| 900 to 1099 dp | index as a strip under the caption bar; column centred | 36 / 700 rounded | 18 / 400 | 20 / 600 |
-| 1100 to 1399 | rail 200 + gap 40 + column, centred as a group | 45 / 700 | 20 / 400 | 22 / 600 |
-| 1400 to 1700 | rail 220 + gap 56 + column; stage 960 × 340 | 57 / 700 | 22 / 400 | 24 / 600 |
+**The frame** (widths in dp; the caption bar is the system's, 40 high, see-through, with nothing of Booklight's in it)
 
-Row text keeps the panel's sizes at every width (`title`, body 15 / 400, `label`). Below 900 dp the column is the width less 48.
+| Window | Navigation | Page |
+| --- | --- | --- |
+| under 600 | Material's `ShortNavigationBar` along the bottom, 64 high | one column, 16 from each edge |
+| 600 to 839 | `WideNavigationRail` collapsed on the leading edge, 96, name under mark | one column, 24 from the rail, 24 from the edge |
+| from 840 | the rail expanded, 220, name beside mark | one column, 24 from the rail, at most 720 wide, never centred |
+| from 1332 | the same | and a second pane, 24 from the column, 320 to 560 wide, 24 from the edge |
 
-**Motion.** Sections rise 12 dp and fade in on `place`, 22 ms apart, once. The index highlight is a vertical option strip following the scroll; a click scrolls on `place`. Choices, switches and tracks move as §6.
+- The window is at least 400 × 480 (`<layout>` in the manifest).
+- The rail has no fill. Its indicator is Booklight's own: Material's shape (56 × 32 round the mark; in the expanded
+  rail 56 high round mark and name), in `secondaryContainer`, travelling between the items on `lead` and `trail`.
+  Material's own indicator is switched off.
+- The centre line of a page's title (28/36, weight 600, the rounded cut) is 40 below the caption bar, and so is
+  the centre of the rail's first mark, at both rail widths.
+- The second pane holds the live demo (Start), the preview of the look (Look), and on Commands the open editor
+  or a built-in command's example. Results and Privacy leave it empty. Below 1332 the demo and the preview are
+  at the top of their pages and an editor opens under its row. The pane's top is the top of the title line's own
+  control (Find): 20 over the title's centre line.
+- In the smallest window: New is only its plus (a column under 400), and Start has no demo (a pane under 520
+  high), so the row about the key is in view.
+
+**Lines everything stands on** (in a column of width C)
+
+| Line | What stands on it |
+| --- | --- |
+| 0 and C | rows and editors; Find's trailing end; Built in · Yours; New |
+| 16 | the title, the lead, a group's name, a row's mark (24 wide) |
+| 52 | a row's text (Material's list item: 16 + 24 + 12); a choice that stands under its text; a command's example in a narrow row |
+| C − 16 | the trailing end of every control in a row: switch, button group, menu button, a word, a mark (a command's Enter mark, after its example) |
+
+The choices of one page stand in one place: at the rows' trailing end when every one of them leaves its text
+200 dp, else every one under its text. At the trailing end every button of the page is one width (the widest
+name's), so the groups' seams stand in line, as long as every row's line still fits on one line beside them; else
+each button is as wide as its name (German at the default width). The search engine's button stays at the
+trailing end at every width.
+
+**Colour.** Ground `surfaceContainer`. Rows, editors and Find `surfaceBright`. Text `onSurface`; second lines, marks
+and group names `onSurfaceVariant`. The open section, a chosen option, the row whose editor is open
+`secondaryContainer` with `onSecondaryContainer`. A switch that is on, Save, the caret `primary`. Delete `error`.
+Unchosen buttons of a choice are in the ground's colour on a row, in the rows' colour on the ground.
+
+**Type.** Title `headlineMedium` 28/36 at 600, rounded. Lead `bodyLarge`, at most 600 wide. Group name `titleSmall`,
+sentence case. Row `bodyLarge`, its second line `bodyMedium`. Rail `labelLarge` beside the mark, `labelMedium`
+under it. A command's example in the fixed-width cut, 12 sp.
+
+**Parts** (all from `material3` 1.5.0-alpha29)
+
+| Part | Component | Notes |
+| --- | --- | --- |
+| A group of settings | `SegmentedListItem` with `ListItemDefaults.segmentedShapes` | 2 between rows, 24 between groups; rows 56, 72, 88 by their lines; mark and control on the row's centre line (on the title's line when something stands under the text) |
+| On or off | `Switch` (52 × 32) | the row flips it, and Enter and Space; not Left and Right |
+| A choice of 2 to 4 | `ToggleButton`s 2 apart with `ButtonGroupDefaults`' connected shapes | 40 high; the chosen one round; only the buttons are pressed: the row has no click and no hover, a click beside the buttons or between them does nothing |
+| A choice of 5 or more | a `Button` and `DropdownMenuPopup` with `SelectableDropdownMenuItem`s | the button as wide as the longest name needs; the menu exactly as wide, 4 under it; names start where the button's does; the chosen one's check under the button's arrow |
+| New | `SplitButtonLayout`, tonal | New link; the arrow offers snippet, recipe, prompt |
+| Find | a rounded field, 40 high, 264 wide | a round button in a compact window, opening over the title |
+| A text in a row | `Field` (`Controls.kt`) | under the row's text, from the text's edge to C − 16; a pill 40 high in the ground's colour, like the menu's button; a 2 dp ring in `primary` while it has the keys; Enter on the row puts the caret in it, Enter in it saves, Escape gives up what was typed, Tab goes on. What saves or removes stands at its end in a wide row (the field gives it room as it comes), under it in a narrow one. The flight service's key is the first: it is never shown once saved ("A key is in"), and Take out asks twice |
+| The editors | `TextField` (12 dp corners, a ring in `primary` when it has the keys), `Button`, `TextButton` | under a row with 16 dp corners; in the second pane with 28; Delete's word ends 16 inside the fields' edge |
+| Menus | `DropdownMenuPopup`, `DropdownMenuGroup`, `DropdownMenuItem` | flat: the rows' colour, a 1 dp outline in `outlineVariant`, no shadow, the items on the menu's own fill; right-click (or Menu, or Shift + F10) on a command, on one of the user's own, on an app |
+| The demo and the preview | `Stage` | the panel's own veil and outline over the desk blurred where the panel stands; a drawn shadow; the desk dimmed when dimming is on; the desk's ground is the rows' colour (never the scheme's darkest); its two windows run off the stage's edges; the panel is one for the window (`Stages`), so a stage that moves between column and pane shows it as it was |
+
+**States.** Hover: Material's state layer (8 %) and the row's corners to 12. Pressed: 10 %, corners 16. Keyboard
+focus: one ring for the whole window, 2 dp in `secondary`, inside the edge of the stop the keys are on; the row
+takes Material's focused shape (corners 16). The ring shows only while the keys are what is used; a press of the
+pointer puts it away. Selected: `secondaryContainer`. Disabled: Material's 38 %.
+
+**Keys.** The window's root has the keyboard; Material's parts are not focus stops (text fields and menus are
+their own). Tab and Shift + Tab go through every stop of the page in reading order and round through the
+navigation; F6 goes between navigation and page; Up and Down move through the stops (in the rail: through the
+sections, at once; under a narrow window Down on the last stop goes on to the bar); Left and Right step a
+choice; Left goes to the rail from a row without a choice, from a switch, and from a choice at its first option;
+Enter and Space run the stop (a switch flips, a choice goes to its next option); Home, End, Page Up, Page Down;
+Ctrl + 1 … 5, Ctrl + F, Ctrl + N, Ctrl + W; Delete on one of the user's own asks once more on the row; Menu or
+Shift + F10 opens a row's menu; Escape closes a menu or an editor and clears Find, never the window.
+
+**The editors.** What is typed is the window's (`CommandsState.draft`), not the editor's: it is still there when
+the editor changes its place at 1332 dp, with the keys in the same field. An open editor has the keys until it
+is closed: Tab goes round inside it. Enter in a one-line field saves, Ctrl + Enter in any. While Save cannot be
+pressed and something was typed, one line over the buttons says the first thing that is missing. An editor with
+something unsaved is not left at once: Escape, Cancel, another row, the other half, a section, Ctrl + N and
+Ctrl + W first turn Cancel into "Press again to discard" for three seconds. After Save the keys are on the saved
+row; after a new one was cancelled, on New.
+
+**Motion** (Booklight's own on `Motion.kt`; Material's parts on the theme's `MotionScheme.expressive()`)
+
+| What happens | What moves | Spec |
+| --- | --- | --- |
+| A section changes | the indicator travels, leading edge first; the old page fades where it stands (70 ms); the new page's blocks rise 12 dp, 22 ms apart, from the side the indicator came from; the second pane's content does the same | `lead`, `trail`; `fade`; `place` |
+| The keys move | the ring glides, the edge that leads on `lead`, the one that follows on `trail`; it stays on its stop while the page scrolls | `lead`, `trail` |
+| An editor opens | under its row the page makes room and follows it into view frame by frame; in the second pane it fades in and rises 12 dp | `place`; `fade` 140 |
+| Built in · Yours | one half fades where it stands, the other comes; the page takes the new height | `fade`; `place` |
+| The window is resized | widths follow the window frame by frame | none |
+| 600 is crossed | the rail's width and the bar's height open or close while they fade | `place`; `fade` |
+| 840 is crossed | Material widens the rail, each name moving from under its mark to beside it; the indicator follows it in the same frame | Material's default spatial spring |
+| 1332 is crossed | the second pane fades in and slides 24 dp from the trailing edge; the demo or the preview closes from below in the column while it fades (180 ms) and the rows under it move up; back, it opens from its top | `fade`; `place` |
+| Animations off | Booklight's own cut; Compose scales Material's by the system's setting | `Motion.on` |
 
 ## 6. Motion specification
 

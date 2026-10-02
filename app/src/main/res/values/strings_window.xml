@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The Booklight window as a desktop window (docs/design/window-redesign.md): five sections. -->
+    <string name="nav_privacy">Privacy</string>
+
+    <!-- Start -->
+    <string name="win_open_title">Open Booklight</string>
+    <string name="win_key_works_text">Booklight opens with the shortcut you set, and the same keys put it away.</string>
+
+    <!-- Commands -->
+    <string name="win_builtin">Built in</string>
+    <string name="win_find">Find a command</string>
+    <string name="win_find_none">Nothing here matches “%1$s”.</string>
+    <plurals name="win_find_there">
+        <item quantity="one">%d match there</item>
+        <item quantity="other">%d matches there</item>
+    </plurals>
+    <string name="win_none_yet">None yet.</string>
+    <string name="win_new_link">New link</string>
+    <string name="win_new_snippet">New snippet</string>
+    <string name="win_new_recipe">New recipe</string>
+    <string name="win_new_prompt">New prompt</string>
+    <string name="win_new_more">New snippet, recipe or prompt</string>
+
+    <!-- Look, Results, Privacy: the names of their groups -->
+    <string name="win_panel">Panel</string>
+    <string name="win_search">Search</string>
+    <string name="win_show">Show in the list</string>
+    <string name="win_may_use">What Booklight may use</string>
+    <string name="win_privacy_lead">Booklight asks for nothing when it is installed. What it may use is yours to give, in the system’s own screens, and to take back there.</string>
+
+    <!-- Rows and controls -->
+    <string name="set_engine_text">Where the last row of the list searches.</string>
+    <string name="win_try">Try it</string>
+    <string name="win_copy_example">Copy example</string>
+    <string name="win_edit">Edit</string>
+    <string name="win_duplicate">Duplicate</string>
+    <string name="win_app_show">Show</string>
+    <string name="win_app_hide">Hide</string>
+
+    <!-- The second pane -->
+    <string name="win_side_demo">The real list, with the apps on this device. Nothing here can be run.</string>
+    <string name="win_side_look">Booklight with these settings. Your key shows it on your desktop.</string>
+    <string name="win_side_example_of">%1$s: what Booklight shows for “%2$s”. Enter on its row types it for you.</string>
+    <string name="win_side_none">Choose one of yours to edit it here, or make a new one.</string>
+    <string name="win_reset">Reset</string>
+    <string name="win_forget">Forget</string>
+    <string name="win_take_out_again">Press again to take out</string>
+    <string name="win_discard_again">Press again to discard</string>
+    <string name="win_why_keyword">It needs a keyword.</string>
+    <string name="win_why_space">A keyword is one word, without spaces.</string>
+    <string name="win_why_taken">This keyword is taken.</string>
+    <string name="win_why_name">It needs a name.</string>
+    <string name="win_why_name_space">A snippet\'s name is one word, without spaces.</string>
+    <string name="win_why_name_taken">This name is taken.</string>
+    <string name="win_why_address">The address starts with https://</string>
+    <string name="win_why_text">It needs its text.</string>
+    <string name="win_why_step">Add at least one step.</string>
+    <string name="win_kind_link">Link</string>
+    <string name="win_kind_snippet">Snippet</string>
+    <string name="win_kind_recipe">Recipe</string>
+    <string name="win_kind_prompt">Prompt</string>
+
+    <!-- The window's keys, for the system's Keyboard Shortcuts Helper -->
+    <string name="win_keys_close">Close the window</string>
+    <string name="win_keys_region">Navigation or page</string>
+</resources>

@@ -137,7 +137,6 @@
     <string name="verb_right">right,right half</string>
     <string name="verb_uninstall">uninstall,remove,delete</string>
     <string name="win_lead">Press a key, type a few letters, press Enter. Booklight opens apps, finds settings, searches the web, and does small things at once: a sum, a timer, a note, an emoji.</string>
-    <string name="win_key_title">Your key</string>
     <string name="win_key_text">Booklight opens when its keyboard shortcut is pressed, and the same keys put it away. The system asks for the Action key in every shortcut; these two are free.</string>
     <string name="win_key_or">or</string>
     <string name="win_key_steps">Choose App shortcuts, then Add shortcut, then Booklight</string>
@@ -148,14 +147,14 @@
     <string name="set_theme_light">Light</string>
     <string name="set_theme_dark">Dark</string>
     <string name="set_tint">Colours</string>
-    <string name="set_tint_text">From your wallpaper, as the system does, or Booklight’s own quiet blue.</string>
+    <string name="set_tint_text">From your wallpaper, or Booklight’s own quiet blue.</string>
     <string name="set_tint_wallpaper">Wallpaper</string>
     <string name="set_tint_own">Booklight</string>
     <string name="set_glass_solid">Solid</string>
     <string name="set_dim">Dim the desktop</string>
-    <string name="set_dim_text">Darken everything behind the panel a little while it is open.</string>
+    <string name="set_dim_text">Darken everything behind the panel a little.</string>
     <string name="set_opening">Opening</string>
-    <string name="set_opening_text">The panel unfolds from a line. Slower speeds are for watching it; Off is a quick fade.</string>
+    <string name="set_opening_text">How fast the panel unfolds.</string>
     <string name="set_opening_off">Off</string>
     <string name="set_opening_fast">Fast</string>
     <string name="set_opening_medium">Medium</string>
@@ -163,13 +162,11 @@
     <string name="set_show_gemini">Ask Gemini</string>
     <string name="set_show_gemini_text">For a question or a longer text, offer to open it in the Gemini app. Nothing is sent until you send it there.</string>
     <string name="win_access_title">Access</string>
-    <string name="win_access_text">Booklight asks for nothing when it is installed. These three are yours to give, in the system’s own screens, and to take back there.</string>
     <string name="win_notes">Notes folder</string>
     <string name="win_notes_in">Notes go to Notes.md in %1$s</string>
     <string name="win_notes_none">Where “note …” writes to. Not chosen yet.</string>
     <string name="win_choose">Choose…</string>
     <string name="win_change">Change…</string>
-    <string name="win_allowed">Allowed</string>
     <string name="win_brightness_on">Booklight may change the screen’s brightness.</string>
     <string name="win_brightness_off">Needs “Modify system settings”, switched on once.</string>
     <string name="win_assistant">Assistant key</string>
@@ -178,12 +175,9 @@
     <string name="win_commands_title">Your commands</string>
     <string name="win_commands_text">Links you reach by a keyword, pieces of text you paste often, recipes that do several things at once, and prompts for the model on this device.</string>
     <string name="win_links">Links</string>
-    <string name="win_link_add">Add a link…</string>
     <string name="win_link_address">Address</string>
-    <string name="win_link_help">{argument} is what you type after the keyword, {clipboard} what you copied, {date} today. Without {argument} the link just opens.</string>
-    <string name="win_snippet_add">Add a snippet…</string>
+    <string name="win_link_help" formatted="false">{argument} (or %s) is what you type after the keyword, {clipboard} what you copied, {date} today. Without it the link just opens.</string>
     <string name="win_recipes">Recipes</string>
-    <string name="win_recipe_add">Add a recipe…</string>
     <string name="win_recipe_name_hint">Start work</string>
     <string name="win_recipe_steps">Steps, done in this order</string>
     <string name="win_recipe_add_step">Add a step</string>

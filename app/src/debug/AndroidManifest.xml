@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application>
+        <!-- Debug builds only: adb may open the Booklight window itself, at a section (./bl window look). In a release
+             only Booklight opens it. -->
+        <activity android:name=".window.MainActivity" android:exported="true" tools:replace="android:exported" />
         <!-- The file another app would add (docs/EXTENSIONS.md); here Booklight's own, in debug builds, to test the reading of it. -->
         <meta-data android:name="io.github.kuscher.booklight.commands" android:resource="@xml/booklight_commands" />
         <!-- Debug builds only: a window of test content (a white page, a dark terminal, colour) to judge the

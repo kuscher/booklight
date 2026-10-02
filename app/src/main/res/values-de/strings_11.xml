@@ -136,8 +136,7 @@
     <string name="verb_left">left,left half,links,linke hälfte</string>
     <string name="verb_right">right,right half,rechts,rechte hälfte</string>
     <string name="verb_uninstall">uninstall,remove,delete,deinstallieren,entfernen,löschen,loeschen</string>
-    <string name="win_lead">Taste drücken, ein paar Buchstaben tippen, Enter. Booklight öffnet Apps, findet Einstellungen, sucht im Web und erledigt Kleinigkeiten sofort: eine Rechnung, einen Timer, eine Notiz, ein Emoji.</string>
-    <string name="win_key_title">Deine Taste</string>
+    <string name="win_lead">Taste drücken, ein paar Buchstaben tippen, Enter. Booklight öffnet Apps, findet Einstellungen, sucht im Web und erledigt Kleinigkeiten sofort: eine Berechnung, einen Timer, eine Notiz, ein Emoji.</string>
     <string name="win_key_text">Booklight öffnet sich, wenn sein Tastenkürzel gedrückt wird; dieselben Tasten schließen es wieder. Das System verlangt die Aktionstaste in jedem Kürzel; diese beiden sind frei.</string>
     <string name="win_key_or">oder</string>
     <string name="win_key_steps">App-Verknüpfungen wählen, dann Tastenkürzel hinzufügen, dann Booklight</string>
@@ -148,14 +147,14 @@
     <string name="set_theme_light">Hell</string>
     <string name="set_theme_dark">Dunkel</string>
     <string name="set_tint">Farben</string>
-    <string name="set_tint_text">Aus deinem Hintergrundbild, wie das System, oder Booklights eigenes ruhiges Blau.</string>
+    <string name="set_tint_text">Aus deinem Hintergrundbild oder Booklights ruhiges Blau.</string>
     <string name="set_tint_wallpaper">Hintergrundbild</string>
     <string name="set_tint_own">Booklight</string>
     <string name="set_glass_solid">Deckend</string>
     <string name="set_dim">Desktop abdunkeln</string>
-    <string name="set_dim_text">Alles hinter dem Panel etwas abdunkeln, solange es offen ist.</string>
+    <string name="set_dim_text">Alles hinter dem Panel etwas abdunkeln.</string>
     <string name="set_opening">Öffnen</string>
-    <string name="set_opening_text">Das Panel entfaltet sich aus einer Linie. Langsamer ist zum Zuschauen; Aus ist ein kurzes Einblenden.</string>
+    <string name="set_opening_text">Wie schnell sich das Panel entfaltet.</string>
     <string name="set_opening_off">Aus</string>
     <string name="set_opening_fast">Schnell</string>
     <string name="set_opening_medium">Mittel</string>
@@ -163,13 +162,11 @@
     <string name="set_show_gemini">Gemini fragen</string>
     <string name="set_show_gemini_text">Bei einer Frage oder längerem Text anbieten, ihn in der Gemini-App zu öffnen. Nichts wird gesendet, bis du es dort sendest.</string>
     <string name="win_access_title">Zugriff</string>
-    <string name="win_access_text">Booklight verlangt bei der Installation nichts. Diese drei kannst du selbst geben, in den Bildschirmen des Systems, und dort wieder nehmen.</string>
     <string name="win_notes">Notizordner</string>
     <string name="win_notes_in">Notizen kommen in Notes.md in %1$s</string>
-    <string name="win_notes_none">Wohin „note …“ schreibt. Noch nicht gewählt.</string>
+    <string name="win_notes_none">Wohin „notiz …“ schreibt. Noch nicht gewählt.</string>
     <string name="win_choose">Wählen …</string>
     <string name="win_change">Ändern …</string>
-    <string name="win_allowed">Erlaubt</string>
     <string name="win_brightness_on">Booklight darf die Bildschirmhelligkeit ändern.</string>
     <string name="win_brightness_off">Braucht „Systemeinstellungen ändern“, einmal eingeschaltet.</string>
     <string name="win_assistant">Assistententaste</string>
@@ -178,12 +175,9 @@
     <string name="win_commands_title">Deine Befehle</string>
     <string name="win_commands_text">Links, die du mit einem Stichwort erreichst, Textstücke, die du oft einfügst, Rezepte, die mehreres auf einmal tun, und Prompts für das Modell auf diesem Gerät.</string>
     <string name="win_links">Links</string>
-    <string name="win_link_add">Link hinzufügen …</string>
     <string name="win_link_address">Adresse</string>
-    <string name="win_link_help">{argument} ist, was du nach dem Stichwort tippst, {clipboard} das Kopierte, {date} das heutige Datum. Ohne {argument} öffnet sich der Link einfach.</string>
-    <string name="win_snippet_add">Textbaustein hinzufügen …</string>
+    <string name="win_link_help" formatted="false">{argument} (oder %s) ist, was du nach dem Stichwort tippst, {clipboard} das Kopierte, {date} das heutige Datum. Ohne das öffnet sich der Link einfach.</string>
     <string name="win_recipes">Rezepte</string>
-    <string name="win_recipe_add">Rezept hinzufügen …</string>
     <string name="win_recipe_name_hint">Arbeit beginnen</string>
     <string name="win_recipe_steps">Schritte, in dieser Reihenfolge</string>
     <string name="win_recipe_add_step">Schritt hinzufügen</string>

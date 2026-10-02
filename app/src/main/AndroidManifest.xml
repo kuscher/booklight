@@ -121,7 +121,10 @@
             android:taskAffinity="io.github.kuscher.booklight.window"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|density|uiMode"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask">
+            <!-- The narrowest it is laid out for: a navigation bar and one column. -->
+            <layout android:minWidth="400dp" android:minHeight="480dp" />
+        </activity>
 
         <!-- The pinned window: a picture-in-picture window, the one kind the system keeps on top without ever giving
              it the keyboard. One at a time. The smallest size named here is the size the system opens it at. -->

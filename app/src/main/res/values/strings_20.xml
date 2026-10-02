@@ -108,7 +108,6 @@
     <string name="model_waiting">The system is fetching it</string>
     <string name="model_progress">%1$d of %2$d MB</string>
     <string name="win_prompts">Prompts</string>
-    <string name="win_prompt_add">Add a prompt…</string>
     <string name="win_prompt_text">Prompt</string>
     <string name="win_prompt_help">{text} is where your text goes; without it, the text follows the prompt. In the panel, type the keyword and then the text, or nothing to use what you copied. The answer comes from the model on this device where the system has one; otherwise the Gemini app opens with the prompt and the text.</string>
     <string name="win_prompt_name_hint">Friendlier</string>
@@ -124,7 +123,7 @@
 
     <!-- The shadow around the panel -->
     <string name="set_shadow">Shadow</string>
-    <string name="set_shadow_text">A wide, soft shadow around the panel, so it stands clear of the windows behind it. It never lies under the glass.</string>
+    <string name="set_shadow_text">A soft shadow around the panel.</string>
     <string name="set_shadow_off">Off</string>
     <string name="set_shadow_low">Low</string>
     <string name="set_shadow_medium">Medium</string>
@@ -236,8 +235,6 @@
     <string name="nav_yours">Yours</string>
     <string name="nav_look">Look</string>
     <string name="nav_results">Results</string>
-    <string name="nav_access">Access</string>
-    <string name="nav_about">About</string>
     <string name="key_none">No key yet</string>
     <string name="key_press">Now press the key once</string>
     <string name="key_works">Your key works</string>

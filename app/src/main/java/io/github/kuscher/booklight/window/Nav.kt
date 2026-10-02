@@ -1,135 +1,243 @@
 package io.github.kuscher.booklight.window
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.WideNavigationRail
+import androidx.compose.material3.WideNavigationRailDefaults
+import androidx.compose.material3.WideNavigationRailItem
+import androidx.compose.material3.WideNavigationRailItemDefaults
+import androidx.compose.material3.WideNavigationRailValue
+import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.util.lerp
 import io.github.kuscher.booklight.R
-import io.github.kuscher.booklight.overlay.LocalDark
 import io.github.kuscher.booklight.overlay.LocalMotion
-import io.github.kuscher.booklight.overlay.SECOND
-import io.github.kuscher.booklight.ui.Fonts
 import io.github.kuscher.booklight.ui.Symbols
 import kotlinx.coroutines.launch
+import kotlin.math.floor
 
-/** The window's sections, in the order of the column. */
+/**
+ * The window's sections, in the order a person meets them: set it up and see what it is, see what it can do
+ * and make your own, change how it looks, choose what the list shows, check what it may use and keeps.
+ */
 enum class Part(val id: String, val symbol: String, val title: Int) {
     START("start", "booklight", R.string.nav_start),
     COMMANDS("commands", "list", R.string.nav_commands),
-    YOURS("yours", "user", R.string.nav_yours),
-    LOOK("look", "sun", R.string.nav_look),
+    LOOK("look", "palette", R.string.nav_look),
     RESULTS("results", "search", R.string.nav_results),
-    ACCESS("access", "lock", R.string.nav_access),
-    ABOUT("about", "info", R.string.nav_about);
+    PRIVACY("privacy", "lock", R.string.nav_privacy);
 
     companion object {
         fun of(id: String?) = entries.firstOrNull { it.id == id }
     }
 }
 
-/** A column item is this high; the column at rest this wide, and never narrower than one item is high. */
-val NAV_ITEM = 48.dp
-val NAV_WIDE = 200.dp
+/** The rail's two widths (Material's own). */
+val RAIL_COLLAPSED = 96.dp
+val RAIL_EXPANDED = 220.dp
 
 /**
- * The column of sections. One quiet pane of glass says which section is open and travels between
- * them, its leading edge first, as the selection does in the panel. It is not the page's pill: that
- * one is coloured and says where the keys are. When the keys are in the column ([focused]) the pane
- * takes a ring. The column's width follows the window's and is never animated: as it narrows the
- * names are covered, down to a column of marks.
+ * How far the first item is from the rail's top, so that the centre of its mark is [TITLE_LINE] below the
+ * caption bar at both widths: the page's title stands on that line. An expanded item is 56 high with its
+ * mark in the middle; a collapsed one is 64 high and its mark's centre is 22 from its top.
+ */
+private val TOP_EXPANDED = TITLE_LINE - 28.dp
+private val TOP_COLLAPSED = TITLE_LINE - 22.dp
+
+/**
+ * What the rail (or the bar) knows of itself: where Material has put each section's mark and name, in the
+ * window, and how far the indicator has travelled. The indicator is drawn from these in the same frame, so
+ * it is where the item is while the rail widens or the window is resized; and the window's focus ring is
+ * drawn round it from the same numbers ([indicator]).
+ */
+class NavState(start: Part, private val bar: Boolean) {
+    /** How wide the rail is now, in px (it animates between its two widths). */
+    var width by mutableIntStateOf(0)
+        internal set
+    internal val mark = mutableStateMapOf<Part, Rect>()
+    internal val name = mutableStateMapOf<Part, Rect>()
+    /** The indicator's upper edge (the bar's: its leading one) and its lower edge (the trailing one), counted in items. */
+    internal val first = Animatable(start.ordinal.toFloat())
+    internal val last = Animatable(start.ordinal.toFloat())
+
+    /**
+     * Where the indicator is now, in the window: Material's shape (56 × 32 round the mark; in the expanded rail
+     * 56 high round mark and name), between the items its two edges are at.
+     */
+    fun indicator(density: Density): Rect? = with(density) {
+        // How far the rail is between collapsed (0) and expanded (1): Material's items go by the same spring.
+        val wide = if (bar) 0f else ((width - RAIL_COLLAPSED.toPx()) / (RAIL_EXPANDED - RAIL_COLLAPSED).toPx()).coerceAtLeast(0f)
+        fun rect(p: Part): Rect? {
+            val mark = mark[p] ?: return null
+            val name = name[p]
+            val left = mark.left - 16.dp.toPx()
+            // Material's own measures, between its two layouts (NavigationItem.kt, AnimatedMeasurePolicy): the mark is 4
+            // below the indicator's top when the name is under it, 16 when the name is beside it, and on the way from
+            // one to the other the item's own height (the name's line and 4 above it, going) shifts it a little more.
+            val pad = lerp(4.dp.toPx(), 16.dp.toPx(), wide.coerceIn(0f, 1f))
+            val top = mark.top - pad - wide * (1f - wide) * (4.dp.toPx() + (name?.height ?: 0f)) / 2
+            val width = lerp(mark.width, mark.width + 8.dp.toPx() + (name?.width ?: 0f), wide) + 32.dp.toPx()
+            return Rect(left, top, left + width, top + mark.height + 2 * pad)
+        }
+        val rects = Part.entries.map { rect(it) ?: return null }
+        /** An edge at a place between two items; a spring that runs past the last item runs on by the same step. */
+        fun edge(at: Float, of: (Rect) -> Float): Float {
+            if (rects.size < 2) return of(rects[0])
+            val i = floor(at).toInt().coerceIn(0, rects.size - 2)
+            return lerp(of(rects[i]), of(rects[i + 1]), at - i)
+        }
+        val mid = (first.value + last.value) / 2
+        if (bar) Rect(edge(first.value) { it.left }, edge(mid) { it.top }, edge(last.value) { it.right }, edge(mid) { it.bottom })
+        else Rect(edge(mid) { it.left }, edge(first.value) { it.top }, edge(mid) { it.right }, edge(last.value) { it.bottom })
+    }
+}
+
+/**
+ * The navigation rail on the window's leading edge: Material's wide rail, collapsed (96 dp, each
+ * name under its mark) or [expanded] (220 dp, each name beside its mark), standing on the window's
+ * ground with no fill of its own. Material widens and narrows it. The indicator is Booklight's: one
+ * shape that travels to the open section, its leading edge first, as the selection does in the
+ * panel; Material's own, which grows in place, is switched off. The rail is one stop for the keys
+ * (the window draws its focus ring round the indicator), so its items take no focus themselves.
  */
 @Composable
-fun NavColumn(current: Part, focused: Boolean, width: Dp, /** A small dot on Start: no key has opened the panel yet. */ dot: Boolean, onPick: (Part) -> Unit, modifier: Modifier = Modifier) {
+fun Rail(nav: NavState, current: Part, expanded: Boolean, /** A small dot on Start: no key has opened the panel yet. */ dot: Boolean, onPick: (Part) -> Unit, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
-    val motion = LocalMotion.current
-    val dark = LocalDark.current
-    val top = NAV_ITEM * current.ordinal
-    val upper = remember { Animatable(top, Dp.VectorConverter) }
-    val lower = remember { Animatable(top + NAV_ITEM, Dp.VectorConverter) }
-    LaunchedEffect(top) {
-        val down = top > upper.targetValue
-        launch { upper.animateTo(top, if (down) motion.trail() else motion.lead()) }
-        launch { lower.animateTo(top + NAV_ITEM, if (down) motion.lead() else motion.trail()) }
-    }
-    val ring by animateFloatAsState(if (focused) 1f else 0f, motion.fade(120), label = "ring")
-    // How much of the names shows: all at full width, none once the column is a column of marks.
-    val names = ((width - NAV_ITEM) / (NAV_WIDE - NAV_ITEM)).coerceIn(0f, 1f)
-    val shape = RoundedCornerShape(24.dp)
-    val hair = with(LocalDensity.current) { 1f.toDp() }
-    Box(modifier.width(width).height(NAV_ITEM * Part.entries.size)) {
-        Box(
-            Modifier.offset { IntOffset(0, upper.value.roundToPx()) }.width(width).height((lower.value - upper.value).coerceAtLeast(12.dp))
-                .border(hair, if (dark) Color.Black.copy(alpha = 0.28f) else scheme.onSurface.copy(alpha = 0.20f), shape)
-                .clip(shape).background(scheme.surfaceContainerLowest.copy(alpha = if (dark) 0.36f else 0.62f))
-                .border(hair, Color.White.copy(alpha = if (dark) 0.30f else 0.55f), shape)
-                .border(2.dp, scheme.onSurface.copy(alpha = ring), shape),
-        )
-        Column {
+    val state = rememberWideNavigationRailState(if (expanded) WideNavigationRailValue.Expanded else WideNavigationRailValue.Collapsed)
+    LaunchedEffect(expanded) { if (expanded) state.expand() else state.collapse() }
+    // What the rail itself goes by: the items and the top space change in the same frame as its width starts to.
+    val wide = state.targetValue == WideNavigationRailValue.Expanded
+    val top by animateDpAsState(if (wide) TOP_EXPANDED else TOP_COLLAPSED, MaterialTheme.motionScheme.defaultSpatialSpec(), label = "top")
+    Box(modifier.fillMaxHeight()) {
+        Indicator(nav, current, Modifier.matchParentSize())
+        WideNavigationRail(
+            modifier = Modifier.onSizeChanged { nav.width = it.width },
+            state = state,
+            colors = WideNavigationRailDefaults.colors(containerColor = Color.Transparent, contentColor = scheme.onSurface),
+            windowInsets = WindowInsets(0, 0, 0, 0),
+            contentPadding = PaddingValues(top = top),
+        ) {
             for (p in Part.entries) {
-                val on = p == current
-                val ink by androidx.compose.animation.animateColorAsState(scheme.onSurface.copy(alpha = if (on) 1f else SECOND), motion.fade(120), label = "nav")
-                val name = stringResource(p.title)
-                Box(
-                    Modifier.width(width).height(NAV_ITEM).clip(shape)
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onPick(p) }
-                        .semantics(mergeDescendants = true) { selected = on; role = Role.Tab }
-                        .clipToBounds(),
-                ) {
-                    // Laid out once at the column's full width; a narrower column only covers the name.
-                    Row(Modifier.wrapContentWidth(Alignment.Start, unbounded = true).requiredWidth(NAV_WIDE).height(NAV_ITEM), verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(Modifier.width(14.dp))
-                        Icon(Symbols.of(p.symbol), null, Modifier.size(20.dp), tint = ink)
-                        Spacer(Modifier.width(14.dp))
-                        Text(name, color = ink, style = TextStyle(fontFamily = Fonts.text, fontSize = 15.sp, fontWeight = FontWeight(600)), maxLines = 1, modifier = Modifier.weight(1f).graphicsLayer { alpha = names })
-                    }
-                    if (p == Part.START) {
-                        val there by animateFloatAsState(if (dot) 1f else 0f, motion.pop(), label = "dot")
-                        // At the item's right end; in a column of marks, at the mark's upper right.
-                        Box(Modifier.align(if (names > 0.5f) Alignment.CenterEnd else Alignment.TopEnd).offset(x = if (names > 0.5f) (-16).dp else (-8).dp, y = if (names > 0.5f) 0.dp else 10.dp)
-                            .size(8.dp).graphicsLayer { scaleX = there.coerceAtLeast(0f); scaleY = there.coerceAtLeast(0f); alpha = there.coerceIn(0f, 1f) }.clip(CircleShape).background(scheme.onSurface))
-                    }
-                }
+                WideNavigationRailItem(
+                    selected = p == current, onClick = { onPick(p) }, railExpanded = wide,
+                    icon = { Mark(p, nav, dot) }, label = { Name(p, nav, bar = false) },
+                    colors = WideNavigationRailItemDefaults.colors(selectedIndicatorColor = Color.Transparent),
+                    modifier = Modifier.focusProperties { canFocus = false },
+                )
             }
         }
     }
+}
+
+/** Under 600 dp: Material's short navigation bar along the bottom, every section one click away, with the same travelling indicator. */
+@Composable
+fun Bar(nav: NavState, current: Part, dot: Boolean, onPick: (Part) -> Unit, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Box(modifier.fillMaxWidth()) {
+        Indicator(nav, current, Modifier.matchParentSize())
+        ShortNavigationBar(containerColor = Color.Transparent, contentColor = scheme.onSurface, windowInsets = WindowInsets(0, 0, 0, 0)) {
+            for (p in Part.entries) {
+                ShortNavigationBarItem(
+                    selected = p == current, onClick = { onPick(p) },
+                    icon = { Mark(p, nav, dot) }, label = { Name(p, nav, bar = true) },
+                    colors = ShortNavigationBarItemDefaults.colors(selectedIndicatorColor = Color.Transparent),
+                    modifier = Modifier.focusProperties { canFocus = false },
+                )
+            }
+        }
+    }
+}
+
+/** A section's mark; on Start, a small dot at its upper right while no key has opened the panel. */
+@Composable
+private fun Mark(p: Part, nav: NavState, dot: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    Box(Modifier.onGloballyPositioned { nav.mark[p] = Rect(it.positionInRoot(), it.size.toSize()) }) {
+        Icon(Symbols.of(p.symbol), null)
+        if (p == Part.START) {
+            val there by animateFloatAsState(if (dot) 1f else 0f, LocalMotion.current.pop(), label = "dot")
+            Box(Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-2).dp).size(8.dp)
+                .graphicsLayer { scaleX = there.coerceAtLeast(0f); scaleY = there.coerceAtLeast(0f); alpha = there.coerceIn(0f, 1f) }
+                .clip(CircleShape).background(scheme.primary))
+        }
+    }
+}
+
+/**
+ * A section's name. Under its mark it is in the small label style, beside it in the large one, changing half way
+ * as the rail widens. (Material's item is meant to do this itself, but in 1.5.0-alpha29 it remembers which of the
+ * two it was first shown as: a rail that starts expanded keeps the large style when it collapses.)
+ */
+@Composable
+private fun Name(p: Part, nav: NavState, bar: Boolean) {
+    val density = LocalDensity.current
+    val small by remember(bar, density) { derivedStateOf { bar || nav.width < with(density) { ((RAIL_COLLAPSED + RAIL_EXPANDED) / 2).toPx() } } }
+    Text(stringResource(p.title), maxLines = 1, softWrap = false, style = if (small) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+        modifier = Modifier.onGloballyPositioned { nav.name[p] = Rect(it.positionInRoot(), it.size.toSize()) })
+}
+
+/**
+ * The open section's indicator, in the selection's colour. Its two edges along the navigation's axis
+ * ride [io.github.kuscher.booklight.overlay.Motion.lead] and `trail`, counted in items, not in
+ * pixels: where an item is comes from Material's layout in every frame, so nothing lags when the
+ * window is resized.
+ */
+@Composable
+private fun Indicator(nav: NavState, current: Part, modifier: Modifier) {
+    val motion = LocalMotion.current
+    val at = current.ordinal.toFloat()
+    LaunchedEffect(at) {
+        val forward = at > nav.first.targetValue
+        launch { nav.first.animateTo(at, if (forward) motion.trail() else motion.lead()) }
+        launch { nav.last.animateTo(at, if (forward) motion.lead() else motion.trail()) }
+    }
+    val fill = MaterialTheme.colorScheme.secondaryContainer
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    Box(modifier.onGloballyPositioned { origin = it.positionInRoot() }.drawBehind {
+        val r = nav.indicator(this)?.translate(-origin.x, -origin.y) ?: return@drawBehind
+        if (r.width <= 0f || r.height <= 0f) return@drawBehind
+        drawRoundRect(fill, r.topLeft, r.size, CornerRadius(minOf(r.width, r.height) / 2))
+    })
 }

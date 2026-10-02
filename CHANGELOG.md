@@ -67,6 +67,39 @@ Your usual › Show your usual. With it off, tips come as before.
 - Also for every list: a row that leaves while it is still rising no longer jumps, and what is under the field
   waits for the glass's edge while the panel opens.
 
+**The Booklight window is a desktop window** (`docs/design/window-redesign.md`; Alex: the settings app "looks very
+weird on a Googlebook … more desktop ready and use material 3 expressive … The left nav should be at the left edge").
+
+- **Navigation on the window's leading edge**: Material's navigation rail, 220 dp wide with each name beside its
+  mark from 840 dp of window, 96 dp with the name under the mark from 600, and a navigation bar along the bottom
+  under 600. One indicator travels between the sections. The page's column starts at the rail and is at most
+  720 dp wide; nothing is centred any more. The caption bar is see-through. The window is at least 400 × 480.
+- **Five sections**: Start, Commands, Look, Results, Privacy. Yours is the other half of Commands (Built in ·
+  Yours), with Find (Ctrl + F, or just type) and New link, whose arrow offers snippet, recipe and prompt
+  (Ctrl + N). Access and About are Privacy. The assistant key is on Start. The window opens where it was left.
+- **Rows and controls are Material 3 Expressive**: grouped rows, switches, connected button groups, a menu for the
+  search engine, Material's text fields and buttons in the editors. Every row has a mark; text, and the controls
+  at the rows' ends, each share one line. Hover and pressed states, one focus ring that glides, right-click menus
+  (Try it, Copy example; Edit, Duplicate, Delete; Show, Hide), tooltips, a scrollbar that can be dragged.
+- **Keys**: Tab and Shift + Tab through everything, F6 between navigation and page, arrows, Home, End, Page Up,
+  Page Down, Ctrl + 1 … 5 for the sections, Delete on one of yours (asks once more), Menu or Shift + F10 for a
+  row's menu, Escape clears Find, Ctrl + W closes the window. Left and Right step a choice; a switch is flipped
+  by Enter or Space, and Left on it goes back to the navigation, as on every row. The window's keys are in the
+  system's Keyboard Shortcuts Helper.
+- **A choice is changed only by its buttons**: a click on the row beside them does nothing.
+- **The editors**: what you typed stays when the window is resized. An editor you changed asks once before it
+  is left ("Press again to discard"). A line says why Save cannot be pressed yet; Enter saves. After Save the
+  keys are on what you saved.
+- **Forget everything** also forgets the recent emoji and letters and which commands were used.
+- **A second pane from 1332 dp**: the live demo on Start, a preview of the panel on Look (it shows the theme, the
+  colours, the glass, the shadow and the dimming as they are chosen), the editor beside the list on Commands.
+  Below that width the demo and the preview are at the top of their pages, and an editor opens under its row.
+- Look's explanations are one line each.
+- **The night's new settings in it**: "Your usual" and "What you copied" on Start, after Tips; "Flights" on
+  Results, with a field for your AirLabs key (pasted, saved with Enter; never shown again; Take out asks twice)
+  and a row that opens where a key is got.
+- New library: `androidx.compose.material3.adaptive` 1.3.0 (window size classes). No new permission.
+
 ## 2.2 (1 October 2026)
 
 Alex's notes on 2.1, each taken through a visual and a motion designer (`docs/design/design-system.md` §12).

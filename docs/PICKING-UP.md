@@ -2,6 +2,80 @@
 
 *Living status. Newest first.*
 
+## 2026-10-02 (early morning): the window on top of the copy, flights and your usual (branch `window-on-the-copy`)
+
+- **What it is:** the window's branch (kept as it was reviewed) merged with `m1-the-copy` into a new branch,
+  `window-on-the-copy`. Conflicts were in the window's activity, the settings, the debug hooks and these notes;
+  the window's structure was kept. `./bl test` and a debug build pass. Not merged to main, nothing released.
+- **Carried into the new window:** "Your usual" (the switch, and "Suggest everything again" with its count) and
+  "What you copied" on Start, after Tips; "Flights" on Results (the key in a field under its row's text, Save,
+  "A key is in", Take out asked twice, the lookups left, "Get a key" as a row); the panel's "Set up times" opens the
+  window on the key's row; "Forget everything" also empties what your usual holds. Why each stands where it
+  does: `docs/design/window-redesign.md` §12.
+- **Seen on the Lenovo** (debug build): Start's two new groups and Results' Flights group with a key in, in light
+  and dark, English and German, compact and expanded; the field with a made-up text and Save (left with Escape:
+  nothing was saved); the window landing on the key's row. Pictures: `*-under.png`, `*-flights.png`,
+  `*-typing.png` in `docs/design/captures/window-redesign/`. **Not seen:** the field with no key in, "Set up
+  times" in the panel, the lookups-left line, Take out's second press, "Suggest everything again" with something
+  hidden. A duplicate of a ready-made prompt is the user's own (no `seed`).
+- **Merged once more** after the night's reviews on `m1-the-copy`; the twelve pictures were taken again with the
+  reworded texts. With the longer text of "Your AirLabs key" the window still lands with the whole row in view,
+  at the compact size too.
+- **For whoever tests on a shared device:** a build that does not know a setting drops it when it writes the
+  settings (`CLAUDE.md`, gotchas).
+
+## 2026-10-02: the Booklight window is rebuilt as a desktop window (on a branch; not merged, not released)
+
+Alex: the settings app "looks very weird on a Googlebook. Consider making that app more desktop ready and use
+material 3 expressive to be safe. The left nav should be at the left edge etc." Built from
+`docs/design/window-redesign.md` with its nine recommended answers (§10), in four commits, one for each step of
+its §8, on the worktree's branch, and then the fixes of its two reviews. The version is still 2.2 / code 6.
+
+- **Built, and seen on the Lenovo** (debug builds; own-window pictures, injected keys):
+  - *The frame.* Material's rail on the window's leading edge, 220 dp with names beside the marks from 840 dp of
+    window, 96 dp with names under them from 600, a navigation bar along the bottom under 600; one indicator
+    that travels; the column starts at the rail and is at most 720 wide; a see-through caption bar; a minimum
+    of 400 × 480.
+  - *Five sections:* Start, Commands (Built in · Yours, Find, New), Look, Results, Privacy. The window opens
+    where it was left (`windowPart`, a new stored setting).
+  - *Rows and controls:* Material's segmented list, switches, connected button groups, a menu for the search
+    engine, text fields and buttons; hover, pressed, one focus ring that glides; right-click menus, tooltips,
+    a scrollbar. Every key of the plan's §6.
+  - *The second pane from 1332 dp:* the demo on Start, the preview on Look (it follows theme, colours, glass,
+    shadow and dimming), the editor or a command's example on Commands. Below that the demo and the preview
+    stand in the column. The window's keys are in the system's Keyboard Shortcuts Helper.
+- **Where the build left the plan:** `docs/design/window-redesign.md` §12 (a table). The ones Alex may want to
+  look at: the rail's indicator is round its mark and name, not across the rail; a choice stands at the row's
+  end only when every choice of the page fits there; the Enter mark is on every command's row; the preview's
+  glass is the desk drawn again, blurred (an ordinary window has no blur behind a part of itself), and the
+  opening's speed is not previewed.
+- **Reviewed** by a visual and an interaction designer, from the pictures and the code: both "ready after the
+  must-fixes". In since then: the check of "Your key works" on its row's centre line; the menu flat with an
+  outline; an editor's draft kept by the window (it was lost when the window crossed 1332 dp); a click beside a
+  choice's buttons does nothing. And of what they would fix: the second pane's top on Find's; one width for a
+  page's choice buttons (English; German has no room at the default width); the stage's ground; Left no longer
+  flips a switch; a changed editor asks before it is left; Save says why it is grey and Enter saves; the keys on
+  the saved row; Tab stays in the editor; Shift + F10; the smallest window in German; "Forget everything"; the
+  link editor's help; three German words. **Open for Alex:** the rail's indicator changes width as it travels
+  (Material's shape for the item; one width for all five is a small change). Left, and why:
+  `docs/design/window-redesign.md` §12.
+- **The search engine's row** (Alex: "the search engine settings ux is really misaligned"): a button at the
+  row's trailing end, on the line the switches end on, at every width; its menu exactly as wide, its names on the
+  button's text edge, the chosen one's check under the button's arrow. Sixteen pictures:
+  `docs/design/captures/window-redesign/results-engine-*`.
+- **What the device showed** for the plan's nine checks: `docs/research/device-findings.md`, "The Booklight
+  window as a desktop window". Pictures: `docs/design/captures/window-redesign/`. Motion was looked at frame by
+  frame through the window's own pictures (`./bl debug window film`), not on a recording of the screen.
+- **Not built:** nothing of the four steps is left out. `k` in the panel does not find the window's keys (the
+  panel was not changed); F6 goes between navigation and page only (an open editor has the keys until Escape).
+- **Not tested:** the HP (default window size, the caption bar, anything). A drag of the window's edge with the
+  pointer (the minimum, the breakpoints at the hand's speed). Hover and right-click with the real pointer.
+  The system's "remove animations". System dark with Booklight light. The release build's window was opened
+  once on the Lenovo; everything else was seen in debug builds. `win_key_steps` names two of the system's own
+  labels in German: not checked against a device set to German.
+- **Next:** Alex looks at it; then merge, a version and notes (the CHANGELOG entry stands under "On main, after
+  2.2").
+
 ## 2026-10-02 (night): the copy, flights and your usual are built on a branch; nothing is released
 
 Alex's word for the night: "go" on M1, then "change out the air api with Airlabs ... have a setting for users to

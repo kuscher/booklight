@@ -26,6 +26,9 @@ import java.io.FileOutputStream
  *   pref theme auto|light|dark | pref tint on|off | pref dim on|off | pref cards (show the first-run cards again) | pref nocards
  *   activity PKG/CLASS (is that activity open to other apps: why an app's shortcut is or is not offered)
  *   think on|off (the light of the model at work, without the model) | turn MS (close, and the key again MS later)
+ *   window (the Booklight window: its size, its section, where the keys are) | window close | window hover KEY | window unhover KEY | window press KEY | window release KEY |
+ *   window trace N (the layout of the next N frames, to the log) | window helper | window helper close |
+ *   window film N EVERY (N pictures of the window, one every EVERY frames, in cache/film.png) | wshot [NAME]
  *   pref zero on|off ("Show your usual") | zero (the usual rows as they would stand now; needs no panel) | seed (after forget:
  *   five apps as if run 8, 5, 3, 2 and 1 times) | unhide (empties the "Don't suggest" list)
  *   in TEXT (types under the chip that is there, which `type` would leave first)
@@ -88,7 +91,7 @@ class DebugReceiver : BroadcastReceiver() {
                     // The user's key for the flight service: `pref flightkey KEY`, `pref flightkey none`. It is never printed.
                     "flightkey" -> app.prefs.setFlightKey(if (v == "none") "" else v)
                 }
-                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim} tips=${it.tips} zero=${it.zero} flightkey=${if (app.prefs.flightKey.value.isEmpty()) "none" else "set"}" })
+                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim} shadow=${it.shadow} tips=${it.tips} copy=${it.copyRow} zero=${it.zero} hidden=${it.zeroHidden.size} flightkey=${if (app.prefs.flightKey.value.isEmpty()) "none" else "set"}" })
             }
             "find" -> app.scope.launch {
                 val t0 = System.nanoTime()
@@ -201,6 +204,55 @@ class DebugReceiver : BroadcastReceiver() {
                 out("chip=${m.chip?.key} query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
                     "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} zero=${if (m.zeroUp) m.results.count { it.kind != io.github.kuscher.booklight.core.Kind.ACTION } else 0} copy=${m.copy?.let { "${it.age}:${it.things.joinToString("+")}${if (it.looking) "…" else ""}" }} tip=${m.tip?.id}${if (m.tipArmed != 0) ":" + m.tipArmed else ""}${if (m.tipOff) " off" else ""} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
+            }
+            // The Booklight window: its size in dp, its section, where the keys are. `window close` closes it.
+            "window" -> main.post {
+                val w = io.github.kuscher.booklight.window.MainActivity.current.get()?.takeIf { !it.isFinishing && !it.isDestroyed } ?: return@post out("no window")
+                if (arg == "close") { w.finishAndRemoveTask(); return@post out("closed") }
+                // `window hover KEY`, `window unhover KEY`: a row as it looks under the pointer.
+                if (arg.startsWith("hover ") || arg.startsWith("unhover ") || arg.startsWith("press ") || arg.startsWith("release ")) return@post out(w.poke(arg))
+                // `window helper`, `window helper close`: the system's Keyboard Shortcuts Helper over this window, and away again.
+                if (arg == "helper") { w.requestShowKeyboardShortcuts(); return@post out("asked for the helper") }
+                if (arg == "helper close") { w.dismissKeyboardShortcutsHelper(); return@post out("helper dismissed") }
+                // `window film N EVERY`: N pictures of the window's own content, one every EVERY frames from now, each a third of
+                // its size, side by side in `cache/film.png` (six in a row): a transition frame by frame, without a recording of the screen.
+                if (arg.startsWith("film")) {
+                    val words = arg.split(' ')
+                    val n = (words.getOrNull(1)?.toIntOrNull() ?: 24).coerceIn(1, 72)
+                    val every = (words.getOrNull(2)?.toIntOrNull() ?: 2).coerceIn(1, 12)
+                    val v = w.window.decorView
+                    val fw = v.width / 3; val fh = v.height / 3
+                    val sheet = createBitmap(6 * fw, ((n + 5) / 6) * fh)
+                    val canvas = android.graphics.Canvas(sheet)
+                    val frames = android.view.Choreographer.getInstance()
+                    var seen = 0; var taken = 0; var done = 0
+                    frames.postFrameCallback(object : android.view.Choreographer.FrameCallback {
+                        override fun doFrame(t: Long) {
+                            if (seen++ % every == 0) {
+                                val k = taken++
+                                val bmp = createBitmap(fw, fh)
+                                PixelCopy.request(w.window, bmp, { r ->
+                                    if (r == PixelCopy.SUCCESS) canvas.drawBitmap(bmp, (k % 6) * fw.toFloat(), (k / 6) * fh.toFloat(), null)
+                                    bmp.recycle()
+                                    if (++done == n) {
+                                        FileOutputStream(File(context.cacheDir, "film.png")).use { sheet.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                                        Log.i(BooklightApp.TAG, "film done ${fw}x$fh x $n")
+                                    }
+                                }, main)
+                            }
+                            if (taken < n) frames.postFrameCallback(this)
+                        }
+                    })
+                    return@post out("filming ${fw}x$fh x $n")
+                }
+                // `window trace N`: the layout of the next N frames, one log line each (what is resized across a breakpoint, frame by frame).
+                if (arg.startsWith("trace")) {
+                    w.trace(arg.substringAfter(' ', "120").toIntOrNull() ?: 120) { lines -> lines.forEach { Log.i(BooklightApp.TAG, "trace $it") }; Log.i(BooklightApp.TAG, "trace end") }
+                    return@post out("tracing")
+                }
+                val d = w.resources.displayMetrics.density
+                val v = w.window.decorView
+                out("${(v.width / d).toInt()}x${(v.height / d).toInt()}dp task=${w.taskId} focus=${w.hasWindowFocus()} ${w.probe()} keys-asked=${w.asked}")
             }
             // A picture of the Booklight window's own content (PixelCopy: no other apps): `wshot NAME`.
             "wshot" -> main.post {

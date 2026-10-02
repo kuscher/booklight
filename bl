@@ -15,6 +15,9 @@
 #                            flight TEXT (a flight's row, looked up at once, without the panel)
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
 #   ./bl wshot [NAME] [OUT]  the same of the Booklight window
+#   ./bl window [SECTION]    open the Booklight window, at a section if one is named (start, commands, look…);
+#                            debug builds. `./bl debug window` says its size, its section and where the keys are;
+#                            `./bl debug window close` closes it
 #   ./bl screen [OUT]        the panel as it looks on screen, blur and shadow included: a crop of a
 #                            screenshot around the panel's window (it shows what is behind the panel)
 #   ./bl backdrop            a window of test content (white page, dark terminal, colour) to put behind
@@ -75,6 +78,7 @@ case "$cmd" in
   open) open "$@" ;;
   stop) A shell am force-stop --user current "$PKG" ;;
   probe) A logcat -c >/dev/null 2>&1 || true; A shell "am broadcast --user current -a $PKG.PROBE -p $PKG --es c '$1'" >/dev/null; sleep 1.2; A shell "logcat -d -s Booklight:I" | grep "probe $1 ->" | tail -1 | sed 's/.*-> //' | tr '|' '\n' ;;   # debug builds: what a plain app may do here (files, state)
+  window) A shell am start --user current -n "$PKG/.window.MainActivity" ${1:+--es page "$1"} >/dev/null ;;   # debug builds: the Booklight window, at a section
   backdrop) A shell am start --user current -n "$PKG/.debug.BackdropActivity" >/dev/null ;;   # debug builds: test content to judge the glass against
   uninstall) A uninstall "$PKG" || true ;;   # every Android user (apps live in user 0 and 10)
   app) build && install && open stay ;;

@@ -320,3 +320,69 @@ Material's site does not render for a plain fetch; its pages were read in a brow
 - [S20] Compose Material 3 Adaptive releases: https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive . The BOM's pins: https://dl.google.com/android/maven2/androidx/compose/compose-bom/2026.09.00/compose-bom-2026.09.00.pom
 - [S21] Build adaptive navigation: https://developer.android.com/develop/ui/compose/layouts/adaptive/build-adaptive-navigation
 - Not found: https://developer.android.com/develop/ui/compose/designsystems/material3-expressive (404); a Compose guide page for Material 3 Expressive was not located, so the library and the release notes stand in.
+
+## 12. As built (October 2026): where the build left this plan
+
+The window is built as planned in §3 to §8, with the nine recommended answers of §10. What the library or the
+device made different, and what was decided on the way:
+
+| Plan | Built | Why |
+| --- | --- | --- |
+| The rail's indicator across the rail, 188 wide (the mock-up) | Round the mark and the name, as wide as they are | Material's expanded rail item draws its hover and press in that shape; the selection has the same shape. It still travels (decision 4). |
+| Row text from 56 | From 52 | Material's list item: 16, a 24 dp mark, 12. |
+| A one-line row with a button group 64 high | 60 | Material's item has 10 above and below its content. |
+| Mark and control at the top of a three-line row (Material's default) | On the row's centre line in every row; on the title's line only when something stands under the text | One rule for where a row's control is. |
+| `ButtonGroup` | A row of `ToggleButton`s with `ButtonGroupDefaults`' connected shapes | The `ButtonGroup` composable adds an overflow menu and squeezes neighbours on a press; the library's connected sample is a row. |
+| A choice beside its text when the row is 560 or wider | Beside it when every choice of the page leaves its text 200 dp, else every one under its text | Widths are measured from the names (German is wider); a page with some choices beside and some under has no line they share. |
+| `DropdownMenu` for the search engine | `DropdownMenuPopup` with `SelectableDropdownMenuItem`s, exactly as wide as its button, the chosen one in `secondaryContainer` with a check at its trailing end | The button's name and the menu's names start on one line and the check stands under the button's arrow. Material's own selected colour for a menu item is `tertiaryContainer`; the window has one selection colour. |
+| The engine's button under its text in a narrow row | At the row's trailing end at every width | It is narrow enough (about 150 dp) to stay on the line the switches end on. |
+| Material's items in the rail take focus | They do not; the window's root has the keys and the rail is one stop | Arrows, Tab and Ctrl + digits then have one owner (§9, point 5). |
+| F6 between rail, page and second pane | Between rail and page; an open editor has the keys until it is closed | As on main: Escape closes it. |
+| `k` in the panel finds the window's shortcuts | The shortcuts are in the system's helper; `k` reads its own table, which is the panel's | The panel was not changed. |
+| Find over one list | Find narrows the half that shows; when nothing matches there, a row says how many the other half has and goes there | One list on screen at a time. |
+| — | An empty group on Yours says "None yet." | The four "Add…" rows are gone; a heading with nothing under it reads as a fault. |
+| Find as an icon button in compact | It opens over the title when pressed or on Ctrl + F, and closes when left empty | Nothing was said about where it opens. |
+| The preview: in-window blur at the user's glass level, and the shadow | The desk drawn a second time, blurred, where the panel stands, under the panel's own veil and outline; a drawn shadow; the desk dimmed with "Dim the desktop" | An ordinary window has no window blur behind a part of itself. The opening's speed is not previewed. |
+| 48 dp targets (§9, point 9) | `LocalMinimumInteractiveComponentSize` is unspecified in the window | A control's target is what is drawn. |
+| — | The page goes out softly over 16 dp at the pane's upper and lower edge | With a see-through caption bar a hard cut under it reads as a fault. |
+| App icons | 24 dp, like every mark | So an app's row has its text on the edge of the rows above it. |
+| The Enter mark appears on the focused row, in room that is always kept (§5) | It is on every command's row, quiet, and in full ink on the row the keys are on | With empty room at the end the examples ended 24 dp short of the line every other row's control ends on. |
+| The demo and the preview | One panel for the window (`Stages`), shown by whichever stage is there | A stage that moves between the column and the second pane at 1332 would else type its letters again and grow from an empty field. |
+| The preview's desk | Two windows that run off the stage's edges, the second over the first | At the second pane's width their edges came to lie 2 px beside the panel's. |
+| 1332: the second pane fades in and slides (§7) | And the demo or the preview opens from its own top in the column (closes towards it, fading over 180 ms) while the rows under it move | It stands where it is; the rows give way. |
+| — | Escape in a new command's editor puts the keys on New | Nothing else was there to go back to. |
+| A row is one target (§6) | A choice's row is not pressed by the pointer and shows no hover: only its buttons are. Enter on the row still goes to the next option | The interaction review: a click beside a button, or in the 2 dp between two, changed a setting nobody pointed at. |
+| ← → on a choice or a switch steps it (§6) | They step a choice. A switch has Enter and Space; Left on it goes to the rail, as on every row without a choice, and so does Left on a choice at its first option | The same review: on Look and Results Left never reached the rail, and switched things off on the way. |
+| — | An editor's draft is the window's; a changed editor asks once before it is left; Save says why it is grey; Enter saves; Tab stays in the editor; after Save the keys are on the saved row | The same review (M1, S2 to S5). |
+| `DropdownMenuPopup` with Material's surface | Flat: the rows' colour, a 1 dp outline, no shadow, the items on the menu's fill | The visual review: the menu's shadow was the only one in the window in light, and in dark it had no edge. |
+| The second pane's top on the title box's top | On the top of the title line's control (Find) | Two filled shapes side by side start on one line. |
+| Buttons of a choice as wide as their names | One width for all of a page's buttons where the rows have room for it and their lines stay on one line | The seams of four groups were within 3 px of each other and not on one line. In German at the default width there is no room: names' own widths there. |
+| The stage on `surfaceContainerLowest` | On the rows' colour | In dark it was pure black, the heaviest thing in the window. |
+| "Forget everything" clears the history | And the recent emoji and letters, and what was used; its word is "Forget" | It said Delete and forgot half. |
+
+The `adaptive` library brings `androidx.window` with it: two optional `uses-library` entries in the manifest, no
+permission. The release APK is 3.9 MB (2.2: 3.6).
+
+**What the night's other branch added, in this window's parts** (the copy, flights, your usual):
+
+| Setting | Where | Why there |
+| --- | --- | --- |
+| Show your usual, and "Suggest everything again" with how many are not suggested | Start, a group "Your usual" after Tips | It takes a tip's place under the empty field. The count is the row's line (always there, so the row keeps its height); the row is dimmed with none. |
+| Offer what you copied | Start, a group "What you copied", last | It is the third thing that can stand under the empty field, and has nothing to do with the other two. |
+| Your AirLabs key, and "Get a key" | Results, a group "Flights" between "Show in the list" and "Other apps" | A flight's times are a kind of row. The key goes into a field under the row's text (`Field`); "Get a key" is a row of its own with the open mark. The panel's "Set up times" opens the window on the key's row. |
+
+**Open, for Alex.** The expanded rail's indicator is as wide as its item's mark and name (97 to 141 dp in
+English), so it changes width while it travels. The visual review would give every name the widest name's
+width, so that the pill is one size. It is Material's own shape for the item (its hover and press are drawn in
+it), and §10's decision 4 asked only that it travels: left as it is until he says.
+
+**Reviewed** by a visual and an interaction designer from the pictures and the code ("ready after the
+must-fixes"); the must-fixes and most of what they would fix are in. Left: a recipe's steps cannot be reordered;
+the notes folder has no way in from Commands; the Results page's text for search suggestions is as long as it
+was; "Keyboard shortcuts" still names three things; the second pane's example follows the keys, not the pointer;
+the window's own close button closes a changed editor without asking.
+
+What the Lenovo showed for §9's nine points is in `docs/research/device-findings.md` ("The Booklight window as a
+desktop window"); pictures of the window at every size, in both themes and in German, are in
+`docs/design/captures/window-redesign/` (`SIZE-THEME[-de]-SECTION.png`; `results-engine-…` is the search engine's
+row with its menu closed and open). Not looked at: the HP.
