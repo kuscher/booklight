@@ -17,6 +17,24 @@ or danish letters like umlauts or ß and have them in my copy paste. Make a rele
   build; the release build still answers a prompt on the device.
 - Version code 5. 2.0 (code 4) was sent for Play review by the Play session about 17:25 PDT; 2.1 is a draft
   beside it until the Play session sends it.
+- **Released:** tag `v2.1`, workflow green, GitHub release "Booklight 2.1"; the published APK was checked against
+  its sums and is on the Lenovo.
+
+**What to build next: research, nothing decided.** Alex asked for the unbuilt ideas, ten new ones, his own
+(a screenshot asked about with the device's model; acting on the copy; a suggestion with nothing typed) and a
+plan for more languages. All in `docs/research/`:
+- `next-features-2.md`: the list in order (22 rows), the ten new ideas explained, five decisions for him.
+  Recommended next release: the copy as a row, `do …`, put the letters back, prompts in the selection menu,
+  more prompts, a clean link, stop what is ringing, `abc` by keystrokes.
+- `screen-and-clipboard.md` (desk research with sources), `not-built-2.0.md` (143 ideas, 134 not built),
+  `languages.md` (about four weeks for six European languages; Japanese, Korean, Chinese are a second block).
+- Tried on the Lenovo with a throwaway hook (`device-findings.md`, last section): the model reads a picture of a
+  region or a window correctly and invents text on a whole screen; the clipboard's description gives type, age
+  and entity scores without the clip being read.
+- Found on the way: six test timers had been ringing in Clock on the Lenovo for two hours. Stopped; the rule is
+  in `device-findings.md` ("Rules for testing").
+- Not checked: whether the Googlebook's capture tool copies the picture to the clipboard (it decides how a
+  picture reaches Booklight).
 
 ## 2026-10-01 (night): 2.0
 

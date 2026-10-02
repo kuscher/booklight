@@ -147,6 +147,9 @@ Tried with a throwaway build (local branch `spike/unfold`), recorded and stepped
 - Opening the panel takes the keyboard from whoever is typing. Check `./bl idle` first and keep each
   test short. Key and tap injection only into Booklight's own focused window.
 - The Debian VM (Terminal app) is off limits: no launch, no force-stop, no reboot, no adbd changes.
+- A timer started for real keeps ringing in Clock after it ends. After any test that presses Enter on a timer:
+  `adb shell am start --user current -a android.intent.action.DISMISS_TIMER` (it stops every expired timer and
+  opens nothing).
 - `./bl screen` crops a real screenshot, so it shows whatever is behind the panel: never publish
   one. `./bl shot` (PixelCopy of Booklight's own window) is the one for docs.
 
@@ -235,4 +238,45 @@ on the user build (`ruby`, `release-keys`).
 - **Classic ML Kit translation** works on x86_64 (a 60 s pack download, then offline), with visibly worse German
   than the model ("Das Treffen zog an Donnerstag").
 - The HP is unchecked.
+
+## A picture to the model, and the clipboard's description (Lenovo Googlebook 15, 1 October 2026)
+
+A throwaway debug hook, not kept: the Prompt API with an `ImagePart` and a question, the panel in front;
+and `ClipboardManager.getPrimaryClipDescription()`.
+
+**The model takes a picture.** `nano-v3`, `genai-prompt` 1.0.0-beta4, temperature 0.2.
+
+| Picture | Asked | Tokens (picture and question) | First word | Whole answer | Answer |
+| --- | --- | --- | --- | --- | --- |
+| A table, 1200 × 600, text 44 px | Which city has the lowest price? | 279 | 2.0 s (the first request) | 2.4 s | Right ("Lisbon … €98") |
+| A build error in a terminal, 1600 × 900, text 28 px | What is the error, in which file and line? | 278 | 0.7 s | 7.0 s | Right: the message, the file, line 42:17, and what it means |
+| A 1200 × 700 piece of a real screenshot (the test backdrop's terminal) | How many tests, how many failures? | 279 | 0.7 s | 1.9 s | Right ("36 tests", "0 failures") |
+| The whole screen, 2880 × 1800 | What does the terminal say? | 281 | 0.7 s | 13.9 s | **Wrong.** It says there are error messages and the word FAILURE; there are none. It cannot read the text and makes some up |
+| The whole screen | Describe it in two sentences | 276 | 0.7 s | 4.6 s | The layout is right (a browser, text left, a console right), the details are not |
+
+- A picture costs about 256 tokens whatever its size: the model sees it small. So a picture of **a region or one
+  window** (up to about 1600 px wide, text from about 28 px) can be asked about as it is; **a whole screen cannot**:
+  it needs its text read first (OCR), or the user to frame what is meant.
+- It answers in Markdown (`**bold**`, lists) unless told not to, and a long answer takes its time (7 to 14 s for a
+  paragraph). The row needs "one or two sentences, plain text" in the prompt.
+- First word after 0.7 s with a picture (0.3 s for text alone).
+
+**The clipboard says what it holds without being read.** With the panel in front,
+`getPrimaryClipDescription()` gave, for a text another call had just set:
+
+| Copied | Type | Age | Entity scores (0 to 1) |
+| --- | --- | --- | --- |
+| "Dinner with Anna on Friday at 7pm at Borchardt, Französische Straße 47, 10117 Berlin. Call +49 30 81886262 or see https://…" | `text/plain` | 2.6 s | url 1.0, phone 1.0, datetime 1.0; address 0.0 (the German address was not found) |
+| "LH 454 lands 14:05" | `text/plain` | 2.6 s | flight 1.0, datetime 1.0 |
+| "just some plain words without anything in them" | `text/plain` | 2.6 s | all 0.0 |
+
+`getClassificationStatus()` was complete (3) each time, two seconds after the copy. `getTimestamp()` gives the
+age. So a row "there is a fresh copy, with a link and a date in it" can be shown without reading the text, and
+so without the system's "pasted from your clipboard" message. Not tried: a picture on the clipboard, and
+whether the Googlebook's screenshot puts one there.
+
+**Timers started in a test ring until they are stopped.** Six `timer … tea` countdowns started while testing the
+pin were still ringing in Clock two hours later. `adb shell am start --user current -a
+android.intent.action.DISMISS_TIMER` stops every expired timer without opening Clock. Do that after any test
+that presses Enter on a timer.
 
