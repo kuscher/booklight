@@ -4,6 +4,12 @@
 
 ## 2026-10-01 (night): 2.0
 
+**Released.** Tag `v2.0` at 321fd59, pushed 23:55 UTC. The workflow was green on its first run: GitHub release
+"Booklight 2.0" with `Booklight.apk`, `Booklight-2.0.apk` and `SHA256SUMS`; the bundle (version code 4) is a
+**draft** on Play's closed-testing track beside 1.1.1. The published APK was downloaded, checked against its
+sums, installed on the Lenovo and asked a prompt: it answers on the device. Sending the draft for review, and
+the Console's forms, are the Play session's (below).
+
 **What 2.0 is.** Alex ticked seven things in `research/next-features.md` and added the rest in his own words
 (spec §1 and §2): other apps' commands as rows; a pinned window; the system's shortcuts as answers; more
 places, nine icons and a list under the row; `?`; notes that grow; prompts; `s` and `k`; tips; a window with
