@@ -1,5 +1,5 @@
 # The page's words. Run by gen.py (it supplies shot, screen and the drawings); [[name]] is where a drawing goes.
-# Screens are numbered as the page shows them: 1 to 4 are M1, 5 to 7 are M2, 8 and 9 are M3, 10 and 11 are M4.
+# Screens: 1 to 4 are M1, 12 to 15 are M5. The parked milestones keep theirs: 5 to 7 are M2, 8 and 9 are M3, 10 and 11 are M4.
 
 NV = '<span class="tag nv">not verified</span>'
 
@@ -40,36 +40,53 @@ HEADER = '''
     <svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="13" fill="var(--accent)"/><path d="M14 11h20a5 5 0 0 1 0 10H14a5 5 0 0 1 0-10z" fill="var(--accent-ink)"/><path d="M16.5 25h15L37 39H11z" fill="var(--lamp)"/></svg>
     <h1>Booklight after 2.1</h1>
   </div>
-  <p class="lede">This is the plan the team stands behind: product manager, UX designer, visual and motion designer, engineer. It has four milestones, and each one below has its promise, what is in it, its designs drawn at real size, what is left out, how it is built, and what only you can decide. Nothing was built and no device was touched; where the research says “not verified”, this page says so too.</p>
-  <div class="meta"><span>1 October 2026</span><span>Eleven screens, four of them play</span><span>Fourteen decisions for you, at the end: eight large, six small</span><span>Nothing is built before you approve it</span></div>
+  <p class="lede">The plan, adjusted on your word: the main panel gets M1, the copy, and a new M5, flights. The improvements you asked for after 2.1 are built, on main, and go out first as 2.2. M2, M3 and M4 are parked at the end of this page, unchanged. Nothing of M1 or M5 is built, and no device was touched for them; where something is not verified, this page says so.</p>
+  <div class="meta"><span>1 October 2026</span><span>Eight screens: 1 to 4 are M1, 12 to 15 are M5</span><span>Thirteen decisions for you, at the end: seven large, six small</span><span>Nothing is built before you say go</span></div>
 </header>
 '''
 
 GLANCE = '''
 <section>
-  <h2>The four, at a glance</h2>
+  <h2>What comes next, at a glance</h2>
   <div class="glance">
+    <a class="gcard" href="#r22"><span class="num">2.2</span><h3>What you asked for after 2.1</h3><p>The opening at Medium on its new curve, glass that is frosted from its first frame, the white reflection, three placements on an app’s row, the see-through selection in dark.</p><span class="size">Built and reviewed, on main · waits for your word to release</span></a>
     <a class="gcard" href="#m1"><span class="num">M1</span><h3>The copy</h3><p>Copy something, open Booklight, and one line offers what can be done with it.</p><span class="size">About 14 days · no new permission</span></a>
-    <a class="gcard" href="#m2"><span class="num">M2</span><h3>The picture</h3><p>Capture a piece of the screen, open Booklight, and copy its text, ask about it or keep it on top.</p><span class="size">About 14 days · no new permission, one more Google library</span></a>
-    <a class="gcard" href="#m3"><span class="num">M3</span><h3>The selection</h3><p>Select text where you are writing, right-click, and Booklight rewrites it in place.</p><span class="size">About 8 days · no new permission</span></a>
-    <a class="gcard" href="#m4"><span class="num">M4</span><h3>Your language</h3><p>Booklight speaks six more languages: its screens, its keywords and its dates.</p><span class="size">About 17 days and the wait for readers, after 12 days of groundwork</span></a>
+    <a class="gcard" href="#m5"><span class="num">M5</span><h3>Flights</h3><p>Type a flight number and the row answers with the next flight: when it leaves, when it lands, where to go, and whether it is late.</p><span class="size">About 10 days · no new permission · the times need a free key of your own</span></a>
   </div>
   <div class="prose blk">
-    <p><b>One idea carries the first three.</b> Something you brought (a copy, a picture, a selection) becomes the chip in the field, and the rows under it are what can be done with it. 2.0 already does this for text another app hands over. M1 builds it once; M2 and M3 each add one new door to it.</p>
-    <p><b>Three of the four are your own ideas:</b> M1, M2 and M4. M3 is not one of your three. It is the team’s proposal for the step after the copy, from the research’s ideas 5, 4 and 6''' + src("NF2 §1") + '''.</p>
-    <p class="muted small">The sizes are the engineer’s, made before the team’s last changes. M1 and M2 were not re-sized after their cuts, the choice “the answer where it stands” was never sized, and one rule (dates read in the text’s own language) has no size yet. Two things moved in the last review, with the engineer’s own figures: the typed language and <code>tr</code> went from M3 to M1 (1.5 days), and <code>error</code> left the four (half a day). That makes about 65 days with the groundwork, without the settings window and today’s polish. The cheapest forms that still keep each promise add up to 42, with three languages in M4, not six. Read the days as sizes against each other, not as a calendar: this project has run far ahead of such figures before.</p>
-    <p class="muted small">Sources are named as in the plan: NF2 is <code>next-features-2.md</code>, S&amp;C is <code>screen-and-clipboard.md</code>, DF is <code>device-findings.md</code>, LANG is <code>languages.md</code>, all in <code>docs/research/</code>; UX, ENG and DES are the team’s three papers behind <code>plan.md</code>. “Check n” is a line of the engineer’s device session.</p>
+    <p><b>M1 is the M1 of the four-milestone plan.</b> One thing changed: a flight number in a copy now gets M5’s row; before, flights were left out of M1 because Booklight could only search the web for them.</p>
+    <p><b>M5 is new and has one hard fact in it.</b> You asked: “I want to type LH455 and get info about the next flight.” No free source gives a flight’s times without a key''' + src("FL, the short version") + '''. What Booklight can do by itself is name the airline and open the flight’s page. For the times, the gate and the delay in the row, it needs a key from a flight data service, and since Booklight has no server and its code is public, that key has to be yours: a free account, about 200 lookups a month. That is decision 4.</p>
+    <p class="muted small">Sizes: M1’s is the engineer’s from the four-milestone plan, not re-sized. M5’s is mine, from the parts listed under it; no engineer has sized it. Read the days as sizes against each other, not as a calendar. Sources are named as in the plan: FL is <code>flights.md</code>, NF2 is <code>next-features-2.md</code>, S&amp;C is <code>screen-and-clipboard.md</code>, DF is <code>device-findings.md</code>, LANG is <code>languages.md</code>, all in <code>docs/research/</code>; UX, ENG and DES are the team’s papers behind the four-milestone plan. “Check n” is a line of the engineer’s device session; “check F n” is one of M5’s.</p>
+    <p class="muted small"><b>Parked, not dropped:</b> M2 the picture, M3 the selection, M4 your language, with their designs and decisions, are at the <a href="#parked">end of this page</a> as they were.</p>
+  </div>
+</section>
+
+<section id="r22">
+  <h2>2.2: what is on main</h2>
+  <div class="prose blk">
+    <p>Your notes on 2.1, each taken through a visual designer and a motion designer, and your question about the blur. All of it is built, reviewed and on main; none of it is released.</p>
+  </div>
+  ''' + table(("What you said", "What it is now"),
+              ("“default to medium for opening speed”; “slow beginning then fast then slow again”", "The opening is at Medium unless chosen otherwise, on a curve that starts slowly, is quick through the middle and lands over a long stretch, with no rebound"),
+              ("“why the blur just pops in”", "The glass is frosted from its first frame and stays so until the seam is gone. The window never moves; the blur’s region is fitted to the glass before every frame. The first try resized the window, and you saw it open one side first; that was thrown away"),
+              ("“the shimmer … should come like a few seconds later and be more complete … a white reflection running around”", "One white light, 2.4 s after the panel has opened, once round from the middle of the top edge. Any key and it fades. While the model works, the same light runs steady and dimmer"),
+              ("“the many Window management options by default are too much”", "An app’s row has six icons: Open, New window, App info, Maximise, Left half, Right half. The other places are in the list under the arrow"),
+              ("“the highlight feels stark on dark”", "The selection in dark is see-through like the panel: the same colour at 42 %"),
+              ("“it doesnt show the actions for apps like chrome which has new tab”", "Found, not changed: Chrome keeps that shortcut closed to other apps. Only the device’s assistant may start it" + src("DF")),
+              ("Found on the way", "The seam the panel opens out of had been invisible since 2.0’s shadow. It is seen again"), cls="k") + '''
+  <div class="prose blk">
+    <p><b>Releasing it</b> is a tag: a GitHub release and a draft on Play’s closed testing. Nothing goes to Play’s production; that stays empty until you say otherwise. It is decision 2.</p>
   </div>
 </section>
 '''
 
 HOLDS = '''
 <section>
-  <h2>What holds for all four</h2>
+  <h2>What holds for both</h2>
   <div class="prose blk">
-    <p>No new permission. A model’s row never runs anything by itself. Nothing in the background. Every string in English and German. Every “not verified” gets its device check before the feature is promised. The release build is installed and asked a prompt before every tag.</p>
+    <p>No new permission. A model’s row never runs anything by itself. Nothing typed leaves the device unless you have switched that on. Nothing in the background. Every string in English and German. Every “not verified” gets its device check before the feature is promised. The release build is installed and asked a prompt before every tag.</p>
     <p>The model is asked on Enter, or when you pick its name in another app’s menu; never after a pause in typing. Ctrl + 1…9 never asks it. Esc closes at every step.</p>
-    <p class="notice"><b>One check stands before all four.</b> Your HP has never run 2.0, and its model has never been tried. If it does not answer there, every model row on the HP hands over to Gemini, and M1’s model rows, M2’s Ask and all of M3 can only be judged on the Lenovo. It is check 1 of the first device session.</p>
+    <p class="notice"><b>One check stands before M1.</b> Your HP has never run 2.0, and its model has never been tried. If it does not answer there, every model row on the HP hands over to Gemini, and M1’s model rows can only be judged on the Lenovo. It is check 1 of the device session. M5 does not need the model.</p>
   </div>
   <h3>The keys in the new states</h3>
   ''' + table(("State", "Enter", "Tab", "Down", "Typing", "Backspace on the empty field"),
@@ -106,7 +123,7 @@ HOLDS = '''
   <div class="prose blk">
     <p><b>Drawn on today’s polish, not on 2.1.</b> Five things are taken from the code and not from the 2.0 design page: the chip’s padding; the strip after today’s polish (three placements and an app’s own shortcuts); the dark highlight, see-through and with less colour, at the app’s value of this afternoon (<code>secondaryContainer</code> at 0.42 on glass: design system §12); the edge light in white; small type at 14 and hints at 13. Screens 2, 5 and 8 show that highlight under the new rows. None of the new elements uses its colour.</p>
     <p><b>The motion in the panels that play</b> follows the numbers settled today in design system §12, at Medium: the seam for 160 ms, the glass from 60 ms for 360 ms on its new curve (slow, fast, slow), at rest 420 ms after the key; the white light 1.75 dp wide in dark and 2.0 in light, with a front and a tail, and no glow. A browser draws them, so they are a close copy, not the app: the glass’s blur and the light’s soft inner edge are simpler here. The app and its recordings stay the reference.</p>
-    <p><b>Nothing new in the look beyond four elements,</b> each built from parts the app has: the quiet line; a chip with a picture in it; a row with a picture; a picture in the pinned window. No new colour, type size or row height. One move is new and the motion designer has not drawn it yet: the picture riding down when a question is typed (screen 5).</p>
+    <p><b>Nothing new in the look beyond four elements,</b> each built from parts the app has: the quiet line; a chip with a picture in it; a row with a picture; a picture in the pinned window. No new colour, type size or row height. (The last three belong to the parked M2.) M5 adds one more: a flight’s row, which is the Event row’s height with a third line.</p>
   </div>
 </section>
 '''
@@ -132,8 +149,8 @@ M1 = '<section class="ms" id="m1">' + mshead(1, "The copy", "Copy something, ope
       ''' + feat("Say what to do with it.", "Under the copy’s chip, what you type is the instruction, unless it is a row’s name or a language. There is no keyword for it: <code>do</code> and a space would swallow “do not disturb”.",
                  eg("Tab, then <code>pull out the tasks as a list</code>, Enter. From the empty field: <code>clip pull out the tasks as a list</code>", "The tasks as a list, in the row, to copy or pin")) + '''
     </ol>
-    <p>Two changes to <code>clip</code> come with it. It opens the same list at any age, with fewer rows than today (decision 10). And it no longer reads a copy marked private; it says “What you copied is marked private”.</p>
-    <p><b>This changes one thing in the released app</b> (decision 11). Shared text behaves the new way too. Today Enter on “Fix spelling” turns the chip into the prompt and types the whole text into the field. After M1 the chip stays the text and the row is answered in its place. The selection handed over by today’s “Booklight” menu entry gets the same list at no extra cost, because it is the same code.</p>
+    <p>Two changes to <code>clip</code> come with it. It opens the same list at any age, with fewer rows than today (decision 9). And it no longer reads a copy marked private; it says “What you copied is marked private”.</p>
+    <p><b>This changes one thing in the released app</b> (decision 10). Shared text behaves the new way too. Today Enter on “Fix spelling” turns the chip into the prompt and types the whole text into the field. After M1 the chip stays the text and the row is answered in its place. The selection handed over by today’s “Booklight” menu entry gets the same list at no extra cost, because it is the same code.</p>
   </div>
 
   <div class="blk">
@@ -156,18 +173,18 @@ M1 = '<section class="ms" id="m1">' + mshead(1, "The copy", "Copy something, ope
                  "You press Enter on a model’s row and the answer is written into that row. The chip stays the copy, so the field is free for a next instruction and the thing stays in sight. The caption names the prompt, because the chip no longer does.") + '''
     ''' + screen(4, "Into any language.",
                  shot("Light", "[[s9]]", "The row names its direction in one form everywhere: “In Danish”, as “In English” in screen 3. The chip of <code>tr</code> stays “Translate”. The Danish is a draft."),
-                 "After Tab you type a language and the row is the translation into it. From the empty field the keyword is <code>tr</code>, with the language as the first word. It is also the keyword M4 needs: “en” or “de” is an everyday word in each of its six languages." + src("LANG §3.4")) + '''
+                 "After Tab you type a language and the row is the translation into it. From the empty field the keyword is <code>tr</code>, with the language as the first word. It is also the keyword the parked M4 needs: “en” or “de” is an everyday word in each of its six languages." + src("LANG §3.4")) + '''
   </div>
 
   <div class="prose blk">
     <h3>Deliberately out</h3>
-    <p>Flights and addresses (a web search and a web address; addresses were not found in the Lenovo test). Copy as Markdown (Booklight does not know a page’s title, so the link would hold its address twice). The system classifier’s ready-made actions (Booklight could not say what one does). A history of copies and pasting in place (both need the power pack). A picture on the clipboard (M2). A line for a copy older than two minutes. A setting for the two minutes.</p>
+    <p>Addresses (a web address; they were not found in the Lenovo test). A flight number in a copy comes with M5, as M5’s row. Copy as Markdown (Booklight does not know a page’s title, so the link would hold its address twice). The system classifier’s ready-made actions (Booklight could not say what one does). A history of copies and pasting in place (both need the power pack). A picture on the clipboard (the parked M2). A line for a copy older than two minutes. A setting for the two minutes.</p>
   </div>
 
   <div class="prose blk">
     <h3>How it is built, and its size</h3>
     <p>The line is built as a third thing that can stand under the empty field, beside the first-run card and the tip, so it brings no highlight, no footer and no stray Enter. When the window has focus and the panel is drawn, Booklight asks the system for the copy’s description; the rule (younger than two minutes, not private, not Booklight’s own, a known kind) is plain code with tests. Tab reads the text and opens the list that <code>clip</code> opens, so there is one list. What is in the text comes from the system’s findings, looked up before the list is shown and capped at about 150 ms; nothing is slipped in above the selection later. <code>tr</code> is a keyword and a table of languages on the translation.</p>
-    <p>Six shared pieces are built here once and used again by M2, M3 and M4: one way to an answer for any row, the material travelling beside the field, ready-made prompts kept by reference, one clipboard helper, the language of a text, and plain answers. <code>PRIVACY.md</code> changes: today it says the clipboard is read only when you ask.</p>
+    <p>Six shared pieces are built here once, and the parked milestones use them again: one way to an answer for any row, the material travelling beside the field, ready-made prompts kept by reference, one clipboard helper, the language of a text, and plain answers. <code>PRIVACY.md</code> changes: today it says the clipboard is read only when you ask.</p>
     <p><b>About 14 days:</b> the engineer’s 13 (11 to 15: 3.5 for the shared pieces, 7.5 for the features, 2 to finish) and 1.5 for the typed language and <code>tr</code>, which came from M3''' + src("ENG §7.3") + '''. The 13 were made before the cuts above and without the answer where it stands as its own line; they were not re-sized. The cheapest form that keeps the promise is about 5 days. Riskiest: the line, done to the standard of the opening.</p>
   </div>
 
@@ -187,9 +204,9 @@ M1 = '<section class="ms" id="m1">' + mshead(1, "The copy", "Copy something, ope
 
   <div class="prose blk">
     <h3>For you to decide</h3>
-    <p><b>A line with nothing typed</b> (decision 2). Your plan says “Nothing typed: nothing at all” (PLAN.md §11.3). This is the first line that depends on what you did in another app, and it changes one sentence of the privacy text. ''' + REC + ''' Yes, with a switch in the window (“What you copied”). If no: the empty panel stays empty, Tab there opens the copy, and the rest of M1 is the same.</p>
-    <p><b>The translation first</b> (decision 9). For a text not in your language its translation stands above what was found in the copy. That puts a model’s row above local rows; the 2.0 design says a model’s rows “never outrank a local match”. ''' + REC + ''' Yes, this one exception: it is what makes “four presses, no typing” true.</p>
-    <p>Two smaller ones are named above: <code>clip</code>’s shorter list (decision 10) and shared text in the released app (decision 11).</p>
+    <p><b>A line with nothing typed</b> (decision 3). Your plan says “Nothing typed: nothing at all” (PLAN.md §11.3). This is the first line that depends on what you did in another app, and it changes one sentence of the privacy text. ''' + REC + ''' Yes, with a switch in the window (“What you copied”). If no: the empty panel stays empty, Tab there opens the copy, and the rest of M1 is the same.</p>
+    <p><b>The translation first</b> (decision 8). For a text not in your language its translation stands above what was found in the copy. That puts a model’s row above local rows; the 2.0 design says a model’s rows “never outrank a local match”. ''' + REC + ''' Yes, this one exception: it is what makes “four presses, no typing” true.</p>
+    <p>Two smaller ones are named above: <code>clip</code>’s shorter list (decision 9) and shared text in the released app (decision 10).</p>
     <p class="muted small">Settled by the team; say so if you disagree: two minutes, fixed. The copy wins over a tip, and a first-run card wins over both. Enter does nothing on the line.</p>
   </div>
 
@@ -201,6 +218,115 @@ M1 = '<section class="ms" id="m1">' + mshead(1, "The copy", "Copy something, ope
       <li>From Ctrl + C to a translation on the clipboard: four presses, no typing.</li>
       <li>The panel opens as fast as 2.1, and late frames stay at about 1 %.</li>
       <li>After a week on your HP the switch is still on.</li>
+    </ul>
+  </div>
+</section>
+'''
+
+# ------------------------------------------------------------------------------------------------ M5
+M5 = '<section class="ms" id="m5">' + mshead(5, "Flights", "Type a flight number and the row answers with the next flight.", "About 10 days · no new permission · the times need a free key of your own") + '''
+  <div class="prose blk">
+    <p class="notice">Your idea, in your words: “Let’s add a new M5 which handles flights. I want to type LH455 and get info about the next flight.”</p>
+    <p><b>The story.</b> Someone you are meeting is on LH 455. You press the key and type <code>LH455</code>. A moment after the last letter the first row says: Lufthansa, San Francisco to Frankfurt, leaves 15:05, lands Friday 10:55, delayed 25 minutes, Terminal G, gate G4. Enter opens the flight’s page with its map. Tab, Tab, Enter keeps the flight on top of your windows, counting down. (Every time, gate and delay on this page is made up; the route is real.)</p>
+    <p><b>The hard fact.</b> There is no free source of a flight’s planned or expected times that an app may call without a key; the research called every candidate''' + src("FL §1") + '''. What is free: which airline a designator belongs to (a small table Booklight can carry), a flight’s usual route (public tables, sometimes out of date), and where an aircraft is at this moment, but only while a volunteer’s receiver on the ground hears it. LH 455 itself was not to be seen on any of those feeds during the research. Times, terminal, gate and a real status are sold. Raycast’s flight extension asks each of its users for a key''' + src("FL §6") + '''; Apple and Google show such a card without one and do not say where the data comes from.</p>
+    <p>So M5 has two layers. <b>For everyone:</b> the row names the airline and Enter opens the flight’s page. <b>With a key of your own</b> (AeroDataBox through RapidAPI: a free account, about 200 lookups a month): the row answers as in the story. Booklight ships no key: its code is public, and the service’s terms forbid a shared one''' + src("FL §2") + '''.</p>
+  </div>
+
+  <div class="prose blk">
+    <h3>What is in it</h3>
+    <ol class="feat">
+      ''' + feat("A flight number is a row.", "Booklight reads <code>LH455</code>, <code>lh 455</code>, <code>LH0455</code> and the callsign <code>DLH455</code> as Lufthansa 455, from a table of airlines it carries (about 30 KB, in the public domain). The row says who flies it. Enter opens the flight’s page at FlightAware; the other actions are a web search, Ask Gemini, and “Get times”, which opens the place in Booklight’s window where a key is set up. Nothing leaves the device before Enter. This part needs no key and no switch.",
+                 eg("<code>LH455</code>, Enter", "FlightAware’s page for Lufthansa 455, in your browser")) + '''
+      ''' + feat("With your key, the row answers.", "A moment after the last letter (not after each one) Booklight asks the service once and the row is written in: who flies it and where; when it leaves and lands, each in its airport’s own time, with the day when that is not your today; the status in plain words; and where to go: the terminal and gate before it leaves, the arrival’s terminal and belt after. Which flight is “the next” is decision 12. A day after the number picks that day’s: <code>LH455 fri</code>, <code>LH455 tomorrow</code>. The answer is kept for two minutes, so opening the panel again does not ask again, and the footer says who gave it and when.",
+                 eg("<code>LH455</code>", "“LH 455 · Lufthansa · San Francisco → Frankfurt. Leaves SFO 15:05, lands FRA Fri 10:55. Delayed 25 min, Terminal G, gate G4”")) + '''
+      ''' + feat("What to do with it.", "Enter still opens the flight’s page, which has everything else: desks, the aircraft, the map. Copy puts one line on the clipboard to send to someone. Pin keeps it on top. The arrow opens three more as a list under the row: Add to calendar (your calendar’s editor with the flight as an event from take-off to landing), Search the web, Ask Gemini. All four stand in the row from its first frame; one that needs the answer waits for it, as an answer’s row does.",
+                 eg("<code>LH455</code>, Tab, Enter", "“LH 455 San Francisco 15:05 → Frankfurt Fri 10:55, delayed 25 min, Terminal G, gate G4” on your clipboard")) + '''
+      ''' + feat("Keep it on top.", "Pin puts the flight in the small window 2.0 built: the time to go, then the time to landing, then “Landed”. It counts down by itself. To stay true it has to ask the service again while it is pinned and the panel is closed: every 30 minutes, about twenty lookups for a long flight. That is sending without a key press, so it is part of decision 7.",
+                 eg("<code>LH455</code>, Tab, Tab, Enter", "“LH 455 · lands Fri 10:48 · 6 h 20 min” on top of your windows")) + '''
+      ''' + feat("Its usual route, without a key.", "For people without a key, behind a switch that is off until they turn it on: Booklight looks the number up in a public table and the row adds “Usually San Francisco → Frankfurt”. The table is free to use and was right for LH 455, but such tables disagreed on three of five flights compared, so the row says “usually” and the page behind Enter is the authority" + src("FL §1.3") + ". The table’s host asks to be told before an app relies on it; that letter comes first.") + '''
+      ''' + feat("A flight in a copy.", "With M1 in, a flight number in something you copied is one of the things found: the line says “a flight”, and after Tab its row stands with the link and the date. Selected, it answers like a typed one.",
+                 eg("Copy “Landing with LH 454 at 12:45”, the key, Tab", "The flight’s row first, then the event")) + '''
+    </ol>
+    <p><b>What looks like a flight and is not.</b> Nearly every pair of letters is some airline’s designator: <code>PS5</code> is Ukraine International 5, <code>MP3</code> is Martinair 3, <code>H264</code> is Sky Airline 64, <code>MS 365</code> is Egyptair 365''' + src("FL §4") + '''. So there are two kinds of match. A <i>strong</i> one (two letters that are not an everyday word, two to four digits, or the three-letter form) may be looked up after a pause. A <i>weak</i> one (a digit in the designator, a single digit, a word like AM, IN or OK, a year) is a row at the very end, and nothing is sent for it until you go to it: Down onto it, or Tab, and it is a flight’s row like any other. A flight’s row never stands above an app, a sum or one of your own links. The keyword <code>flight</code> (German <code>flug</code>) makes any of them a flight at once: <code>flight u2 8001</code>. The price of this rule is decision 13: Ryanair (FR), easyJet (U2), Wizz (W6), JetBlue (B6), Austrian (OS), Alaska (AS), Condor (DE) and Qatar (QR) are all weak.</p>
+  </div>
+
+  <div class="blk">
+    <h3>The designs</h3>
+    ''' + screen(12, "Type the number.",
+                 shot("Light", "[[f1type]]", "Above: the answer. Line one is the number, who flies it and where. Line two is the two times, each in its airport’s own time, with the day when it is not your today. Line three is the status, in full ink, then where to go. Open is armed: Enter opens the flight’s page. The footer says who gave the answer and when. Below: the frame before. The row has its height, its three lines and its four actions from the moment it appears, and “Lands” already stands where it will stand, so nothing moves when the answer is written in. The white light’s slow lap, the sign of work, starts only if the answer takes longer than 600 ms: a quick one should not flash.")
+                 + shot("Dark", "[[f1dark]]", "The same row on today’s softer highlight. A delay is said, not painted: no red, no warning mark. Red stays what it is in Booklight, the colour of an action that removes something.")
+                 + shot("German, and the widest case", "[[f1de]]", "German says „Ab“ and „An“. Below it the widest this row gets in English: a twelve-hour clock, a day at both ends, a long airline and long city names. Line one is cut short when it must be; the times never are. With four actions the times have room whichever action is armed."),
+                 "You type a flight number and row one is the flight. It is the Event row’s shape, which Booklight has had since 1.1: a small line, a line of named values, a small line. Nothing in it is new type, colour or height.") + '''
+    ''' + screen(13, "What the row says, state by state.",
+                 shot("Light · one row, eight states", "[[f2sheet]]", "From the top: planned; on time; delayed; boarding; in the air; landed; diverted; cancelled. Every disc is on x = 38, every text starts at x = 72, every right end is at x = 700, and the second time starts at one x in every row. “Leaves” becomes “Left” and “Lands” becomes “Landed” as they happen. Once it has left, the third line still says how late it is, and where to go becomes the arrival’s terminal. A flight that is diverted or cancelled keeps its times struck through, as a done task is: they are what was planned, not what will happen.")
+                 + table(("The service says", "The row says"),
+                         ("Unknown, or Expected with no new time", "Planned"),
+                         ("Expected, with a new time that equals the plan", "On time"),
+                         ("Delayed, or a new time later than the plan", "Delayed 25 min"),
+                         ("CheckIn · Boarding · GateClosed", "Check-in open · Boarding · Gate closed"),
+                         ("Departed · EnRoute", "In the air (with “18 min late” or “on time” from the new landing time)"),
+                         ("Approaching", "Landing soon"),
+                         ("Arrived", "Landed (with “12 min late” or “early”)"),
+                         ("Diverted", "Diverted, the planned landing struck"),
+                         ("Canceled · CanceledUncertain", "Cancelled · May be cancelled"), cls="k")
+                 + '<p class="capt">The service’s thirteen states' + src("FL §2") + " and Booklight’s words for them. “On time” is said only when the service has given a new time and it equals the plan; otherwise the row says “Planned”. No answer of the service was seen in the research, so this table is from its description, " + NV + ".</p>",
+                 "The row says each state in two or three plain words and never shows a field the service left empty.") + '''
+    ''' + screen(14, "More, another day, and kept on top.",
+                 shot("Light · the arrow opens three more", "[[f3more]]", "As an app’s row opens its places: the highlight leaves the row for the list, the row keeps only its arrow, turned over, and the line the highlight is on carries the Enter mark. One highlight.")
+                 + shot("Light · another day", "[[f3day]]", "A day after the number. Each time carries its day, because neither is your today, and a flight that far ahead has no gate yet.")
+                 + shot("Light · pinned", "[[f3pin]]", "The pin is 2.0’s small window at the timer’s size. Its figure is hours and minutes in words, because the timer’s figure beside it is minutes and seconds and “1:07” would read as 67 seconds. The small line is the number, where to go and the time; it is the part that changes when the service says something new. A pin can be up to 30 minutes behind the service."),
+                 "Three things you do after the answer: something else with it, another day, keep it in sight.") + '''
+    ''' + screen(15, "Without a key, and when it is not a flight.",
+                 shot("Light · no key", "[[f4nokey]]", "Without a key the row is an ordinary 56 dp row and Enter opens the flight’s page. With the route switch on, a second line says where it usually goes. The last action, “Get times”, is how someone without a key learns that there is more: it opens the Flights group in Booklight’s window.")
+                 + shot("Light · weak matches, and the keyword", "[[f4weak]]", "“ps5” is a search first; the flight is the last row and nothing was sent for it. It is the row most likely to look like a mistake, and it is the price of “type the number” needing no keyword (decision 13). Behind the keyword an airline with a digit in its designator is looked up like any other.")
+                 + shot("Light · when there is no answer", "[[f4none]]", "Four plain states. The row keeps its three lines and its actions where they were, with the times empty, so nothing jumps when an answer does not come; Enter still opens the flight’s page, and Copy and Pin wait dimmed.")
+                 + shot("Light · in a copy (with M1)", "[[f4copy]]", "The line says “a flight”. After Tab the flight’s row is one of the things found, and answers when it is selected.")
+                 + shot("Light · the tip", "[[f4tip]]", "One new tip, in the tips’ own card. Tips pass over what you already use, so this one is for people who have never typed a flight number; the row’s own “Get times” is for those who have."),
+                 "Most people will have no key, most text that looks like a flight is not one, and sometimes no answer comes. These are the states for that.") + '''
+  </div>
+
+  <div class="prose blk">
+    <h3>Deliberately out</h3>
+    <p>A key of Booklight’s own in the app (the code is public, and the service’s terms forbid it). A server of Booklight’s that holds one (you said “not yet” to a relay). “In the air now” from volunteers’ receivers: it shows nothing over oceans and for most short flights in Europe, which fly under callsigns that have nothing to do with the ticket’s number''' + src("FL §1.5") + '''. A map. A list of facts under the row (desks, the aircraft, the baggage belt before landing): the flight’s page has them. The flight after this one (a second lookup). Codeshares and numbers with two legs get no drawing yet: the row shows what the service answers first. Search by route (“SFO to FRA tomorrow”). Booking, prices, seats. Notifications when a gate changes: that needs something running in the background. A second service to choose from (FlightAware’s personal key fits the same field later). Airports as rows of their own.</p>
+  </div>
+
+  <div class="prose blk">
+    <h3>How it is built, and its size</h3>
+    <p>A reader for flight numbers in <code>core/</code>, with a test for every false friend in the research’s table. The airline table is an asset made by a script from a public-domain list, like the emoji table. A provider gives the row; it ranks under every local match. With a key, a strong match starts one request 400 ms after the last key; a new letter cancels it. The request, the answer’s reader and the two-minute memory are plain code beside the search suggestions, the only other network code Booklight has; the reader is tested against saved answers. The key is typed into the Booklight window, kept in the app’s private storage and out of its backup, and sent to that service only. The row is the Event row’s body with one more line. Add to calendar is the Event row’s action; the pin is one more kind of 2.0’s pin.</p>
+    <p><code>PRIVACY.md</code> and the window’s text name the new recipients. The Play form’s answers stay as they are: it is the kind of data already declared for suggestions''' + src("FL §5") + '''. The footer says “AeroDataBox” and the time whenever an answer is on screen: its free plan asks for attribution. Whether that line is enough for its terms is ''' + NV + '''.</p>
+    <p><b>About 10 days,</b> my estimate: the reader, the table and their tests 1; the row without a key and its three ways out 1; the request, the key’s field, the states and the memory 3; the three more actions and the day 1; the pin 1; the usual route and its switch 1; the copy’s row, the tip, the list of everything, German 1; a pass on both devices and the release build 1. The cheapest form that is still worth having is the first layer alone, about 2 days: it is the difference between “LH455” finding nothing and Enter opening the right page.</p>
+  </div>
+
+  <div class="blk">
+    <h3>To check on a device first</h3>
+    <p class="prose">None of the services was called with a key: there was none to call with. So every word about the answer is from the service’s own description, ''' + NV + '''.</p>
+    ''' + table(("Check", "What", "If it goes badly"),
+                ("F1", "With a real key: LH 455, a short flight in Europe, a codeshare, a number with two legs, one that landed two hours ago. How long an answer takes. Which fields come filled at a large and at a small airport; whether “revised” is what a traveller calls “expected”; what the reply says when the key’s lookups are used up", "The row shows less: the times without a gate. The design never shows an empty field"),
+                ("F2", "Which flight the service calls nearest at 23:00 and just after a landing", "Booklight asks for a day itself: two requests where there was one"),
+                ("F3", "The addresses in Chrome on a Googlebook: FlightAware’s page for DLH455, and whether an installed tracker takes the link", "Enter opens a web search for “LH455 flight status”"),
+                ("F4", "Not in the half-day session: a day of your own typing with the reader on, in a build made for it. How often a flight’s row turns up for text that was not a flight", "The rule gets stricter: only after the keyword"),
+                ("F5", "The row with the longest names and a twelve-hour clock, in English and German, on both devices", "City names give way to the three-letter codes in line one"),
+                ("F6", "What the sign-up really asks for: whether the free plan wants a card", "The second service, FlightAware’s personal key, becomes the first"),
+                ("F7", "The answer from the hosts of the public route table", "No usual route without a key; the row names the airline only"),
+                ("F8", "What the system’s own “Track” action for a flight number opens on a Googlebook", "Nothing changes: Booklight does not use it")) + '''
+  </div>
+
+  <div class="prose blk">
+    <h3>For you to decide</h3>
+    <p><b>Your own key</b> (decision 4). The full answer needs an account with a flight data service: yours, and one for every other person who wants it. ''' + REC + ''' Yes: it is the only honest road to what you asked for, it is free at this size, and people without a key still get a row that opens the right page. If no: M5 is the first layer and the usual route, about 4 days, and the row never shows a time.</p>
+    <p><b>When it asks</b> (decision 5). ''' + REC + ''' A moment after the last letter, for a strong match, once a key is in. That is what “type LH455 and get info” means, and it is how suggestions already work once switched on. If no: only on Enter; nothing is ever sent while you type, and the answer is one key press away.</p>
+    <p><b>The usual route without a key</b> (decision 6) and <b>the pin</b> (decision 7) are each about a day and can each be left out. The pin is the one place where Booklight would ask the service with the panel closed.</p>
+    <p class="muted small">Settled by me; say so if you disagree: times are shown in each airport’s own time; the status is words, never a colour; the answer is kept for two minutes; the light of work starts after 600 ms.</p>
+  </div>
+
+  <div class="prose blk">
+    <h3>How we will know it worked</h3>
+    <ul class="checks">
+      <li>Type <code>LH455</code> with your key in: a moment after the last letter the row shows both times, the status and the gate, and they agree with the airline’s own page. How long that moment is, is check F1.</li>
+      <li>Type <code>ps5</code>, <code>mp3</code>, <code>h264</code>, <code>q4 2026</code>: no flight in the first row, and nothing was sent.</li>
+      <li>Without a key: <code>LH455</code>, Enter opens the right page. Nothing left the device before Enter.</li>
+      <li>A pinned flight counts down, says “Landed” when it has, and never takes the keyboard.</li>
+      <li>After a month of your own use the free plan’s lookups have not run out.</li>
     </ul>
   </div>
 </section>
@@ -456,10 +582,66 @@ M4 = '<section class="ms" id="m4">' + mshead(4, "Your language", "Booklight spea
 </section>
 '''
 
+# ------------------------------------------------------------------------------------------------ what comes next
+NEXT = '''
+<section id="order">
+  <h2>The order, and what you get when</h2>
+  <ol class="plan prose">
+    <li><span><b>2.2: what is on main,</b> released when you say so (decision 2). M1’s line and list are drawn on its softer highlight and shorter strip.</span></li>
+    <li><span><b>One device session,</b> half a day, both devices. For M1: checks 1, 3 to 8, the translation half of 18, and the line in dark over a white window. For M5: checks F1 to F3, F5, F6 and F8. Some need only the released app; the rest a throwaway build on a branch. It needs your HP awake and attached, and for F1 a key.</span></li>
+    <li><span><b>M1 · The copy,</b> released as 2.3. It builds the pieces M5’s row in a copy stands on: the line, the chip and its rows, an answer where it stands.</span></li>
+    <li><span><b>M5 · Flights,</b> released as 2.4. Its first layer (the row, and Enter opens the page) is about two days and needs nothing from M1: it can ride in 2.3 if you want it sooner.</span></li>
+  </ol>
+  <p class="prose"><b>Beside these: the settings window.</b> Its build started today on a branch of its own, on your word, with the nine recommended answers of its plan. It ships alone once it is built and you have seen it; neither milestone waits for it.</p>
+  ''' + table(("From", "It adds to the window"),
+              ("M1", "One switch: “What you copied”"),
+              ("M5", "One group, “Flights”: the field for your key with two lines on how to get one, and the switch for the usual route")) + '''
+  <p class="prose"><b>After these two,</b> the parked three come back in the order they had (the picture, the selection, your language), unless you say otherwise. Nothing in M5 changes them.</p>
+</section>
+
+<section id="decisions">
+  <h2>Your decisions, in one list</h2>
+  <p class="prose">Each can be answered in a word. The recommended answer is what happens if you say only “go”. Under each: what the other answer costs.</p>
+  <ol class="qs prose">
+    ''' + q("All · This plan: 2.2, the device session, M1, then M5. The picture, the selection and your language stay parked.", "<b>Yes</b>", "If no: name what comes back in, or what goes first. M5’s first layer and M1 do not depend on each other.") + '''
+    ''' + q("2.2 · Release what is on main now, as 2.2: a GitHub release and a draft on Play’s closed testing. Play’s production stays empty.", "<b>Yes</b>", "If no: it waits, and goes out with the settings window or with M1.") + '''
+    ''' + q("M1 · A line under the empty field for something you just copied, with a switch to turn it off.", "<b>Yes</b>", "If no: the empty panel stays empty, and Tab there opens the copy.") + '''
+    ''' + q("M5 · The times, the gate and the status come through a key of your own: a free account with AeroDataBox through RapidAPI, about 200 lookups a month. Everyone else who wants them makes their own.", "<b>Yes</b>", "If no: the row names the airline (and the usual route), Enter opens the flight’s page, and no time is ever shown. About 4 days.") + '''
+    ''' + q("M5 · Booklight asks the service a moment after the last letter, for a strong match, once a key is in.", "<b>Yes</b>", "If no: only on Enter. Nothing is sent while you type; the answer is one key press later.") + '''
+    ''' + q("M5 · The usual route for people without a key, from a public table, behind a switch that starts off, after its host has been asked.", "<b>Yes</b>, and the first thing to cut", "If no: without a key the row names the airline only. It saves about a day and a letter.") + '''
+    ''' + q("M5 · Pin a flight: the time to go, then to landing, on top of your windows. A pinned flight asks the service again every 30 minutes with the panel closed, about twenty lookups for a long flight.", "<b>Yes</b>", "If no: later, and it saves about a day. Or yes without asking again: the pin counts down from what it knew when you pinned it, and may be wrong by the time it lands.") + '''
+  </ol>
+  <h3 class="gap">Six smaller ones</h3>
+  <p class="prose">Each changes something that is yours: a rule of yours, the released app, or the privacy text.</p>
+  <ol class="qs prose" start="8" style="counter-reset: q 7">
+    ''' + q("M1 · The translation stands first for a text not in your language, above what was found in the copy.", "<b>Yes</b>, as the one exception", "It bends two rules: the 2.0 design’s “a model’s rows never outrank a local match”, and “the order is fixed”. If no: it stands after the found things, and the story is Tab, Down up to three times, Enter, Enter.") + '''
+    ''' + q("M1 · <code>clip</code> shows fewer rows. Note, Mail, QR code, UPPERCASE, lowercase, Title Case, On one line, Counted, URL-encoded, Search and Ask Gemini are found by typing their name.", "<b>Yes</b>", "If no: those eleven rows stay in the list, under the new ones.") + '''
+    ''' + q("M1 · Shared text behaves the new way in the released app: the chip stays the text and the row is answered in its place.", "<b>Yes</b>", "If no: shared text keeps today’s way (the chip becomes the prompt), and the same rows behave in two ways.") + '''
+    ''' + q("M5 · Enter on a flight opens its page at FlightAware. In the research its address answered with the right flight every time when built from the airline’s three-letter code; FlightStats’ did too.", "<b>Yes</b>", "The other answers: FlightStats, or a search with your engine for “LH455 flight status”. The search is in the row’s list either way.") + '''
+    ''' + q("M5 · Which flight is “the next”: the one in the air now; else one that landed in the last three hours; else the next to leave.", "<b>Yes</b>", "If you meant strictly the next to leave: after a landing the row shows tomorrow’s flight, and someone waiting at arrivals has to type the day.") + '''
+    ''' + q("M5 · A flight’s row never stands above an app, a sum or a link of yours, and text that only looks like a flight is the last row and sends nothing until you go to it. The price: Ryanair, easyJet, Wizz, JetBlue, Austrian, Alaska, Condor and Qatar numbers are “only looks like”, and need Down or the keyword.", "<b>Yes</b>", "Looser: every known designator is looked up after a pause, and “ps5” or “q4 2026” goes to the service. Stricter: a flight only after the keyword <code>flight</code>, and then “type LH455” needs it too.") + '''
+  </ol>
+  <div class="prose blk">
+    <p><b>Not a decision, a notice:</b> with M5 the privacy text names who gets a flight number: the service your key belongs to, and the host of the route table if that switch is on. Play’s form does not change.</p>
+    <p><b>Three questions I have.</b> One: by “the other improvements your new plan had” I took the 2.2 list above, and M1 with everything the four-milestone plan put in it. If you meant something else, say what. Two: will you make the account and paste a key? Check F6 is whether the free plan asks for a card; I could not see that from outside. Three: can the HP be attached for half a day? It has never run 2.0.</p>
+    <p><b>Five things only you can judge, on a device,</b> before the designs are final. The line at 320 ms and at 200 ms after the opening (the playing panel of screen 1 has both). The line in dark over a white window. Whether a flight’s status stands out enough as the news of its row: it differs from the rest of its line only by full ink, and could be set heavier. Whether „AB SFO“ and „AN FRA“ read as words or as a run of codes in German. And whether the “ps5” row is quiet enough to keep.</p>
+    <p><b>After “go”</b> comes 2.2 if you said yes, then the device session and its results, then the designs made final on them, then the build of M1.</p>
+  </div>
+</section>
+'''
+
+# ------------------------------------------------------------------------------------------------ parked
+PARKED = '''
+<section id="parked">
+  <h2>Parked: the picture, the selection, your language</h2>
+  <p class="prose">M2, M3 and M4 as the four-milestone plan had them, with their designs. Nothing in them changed. Their screens keep their numbers, 5 to 11, and their decisions keep the numbers of that plan’s list, which follows them.</p>
+</section>
+'''
+
 # ------------------------------------------------------------------------------------------------ the rest
-ORDER = '''
+OLD_REST = '''
 <section>
-  <h2>The order, and why</h2>
+  <h2>The four-milestone plan: its order, and why</h2>
   <ol class="plan prose">
     <li><span><b>Today’s polish,</b> released on its own. M1’s line and list are drawn on its softer highlight and shorter strip, not on 2.1’s.</span></li>
     <li><span><b>One device session,</b> half a day, both devices: checks 1 to 11, 15, 16 and the translation half of 18. Five need only 2.1 as released; the rest need a throwaway build on a branch. It settles M1, the way a picture gets in, and whether M3’s promise holds, so the order of the four is known before the first is built. It needs your HP awake and attached.</span></li>
@@ -480,7 +662,7 @@ ORDER = '''
 </section>
 
 <section>
-  <h2>The tracks beside the four</h2>
+  <h2>The four-milestone plan: the tracks beside the four</h2>
   <div class="prose blk">
     <p><b>The settings window.</b> You said it “looks very weird on a Googlebook”. It is being redesigned by a separate designer as a desktop-ready Material 3 Expressive window with its navigation at the left edge, and you approve it separately. It is a visible flaw in the released app, not a feature waiting for a story, so it does not wait for a milestone. It changes the window and the milestones change the panel, so neither waits for the other. Every page must be final before M4’s picture book is made. What the milestones add to it is small, and each is “a title, one line, a switch”, a row every version of the window has.</p>
   </div>
@@ -495,7 +677,7 @@ ORDER = '''
 </section>
 
 <section>
-  <h2>Not in these four, and why</h2>
+  <h2>Not in the four, and why</h2>
   ''' + table(("Idea", "Why not now"),
               ("<b>Say it plainly, a guess when nothing matches, settings in plain words, emoji by description</b>", "One real story and the best candidate for a fifth milestone. It is the largest model work, and it takes one to two seconds for something that looks instant"),
               ("<b>Pick a colour from the screen</b>", "Close to M2’s story but another mechanism, with one device check open. The first thing to add after M2"),
@@ -513,8 +695,8 @@ ORDER = '''
 </section>
 
 <section>
-  <h2>Your decisions, in one list</h2>
-  <p class="prose">Each can be answered in a word. The recommended answer is what happens if you say only “go”. Under each: what the other answer costs.</p>
+  <h2>The four-milestone plan: its decisions, with their old numbers</h2>
+  <p class="prose">Kept as they were numbered, because the parked milestones name them. M1’s four (2, 9, 10 and 11 here) are in the list above as 3, 8, 9 and 10. Decisions 3 to 8 and 12 to 14 wait with their milestones.</p>
   <ol class="qs prose">
     ''' + q("All · These four, in this order, starting with the half-day device session on both devices.", "<b>Yes</b>", "If no: name the order. The device session still comes first, and it needs your HP awake and attached for half a day.") + '''
     ''' + q("M1 · A line under the empty field for something you just copied, with a switch to turn it off.", "<b>Yes</b>", "If no: the empty panel stays empty, and Tab there opens the copy.") + '''
@@ -568,4 +750,6 @@ ORDER = '''
 </section>
 '''
 
-PAGE = "<main>" + HEADER + GLANCE + HOLDS + M1 + M2 + M3 + M4 + ORDER + "</main>"
+
+
+PAGE = "<main>" + HEADER + GLANCE + HOLDS + M1 + M5 + NEXT + PARKED + M2 + M3 + M4 + OLD_REST + "</main>"

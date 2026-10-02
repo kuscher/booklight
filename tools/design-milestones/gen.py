@@ -1,4 +1,4 @@
-"""Generates booklight-milestones.html: the four milestones after 2.1, with their designs drawn at 1 px = 1 dp.
+"""Generates booklight-milestones.html: what comes after 2.1 (the copy, then flights; three more milestones parked), with the designs drawn at 1 px = 1 dp.
 
     python3 gen.py      then publish booklight-milestones.html (it is one self-contained file).
 
@@ -52,6 +52,10 @@ ICONS = {
     "text": "M3 18h12v-2H3zM3 6v2h18V6zm0 7h18v-2H3z",
     "image": "M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5z",
     "replace": "M6.99 11 3 15l3.99 4v-3H14v-2H6.99zM21 9l-3.99-4v3H10v2h7.01v3z",
+    # new for M5
+    "plane": "M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z",
+    "takeoff": "M2.5 19h19v2h-19zm19.57-9.36a1.5 1.5 0 0 0-1.84-1.06L14.92 10l-6.9-6.43-1.93.51 4.14 7.17-4.97 1.33-1.97-1.54-1.45.39 1.82 3.16.77 1.33 16.57-4.43a1.5 1.5 0 0 0 1.07-1.85z",
+    "landing": "M2.5 19h19v2h-19zm7.18-5.27 4.35 1.16 5.31 1.42a1.5 1.5 0 0 0 .78-2.9l-5.31-1.42-2.76-9.02L10.12 2.5v8.28L5.15 9.45l-.93-2.32-1.45-.39v5.17l1.6.43z",
 }
 RAW = {
     "globe": '<circle cx="12" cy="12" r="8.7" fill="none" stroke="currentColor" stroke-width="1.9"/><ellipse cx="12" cy="12" rx="3.7" ry="8.7" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.6 12h16.8" fill="none" stroke="currentColor" stroke-width="1.7"/>',
@@ -602,6 +606,113 @@ D["s11i"] = desk(dtag("English: the device’s model passed, so its rows are ans
                  dtag("Danish, draft: the model failed the test, so the same rows hand over. Ordinary rows, not errors"),
                  modelrows(("Ret stavning", "Kortere", "På engelsk"), ("send", "Spørg Gemini", True), "Gemini"))
 
+# ---------------------------------------------------------------- M5: flights
+# The page's world: Thursday 1 October 2026, the user in San Francisco. LH 455 is San Francisco to Frankfurt (docs/research/flights.md);
+# every time, terminal, gate and delay drawn here is made up. Planned: leaves 14:40, lands Fri 10:30.
+LH = "LH 455 · Lufthansa"
+FL_WHO = LH + " · San Francisco → Frankfurt"
+FL_STRIP = strip(("open", "Open", True), ("copy", "Copy"), ("pin", "Pin"), ("more", "More"))
+FL_STRIP_OFF = strip(("open", "Open", True), ("search", "Search"), ("send", "Ask Gemini"), ("settings", "Get times"))
+SRC = "AeroDataBox · 13:58"   # the footer's left slot while an answer is shown: who said it, and when
+
+
+def flight(who, slots, note, right=None, on=False, off=False, cls="", wide=False):
+    """A flight's row: the app's slots body at the Event row's 92 dp. Line one: the number, who flies it and where. Line two: the two
+    times as named values; the second starts at a fixed x, so nothing moves when the answer is written in. Line three: the status in
+    full ink, then where to go. No colour: a delay is said, not painted. off: the times will not happen (struck, as a done task is)."""
+    sl = "".join(f'<span><em>{k}</em><span class="v">{v}</span></span>' for k, v in slots)
+    st, rest = note
+    n = f'<div class="cap"><span class="st">{st}</span>{" · " + rest if rest else ""}</div>'
+    return (f'<div class="r tall fl{" on" if on else ""}{" " + cls if cls else ""}">{sym("plane")}<div class="t"><div class="cap">{who}</div>'
+            f'<div class="sl{" off" if off else ""}{" wide" if wide else ""}">{sl}</div>{n}</div>{right if right is not None else kind("Flight")}</div>')
+
+
+def opt(icon, text, on=False):
+    """A line of the list under a row (design-system.md §11, Rows.kt): 40 dp, its glyph on the icon column, the name on the title's
+    edge in full ink, and the Enter mark where the row's arrow stands, on the line the pill is on."""
+    return f'<div class="r opt{" on" if on else ""}"><span class="ic">{svg(icon)}</span><span class="t"><b>{text}</b></span><span class="em">{ENTER if on else ""}</span></div>'
+
+
+def srcfoot(*pairs):
+    """The footer under an answer: where it came from and when, at the left."""
+    return f'<div class="foot"><span class="done src">{SRC}</span>' + "".join(f"{cap(k)}{v}" for k, v in pairs) + "</div>"
+
+
+TURNED = '<span class="strip"><span class="a turned">' + svg("more") + "</span></span>"   # its list is open: the row keeps only its arrow, turned over
+WEB = lambda q, lab="Web": row(sym("search"), f"Search Google for “{q}”", right=kind(lab))
+EMPTY = [("Leaves", "–"), ("Lands", "–")]
+DELAYED = lambda right=None, on=False: flight(FL_WHO, [("Leaves", "SFO 15:05"), ("Lands", "FRA Fri 10:55")], ("Delayed 25 min", "Terminal G, gate G4"), right, on)
+LOOKING = flight(LH, EMPTY, ("Looking it up", ""), FL_STRIP, on=True)
+
+D["f1type"] = desk(dtag("With your key: the row answers a moment after the last letter"), panel(fld("LH455") + rows(DELAYED(FL_STRIP, True) + WEB("LH455")) + srcfoot(("tab", "Actions"), ("esc", "Close"))),
+                   dtag("The moment before: the row has its height, its lines and its actions from its first frame"), panel(fld("LH455") + rows(LOOKING + WEB("LH455")) + foot(("tab", "Actions"), ("esc", "Close"))))
+D["f1dark"] = desk(panel(fld("lh 455") + rows(DELAYED(FL_STRIP, True) + WEB("lh 455")) + srcfoot(("tab", "Actions"), ("esc", "Close"))), theme="dark")
+D["f1de"] = desk(dtag("German"), panel(fld("LH455") + rows(flight(FL_WHO, [("Ab", "SFO 15:05"), ("An", "FRA Fr. 10:55")], ("25 Min. verspätet", "Terminal G, Gate G4"),
+                                                               strip(("open", "Öffnen", True), ("copy", "Kopieren"), ("pin", "Anheften"), ("more", "Mehr")), on=True)
+                                                        + row(sym("search"), "Mit Google nach „LH455“ suchen", right=kind("Web"))) + srcfoot(("tab", "Aktionen"), ("esc", "Schließen"))),
+                 dtag("The widest this row gets: a twelve-hour clock, a day at both ends, long names"),
+                 panel(fld("AR 1303") + rows(flight("AR 1303 · Aerolíneas Argentinas · Buenos Aires → Mexico City", [("Leaves", "EZE Thu 11:55 PM"), ("Lands", "MEX Fri 6:40 AM")], ("Delayed 1 h 15 min", "Terminal A, gate 12"), FL_STRIP, on=True, wide=True)
+                                             + WEB("AR 1303")) + srcfoot(("tab", "Actions"), ("esc", "Close"))))
+
+T1 = "Terminal G, gate G4"
+FL_STATES = [
+    flight(FL_WHO, [("Leaves", "SFO 14:40"), ("Lands", "FRA Fri 10:30")], ("Planned", "Terminal G"), FL_STRIP, on=True),
+    flight(FL_WHO, [("Leaves", "SFO 14:40"), ("Lands", "FRA Fri 10:30")], ("On time", T1)),
+    DELAYED(),
+    flight(FL_WHO, [("Leaves", "SFO 15:05"), ("Lands", "FRA Fri 10:55")], ("Boarding", T1)),
+    flight(FL_WHO, [("Left", "SFO 15:12"), ("Lands", "FRA Fri 10:48")], ("In the air", "18 min late · Terminal 1")),
+    flight(FL_WHO, [("Left", "SFO 15:12"), ("Landed", "FRA Fri 10:42")], ("Landed 12 min late", "Terminal 1, belt 12")),
+    flight(FL_WHO, [("Left", "SFO 15:12"), ("Lands", "FRA Fri 10:48")], ("Diverted", ""), off=True),
+    flight(FL_WHO, [("Leaves", "SFO 14:40"), ("Lands", "FRA Fri 10:30")], ("Cancelled", ""), off=True),
+]
+D["f2sheet"] = desk(guided(panel(rows("".join(FL_STATES)), cls="cut"), [38, 72, 700]))
+
+more = opt("event", "Add to calendar", on=True) + opt("search", "Search the web") + opt("send", "Ask Gemini")
+D["f3more"] = desk(panel(fld("LH455") + rows(DELAYED(TURNED) + more) + srcfoot(("tab", "Actions"), ("esc", "Close"))))
+D["f3day"] = desk(dtag("A day after the number picks that day’s flight"),
+                  panel(fld("LH455 fri") + rows(flight(FL_WHO, [("Leaves", "SFO Fri 14:40"), ("Lands", "FRA Sat 10:30")], ("Planned", "Terminal G"), FL_STRIP, on=True, wide=True) + WEB("LH455 fri"))
+                        + srcfoot(("tab", "Actions"), ("esc", "Close"))))
+pinf = lambda capt, fig, label: pintext(280, 118, f'<div class="pcap">{capt}</div><div class="fig">{fig}</div>', label)
+D["f3pin"] = desk('<div class="pinrow">'
+                  + pinf("LH 455 · gate G4 · 15:05", "1 h 07 min", "Before it leaves: the time to go")
+                  + pinf("LH 455 · lands Fri 10:48", "6 h 20 min", "In the air: the time to landing")
+                  + pinf("LH 455 · 10:42 · Terminal 1", "Landed", "Landed: it stays until you take it down")
+                  + pinf("LH 455 · was 14:40", "Cancelled", "Cancelled")
+                  + pinf("tea · set for 14:12", "7:42", "2.0’s timer, for scale: minutes and seconds")
+                  + "</div>", cls="plain")
+
+D["f4nokey"] = desk(dtag("No key: who flies it, and Enter opens its page"),
+                    panel(fld("LH455") + rows(row(sym("plane"), LH, right=FL_STRIP_OFF, on=True) + WEB("LH455")) + foot(("tab", "Actions"), ("esc", "Close"))),
+                    dtag("No key, routes switched on"),
+                    panel(fld("LH455") + rows(row(sym("plane"), LH, "Usually San Francisco → Frankfurt", right=FL_STRIP_OFF, on=True) + WEB("LH455")) + foot(("tab", "Actions"), ("esc", "Close"))),
+                    dtag("The last action: where a key is set up"),
+                    panel(fld("LH455") + rows(row(sym("plane"), LH, right=strip(("open", "Open"), ("search", "Search"), ("send", "Ask Gemini"), ("settings", "Get times", True)), on=True) + WEB("LH455"))
+                          + foot(("tab", "Actions"), ("esc", "Close"))))
+D["f4weak"] = desk(dtag("Text that only looks like a flight: the flight is the last row, and nothing is sent"),
+                   panel(fld("ps5") + rows(row(sym("search"), "Search Google for “ps5”", right=strip(("search", "Search", True)), on=True)
+                                           + row(sym("plane"), "PS 5 · Ukraine International", right=kind("Flight"))) + foot(("esc", "Close"))),
+                   dtag("The keyword makes it a flight"),
+                   panel(fld("u2 8001", chip_html=chip("plane", "Flight")) + rows(flight("U2 8001 · easyJet · Milan → London", [("Leaves", "MXP 18:20"), ("Lands", "LGW 19:25")], ("On time", "Terminal 2"), FL_STRIP, on=True)
+                                                                                  + WEB("flight u2 8001"))
+                         + srcfoot(("tab", "Actions"), ("esc", "Close"))))
+FL_OPEN = strip(("open", "Open", True), ("copy", "Copy", "off"), ("pin", "Pin", "off"), ("more", "More"))
+D["f4none"] = desk(dtag("Nothing found"),
+                   cutp(rows(flight("LH 9999 · Lufthansa", EMPTY, ("Nothing found for this number", ""), FL_OPEN, on=True))),
+                   dtag("No answer"),
+                   cutp(rows(flight(LH, EMPTY, ("No answer this time", ""), FL_OPEN, on=True))),
+                   dtag("The key has no lookups left"),
+                   cutp(rows(flight(LH, EMPTY, ("The key’s lookups are used up", ""), FL_OPEN, on=True))),
+                   dtag("The key is not accepted"),
+                   cutp(rows(flight(LH, EMPTY, ("The key was not accepted", ""), strip(("open", "Open", True), ("settings", "Open settings"), ("more", "More")), on=True))))
+D["f4copy"] = desk(dtag("M1’s line names it"), line_panel("en", "Copied just now", "a flight and a date"),
+                   dtag("After Tab the flight is a row like the others, and answers when it is selected"),
+                   panel(fld(chip_html=chip("clip", "Landing with LH 454 at…"), ph="What to do with it")
+                         + rows(flight("LH 454 · Lufthansa · Frankfurt → San Francisco", [("Left", "FRA 10:22"), ("Lands", "SFO 12:38")], ("In the air", "on time · Terminal I"), FL_STRIP, on=True)
+                                + row(sym("event"), "Thu 1 Oct, 12:45–13:45", "Landing with LH 454", right=kind("Event"))
+                                + row(sym("spark"), "Fix spelling", right=kind("On this device")))
+                         + srcfoot(("tab", "Actions"), ("esc", "Close"))))
+D["f4tip"] = desk(tip("LH455", "A flight number", "names the airline; Enter opens the flight’s page. Times need a key", "Try it", "Turn off tips", "Search apps, settings and the web", icon="plane"))
+
 # ---------------------------------------------------------------- the page
 exec(open(os.path.join(HERE, "text.py"), encoding="utf-8").read())   # defines PAGE, with [[name]] where a drawing goes
 
@@ -616,6 +727,6 @@ assert "[[" not in body, "no drawing for: " + body[body.index("[["):body.index("
 out = ('<title>Booklight Milestones</title>\n'
        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght,ROND@6..144,300..800,0..100&family=Google+Sans+Code:wght@400..600&display=swap">\n'
        "<style>\n" + CSS + "\n</style>\n\n" + body + "\n<script>\n" + JS + "\n</script>\n")
-path = os.path.join(HERE, "..", "..", "docs", "design", "booklight-milestones.html")
+path = os.environ.get("BL_PAGE_OUT") or os.path.join(HERE, "..", "..", "docs", "design", "booklight-milestones.html")
 open(path, "w", encoding="utf-8").write(out)
 print(path, len(out))

@@ -1,5 +1,8 @@
 # Booklight after 2.1: the plan in four milestones
 
+> **Adjusted later the same day.** Alex chose M1 for the main panel and added a new M5, flights. The plan in force
+> is `plan-next.md`, beside this file. M2, M3 and M4 below are parked, unchanged; M1 below is still M1.
+
 *The plan the team stands behind, 1 October 2026: product manager, UX designer, visual and motion designer,
 engineer. Planning and design only. Nothing was built, no device was touched, nothing in the repo was changed.
 Nothing is built before you approve it.*

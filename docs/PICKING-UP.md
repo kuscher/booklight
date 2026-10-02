@@ -2,6 +2,23 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (night, later): the plan is M1 and a new M5; the window is being built
+
+- **The plan in force is `docs/design/milestones/plan-next.md`** (page: `docs/design/booklight-milestones.html`,
+  https://claude.ai/artifact/YWPmPVwvSFiY1keZCbyCYt). Alex: "adjust the plan for the main ux by doing M1. Let's add a
+  new M5 which handles flights. I want to type LH455 and get info about the next flight." So: 2.2 (what is on
+  main), a half-day device session, M1 the copy, M5 flights. M2, M3 and M4 are parked. Thirteen decisions and
+  three questions wait for his answer; nothing of M1 or M5 is built.
+- **M5's hard fact** (`docs/research/flights.md`): no free source gives a flight's times without a key. The row
+  names the airline and opens the flight's page for everyone; the times, gate and status need the user's own
+  free key (AeroDataBox through RapidAPI). No keyed service was called: there was no key.
+- **The settings window is being built** on a branch in a git worktree of its own, on his word ("kick off the
+  settings window redesign"), with the nine recommended answers of `docs/design/window-redesign.md` §10. His
+  note while it ran: "the search engine settings ux is really misaligned". Not merged, not released.
+- **The repo's history was rewritten on 1 October** by the Play session (device identifiers and private project
+  names taken out; see "This repo is public" in `CLAUDE.md`). Commit ids named in older entries below are from
+  before it. No tag until Alex says so: a tag's upload also sends what is waiting unsent on Play.
+
 ## 2026-10-01 (late night): on main after 2.1, not released
 
 Alex used 2.1 and asked for small improvements on main, each to go through a visual designer and a motion

@@ -189,6 +189,22 @@ svg.ent { width: 14px; height: 14px }
 /* a preview with slots (an event): 92, the slot's label 12/600 in capitals, its value 17/500 */
 .r.tall { height: 92px }
 .r.tall > .t { gap: 3px }
+/* a flight's row (M5): the Event row's 92, with a third line: the status in full ink, then where to go. No colour.
+   The first value has a fixed room, so the second label stands at one x whatever the first says (228 on a 24-hour clock) */
+.r.fl .cap .st { color: rgb(var(--on)) }
+.r.fl .sl > span:first-child { min-width: 136px }
+.r.fl .sl.wide > span:first-child { min-width: 196px }
+.r.fl .sl.off .v { text-decoration: line-through; color: rgb(var(--on) / .8) }
+/* the list under a row (design-system.md §11, Rows.kt): 40 dp lines, the glyph on the icon column, the list's own pill, the Enter mark where the row's arrow stands */
+.r.opt { height: 40px; border-radius: 20px }
+.r.opt > .ic { height: 40px; color: rgb(var(--on) / .8) }
+.r.opt.on > .ic { color: rgb(var(--on)) }
+.r.opt > .ic svg.i { width: 18px; height: 18px }
+.r.opt .t b { font-size: 14px; letter-spacing: .1px; line-height: 20px }
+.r.opt .em { flex: none; width: 32px; display: grid; place-items: center }
+.r.opt .em svg { width: 14px; height: 14px }
+.a.turned { color: rgb(var(--on) / .8) } .a.turned svg { transform: rotate(180deg) }
+.foot .done.src { color: rgb(var(--on) / .8); font-size: 13px; font-weight: 500 }
 .sl { display: flex; gap: 20px; white-space: nowrap; overflow: hidden; font-size: 17px; font-weight: 500; line-height: 24px; align-items: baseline }
 .sl em { font-style: normal; font-size: 12px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: rgb(var(--on) / .8); margin-right: 7px }
 .txt .ln { display: block; white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent) }
