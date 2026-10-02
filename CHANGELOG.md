@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.0 (2 October 2026)
 
 **A flight's row shows the flight** (`docs/design/flights-row/`; with your own AirLabs key, as before).
 

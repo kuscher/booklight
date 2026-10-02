@@ -1,5 +1,8 @@
 package io.github.kuscher.booklight.overlay
 
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
@@ -91,6 +94,8 @@ private val CENTRED = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeig
 private val HEAD = TextStyle(fontFamily = Fonts.text, fontSize = 17.sp, fontWeight = FontWeight(500), fontFeatureSettings = "tnum")
 /** The badge's word: the footer hint's size at the weight of its word. */
 private val WORD = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(600), letterSpacing = 0.1.sp)
+/** What a space between the badge's words gets on top of its own width. */
+private val WORD_GAP = 2.1.sp
 
 /**
  * A style whose line is exactly [height] high, the letters in its middle: the row's lines have their places in dp, and
@@ -201,7 +206,14 @@ private fun Badge(word: String, tone: Tone, ink: Color, modifier: Modifier = Mod
             .border(with(LocalDensity.current) { 1f.toDp() }, Color.White.copy(alpha = if (dark) 0.30f else 0.55f), shape)
             .padding(horizontal = BADGE_EDGE),
         contentAlignment = Alignment.Center,
-    ) { Text(word, color = on, style = WORD, maxLines = 1, softWrap = false) }
+    ) {
+        // At this size and weight the face's own space is hardly wider than the gap between two letters ("On time" read as
+        // one word on the device): each space in the badge is given 2 sp more.
+        val spaced = remember(word) {
+            buildAnnotatedString { for (c in word) if (c == ' ') withStyle(SpanStyle(letterSpacing = WORD_GAP)) { append(c) } else append(c) }
+        }
+        Text(spaced, color = on, style = WORD, maxLines = 1, softWrap = false)
+    }
 }
 
 /**

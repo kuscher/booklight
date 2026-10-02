@@ -2,6 +2,30 @@
 
 *Living status. Newest first.*
 
+## 2026-10-02 (evening): 3.0 is released
+
+Alex, on the flight row's design: "Go ahead, approved. When done ship v3.0!"
+
+- **In 3.0** (versionCode 8): one structure for apps (Open · Search · Play · Window · More; the app as the chip);
+  play by name through Spotify with the user's own key; a search inside an app; an app's pages in Settings; `go`,
+  `meet`, `call`, `sms`, `wa`, `tg`, `alarms`, `timers`; links with any scheme and app commands; Labs; the flight's
+  row with a line, the plane on it and one badge (`docs/design/flights-row/`), and the same line in the pin; the
+  rubber highlight; typed keys before the input method; the new mark; "Fika Labs". `CHANGELOG.md`,
+  `docs/release-notes/3.0.md`.
+- **How it came onto main:** commits made from the branch's trees at four points (the commands for other apps, the
+  structure and the highlight, the flight row and the pictures, the release). The branch's own history stays on
+  the Mac.
+- **Checked before the tag:** the core tests, lint, the release build; the release APK on the Lenovo Googlebook with
+  real keys (a prompt answered by the device's model, `spo` Tab Tab Enter a song Enter, a search inside an app, a
+  real flight with a key, the window). **Not run on the HP Googlebook** (the private notes say why).
+- **Pictures:** the captures, the store scenes and the README's two pictures were taken again; the store's eight
+  now include a flight. The feature graphic still shows the old mark: it is made by the Play session's tool.
+- **Not seen on a device:** the emoji grid's square in motion; a jump of five rows by the pointer; a second music
+  app; `call`, `tg` (no app on the test device) and `sms`, `wa` filled in (their apps were not set up there);
+  dead keys and AltGr with the new key path; a screen under 880 dp high with a flight's row.
+- **Open for Alex, unchanged:** the full-ink question for quiet texts; the decisions of `docs/design/zero-state.md`;
+  whether Spotify should work without the user's own key (a relay of his was discussed and not built).
+
 ## 2026-10-02 (afternoon): the road to 3.0, on branch `next-five` (local, nothing pushed, nothing released)
 
 Alex: "I agree with the decisions for one structure for apps and your call. Go ahead and have this built. When this
