@@ -13,6 +13,10 @@ few letters, press Enter.
   arrow at the end opens the rest as a list. "chrome top left" or "chrome uninstall" arms that one straight away.
 - **Answers on this device.** `fix teh text`, `shorter …`, `de …`, `sum`, `explain …`, or a prompt of your
   own: the system's own model (Gemini Nano, where the device has it) writes the answer into the row.
+- **What you just copied.** Open Booklight within two minutes of a copy and one line offers it. Tab opens
+  it: the link, the date as an event, a translation, your prompts, or whatever you tell the model to do with it.
+- **Flights.** `LH455` names the airline and opens the flight's page. With a free AirLabs key of your own
+  the row shows times, status, terminal and gate, and a pinned flight counts down.
 - **Pin.** A note, a sum's answer, a colour, a QR code or a countdown in a small window that stays on top
   and never takes the keyboard.
 - **`?` lists everything**, each with an example that Booklight types for you.
@@ -67,6 +71,8 @@ free. The same keys close the panel again. Booklight shows these steps the first
 | --- | --- |
 | `chr`, `chrome right third`, `chrome uninstall` | An app, where to open it, and what to do with it |
 | `fix teh text` · `sum` · `de good morning` · `explain idempotent` | An answer from the model on this device |
+| Tab on "Copied 20 s ago · a link and a date" · `tr danish see you on Saturday` | What you copied, opened; a translation |
+| `LH455` · `LH455 fri` · `flight u2 8001` | A flight: its page, and with your own key its times |
 | `pin gate B22, 14:05` · `timer 10m tea`, Start and pin | A small window that stays on top |
 | `s wifi` · `k snap` · `new event` | A settings page, a keyboard shortcut, something another app offers |
 | `notes milk` · `todo call the bank` | A line of your notes; your tasks |
@@ -80,11 +86,12 @@ free. The same keys close the panel again. Booklight shows these steps the first
 
 ## The Booklight window
 
-The app's icon opens a window with everything else, in seven sections: Start (what Booklight is, your key,
-tips), Commands (everything it does; Enter on a row types the example into the panel), Yours (links,
-snippets, recipes, prompts), Look (theme, colours, glass, shadow, opening), Results (the search engine,
-suggestions, which kinds of rows show, other apps' commands), Access (the notes folder, brightness, the
-assistant key) and About. "Booklight settings" in the panel opens it too.
+The app's icon opens an ordinary desktop window with everything else, its navigation on the window's edge, in
+five sections: Start (what Booklight is, your key, tips, your usual, what you copied), Commands (everything it
+does, and yours: links, snippets, recipes, prompts; Enter on a row types the example into the panel), Look
+(theme, colours, glass, shadow, opening, with a live preview), Results (the search engine, suggestions, which
+kinds of rows show, other apps' commands, the flight service's key) and Privacy (the notes folder, brightness,
+what Booklight keeps, about). "Booklight settings" in the panel opens it too.
 A search-pill widget and a Quick Settings tile open the panel without a keyboard.
 
 ## Building

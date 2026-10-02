@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.kuscher.booklight"
         minSdk = 34
         targetSdk = 37
-        versionCode = 6
-        versionName = "2.2"
+        versionCode = 7
+        versionName = "2.3"
     }
 
     // Release signing from ~/.config/booklight (never committed). Absent -> unsigned release build.

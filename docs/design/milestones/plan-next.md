@@ -17,9 +17,9 @@ grew out of is `plan.md` beside this file; its M2, M3 and M4 are parked, unchang
 
 | | What | Size | State |
 | --- | --- | --- | --- |
-| **2.2** | What Alex asked for after 2.1: the opening at Medium on its new curve, glass frosted from its first frame, the white reflection, three placements on an app's row, the see-through selection in dark | Built | On main, reviewed, not released |
-| **M1 · The copy** | Copy something, open Booklight, and one line offers what can be done with it | About 14 days (the engineer's, not re-sized) | Planned and drawn; fourteen checks wait for a device session |
-| **M5 · Flights** | Type a flight number and the row answers with the next flight | About 10 days (not sized by an engineer) | Planned and drawn here; the full answer needs a key of the user's own (AirLabs since 2 October: §4). Built on a branch, not yet on a device |
+| **2.2** | What Alex asked for after 2.1: the opening at Medium on its new curve, glass frosted from its first frame, the white reflection, three placements on an app's row, the see-through selection in dark | Built | Released on 1 October 2026 |
+| **M1 · The copy** | Copy something, open Booklight, and one line offers what can be done with it | About 14 days (the engineer's, not re-sized) | Built, reviewed, tried on both Googlebooks. **Released in 2.3** (2 October 2026) |
+| **M5 · Flights** | Type a flight number and the row answers with the next flight | About 10 days (not sized by an engineer) | Built with AirLabs and a key of the user's own (§4), tried on both Googlebooks with a real key. **Released in 2.3** |
 
 No new permission in any of it. Parked, not dropped: M2 the picture, M3 the selection, M4 your language.
 
@@ -251,7 +251,8 @@ not asked: FL §10.4).
 2. **One device session,** half a day, both devices: M1's checks and M5's F1 to F3, F5, F6 and F8. It needs the HP
    awake and attached, and for F1 a key.
 3. **M1 · The copy,** released as 2.3.
-4. **M5 · Flights,** released as 2.4. Its first layer needs nothing from M1 and can ride in 2.3.
+4. **M5 · Flights,** released in 2.3 as well (Alex, 2 October: "get release 2.3 out with all things included"),
+   together with your usual (behind its switch) and the rebuilt window.
 
 Beside these: **the settings window.** Its build started on 1 October on a branch of its own, on Alex's word
 ("kick off the settings window redesign"), with the nine recommended answers of `window-redesign.md` §10. It

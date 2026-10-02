@@ -2,6 +2,29 @@
 
 *Living status. Newest first.*
 
+## 2026-10-02 (morning): 2.3 is released
+
+Alex: "Go ahead and get release 2.3 out with all things included and go ahead building the next five with intents."
+
+- **In 2.3** (versionCode 7): the copy (M1), flights with the user's own AirLabs key (M5), your usual behind its
+  switch (off unless chosen), the Booklight window rebuilt as a desktop window with the three new groups in it,
+  and every fix of the night's code review and design reviews. `CHANGELOG.md` and `docs/release-notes/2.3.md`.
+- **How it came onto main:** the night's two branches as two commits (the panel's features, then the window),
+  then the release commit. The branches' own histories stay on the Mac and are not pushed.
+- **Checked before the tag:** the core tests, lint and the release build; the release APK on the Lenovo Googlebook
+  (the panel, a prompt answered by the device's model, a flight with a key, your usual, the window). **Not run on
+  the HP Googlebook** (the private notes say why); the steps of `docs/RELEASING.md` for it are still to do.
+- **Seen in that check, not new:** text injected with no pause between the keys (`adb shell input text`) can lose the
+  one letter that follows a keyword's space, in the frame where the keyword becomes the chip (`fix teh` arrived as
+  `eh`). The code there is 2.2's. Not seen with typing by hand; worth a look.
+- **Store texts in the repo:** release notes (English, German) and one line each for the copy and for flights in
+  the two descriptions, with a sentence on flights under privacy. The tag sends the bundle and the notes to Play's
+  closed testing as a draft; the descriptions reach Play only when somebody puts them there.
+- **Open from the night, unchanged:** the full-ink question for quiet texts (`docs/design/reviews-night/`), the
+  rail's indicator width, the decisions of `docs/design/zero-state.md`, a second lookup after "not found"
+  (`docs/research/flights.md` §10), what the service's `expired` date means.
+- **Next:** the next five (`docs/research/next-five.md`), on a branch, starting with its device session.
+
 ## 2026-10-02 (early morning): the window on top of the copy, flights and your usual (branch `window-on-the-copy`)
 
 - **What it is:** the window's branch (kept as it was reviewed) merged with `m1-the-copy` into a new branch,

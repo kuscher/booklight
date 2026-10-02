@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.3 (2 October 2026)
 
 **The copy** (M1 of `docs/design/milestones/plan-next.md`).
 
@@ -25,7 +25,7 @@
 - A long text is never returned cut: a rewrite or translation of more than about 1,800 characters hands over
   to Gemini.
 
-**Flights** (M5 of `docs/design/milestones/plan-next.md`). Built without a device: its checks are still to do.
+**Flights** (M5 of `docs/design/milestones/plan-next.md`). Tried on both Googlebooks with a real key.
 
 - **A flight number is a row.** `LH455`, `lh 455`, `LH0455` and the callsign `DLH455` name the airline, from a
   table of 1,375 airlines Booklight carries (`tools/airlines.py`, public domain). Enter opens the flight's page
