@@ -15,10 +15,17 @@ round and its confirmation and four motion rounds of recordings on the Lenovo, a
   never on screen (the root view shows nothing while its outline is empty). Fixed in `PanelOutline.caster`.
 - **Chrome's "New tab" cannot be offered** by a plain app: `device-findings.md`, last section. The digital
   assistant may start such shortcuts (read in the Android 17 source, not tried).
+- **The blur follows the glass** (Alex's next note: the blur "just pops in"). The window's root view is framed
+  to the glass before each frame (`OverlayActivity.frameGlass`), so the glass is frosted from the seam on and
+  through the fold; the window still never moves. How the blur's region works, the system's own fade over the
+  first 200 ms, and the window resize that was tried and thrown away (Alex saw it open "one side first" on the
+  Lenovo): `device-findings.md`, "The blur follows the glass". Motion review five approved it with nothing
+  outstanding; the release build draws the whole opening at 8.3 ms a frame.
 - Settings schema 4: a stored `fast` becomes `medium` once.
 - Debug hooks added: `./bl debug activity PKG/CLASS`, `think on|off`, `turn MS`.
 - Release build checked on the Lenovo (a prompt answers; frame times: the opening 56 frames with only the
-  window's first one to three late, the reflection's lap one late in 249). The Lenovo has this release build.
+  window's first one to three late, the reflection's lap one late in 249). The Lenovo has the release build
+  with the blur change (its opening speed is set to Slow there, not by this work; left as found).
 - Not done: nothing of it on the HP; German was not looked at on the device for the two renamed places.
 
 **Two plans wait for Alex** (nothing of either is built):

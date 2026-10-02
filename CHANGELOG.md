@@ -6,7 +6,10 @@ Alex's notes on 2.1, each taken through a visual and a motion designer (`docs/de
 
 - **The opening is at Medium speed** unless chosen otherwise; whoever had Fast stored (everybody) gets Medium once.
 - **The opening's curve**: the glass opens slowly, quickly through the middle, and lands over a long stretch, with
-  no rebound. The blur comes with the landing. Leaving takes 155 ms at Fast and Medium alike.
+  no rebound. Leaving takes 155 ms at Fast and Medium alike.
+- **The glass is frosted from its first frame.** The blur used to arrive at the end of the opening, all at once.
+  It now belongs to the glass: there from the seam on, the same shape as the glass in every frame, and with it
+  until the seam is gone when the panel leaves.
 - **The seam the panel opens out of is seen again**: since 2.0's shadow nothing showed until the glass widened.
 - **The light on the edge is a white reflection**: it comes 2.4 s after the panel has opened, in a quiet moment,
   runs once round from the middle of the top edge, and gives way to any key. The model's "thinking" light is the

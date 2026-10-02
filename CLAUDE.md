@@ -58,7 +58,7 @@ permission needs his say-so and a place in docs/PLAN.md §4/§6).
     the model, tips, Booklight typing), `Panel` (keys, the unfold arrival, the tip card), `Field` (the scope
     chip), `Rows` (and an opened row's list), `Strip` (the action row and the option strip), `Bodies` (slots,
     level, grid, QR, the answer being written), `Marks` (the drawn check), `Footer`, `Metrics`, `Glass`
-    (shader, edge light, the shadow's settings), `PanelOutline` (the blur's corners; keeps the shadow off the
+    (shader, edge light, the shadow's settings), `PanelOutline` (the blur's corners; `GlassFrame`, where the glass stands; keeps the shadow off the
     glass), `Motion`.
   - `window/` the Booklight window the icon opens: `MainActivity` (the sections' pages, the keys), `Nav` (the
     column of sections), `Page` (rows and the one pill), `Stage` (the live demo), `Commands` (the Yours page:
@@ -115,9 +115,11 @@ permission needs his say-so and a place in docs/PLAN.md §4/§6).
 - Motion everywhere, all from `Motion.kt`: highlights move, lists cascade in, names unroll, nothing pops.
   Sizes are known before anything moves; typed text changes in the same frame. Never hold up typing.
 - Nothing typed = nothing shown (after the two first-run cards).
-- The window is exactly the panel: never WRAP_CONTENT, never bigger than what is drawn. **The blur is always
-  the whole window** (device-findings.md), so the arrival grows the glass inside a window that stays put, and
-  nothing may be drawn outside the panel's final rectangle.
+- The window is exactly the panel: never WRAP_CONTENT, never bigger than what is drawn, and never resized in
+  width (it is neither smooth nor symmetric). The arrival grows the glass inside a window that stays put.
+  **The blur is the window's root view**, so before each frame that view is framed to the glass
+  (`OverlayActivity.frameGlass`; device-findings.md, "The blur follows the glass"): the blur is the glass's own
+  from the seam on. Nothing may be drawn outside the glass: the root view clips it.
 - Destructive actions are last, in the error colour, never first, and never run by an arrow or Ctrl + digit.
 - What the device's model says is only shown, copied, pinned or put back where the text came from: it never
   runs anything and never outranks a local match.

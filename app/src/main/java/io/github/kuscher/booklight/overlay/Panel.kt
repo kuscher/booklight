@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.kuscher.booklight.R
@@ -140,8 +142,8 @@ fun Panel(
     onHeight: (Dp) -> Unit,
     /** How far the room has dimmed and how far the glass has come into focus, each 0 to 1: the window's dim and blur follow. */
     onPresence: (dim: Float, blur: Float) -> Unit,
-    /** Where the glass stands in the window, in pixels, and how far it has arrived (0 to 1): its shadow follows it. */
-    onGlass: (left: Int, top: Int, right: Int, bottom: Int, shown: Float) -> Unit,
+    /** Asked by the window before each frame is drawn: where the glass stands (its blur and its shadow follow it), and how much of its shadow it casts. */
+    frame: GlassFrame,
     /** Runs an action; [stay]: Shift was held, keep the panel open. */
     onRun: (Result, Action, stay: Boolean) -> Unit,
     onCard: (Card, primary: Boolean) -> Unit,
@@ -166,9 +168,9 @@ fun Panel(
     LaunchedEffect(Unit) { snapshotFlow { height }.collect { onHeight(it) } }
 
     // Arriving. Unfold: a seam of outline grows up and down, then the glass opens out of it to both
-    // sides. The window is the panel's final rectangle throughout (its blur is the whole window, and
-    // resizing a window in width is neither smooth nor symmetric): only the glass inside it grows,
-    // and the contents, laid out once at full width, are uncovered.
+    // sides. The window is the panel's final rectangle throughout (resizing a window in width is
+    // neither smooth nor symmetric): only the glass inside it grows, the window's blur with it, and
+    // the contents, laid out once at full width, are uncovered.
     val slow = arrival.slow
     val w0 = SEAM.value / Metrics.width.value
     val wide = remember { Animatable(if (arrival.unfold) w0 else 1f) }
@@ -185,15 +187,20 @@ fun Panel(
     val fieldPx = with(density) { Metrics.field.toPx() }
     fun unrolled() = ((landed(high.value) - 0.1f) / 0.9f).coerceIn(0f, 1f)
     fun glassTop() = ((fieldPx - seamPx) / 2f * (1f - unrolled())).roundToInt()
-    // On the way out the blur and the contents let go early: the glass closes slowly at first, and a
-    // blurred band would stand beside it for those frames.
+    /** The glass in a window [full] wide and [h] high, as far as the arrival has opened it: centred on the seam. */
+    fun glassBox(full: Int, h: Int): IntRect {
+        val w = (full * landed(wide.value)).roundToInt().coerceIn(1, full.coerceAtLeast(1))
+        val u = unrolled()
+        val hh = (h * u + seamPx * (1f - u)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
+        val top = glassTop().coerceAtMost((h - hh).coerceAtLeast(0))
+        return IntRect((full - w) / 2, top, (full - w) / 2 + w, top + hh)
+    }
+    // The window asks before each frame, and its shadow is cast from exactly this rectangle in the frame that draws it.
+    SideEffect { frame.at = ::glassBox; frame.cast = { presence.value * opened() } }
+    // On the way out the contents let go early: the glass closes over them.
     var folding by remember { mutableStateOf(false) }
     /** How fast the glass was closing, last frame (widths a second): a turn takes it over. A cancelled animation forgets its own. */
     var foldSpeed by remember { mutableFloatStateOf(0f) }
-    // On the way in the blur belongs to the landing: the pane arrives clear and frosts over in its last stretch. The
-    // blur is the whole window's, and the glass spends a long time nearly open: a blur that came sooner would stand
-    // beside the glass as a ghost of where it is going.
-    fun focused() = if (folding) smooth(0.75f, 1f, opened()) else smooth(0.88f, 1f, opened())
     fun shown() = if (folding) smooth(0.55f, 0.95f, opened()) else smooth(0.35f, 0.85f, opened())
     // The mark at the field's start and the cap at its end come last: the glass's edge passes them slowly, and would cut them.
     fun ends() = smooth(0.92f, 1f, opened())
@@ -231,8 +238,9 @@ fun Panel(
             presence.animateTo(0f, motion.fade((Arrival.GONE_MS * by).toInt(), easing = LinearEasing))
         }
     }
-    // The blur covers the whole window, so it waits until the glass is all but open.
-    LaunchedEffect(Unit) { snapshotFlow { presence.value * opened() to presence.value * focused() }.collect { (dim, blur) -> onPresence(dim, blur) } }
+    // The blur is the glass's own (the window frames its root view to the glass before each frame): it is there from
+    // the seam on, and goes with the seam.
+    LaunchedEffect(Unit) { snapshotFlow { presence.value * opened() to presence.value }.collect { (dim, blur) -> onPresence(dim, blur) } }
 
     // The reflection. A while after the panel has opened, in a quiet moment, one white light runs once round the
     // outline: from the middle of the top edge, clockwise, and back to it. It is there for the pleasure of it. It is
@@ -400,16 +408,9 @@ fun Panel(
             Modifier
                 // The glass: as wide and as high as the arrival has opened it, centred on the seam.
                 .layout { measurable, constraints ->
-                    val full = constraints.maxWidth
-                    val h = constraints.maxHeight
-                    val w = (full * landed(wide.value)).roundToInt().coerceIn(1, full.coerceAtLeast(1))
-                    val u = unrolled()
-                    val hh = (h * u + seamPx * (1f - u)).roundToInt().coerceIn(1, h.coerceAtLeast(1))
-                    val p = measurable.measure(Constraints.fixed(w, hh))
-                    val top = glassTop().coerceAtMost((h - hh).coerceAtLeast(0))
-                    // Its shadow is cast from exactly this rectangle, in the frame that places it there.
-                    val cast = presence.value * opened()
-                    layout(full, constraints.maxHeight) { p.place((full - w) / 2, top); onGlass((full - w) / 2, top, (full - w) / 2 + w, top + hh, cast) }
+                    val box = glassBox(constraints.maxWidth, constraints.maxHeight)
+                    val p = measurable.measure(Constraints.fixed(box.width, box.height))
+                    layout(constraints.maxWidth, constraints.maxHeight) { p.place(box.left, box.top) }
                 }
                 .graphicsLayer { scaleX = scale.value; scaleY = scale.value; alpha = presence.value }
                 .glass(

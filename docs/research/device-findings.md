@@ -117,7 +117,8 @@ Tried with a throwaway build (local branch `spike/unfold`), recorded and stepped
   only the corner radius. A window 24 dp larger than the panel showed a blurred band around the panel at
   rest. So: the window must be exactly the panel, nothing can swing out past the panel's final edge (a
   bounce has to turn back inwards), and while the glass is still narrow the blur radius is kept at 0; it
-  comes in over the second half of the opening.
+  comes in over the second half of the opening. **Corrected later the same day:** the blur is the window's
+  *root view*, and that view can be framed to the glass. See "The blur follows the glass" below.
 - The Lenovo is 2880 × 1800 at 240 dpi (1 dp = 1.5 px), Android user 10, SDK 37; the same build behaves the same.
 
 ## Checked for 1.1 to 1.4 (1 October, HP; nothing was sent or changed)
@@ -304,4 +305,50 @@ Alex: "it doesnt show the actions for apps like chrome which has new tab as one.
 - Without that: Booklight's own "New window" on Chrome's row opens a new Chrome window with a new tab, and a
   typed address or search opens in a new tab already. Chrome has no public way to ask for an empty new tab
   (it ignores its own `chrome://` addresses from outside).
+
+## The blur follows the glass (Lenovo Googlebook 15, 1 October 2026)
+
+Alex: "why does the blur just pop in when booklight opens? is there a chance to have it from the getgo or fade
+in during animation timed vs just sort of becoming blurred randomly?" Until then the blur's radius was held at 0
+while the glass grew and came in over the last stretch, because the blur was taken to be the whole window.
+
+- **What the blur's region really is** (Android's source, `DecorView` and `BackgroundBlurDrawable`, read in the
+  SDK's 36.1 sources; the Lenovo behaves the same). `Window.setBackgroundBlurRadius` puts a blur layer under the
+  window's background, inside the root view. `getBackground()` on that view still answers the app's own
+  drawable, which is why 1.0's check found "no `LayerDrawable`". The region sent to the compositor is **where
+  that layer's render node is drawn**: the root view's rectangle. It is reported for every frame and travels in
+  the same transaction as that frame's buffer. Its corner radius is read before each frame from the background's
+  outline.
+- **So the root view is framed to the glass.** In a pre-draw listener, before each frame:
+  `decorView.setLeftTopRightBottom(glass)` and the root view's children moved back by the same amount, so what
+  they draw stays where it was on screen (`OverlayActivity.frameGlass`). The window itself never moves. A
+  layout pass gives the root view the whole window again, so the frame is set anew every time. It is done before
+  the draw, not from Compose's layout during it: the background takes its bounds when the root view is drawn.
+  The shadow's outline and the cleared shape are then the root view's own rectangle.
+- **Measured at real speed (120 Hz), Fast, Medium and Slow, opening and closing, five of each:** the glass's
+  middle is within 0.5 px of the panel's in every frame; no frame stalls; what is behind the glass is blurred
+  across its whole width, edge to edge, and nothing beside it is (four times slower: from a glass 27 px wide;
+  at real speed the first frames are under the system's fade, below). Light and dark, with the shadow, with
+  rows arriving while it opens, and through a turn. Solid glass and the opening turned off are as before.
+- **Resizing the window itself in width was tried once more and thrown away.** At real speed the glass's middle
+  was 16 to 57 px off for the frames in which it grows fastest (the window's new position is applied before its
+  new buffer). Four times slower it looked right. Alex saw it at once: "one side first".
+- **The system fades the panel's task in, and the blur with it.** The desktop's shell animates a see-through
+  task itself (`SystemModalsTransitionHandler` in its transition log; the same handler animates the closing).
+  For about 200 ms after the first frame the whole window is under that fade: the seam has always come up over
+  its first 130 to 200 ms. The compositor multiplies a blur region by its window's alpha, so the blur comes up
+  with the glass, not later. `onEnterAnimationComplete` arrives 195 to 210 ms after the first frame.
+  `overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, 0, 0)` changes nothing (measured both ways). At Medium
+  and Slow the glass starts to open when that fade is over or all but over (220 and 440 ms); at Fast it opens
+  under it (from 110 ms).
+- **The blur is asked for in `onCreate`.** The first `setBackgroundBlurRadius` above 0 only registers a
+  listener; the platform makes the blur layer in a message of its own, and during an opening those wait behind
+  the frames. Asked for before the first frame, the layer is there with it. And the radius is never set to 0 on
+  the way in: at 0 the platform lets the layer go and has to be asked again. (From the source. On the device
+  the system's fade covers the same first frames, so no difference could be measured.)
+- How it was looked at: recordings over the test backdrop, the glass's edges and the sharpness of the text
+  behind it measured in every frame. The shell's transition log (`wm shell protolog enable-text
+  WM_SHELL_TRANSITIONS`) was on for one opening and turned off again.
+- Not tried: the HP. A system that does not put its blur in the root view would show a blurred rectangle
+  around the growing glass; the code cannot detect that, so look at the first opening on any new device.
 

@@ -313,7 +313,7 @@ this one is the app.
   | Glass | from the seam to its width on `opens`: slow, fast, and a long way of slowing down. No overshoot | 180 / 360 / 720 ms, cubic-bezier(0.55, 0, 0.1, 1) |
   | Contents | fade in | smooth(0.35, 0.85) of how far the glass is open |
   | The G and the esc cap | fade on their own, last: the glass's edge passes them slowly and would cut them | smooth(0.92, 1.0) |
-  | Blur | belongs to the landing: the pane arrives clear and frosts over | smooth(0.88, 1.0) (was 0.5 to 1.0: a ghost of the full panel stood beside the glass) |
+  | Blur | is the glass's own, from the seam's first frame (see "The blur follows the glass" below) | the level's full radius, times the panel's presence |
   | Under the field | may arrive | at 85 % open, as before |
   | In all | from the key to rest | 210 / 420 / 840 ms |
 
@@ -324,6 +324,26 @@ this one is the app.
   Slow in 310. The key pressed again part of the way opens on a spring without overshoot that takes over the
   speed the glass has (damping 1.0; stiffness 1000 at Fast and Medium, 250 at Slow: as stiff as the leaving is
   quick, or the glass would go on closing long after the key). From the seam it is the curve.
+- **The blur follows the glass** (Alex: "why does the blur just pop in ... is there a chance to have it from the
+  getgo or fade in during animation timed"). The blur was held back until the glass had all but landed, because
+  it was taken to be the whole window's; it came in two to four frames at the end and read as a pop. It is the
+  window's root view's, and that view is now framed to the glass before each frame
+  (`docs/research/device-findings.md`, "The blur follows the glass"). So:
+  - The glass is frosted from the seam on, at the level's full radius. The radius has no curve of its own: it is
+    a property of the material, like the veil and the outline, and cannot drift out of step with the width.
+  - It stays on the glass through the fold and the turn, and goes with the seam (radius times presence). The
+    band of blurred page that stood beside the folding glass for two or three frames is gone.
+  - Nothing else moved: contents smooth(0.35, 0.85), the G and the esc cap smooth(0.92, 1), the gate at 0.85. The
+    placeholder now comes up over frosted glass.
+  - The window still never moves or changes its width. The glass's middle is within half a pixel of the
+    panel's in every frame, and the release build draws the whole opening at one frame every 8.3 ms.
+  - The desktop itself fades the panel's window in over its first 140 to 200 ms, and a window's blur is as
+    strong as the window is opaque. At Medium and Slow that is over as the glass starts to open. At Fast the
+    glass, its veil, its outline and its blur come up on that one ramp while it spreads; left so (to open after
+    the fade Fast would take 320 ms). Booklight cannot turn that fade off.
+  - With the opening turned off, and with Solid glass, nothing changed.
+  - §4's "the blur is always the whole window" and its radius kept at 0 no longer hold. Motion review five:
+    `docs/design/reviews-after-2.1/motion-5.md`.
 - **The seam is seen again.** Since the shadow came (2.0) nothing of the panel showed until the glass began to
   widen: the root view had an empty outline while the shadow's strength was 0. The outline is now the glass's
   shape at alpha 0. The seam grows from its first frame and is seen to draw in at the end.

@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -120,7 +121,7 @@ class OverlayActivity : ComponentActivity() {
                     BackHandler { close() }
                     Panel(
                         model, icons, glass && !solid, dark, arrival, leaving,
-                        onHeight = ::sizeWindow, onPresence = ::present, onGlass = ::shadow,
+                        onHeight = ::sizeWindow, onPresence = ::present, frame = frame,
                         onRun = ::run, onCard = ::card, onClose = ::close,
                     )
                 }
@@ -149,6 +150,10 @@ class OverlayActivity : ComponentActivity() {
         // The background draws nothing; the platform reads the blur region's corner radius from its outline.
         ground = PanelOutline(dp(Metrics.radius.value))
         window.setBackgroundDrawable(ground)
+        window.decorView.viewTreeObserver.addOnPreDrawListener { frameGlass(); true }
+        // The blur is asked for here, not with the first frame: the platform turns it on in a message of its own, which
+        // would wait behind the opening's frames. With the glass's first frame it is already there.
+        if (motion.on && !solid) present(0f, if (arrival.unfold) 1f else 0f)
         if (shade != Shade.OFF) {
             // The shadow is the system's own, cast by the window's root view; it lies in room the system adds around the
             // window for it, where the window's blur does not reach. Darker in dark theme, where it has less to show against.
@@ -184,14 +189,42 @@ class OverlayActivity : ComponentActivity() {
 
     /** The room dims (if asked to) and the glass comes into focus as the panel arrives, and they let go as it leaves. */
     private fun present(dimmed: Float, focused: Float) {
-        val blur = if (solid) 0 else (dp(Look.blurDp) * focused).roundToInt()
+        // Never 0 on the way in: at 0 the platform lets go of the blur, and has to be asked again.
+        val blur = if (solid) 0 else (dp(Look.blurDp) * focused).roundToInt().coerceAtLeast(if (leaving) 0 else 1)
         if (blur != lastBlur) { lastBlur = blur; window.setBackgroundBlurRadius(blur) }
         if (dim > 0f) window.setDimAmount(dim * dimmed)
     }
 
-    /** Where the glass stands in the window and how far it has arrived: its shadow is cast from exactly there. */
+    private val frame = GlassFrame()
+    private var framed = false
+
+    /**
+     * Before each frame is drawn: the window's root view is framed to the glass as it stands, and what is in it is
+     * moved back so that it stays where it was on screen. The blur's region is the root view's rectangle, sent with
+     * the frame that is drawn (docs/research/device-findings.md): so the blur is the glass's own from its first
+     * frame, while the window itself stays the panel's final rectangle (resized in width it is neither smooth nor
+     * symmetric). The shadow is cast from the same rectangle.
+     */
+    private fun frameGlass() {
+        val root = window.decorView as ViewGroup
+        val content = root.getChildAt(0) ?: return
+        val w = content.width; val h = content.height
+        if (w == 0 || h == 0) return
+        val box = frame.at(w, h)
+        val follow = glass && !solid && (box.left != 0 || box.top != 0 || box.right != w || box.bottom != h)
+        if (follow || framed) {
+            // A layout pass gives the root view the whole window again, so the frame is set anew every time.
+            framed = follow; ground.framed = follow
+            val left = if (follow) box.left else 0; val top = if (follow) box.top else 0
+            root.setLeftTopRightBottom(left, top, if (follow) box.right else w, if (follow) box.bottom else h)
+            for (i in 0 until root.childCount) root.getChildAt(i).apply { translationX = -left.toFloat(); translationY = -top.toFloat() }
+        }
+        if (framed) shadow(0, 0, box.width, box.height, frame.cast()) else shadow(box.left, box.top, box.right, box.bottom, frame.cast())
+    }
+
+    /** Where the glass stands in the root view and how far it has arrived: its shadow is cast from exactly there. */
     private fun shadow(left: Int, top: Int, right: Int, bottom: Int, shown: Float) {
-        if (shade == Shade.OFF || !ground.place(left, top, right, bottom, shown)) return
+        if (!ground.place(left, top, right, bottom, shown) || shade == Shade.OFF) return
         window.decorView.invalidateOutline()
         ground.invalidateSelf()
     }

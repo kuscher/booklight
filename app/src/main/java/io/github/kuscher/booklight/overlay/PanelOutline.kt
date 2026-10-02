@@ -11,10 +11,19 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewOutlineProvider
+import androidx.compose.ui.unit.IntRect
+
+/** What the window asks the panel before each frame is drawn. */
+class GlassFrame {
+    /** Where the glass stands in a window of that size, in pixels. */
+    var at: (width: Int, height: Int) -> IntRect = { w, h -> IntRect(0, 0, w, h) }
+    /** How much of its shadow it casts, 0 to 1. */
+    var cast: () -> Float = { 1f }
+}
 
 /**
  * The window's background. It paints nothing (Compose paints the panel), but it has the panel's
- * rounded outline: the platform reads the blur region's corner radius from it.
+ * rounded outline: the platform reads the blur region's corner radius from it, before each frame.
  *
  * It also keeps the shadow off the glass. The shadow around the panel is the system's own, cast by
  * the window's root view from [caster]'s outline: the glass as it stands ([glass]: it grows during
@@ -23,7 +32,7 @@ import android.view.ViewOutlineProvider
  * shape, cleared. What is left of the shadow is only what lies around the panel.
  */
 class PanelOutline(private val radius: Float) : Drawable() {
-    /** Where the glass is in the window, in pixels; empty until the panel has said. */
+    /** Where the glass is in the window's root view, in pixels; empty until the panel has said. */
     val glass = Rect()
     /** How much of its shadow the glass casts, 0 to 1: it comes with the glass as it opens and goes with it. */
     var cast = 0f; private set
@@ -47,7 +56,13 @@ class PanelOutline(private val radius: Float) : Drawable() {
         canvas.drawRoundRect(glass.left.toFloat(), glass.top.toFloat(), glass.right.toFloat(), glass.bottom.toFloat(), r, r, clear)
     }
 
-    override fun getOutline(outline: Outline) { outline.setRoundRect(bounds, corner(bounds.width(), bounds.height())); outline.alpha = 1f }
+    /** True while the root view is framed to the glass: the blur's corners are then the glass's (it is placed before the frame is drawn; the bounds follow when it is). */
+    var framed = false
+
+    override fun getOutline(outline: Outline) {
+        outline.setRoundRect(bounds, if (framed) corner(glass.width(), glass.height()) else corner(bounds.width(), bounds.height()))
+        outline.alpha = 1f
+    }
     override fun setAlpha(alpha: Int) {}
     override fun setColorFilter(colorFilter: ColorFilter?) {}
     @Deprecated("Deprecated in Java") override fun getOpacity() = PixelFormat.TRANSLUCENT
