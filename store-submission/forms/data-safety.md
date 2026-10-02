@@ -5,10 +5,10 @@ Written the way the app says it, for the Play data-safety answers and the privac
 ## The short version
 Booklight keeps what it learns on the device and sends nothing anywhere, with one exception that is
 **off until the user turns it on**: search suggestions. With suggestions on, the text being typed is sent
-to the chosen search engine to get suggested searches. (M5, not released yet: a second one, which needs
-the user's own key before anything is sent: a flight number goes to AirLabs. See "Flight lookups". Not
-released yet either: a third, which needs the user's own key as well: the name of a song typed for Play in
-Spotify goes to Spotify. See "Spotify lookups".)
+to the chosen search engine to get suggested searches. Two more need a key of the user's own before anything
+is sent: since 2.3 a flight number goes to AirLabs (see "Flight lookups"), and since 3.0 the name of a song
+typed for Play in Spotify goes to Spotify (see "Spotify lookups"). (The library of 2.0 is another matter: see
+"2.0: what changed for the form".)
 
 ## What is stored on the device
 - `files/history.json`: for results the user picked, the result's id (for an app: its package and
@@ -54,7 +54,7 @@ Spotify goes to Spotify. See "Spotify lookups".)
   (64 entries at most). It is not written to storage.
 - Booklight's developer receives nothing: there is no Booklight server.
 
-**Flight lookups (M5; only with a key of the user's own, none by default).**
+**Flight lookups (since 2.3; only with a key of the user's own, none by default).**
 - Booklight ships no key. Until the user pastes their own AirLabs key into the Booklight window (Labs ›
   Flights), a flight number is read on the device from a bundled table of airlines and nothing is sent.
 - With a key in: one HTTPS GET request to `https://airlabs.co/api/v9/flight?flight_iata=<number>&api_key=<the user's key>`
