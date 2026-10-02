@@ -27,7 +27,8 @@ HOW IT LOOKS
 One panel in the upper middle of the screen, in the colours of your wallpaper or its own, light or dark. It unfolds when it opens, the selection glides from row to row, lists arrive in a quick cascade, and nothing pops. You choose how see-through it is and how fast it opens. If your system has animations turned off, Booklight cuts instead.
 
 PRIVACY
-No account, no ads, no analytics. What Booklight learns is kept on your device, and you can clear it.
+No account and no ads, and Booklight's developer receives nothing from it. What Booklight learns is kept on your device, and you can clear it.
+Prompts are answered on the device by the system's own model, through a library of Google's. Your text and the answer stay on the device. The library reports how it is used to Google: the device model and Android version, the app's version, an identifier made for this installation, timings and error codes. Not the text.
 Search suggestions are off until you turn them on. If you do, the text you type is sent to the search engine you chose (Google, DuckDuckGo, Bing, Brave Search or Ecosia) to suggest searches. Sums, web addresses and anything typed after a keyword are not sent. You can turn suggestions off again at any time.
 A mail, an event, a timer or a question for Gemini is handed to the app that opens; Booklight sends nothing itself.
 Booklight has no accessibility service and shows no permission prompts. Uninstalling an app is confirmed by Android; brightness works only after you switch it on in Settings.

@@ -27,7 +27,8 @@ WIE ES AUSSIEHT
 Ein Fenster oben in der Mitte des Bildschirms, in den Farben deines Hintergrundbilds oder in eigenen, hell oder dunkel. Es entfaltet sich beim Öffnen, die Auswahl gleitet von Zeile zu Zeile, Listen kommen in einer kurzen Kaskade, und nichts springt ins Bild. Du bestimmst, wie durchsichtig es ist und wie schnell es sich öffnet. Sind die Animationen des Systems aus, schaltet Booklight hart um.
 
 DATENSCHUTZ
-Kein Konto, keine Werbung, keine Analyse. Was Booklight lernt, bleibt auf deinem Gerät und lässt sich löschen.
+Kein Konto und keine Werbung, und der Entwickler von Booklight erhält nichts. Was Booklight lernt, bleibt auf deinem Gerät und lässt sich löschen.
+Prompts beantwortet das systemeigene Modell auf dem Gerät, über eine Bibliothek von Google. Dein Text und die Antwort bleiben auf dem Gerät. Die Bibliothek meldet Google, wie sie genutzt wird: Gerätemodell und Android-Version, die Version der App, eine Kennung für diese Installation, Laufzeiten und Fehlercodes. Nicht den Text.
 Suchvorschläge sind aus, bis du sie einschaltest. Dann wird dein getippter Text an die gewählte Suchmaschine gesendet (Google, DuckDuckGo, Bing, Brave Search oder Ecosia), um Suchen vorzuschlagen. Rechnungen, Webadressen und alles nach einem Kürzel werden nicht gesendet. Du kannst die Vorschläge jederzeit wieder ausschalten.
 Eine Mail, ein Termin, ein Timer oder eine Frage an Gemini wird der App übergeben, die sich öffnet; Booklight sendet selbst nichts.
 Booklight hat keinen Bedienungshilfen-Dienst und zeigt keine Berechtigungsabfragen. Das Deinstallieren einer App bestätigt Android; die Helligkeit funktioniert erst, nachdem du sie in den Einstellungen eingeschaltet hast.
