@@ -10,7 +10,7 @@ WHAT IT DOES
 - A row shows everything it can do as a row of icons. Tab moves along them: open in a new window, in the left or right half, app info, uninstall. "chrome uninstall" arms Uninstall straight away.
 - Jot things down in one line: mail anna@example.com Lunch? / See you at 1 opens your mail app's compose window, filled in. note, event, remind, timer, alarm and new file work the same way, each with a preview of what was understood.
 - Small controls: vol and brightness change with the arrow keys, pause and next reach your music.
-- Things to copy: an emoji grid, symbols, colour values, QR codes, passwords.
+- Things to copy: an emoji grid, symbols, the letters of other languages (ä ö ü ß, æ ø å, é, ñ), colour values, QR codes, passwords.
 - A question or a longer text opens in the Gemini app, typed in for you. You send it there.
 - Your own commands: links with placeholders, snippets, and recipes that do several things at once.
 

@@ -95,6 +95,11 @@
     <string name="sym_name">Symbols</string>
     <string name="sym_hint">Symbol name</string>
     <string name="sym_about">→ € ≠ ½ and more, to copy</string>
+    <string name="abc_keys">abc</string>
+    <string name="abc_name">Letters</string>
+    <string name="abc_hint">A language, a letter, or a mark: german, a, umlaut</string>
+    <string name="abc_about">ä ö ü ß æ ø å é ñ and more, to copy</string>
+    <string name="abc_words">letters,letter,umlaut,umlauts,accent,accents,special characters,eszett,german letters,danish letters</string>
     <string name="qr_name">QR code</string>
     <string name="qr_hint">Text or link</string>
     <string name="qr_about">A code to scan from the screen</string>

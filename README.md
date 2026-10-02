@@ -18,7 +18,7 @@ few letters, press Enter.
 - **`?` lists everything**, each with an example that Booklight types for you.
 - **Jot things down.** `mail …`, `note …`, `event …`, `remind …`, `timer 10m tea`, `new file ideas.md`:
   one line, a preview of what was understood, Enter. Longer questions go to Gemini.
-- **Small controls.** `vol`, `brightness`, `pause`; an emoji grid, colour values, QR codes, passwords.
+- **Small controls.** `vol`, `brightness`, `pause`; an emoji grid, the letters of other languages (`abc danish`), colour values, QR codes, passwords.
 - **Settings pages, sums and the web.** "dark", `150 + 20%`, a typed address, or a search. A keyword
   and a space search one site: `yt lofi`.
 - **Your own commands.** Links with placeholders, snippets, prompts, and recipes that do several things at
@@ -74,7 +74,7 @@ free. The same keys close the panel again. Booklight shows these steps the first
 | `note buy milk` · `event Fri 3pm Dentist` · `remind 5pm call bank` | A note, an event, a reminder |
 | `timer 10m tea` · `alarm 7:30` · `new file ideas.md` | A timer, an alarm, a new file |
 | `vol 40` · `brightness` · `pause` · `play lofi` | Controls |
-| `emoji party` · `sym arrow` · `#3478f6` · `qr …` · `password 20` | Things to copy |
+| `emoji party` · `sym arrow` · `abc german` · `#3478f6` · `qr …` · `password 20` | Things to copy |
 | `yt lofi` · `gh owner/repo` · `:3000` · `ask …` | The web, GitHub, localhost, Gemini |
 | `snip sig` · `clip` · your own keywords | Your snippets, your clipboard, your links and recipes |
 

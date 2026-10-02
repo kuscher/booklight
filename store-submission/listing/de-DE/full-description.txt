@@ -10,7 +10,7 @@ WAS ES TUT
 - Eine Zeile zeigt alles, was sie kann, als Reihe von Symbolen. Tab geht sie durch: in neuem Fenster öffnen, in der linken oder rechten Hälfte, App-Info, deinstallieren. „chrome deinstallieren“ wählt gleich Deinstallieren.
 - In einer Zeile notieren: mail anna@example.com Mittag? / Bis um 1 öffnet das Verfassen-Fenster deiner Mail-App, ausgefüllt. notiz, termin, erinnere, timer, wecker und neu datei funktionieren genauso, jeweils mit einer Vorschau dessen, was verstanden wurde.
 - Kleine Regler: vol und helligkeit ändern sich mit den Pfeiltasten, pause und weiter erreichen deine Musik.
-- Zum Kopieren: ein Emoji-Raster, Zeichen, Farbwerte, QR-Codes, Passwörter.
+- Zum Kopieren: Emoji, Zeichen, æ ø å é ñ, Farbwerte, QR-Codes, Passwörter.
 - Eine Frage oder ein längerer Text öffnet sich in der Gemini-App, schon eingetippt. Abschicken tust du dort.
 - Deine eigenen Befehle: Links mit Platzhaltern, Textbausteine und Rezepte, die mehreres auf einmal tun.
 

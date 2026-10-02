@@ -71,6 +71,8 @@ object Symbols {
         "clip" to "M16 3h-2.200a2 2 0 0 0-3.600 0H8a2 2 0 0 0-2 2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1a2 2 0 0 0-2-2zM8 5h8v3H8zM5 7h1v3h12V7h1v12H5z",
         "bolt" to "M11 21h-1l1-7H7.500c-.600 0-.600-.300-.400-.700L13 3h1l-1 7h3.500c.500 0 .600.300.400.700z",
         "text" to "M5 4h14v3h-2V6h-4v12h2v2H9v-2h2V6H7v1H5z",
+        // A capital A with the two dots of an umlaut: the letters of other languages.
+        "letters" to "M9.2 3a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zM14.8 3a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zM10.9 8h2.2L19 21h-2.3l-1.4-3.2H8.7L7.3 21H5zM9.6 15.8h4.8L12 10.4z",
         "full" to WINDOW,
         // Places: a window with the part filled where the app's window goes. Halves split it at 12; thirds are drawn as
         // three columns (two divisions), so at 18 dp a third is a different shape from a half, not a slightly narrower one.

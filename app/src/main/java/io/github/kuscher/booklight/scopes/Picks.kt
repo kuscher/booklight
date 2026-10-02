@@ -13,6 +13,7 @@ import io.github.kuscher.booklight.core.EmojiIndex
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.ImageUse
 import io.github.kuscher.booklight.core.Kind
+import io.github.kuscher.booklight.core.Letters
 import io.github.kuscher.booklight.core.Matcher
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
@@ -66,6 +67,36 @@ class EmojiScope(private val context: Context, private val prefs: Prefs, private
                 EmojiIndex(lines, german = context.resources.configuration.locales[0].language == "de")
             }.also { loaded = it }
         }
+    }
+}
+
+/**
+ * `abc german`, `abc ss`, `abc umlaut`: the letters of other languages in the same grid, to pick and
+ * copy. Nothing typed: the ones picked lately, then every small letter. Its row is also found by
+ * what people call these ("umlaut", "accent"), without those words being keywords.
+ */
+class LettersScope(private val context: Context, private val prefs: Prefs) : Scope {
+    override val key = "abc"
+    override val keywords: List<String> = context.getString(R.string.abc_keys).split(',')
+    override val name: String = context.getString(R.string.abc_name)
+    override val symbol = "letters"
+    override val hint: String = context.getString(R.string.abc_hint)
+    override val about: String = context.getString(R.string.abc_about)
+    override val words: List<String> = context.getString(R.string.abc_words).split(',')
+    private val letters by lazy { Letters(german = context.resources.configuration.locales[0].language == "de") }
+
+    override suspend fun rows(arg: String): List<Result> {
+        val found = letters.find(arg, EmojiScope.GRID)
+        val cells = if (arg.isBlank()) {
+            val recent = prefs.now.lettersRecent.mapNotNull { letters.named(it) }
+            (recent + found.filter { f -> recent.none { it.glyph == f.glyph } }).take(EmojiScope.GRID)
+        } else found
+        if (cells.isEmpty()) return emptyList()
+        return listOf(Result(
+            id = "pick:$key", provider = key, kind = Kind.OTHER, title = name, icon = Icon.Symbol(symbol), score = 1.0, learnable = false,
+            body = Body.Grid(cells.map { Cell(it.glyph, it.name) }),
+            actions = listOf(Action("copy", context.getString(R.string.action_copy), Effect.CopyText(""), done = context.getString(R.string.copied))),
+        ))
     }
 }
 

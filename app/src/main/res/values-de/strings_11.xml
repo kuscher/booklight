@@ -95,6 +95,11 @@
     <string name="sym_name">Zeichen</string>
     <string name="sym_hint">Name des Zeichens</string>
     <string name="sym_about">→ € ≠ ½ und mehr, zum Kopieren</string>
+    <string name="abc_keys">abc</string>
+    <string name="abc_name">Buchstaben</string>
+    <string name="abc_hint">Sprache, Buchstabe oder Zeichen: dänisch, a, akut</string>
+    <string name="abc_about">ä ö ü ß æ ø å é ñ und mehr, zum Kopieren</string>
+    <string name="abc_words">buchstaben,buchstabe,umlaut,umlaute,akzent,akzente,sonderzeichen,eszett,dänische buchstaben,letters</string>
     <string name="qr_name">QR-Code</string>
     <string name="qr_hint">Text oder Link</string>
     <string name="qr_about">Ein Code zum Scannen vom Bildschirm</string>

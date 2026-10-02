@@ -24,12 +24,14 @@ class CalcProvider(private val context: Context, private val prefs: Prefs) : Pro
     override val id = "calc"
     override suspend fun query(q: Query): List<Result> {
         if (!prefs.now.showSums) return emptyList()
-        val a = Calc.answer(q.text) ?: return emptyList()
+        // One and a half is 1,5 where the user's language writes it so; the answer is written the same way.
+        val comma = java.text.DecimalFormatSymbols.getInstance(context.resources.configuration.locales[0]).decimalSeparator == ','
+        val a = Calc.answer(q.text, comma) ?: return emptyList()
         return listOf(Result(
             id = "calc", provider = id, kind = Kind.ANSWER, title = a, subtitle = q.text.removePrefix("=").trim(),
             icon = Icon.Symbol("calc"), score = 1.0, answer = a, learnable = false,
             actions = listOf(
-                Action("copy", context.getString(R.string.action_copy), Effect.CopyText(a.replace(",", ""))),
+                Action("copy", context.getString(R.string.action_copy), Effect.CopyText(Calc.plain(a, comma))),
                 Action("pin", context.getString(R.string.action_pin), Effect.Pin("answer", a, note = q.text.removePrefix("=").trim()), symbol = "pin"),
             ),
         ))

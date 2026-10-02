@@ -44,7 +44,7 @@ class Scopes(
     private val fixed: List<Scope> = listOf(
         MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, PinScope(context, pinned), EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context), HelpScope(context, guide) { prefs.now.used },
-        EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), QrScope(context), ColorScope(context),
+        EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), LettersScope(context, prefs), QrScope(context), ColorScope(context),
         SnipScope(context, prefs), TextScope(context, null, web) { prefs.now.prompts },
         LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),
         // `s` and `k`: the two that give their letter up to a link of the user's own with that keyword.

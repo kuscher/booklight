@@ -175,12 +175,13 @@
         <item>new|write|plus|new|neu doc Plan Q3|Neu|Datei, Ordner, Dokument, Tabelle oder Präsentation</item>
         <item>timer|time|timer|timer|timer 10m Tee|Timer|Die Uhr startet ihn; „Starten und anheften“ hält den Countdown oben</item>
         <item>alarm|time|bell|alarm|wecker 7:30 Sport|Wecker|Die Uhr stellt ihn</item>
-        <item>sums|answers|calc||12*3.5|Rechnen|Enter kopiert das Ergebnis</item>
+        <item>sums|answers|calc||12*3,5|Rechnen|Enter kopiert das Ergebnis</item>
         <item>color|answers|edit||#3478f6|Farben|Dieselbe Farbe in HEX, RGB, HSL und OKLCH, jede zum Kopieren</item>
         <item>password|answers|key||passwort 20|Passwörter|Jedes Mal ein neues</item>
         <item>qr|answers|qr|qr|qr https://example.com|QR-Code|Zum Scannen vom Bildschirm, Kopieren, Speichern oder Teilen</item>
         <item>emoji|answers|smile|emoji|emoji party|Emoji|Ein Raster zum Auswählen; Enter kopiert</item>
         <item>sym|answers|text|sym|zeichen pfeil|Zeichen|Pfeile, Mathematik, Währungen</item>
+        <item>abc|answers|letters|abc|abc dänisch|Buchstaben|æ ø å, é, ñ und die Buchstaben anderer Sprachen: nach Sprache, Buchstabe (abc a) oder Zeichen (abc akut)</item>
         <item>prompts|text|spark||{prompt}|Prompts|Dein Text, beantwortet vom Modell auf diesem Gerät</item>
         <item>ask|text|spark|ask|frage wie falte ich ein Spannbettlaken|Gemini fragen|Übergibt den Text an die Gemini-App</item>
         <item>clip|text|clip|clip|clip |Zwischenablage|Was du kopiert hast: Großbuchstaben, eine Notiz, ein QR-Code …</item>
@@ -211,7 +212,7 @@
         <item>timer|timer|timer 10m Tee|Timer|startet einen Timer in der Uhr. „Starten und anheften“ zeigt den Countdown</item>
         <item>note|note|notiz Milch kaufen|Notiz|fügt Notes.md eine Zeile mit Datum hinzu</item>
         <item>clip|clip|clip |Zwischenablage|zeigt, was du kopiert hast und was sich damit tun lässt</item>
-        <item>sums|calc|12*3.5|Rechnen|wird beim Tippen beantwortet. Enter kopiert</item>
+        <item>sums|calc|12*3,5|Rechnen|wird beim Tippen beantwortet. Enter kopiert</item>
         <item>emoji|smile|emoji party|Emoji|zeigt ein Raster zum Auswählen. Enter kopiert</item>
     </string-array>
 

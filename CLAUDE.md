@@ -33,8 +33,9 @@ permission needs his say-so and a place in docs/PLAN.md §4/§6).
   - `Matcher.kt`, `History.kt`, `Calc.kt`, `Web.kt`, `Sites.kt`, `Suggest.kt`: as in 1.0.
   - Parsers, each with its tests: `Verbs.kt` ("chrome uninstall"), `When.kt` + `WhenParts.kt` + `Durations.kt`
     (dates and times, English and German), `Jot.kt` (mail, event, reminder, timer, new), `Colors.kt`,
-    `Templates.kt` (link placeholders), `Clip.kt`, `Secrets.kt`, `Emoji.kt`, `Jumps.kt`, `Ask.kt`,
-    `Places.kt` (where a window goes), `NoteText.kt` (notes and tasks as lines), `Prompts.kt`.
+    `Templates.kt` (link placeholders), `Clip.kt`, `Secrets.kt`, `Emoji.kt`, `Letters.kt` (`abc`: other
+    languages' letters), `Jumps.kt`, `Ask.kt`, `Places.kt` (where a window goes), `NoteText.kt` (notes and
+    tasks as lines), `Prompts.kt`.
 - `app/` — Compose app, package `io.github.kuscher.booklight`.
   - `BooklightApp` the process: providers, scopes, engine, stores. **Register a new provider here.**
   - `Guide.kt` everything Booklight does, as one table in the string resources (`guide`): the list behind `?`,

@@ -78,4 +78,49 @@ class CalcTest {
             assertEquals("12,345.5", a("12345 + 0.5"))
         } finally { java.util.Locale.setDefault(before) }
     }
+
+    private fun c(s: String) = Calc.answer(s, comma = true)
+
+    @Test fun aDecimalCommaWhereTheLanguageWritesOne() {
+        assertEquals("42", c("12*3,5"))
+        assertEquals("0,3", c("0,1 + 0,2"))
+        assertEquals("2,5", c("10 / 4"))
+        assertEquals("1,234", c("1,234 * 1"))
+        assertEquals("2468", c("1.234 * 2"))
+        assertEquals("2469", c("1.234,5 * 2"))
+        assertEquals("1.000.000", c("1000 * 1000"))
+        assertEquals("1.234.567,5", c("1.234.567 + 0,5"))
+        assertEquals("180", c("150 + 20%"))
+        assertEquals("151,5", c("150 + 1,0%"))
+        assertEquals("1,5", c(",5 + 1"))
+        assertEquals("1,41421356237", c("sqrt(2)"))
+    }
+
+    @Test fun thePointStillWorksWhereTheLanguageWritesAComma() {
+        assertEquals("42", c("12*3.5"))
+        assertEquals("0,25", c("0.125 * 2"))
+        assertEquals("2469", c("1,234.5 * 2"))
+    }
+
+    @Test fun aCommaIsADecimalSignInEnglishWhereItCannotBeThousands() {
+        assertEquals("42", a("12*3,5"))
+        assertEquals("0.25", a("0,125 * 2"))
+        assertEquals("2468", a("1,234 * 2"))
+        assertEquals("2469", a("1.234,5 * 2"))
+        assertEquals("2,469,134", a("1.234.567 * 2"))
+    }
+
+    @Test fun signsThatMakeNoNumber() {
+        assertNull(a("1,2,3 + 1"))
+        assertNull(c("1,2,3 + 1"))
+        assertNull(c("1.2.3 + 1"))
+        assertNull(a("1,23,4 * 2"))
+        assertNull(c("3,5"))
+        assertNull(a("1.5,2.5 + 1"))
+    }
+
+    @Test fun whatIsCopiedHasNoGroups() {
+        assertEquals("1234567.5", Calc.plain("1,234,567.5"))
+        assertEquals("1234567,5", Calc.plain("1.234.567,5", comma = true))
+    }
 }

@@ -190,6 +190,7 @@
         <item>qr|answers|qr|qr|qr https://example.com|QR code|To scan from the screen, copy, save or share</item>
         <item>emoji|answers|smile|emoji|emoji party|Emoji|A grid to pick from; Enter copies</item>
         <item>sym|answers|text|sym|sym arrow|Symbols|Arrows, maths, currency</item>
+        <item>abc|answers|letters|abc|abc german|Letters|ä ö ü ß, æ ø å and other languages\' letters: by language, by letter (abc a), by mark (abc umlaut)</item>
         <item>prompts|text|spark||{prompt}|Prompts|Your text, answered by the model on this device</item>
         <item>ask|text|spark|ask|ask how do I fold a fitted sheet|Ask Gemini|Hands the text to the Gemini app</item>
         <item>clip|text|clip|clip|clip |Clipboard|What you copied: upper case, a note, a QR code…</item>

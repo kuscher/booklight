@@ -73,6 +73,8 @@ data class Settings(
     /** The folder notes go to, as the tree address the user granted; null until they have. */
     val notesFolder: String? = null,
     val emojiRecent: List<String> = emptyList(),
+    /** The letters of other languages picked lately (`abc`), newest first. */
+    val lettersRecent: List<String> = emptyList(),
     /** What other apps offer (their shortcuts, their commands for Booklight) shows as rows; and the apps the user turned off one by one. */
     val appCommands: Boolean = true,
     val mutedApps: List<String> = emptyList(),

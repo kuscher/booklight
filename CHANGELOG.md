@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1 (1 October 2026)
+
+- **Letters** (`abc`): the letters of sixteen languages in the picker's grid, to copy. By language
+  (`abc german`, `abc dansk`; the start of the name is enough, in English, German or the language's own name),
+  by plain letter (`abc a`, `abc A` for capitals), by the two letters it is written with (`abc ss`, `abc ae`),
+  by its mark (`abc umlaut`, `abc acute`, `abc o slash`), or the letter itself for its other case. Nothing
+  typed: the ones picked lately, then every small letter. Its row is also found by `umlaut`, `accent`,
+  `letters`. `core/Letters.kt`; marks and plain letters come from Unicode's decomposition, not a hand-kept list.
+- **The calculator reads a decimal comma.** Where the system's language writes one (German, Danish, French…)
+  `1,5` is one and a half, `1.000` a thousand, and answers are written and copied that way. In any language the
+  other sign is understood where it can only mean one thing (`12*3,5` in English, `12*3.5` and `0.125` in
+  German), and with both signs in a number the last one is the decimal sign. The German examples use a comma again.
+
 ## 2.0 (1 October 2026)
 
 What Alex chose from `docs/research/next-features.md`, plus a shadow, tips, `s` and `k`, and answers from the

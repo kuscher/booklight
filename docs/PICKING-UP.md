@@ -2,6 +2,22 @@
 
 *Living status. Newest first.*
 
+## 2026-10-01 (night): 2.1
+
+Alex, after 2.0: "Fix the German decimal point. Add a new function to the app which lets me ask for e.g. German
+or danish letters like umlauts or ß and have them in my copy paste. Make a release."
+
+- **Letters** (`abc`, `core/Letters.kt`, `LettersScope` in `scopes/Picks.kt`): sixteen languages' letters in the
+  picker's grid, by language, plain letter, the two letters it is written with, or its mark. `abc` is the only
+  keyword (it is not a word anyone searches for); `umlaut`, `accent`, `letters` find its row without entering it.
+  Recents in `Settings.lettersRecent`. A new language is one line in `LANGUAGES`.
+- **Decimal comma** (`Calc.answer(text, comma)`): the language's decimal sign decides only the one ambiguous
+  case (one sign, once, followed by exactly three digits); everything else is read by what it can mean.
+- 221 core tests. Tried on the Lenovo in English and in German (`cmd locale set-app-locales`), debug and release
+  build; the release build still answers a prompt on the device.
+- Version code 5. 2.0 (code 4) was sent for Play review by the Play session about 17:25 PDT; 2.1 is a draft
+  beside it until the Play session sends it.
+
 ## 2026-10-01 (night): 2.0
 
 **Released.** Tag `v2.0` at 321fd59, pushed 23:55 UTC. The workflow was green on its first run: GitHub release
@@ -59,7 +75,6 @@ store's release notes are in `store-submission/listing/*/release-notes.txt`.
 - At the speed `adb shell input text` types, a letter right after a keyword's Space can be lost (seen once:
   "fix this" became Fix + "his"). `./bl debug keys` (40 ms a letter) never loses one. Worth a look in `Panel`'s
   `onChange` if a fast typist reports it.
-- The calculator still has no decimal comma (the German examples use a point).
 - From the motion review, left: when a row's list opens, its first action is drawn over the row that is
   fading under it for about 50 ms, and the pill's lower edge is ahead of the uncovering edge for as long
   (the fix is rows riding the edge; it wants its own recording session). A strip whose actions change (an

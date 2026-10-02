@@ -297,6 +297,7 @@ class OverlayActivity : ComponentActivity() {
         model.used(r, a)
         // An emoji that was picked comes first next time.
         if (r.body is Body.Grid && r.provider == "emoji") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(emojiRecent = (listOf(c.text) + (it.emojiRecent - c.text)).take(14)) } }
+        if (r.body is Body.Grid && r.provider == "abc") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(lettersRecent = (listOf(c.text) + (it.lettersRecent - c.text)).take(14)) } }
         val word = a.done ?: if (a.effect is Effect.CopyText) getString(R.string.copied) else replaced
         if (word != null) say(word)
         when {
