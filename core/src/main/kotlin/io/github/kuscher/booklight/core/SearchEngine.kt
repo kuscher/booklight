@@ -31,7 +31,7 @@ class SearchEngine(
 ) {
     suspend fun search(q: Query, limit: Int = DEFAULT_LIMIT): List<Result> {
         if (q.scope != null) return inScope(q, limit)
-        if (q.isEmpty) return zeroState(limit)
+        if (q.isEmpty) return emptyList()       // nothing typed: nothing found (what stands under the empty field is [byIds])
         val now = clock()
         val all = ask { it.query(q) } + scopeRows(q.text)
         val ranked = all.distinctBy { it.id }
@@ -41,8 +41,10 @@ class SearchEngine(
         // The ways out (search the web, ask Gemini) keep the last rows, however many other rows match. So does the
         // row of a one-letter keyword ("s" for Settings): it is always there to Tab into, under everything that matched.
         val letter = ranked.filter { isLetterRow(it, q.text) }.take(1)
-        val out = letter + ranked.filter(::isFallback).take(MAX_FALLBACKS)
-        return ranked.filterNot { isFallback(it) || it in letter }.take(limit - out.size) + out
+        // A guess (text that only looks like a flight number) is the very last row, under the ways out: it is far more
+        // often wrong than right, and there it costs one row and nothing else.
+        val out = letter + ranked.filter(::isFallback).take(MAX_FALLBACKS) + ranked.filter(::isGuess).take(1)
+        return ranked.filterNot { isFallback(it) || isGuess(it) || it in letter }.take(limit - out.size) + out
     }
 
     private suspend fun inScope(q: Query, limit: Int): List<Result> {
@@ -112,6 +114,8 @@ class SearchEngine(
 
     private fun isFallback(r: Result) = r.kind == Kind.WEB && r.score < FALLBACK_BELOW
 
+    private fun isGuess(r: Result) = r.score <= GUESS
+
     /** The row of a scope whose keyword is the one letter that was typed. */
     private fun isLetterRow(r: Result, text: String): Boolean {
         if (r.kind != Kind.SCOPE || text.length != 1) return false
@@ -128,16 +132,11 @@ class SearchEngine(
         return local + fresh.take(minOf(MAX_SUGGESTIONS, limit - local.size).coerceAtLeast(0))
     }
 
-    /** Before anything is typed: what you use most, then whatever providers suggest. */
-    private suspend fun zeroState(limit: Int): List<Result> {
-        val now = clock()
-        val all = ask { it.zeroState() }.distinctBy { it.id }
-        return all.map { it to (history.weight(it.id, now) + it.score * 0.01) }
-            .filter { it.second > 0 }                // nothing used yet and nothing suggested: an empty panel
-            .sortedByDescending { it.second }
-            .take(limit)
-            .map { it.first }
-    }
+    /** The live rows for [ids], in no particular order: whichever provider has each. One that fails has none. */
+    fun byIds(ids: Set<String>): List<Result> = providers.flatMap { p -> runCatching { p.byIds(ids) }.getOrDefault(emptyList()) }.distinctBy { it.id }
+
+    /** What was run from here, and when: the history the three under the empty field are picked from. */
+    fun used(): Map<String, History.Entry> = history.items()
 
     private suspend fun ask(from: List<Provider> = providers, call: suspend (Provider) -> List<Result>): List<Result> = coroutineScope {
         from.map { p ->
@@ -183,5 +182,7 @@ class SearchEngine(
         const val HANDOVER = "handover:"
         /** A web row scoring less than this is a way out, kept for the end of the list. */
         const val FALLBACK_BELOW = 0.5
+        /** A row with this score is a guess at what the text might be: it keeps the last place, under the ways out. */
+        const val GUESS = -1.0
     }
 }

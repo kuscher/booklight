@@ -43,7 +43,7 @@
     <string name="set_show_settings">Einstellungsseiten</string>
     <string name="set_show_sums">Rechnungen</string>
     <string name="set_privacy_title">Was Booklight speichert</string>
-    <string name="set_privacy_text">Booklight merkt sich, was du zu deinem Text auswählst, damit deine übliche Wahl zuerst erscheint. Das bleibt auf diesem Gerät.</string>
+    <string name="set_privacy_text">Booklight merkt sich, was du zu deinem Text auswählst, damit deine übliche Wahl zuerst erscheint. Ist „Das Übliche zeigen“ an, kommen daraus auch die Zeilen unter dem leeren Feld. Das bleibt auf diesem Gerät.</string>
     <string name="set_forget">Alles vergessen</string>
     <string name="set_forgotten">Vergessen</string>
     <string name="set_version">Version %1$s</string>

@@ -1,7 +1,5 @@
 package io.github.kuscher.booklight.device
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -33,7 +31,7 @@ object QrImages {
                 val file = File(File(context.cacheDir, "share").apply { mkdirs() }, "qr.png")
                 file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
-                if (use == ImageUse.COPY) context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newUri(context.contentResolver, "QR", uri))
+                if (use == ImageUse.COPY) Clipboard.set(context, context.contentResolver, uri)
                 else context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, uri)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }

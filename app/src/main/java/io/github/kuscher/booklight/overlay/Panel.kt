@@ -3,6 +3,13 @@ package io.github.kuscher.booklight.overlay
 import androidx.compose.animation.AnimatedContent
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -180,8 +187,20 @@ fun Panel(
     fun opened() = if (arrival.unfold) ((landed(wide.value) - w0) / (1f - w0)).coerceIn(0f, 1f) else 1f
     LaunchedEffect(Unit) { if (!gate) { snapshotFlow { opened() >= Motion.GATE }.first { it }; gate = true } }
     LaunchedEffect(gate) { if (gate) model.arrived = true }
-    // A tip comes only after the opening, and only if nothing has been typed for a moment: the opening is the same every time.
-    LaunchedEffect(gate) { if (gate) { delay(TIP_AFTER_MS); model.offerTip() } }
+    // What stands under the empty field comes only after the opening, and only if nothing has been typed for a moment:
+    // the opening is the same every time. Something just copied has the place before a tip.
+    // "Your usual" (a switch, off by default) may come sooner: as the glass lands, once it is known that no copy is fresh.
+    LaunchedEffect(gate) {
+        if (!gate || !model.settings.zero) return@LaunchedEffect
+        if (!arrival.unfold) snapshotFlow { presence.value >= 1f }.first { it }       // the opening set to Off: after its fade
+        snapshotFlow { model.zeroSeats != null && model.focused }.first { it }
+        model.offerZero()
+    }
+    LaunchedEffect(gate) { if (gate) { delay(TIP_AFTER_MS); if (!model.offerCopy() && !model.offerZero(last = true)) model.offerTip() } }
+    // The usual rows arrive unasked and with nothing selected: a screen reader is told once that they are there, and how to get in.
+    val view = androidx.compose.ui.platform.LocalView.current
+    val said = stringResource(R.string.a11y_usual, model.results.takeIf { model.zeroUp }.orEmpty().joinToString(", ") { it.title })
+    LaunchedEffect(model.zeroUp) { if (model.zeroUp) view.announceForAccessibility(said) }
     // The seam the glass grows out of, and draws back into, lies on the field's centre line whatever the panel's height.
     val seamPx = with(density) { Metrics.field.toPx() * 0.1f }
     val fieldPx = with(density) { Metrics.field.toPx() }
@@ -260,7 +279,8 @@ fun Panel(
         val since = SystemClock.uptimeMillis()
         var came = false
         var first = true
-        snapshotFlow { Triple(model.query, model.results, stir) }.collectLatest {
+        // (The copy's line arriving, and its words settling, are the list changing too.)
+        snapshotFlow { listOf(model.query, model.results, model.copy, stir) }.collectLatest {
             val acted = !first; first = false
             if (lapping) { if (acted) flourish.animateTo(0f, motion.fade(160)); return@collectLatest }
             // Once the model's light has gone round, the lap does not come: the same light again would read as more work.
@@ -268,7 +288,7 @@ fun Panel(
             // The panel has been open a while, and everything has stood still for a moment: both in real time.
             val open = SystemClock.uptimeMillis() - since
             delay(motion.hold(maxOf(Motion.REFLECTION_QUIET_MS, Motion.REFLECTION_AFTER_MS - open)))
-            if (model.thinking || think.value > 0f || thought) return@collectLatest
+            if (model.working || think.value > 0f || thought) return@collectLatest
             came = true
             // Its own job: what happens next must not stop it where it stands.
             laps.launch {
@@ -288,7 +308,7 @@ fun Panel(
 
     // While the device's own model works on an answer the same light goes round steadily, slower and less bright: a
     // flourish must not read as "working". When the first word lands it fades while it goes on.
-    LaunchedEffect(model.thinking) {
+    LaunchedEffect(model.working) {
         if (!motion.on) return@LaunchedEffect
         suspend fun round() {
             while (true) {
@@ -296,7 +316,7 @@ fun Panel(
                 run.animateTo(1f, motion.fade(((1f - run.value) * outlineDp() * Motion.THINKING_MS_PER_DP).toInt().coerceAtLeast(1), easing = LinearEasing))
             }
         }
-        if (model.thinking) {
+        if (model.working) {
             thought = true
             if (lapping) {
                 // The lap is on its way: the light it is becomes the model's, in the same place. Its brightness goes one
@@ -345,8 +365,9 @@ fun Panel(
         val r = model.current
         val entersScope = r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope
         return when (e.key) {
-            Key.DirectionDown -> { if (!model.moveCell(0, 1)) model.move(1); true }
-            Key.DirectionUp -> { if (!model.moveCell(0, -1) && !model.restoreLast()) model.move(-1); true }
+            // On the copy's line Down opens it, as Tab does: the line is where row one will be.
+            Key.DirectionDown -> { model.down(again); true }
+            Key.DirectionUp -> { model.up(again); true }
             Key.Enter, Key.NumPadEnter -> {
                 if (!again) { if (card != null) onCard(card, cardChoice == 0) else if (model.tip != null) model.tipEnter() else model.enter { row, a -> go(row, a, e.isShiftPressed) } }
                 true
@@ -355,6 +376,11 @@ fun Panel(
                 when {
                     card != null -> if (!again) cardChoice = 1 - cardChoice
                     model.tip != null -> if (!again) model.tipTab()
+                    // The usual rows at rest, where nothing is selected: Tab is Down. It acts on what is on screen.
+                    // (Not in the frames between a typed letter, or a scope entered, and its list: those rows are on their way out.)
+                    model.zeroUp && model.current == null && model.chip == null && model.query.isBlank() -> if (!again && !e.isShiftPressed) model.down(false)
+                    // The copy's line, or the empty field before the line has come: Tab opens what was copied.
+                    model.copy != null || model.bare -> if (!again && !e.isShiftPressed) model.tabCopy()
                     // The text is exactly a keyword and nothing has been moved: Tab makes it the chip. Text and chip change in one frame.
                     model.keyword != null && !e.isShiftPressed -> if (!again && model.enterKeyword()) field = TextFieldValue("")
                     entersScope && !e.isShiftPressed -> if (!again) model.fill()
@@ -384,7 +410,8 @@ fun Panel(
                 atEnd && model.nudge(-1) -> true
                 else -> model.arm(-1, wrap = false)     // on the first action Left is the caret's again
             }
-            Key.Backspace -> field.text.isEmpty() && model.leaveScope()
+            // One step back for one press: a held Backspace empties the text and stops there.
+            Key.Backspace -> field.text.isEmpty() && (again || model.back())
             Key.Escape -> { onClose(); true }
             else -> {
                 // Ctrl+1…9 runs that row's first action straight away (never one that removes something: those are never first).
@@ -446,10 +473,30 @@ fun Panel(
                     val foot = androidx.compose.animation.core.animateFloatAsState(if (rows) 1f else 0f, motion.fade(if (rows) 140 else 70), label = "footer")
                     // What is under the field shows as far as the window has grown; the footer rides the window's bottom
                     // edge, so it is never left behind by a list that grows and never lies over a row.
+                    // What is under the field, and the footer, wait for the glass's edge while it opens: at the gate the glass
+                    // is not yet as wide as a row, and its edge would cut the icons and the words at both ends.
+                    fun edges() = if (folding) 1f else ends()
+                    val target = Metrics.height(model)
+                    val soft = with(density) { 20.dp.toPx() }
                     Box(
-                        Modifier.fillMaxWidth().clipToBounds().layout { measurable, constraints ->
+                        // Cut at its lower edge, which is the window's as it grows: softly while it is still growing, so a row
+                        // that rises into room that is not there yet appears over its first lines and not at a hard line.
+                        Modifier.fillMaxWidth().graphicsLayer { alpha = edges(); clip = true; compositingStrategy = CompositingStrategy.Offscreen }
+                            .drawWithContent {
+                                drawContent()
+                                if (height < target - 1.dp && size.height > soft) drawRect(
+                                    Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - soft, endY = size.height),
+                                    topLeft = Offset(0f, size.height - soft), size = Size(size.width, soft), blendMode = BlendMode.DstIn,
+                                )
+                            }
+                            .layout { measurable, constraints ->
                             val p = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
-                            val room = (windowPx - fieldPx.roundToInt() - if (rows || foot.value > 0f) footerPx else 0).coerceAtLeast(0)
+                            // The footer's band is taken only from what the window has beyond row one's seat: while the window
+                            // is still at the height of the copy's line (or a tip's), the first row and the pill stand whole in it.
+                            val under = windowPx - fieldPx.roundToInt()
+                            val seat = (Metrics.pad + Metrics.row + Metrics.pad).roundToPx()
+                            val band = if (rows || foot.value > 0f) footerPx.coerceAtMost((under - seat).coerceAtLeast(0)) else 0
+                            val room = (under - band).coerceAtLeast(0)
                             layout(p.width, room) { p.place(0, 0) }
                         },
                     ) {
@@ -466,8 +513,15 @@ fun Panel(
                                 else -> Spacer(Modifier.fillMaxWidth())
                             }
                         }
+                        // The copy's line stands in row one's seat, over whatever comes into it: it fades where it
+                        // stands while the rows arrive under it.
+                        CopyLine(model)
                     }
-                    if (rows || foot.value > 0f) Box(Modifier.graphicsLayer { alpha = foot.value }) { Footer(model) }
+                    // The footer shows once its band is (nearly) whole: while the window has not grown that far it would hang
+                    // below the glass's lower edge and be cut by it.
+                    val seatPx = with(density) { (Metrics.pad + Metrics.row + Metrics.pad).toPx() }
+                    fun band() = smooth(0.75f, 1f, ((windowPx - fieldPx - seatPx) / footerPx).coerceIn(0f, 1f))
+                    if (rows || foot.value > 0f) Box(Modifier.graphicsLayer { alpha = foot.value * edges() * band() }) { Footer(model) }
                 }
             }
         }
@@ -491,7 +545,8 @@ private fun TipBody(model: OverlayModel) {
     val tip = remember { model.tip } ?: return
     val off = model.tipOff
     val arrive = remember { Animatable(if (motion.on) 0f else 1f) }
-    LaunchedEffect(Unit) { arrive.animateTo(1f, motion.fade(140 + 2 * 22, easing = LinearEasing)) }
+    // (They start once the panel's height has made most of their room: the glass's lower edge does not cut them.)
+    LaunchedEffect(Unit) { arrive.animateTo(1f, motion.fade(140 + 2 * 22, delay = 120, easing = LinearEasing)) }
     val rise = with(LocalDensity.current) { 12.dp.toPx() }
     // Part [i] of three starts 22 ms after the one before it and takes 140 ms.
     fun Modifier.part(i: Int) = graphicsLayer {

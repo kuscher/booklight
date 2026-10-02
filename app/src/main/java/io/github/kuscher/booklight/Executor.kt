@@ -4,9 +4,6 @@ import android.app.Activity
 import android.app.ActivityOptions
 import android.app.SearchManager
 import android.content.ActivityNotFoundException
-import android.content.ClipData
-import android.content.ClipDescription
-import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -14,7 +11,6 @@ import android.content.pm.LauncherApps
 import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.net.Uri
-import android.os.PersistableBundle
 import android.os.UserManager
 import android.provider.AlarmClock
 import android.provider.CalendarContract
@@ -26,6 +22,7 @@ import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.core.net.toUri
 import io.github.kuscher.booklight.core.Effect
+import io.github.kuscher.booklight.device.Clipboard
 import io.github.kuscher.booklight.core.MediaKey
 import io.github.kuscher.booklight.core.Box
 import io.github.kuscher.booklight.core.Place
@@ -61,7 +58,8 @@ class Executor(private val context: Context) {
     fun run(effect: Effect, from: Activity? = null): Boolean = try {
         perform(effect, from)
     } catch (e: Exception) {
-        Log.w(BooklightApp.TAG, "effect failed: ${effect::class.simpleName}", e)
+        // Only the kind of failure: an exception's message can carry what was typed or copied (an address that could not be opened).
+        Log.w(BooklightApp.TAG, "effect failed: ${effect::class.simpleName} (${e.javaClass.simpleName})")
         false
     }
 
@@ -80,6 +78,8 @@ class Executor(private val context: Context) {
                 "settings", "window" -> start(Intent(context, MainActivity::class.java))
                 // The list of everything, in the window.
                 "commands" -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_PAGE, "commands"))
+                // Where the key for a flight's times is set: the window, at that row.
+                "flights" -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_PAGE, MainActivity.PAGE_FLIGHTS))
                 // The system's Keyboard shortcuts window, where Customize adds an app shortcut.
                 "shortcuts" -> from?.requestShowKeyboardShortcuts() ?: return false
                 "done", "again" -> {}     // nothing to do here: the level was set as it was moved; a new password comes with the next list
@@ -154,7 +154,7 @@ class Executor(private val context: Context) {
             is Effect.Edit -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_EDIT, effect.kind).putExtra(MainActivity.EXTRA_ID, effect.id))
             // A recipe: each step in turn; it stops at the first that can't be done.
             is Effect.Steps -> return effect.steps.all { perform(it, from) }
-            is Effect.EnterScope, is Effect.Type -> return false     // the panel does these itself
+            is Effect.EnterScope, is Effect.Type, is Effect.Ask, is Effect.Unsuggest -> return false     // the panel does these itself
             // 2.0, each in its own task:
             is Effect.Open -> return open(effect, ctx)
             // The app the text came from asked for text back (its selection menu): this is the answer to that.
@@ -239,12 +239,7 @@ class Executor(private val context: Context) {
         return Rect(r.left, r.top, r.right, r.bottom)
     }
 
-    private fun copy(text: String, sensitive: Boolean) {
-        val clip = ClipData.newPlainText("Booklight", text)
-        // A password: the system's clipboard preview and history are asked not to show it.
-        if (sensitive) clip.description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
-        context.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
-    }
+    private fun copy(text: String, sensitive: Boolean) = Clipboard.set(context, text, sensitive)
 
     private fun mailto(e: Effect.Compose): Uri {
         val query = listOfNotNull(

@@ -17,8 +17,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Search suggestions from the chosen search engine: the one thing in Booklight that uses the
- * network, and only once the user has turned it on. The typed text goes to the engine's
+ * Search suggestions from the chosen search engine: one of the two things in Booklight that use the
+ * network (the other is a flight's times, `Flights.kt`), and only once the user has turned it on. The typed text goes to the engine's
  * suggestion address over HTTPS; nothing else is sent (no cookies, no identifiers, a plain
  * "Booklight" user agent), nothing is kept
  * beyond a small in-memory cache. Slow or failing requests are simply no suggestions.

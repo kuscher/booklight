@@ -55,6 +55,7 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
                 "appcommands" -> "commands"
                 "web" -> "web"
                 "answers" -> if (row.id == "answer:color") "color" else "password"
+                "flights" -> "flight"
                 else -> null
             }
             key.startsWith("site:") -> "links"

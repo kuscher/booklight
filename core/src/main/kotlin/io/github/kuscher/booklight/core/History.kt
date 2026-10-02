@@ -31,6 +31,10 @@ class History(data: Data = Data()) {
     @Synchronized
     fun data(): Data = Data(HashMap(items), latches.mapValues { HashMap(it.value) })
 
+    /** What was run and when, without what was typed for it: for the three under the empty field ([Zero]). */
+    @Synchronized
+    fun items(): Map<String, Entry> = HashMap(items)
+
     @Synchronized
     fun record(query: String, id: String, now: Long) {
         items[id] = bump(items[id], now)
@@ -70,10 +74,7 @@ class History(data: Data = Data()) {
 
     private fun bump(e: Entry?, now: Long) = Entry((e?.let { decayed(it, now) } ?: 0.0) + 1.0, now)
 
-    private fun decayed(e: Entry, now: Long): Double {
-        val age = (now - e.last).coerceAtLeast(0)
-        return e.count * exp(-LN2 * age / HALF_LIFE_MS)
-    }
+    private fun decayed(e: Entry, now: Long): Double = faded(e, now)
 
     /** 0 at 0, about 0.63 at [scale], towards 1 beyond: the first picks matter most. */
     private fun saturate(x: Double, scale: Double) = min(1.0, 1 - exp(-x / scale))
@@ -91,5 +92,8 @@ class History(data: Data = Data()) {
         const val HALF_LIFE_MS = 28.0 * 24 * 60 * 60 * 1000
         private const val MAX_LATCHES = 4000
         private val LN2 = ln(2.0)
+
+        /** A count as it stands at [now]: halved every four weeks since the last pick. A pick "in the future" (the clock was set back) has not faded. */
+        fun faded(e: Entry, now: Long): Double = e.count * exp(-LN2 * (now - e.last).coerceAtLeast(0) / HALF_LIFE_MS)
     }
 }

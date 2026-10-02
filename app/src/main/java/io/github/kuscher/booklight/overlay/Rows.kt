@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -113,18 +115,21 @@ private class RowSlots {
     fun sync(results: List<Result>, motion: Motion): List<Slot> {
         if (results === last) return all
         last = results
-        val live = all.filter { !it.leaving }.associateBy { it.result.id }
+        // A flight's full row is one row to the list whatever its number is just now ("LH45", then "LH455"): its words
+        // change in the frame of the key, it does not leave and arrive again in its own seat.
+        fun seat(r: Result) = if (r.provider == io.github.kuscher.booklight.providers.FlightsProvider.ID && r.body is Body.Slots) "flight:" else r.id
+        val live = all.filter { !it.leaving }.associateBy { seat(it.result) }
         val fromNothing = live.isEmpty()
         val tops = Metrics.tops(results)
         var fresh = 0
         val now = results.mapIndexedNotNull { i, r ->
             if (r.kind == Kind.ACTION) return@mapIndexedNotNull null
-            val s = live[r.id] ?: Slot(next++, r).also { it.delay = motion.stagger(if (fromNothing) i else fresh++) }
+            val s = live[seat(r)] ?: Slot(next++, r).also { it.delay = motion.stagger(if (fromNothing) i else fresh++) }
             s.result = r; s.index = i; s.top = tops[i]
             s
         }
-        val ids = results.mapTo(HashSet()) { it.id }
-        val going = all.filter { it.leaving || it.result.id !in ids }.onEach { it.leaving = true }
+        val kept = now.toHashSet()
+        val going = all.filter { it.leaving || it !in kept }.onEach { it.leaving = true }
         all = now + going
         return all
     }
@@ -154,7 +159,8 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     }
     // Closed by typing: typing is never held up. The list fades where it stands, quickly, and the rows for the new text
     // come at once. Closed by Left, the arrow or Enter: the edge covers it again, and what comes back waits for the edge.
-    val typedAway = open == null && held != null && model.query != heldText
+    // (And when its row has left the list altogether, by "Don't suggest": nothing is left for an edge to travel back to.)
+    val typedAway = open == null && held != null && (model.query != heldText || rows.none { !it.leaving && it.result.id == held?.first })
     LaunchedEffect(open) {
         // The other rows are fading in these first frames. Opened again while it was still closing, it turns round at once.
         if (open != null) { if (block.value == 0f) delay(motion.hold(30)); block.animateTo(1f, motion.place()) }
@@ -162,7 +168,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     }
 
     // The list that is closing: where its row stands in the list that is coming back, and how tall it was.
-    val closing = held?.takeIf { open == null }?.let { h -> rows.firstOrNull { !it.leaving && it.result.id == h.first }?.let { Closing(it.top, Metrics.listHeight(h.second)) } }
+    val closing = held?.takeIf { open == null }?.let { h -> rows.firstOrNull { !it.leaving && it.result.id == h.first }?.let { Closing(it.top, Metrics.listHeight(h.second), Metrics.rowHeight(it.result)) } }
 
     // As tall as its rows, the ones that are leaving included: the body fades this out when the list empties, and a fade
     // cuts what it fades to its own bounds. At no height the rows would be gone in one frame instead of fading.
@@ -182,7 +188,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
             SlotRow(slot.top, slot.leaving, if (under) 0 else slot.delay, onGone = { slots.remove(slot) }, wait = {
                 when {
                     typedAway || open != null || held == null || mine != null -> false
-                    under -> closing!!.top + Metrics.row + closing.height * block.value > slot.top + Metrics.row / 2
+                    under -> closing!!.top + closing.row + closing.height * block.value > slot.top + Metrics.row / 2
                     else -> block.value > 0.04f
                 }
             }) {
@@ -190,17 +196,29 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                     r, icons, selected,
                     armed = if (selected) model.armed else r.armed, confirming = selected && model.confirming, cell = if (selected) model.cell else -1,
                     stops = model.stops(r), opened = open == r.id,
-                    onHover = { if (!slot.leaving) model.select(slot.index) },
+                    // (A pointer passing over a row is not the user going to it: nothing is looked up for that.)
+                    onHover = { if (!slot.leaving) model.select(slot.index, passing = true) }, calm = model.zeroUp && model.current == null,
                     onClick = { if (!slot.leaving) { model.select(slot.index); if (open != r.id) model.armAt(r.armed); model.enter(onRun) } },
                     onArm = { if (selected) model.armAt(it) },
-                    onAction = { if (selected) { model.armAt(it); model.enter(onRun) } },
+                    // (An action that is off takes no click: Enter would run the armed one in its place.)
+                    onAction = { if (selected && r.actions.getOrNull(it)?.off != true) { model.armAt(it); model.enter(onRun) } },
+                    // A screen reader's action on a row: the row is gone to first (it may not be the selected one, and in the
+                    // usual rows none is). An action behind the arrow is run from the row's list, so every rule of Enter holds.
+                    onCustom = { i ->
+                        val a = r.actions.getOrNull(i)
+                        if (!slot.leaving && a != null && !a.off) {
+                            model.select(slot.index)
+                            if (a.more) { if (model.opened != r.id) model.open(); if (model.selectId("act:${r.id}:${a.id}")) model.enter(onRun) }
+                            else { model.armAt(i); model.enter(onRun) }
+                        }
+                    },
                     onCell = { if (selected) model.cellAt(it) else if (!slot.leaving) model.select(slot.index) },
                     onPick = { if (!slot.leaving) { model.select(slot.index); model.cellAt(it); model.armAt(0); model.enter(onRun) } },
                     onToggle = { if (!slot.leaving) { model.select(slot.index); if (open == r.id) model.close() else model.open() } },
                     onGrow = { model.grow(r.id) },
                 )
                 if (mine != null) ActionBlock(
-                    mine.second, shown = { block.value.coerceIn(0f, 1f) }, fading = typedAway,
+                    mine.second, under = Metrics.rowHeight(r), shown = { block.value.coerceIn(0f, 1f) }, fading = typedAway,
                     // Which of them the pill is on: they follow their row in the list.
                     selected = if (open == r.id) model.selected - slot.index - 1 else -1,
                     onHover = { i -> if (open == r.id) model.select(slot.index + 1 + i) },
@@ -211,7 +229,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     }
 }
 
-private class Closing(val top: Dp, val height: Dp)
+private class Closing(val top: Dp, val height: Dp, /** The height of the row the list was opened under. */ val row: Dp)
 
 /** Places a row, moves it when its slot changes, and plays its arrival and departure. */
 @Composable
@@ -229,13 +247,16 @@ private fun SlotRow(top: Dp, leaving: Boolean, delayMs: Int, onGone: () -> Unit,
         }
     }
     val rise = with(LocalDensity.current) { 12.dp.toPx() }
+    // A row that leaves while it is still rising keeps the offset it had: it fades where it stands, it does not jump up.
+    val left = remember { floatArrayOf(-1f) }
+    if (!leaving) left[0] = -1f else if (left[0] < 0f) left[0] = (1f - here.value).coerceIn(0f, 1f) * rise
     Box(
         Modifier.zIndex(if (leaving) 0f else 1f)
             .offset { IntOffset(0, y.roundToPx()) }
             .graphicsLayer {
                 alpha = here.value.coerceIn(0f, 1f)
                 // Arriving rows rise into place; leaving ones just fade where they are.
-                translationY = if (leaving) 0f else (1f - here.value) * rise
+                translationY = if (leaving) left[0].coerceAtLeast(0f) else (1f - here.value) * rise
             },
     ) { content() }
 }
@@ -259,7 +280,9 @@ fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false) {
         if (!visible) return@LaunchedEffect
         if (shown == 0f) { upper.snapTo(top); lower.snapTo(top + height); return@LaunchedEffect }
         // Its row only grew (an answer needing more lines): the lower edge goes with the row's own growth, on the same spring.
-        if (top == upper.targetValue) { lower.animateTo(top + height, motion.place()); return@LaunchedEffect }
+        // (Only if the upper edge really stands there: one that was on its way when the list changed again must be brought
+        // home too, or the pill would stay short of its row's top.)
+        if (top == upper.value) { lower.animateTo(top + height, motion.place()); return@LaunchedEffect }
         val down = top + height / 2 > (upper.targetValue + lower.targetValue) / 2
         launch { upper.animateTo(top, if (down) motion.trail() else motion.lead()) }
         launch { lower.animateTo(top + height, if (down) motion.lead() else motion.trail()) }
@@ -286,11 +309,11 @@ fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false) {
  * top down and covers them again.
  */
 @Composable
-private fun ActionBlock(rows: List<Result>, shown: () -> Float, /** Going because the text changed: all of it fades, no edge travels. */ fading: Boolean, selected: Int, onHover: (Int) -> Unit, onClick: (Int) -> Unit) {
+private fun ActionBlock(rows: List<Result>, /** How tall the row is that they are opened under. */ under: Dp, shown: () -> Float, /** Going because the text changed: all of it fades, no edge travels. */ fading: Boolean, selected: Int, onHover: (Int) -> Unit, onClick: (Int) -> Unit) {
     val tops = Metrics.tops(rows)
     val soft = with(LocalDensity.current) { 20.dp.toPx() }
     Box(
-        Modifier.offset(y = Metrics.row).fillMaxWidth().height(Metrics.listHeight(rows))
+        Modifier.offset(y = under).fillMaxWidth().height(Metrics.listHeight(rows))
             .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen; alpha = if (fading) shown() else 1f }
             .drawWithContent {
                 val edge = if (fading) size.height else size.height * shown()
@@ -337,15 +360,29 @@ private fun ActionRow(r: Result, selected: Boolean, modifier: Modifier, onHover:
 }
 
 @Composable
-private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List<Action>, bare: Boolean, onHover: () -> Unit, onClick: () -> Unit, onAction: (Int) -> Unit, content: @Composable RowScope.() -> Unit) {
+private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List<Action>, bare: Boolean, onHover: () -> Unit, onClick: () -> Unit, onAction: (Int) -> Unit, calm: Boolean = false, content: @Composable RowScope.(Dp) -> Unit) {
     val hover by rememberUpdatedState(onHover)
+    val still by rememberUpdatedState(calm)
+    val slack = with(LocalDensity.current) { 4.dp.toPx() }
     val act by rememberUpdatedState(onAction)
+    // A row that changes its height (its answer is asked for, or needs more lines) grows and shrinks on the spring the
+    // pill's lower edge and the rows under it move on: what it holds is uncovered by that edge, never drawn outside the pill.
+    val tall by animateDpAsState(height, LocalMotion.current.place(), label = "tall")
     Row(
-        Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(24.dp))
+        Modifier.fillMaxWidth().height(tall.coerceAtLeast(1.dp)).clip(RoundedCornerShape(24.dp))
             // Hover selects only when the pointer moves, so a list growing under a resting pointer doesn't steal the selection.
             .pointerInput(Unit) {
                 awaitPointerEventScope {
-                    while (true) if (awaitPointerEvent().type == PointerEventType.Move) hover()
+                    var from: Offset? = null
+                    while (true) {
+                        val e = awaitPointerEvent()
+                        val at = e.changes.firstOrNull()?.position
+                        if (e.type == PointerEventType.Exit) from = null
+                        if (e.type != PointerEventType.Move || at == null) continue
+                        if (!still) { from = null; hover(); continue }
+                        val start = from ?: at.also { from = it }
+                        if ((at - start).getDistance() > slack) { from = null; hover() }
+                    }
                 }
             }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
@@ -356,8 +393,7 @@ private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List
             }
             .padding(horizontal = if (bare) 0.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        content = content,
-    )
+    ) { content(tall) }
 }
 
 @Composable
@@ -366,6 +402,10 @@ fun ResultRow(
     /** What the arming can rest on (indices into the row's actions; the number of actions is its arrow), and whether its other actions are listed under it. */
     stops: List<Int> = r.actions.indices.toList(), opened: Boolean = false,
     onHover: () -> Unit, onClick: () -> Unit, onArm: (Int) -> Unit, onAction: (Int) -> Unit, onCell: (Int) -> Unit, onPick: (Int) -> Unit, onToggle: () -> Unit = {},
+    /** Nothing is selected yet (the usual rows at rest): the pointer brings the highlight only once it has really moved on the row, not by a tremble. */
+    calm: Boolean = false,
+    /** One of the row's actions, asked for by a screen reader. */
+    onCustom: (Int) -> Unit = onAction,
     /** An answer in this row needs more than its two lines. */
     onGrow: () -> Unit = {},
 ) {
@@ -376,13 +416,23 @@ fun ResultRow(
     val on = scheme.onSurface
     val dim by animateColorAsState(scheme.onSurface.copy(alpha = if (selected) 1f else SECOND), motion.fade(120), label = "dim")
     val pop by animateFloatAsState(if (selected) 1.06f else 1f, motion.pop(), label = "icon")
-    val kind = r.label ?: if (r.provider == "gemini") "Gemini" else kindLabel(r.kind)
+    // (Read whether it is used or not: a row that gains or loses its own label must stay the same row to Compose.)
+    val ofKind = kindLabel(r.kind)
+    val kind = r.label ?: if (r.provider == "gemini") "Gemini" else ofKind
     val body = r.body
     val described = stringResource(R.string.a11y_selected, r.title, r.actions.getOrNull(armed)?.label ?: kind)
-    RowFrame(Metrics.rowHeight(r), selected, described, r.actions, bare = body is Body.Grid, onHover, onClick, onAction) {
+    // The answer body as it last was: it goes on being drawn while it fades, when the row turns back into its name.
+    val lastStream = remember { arrayOfNulls<Body.Stream>(1) }
+    if (body is Body.Stream) lastStream[0] = body
+    // And the room its strip keeps stays until it has faded, so its lines are not laid out again on their way out.
+    var streamed by remember { mutableStateOf(body is Body.Stream) }
+    LaunchedEffect(body is Body.Stream) { if (body is Body.Stream) streamed = true else { delay(motion.hold(80)); streamed = false } }
+    RowFrame(Metrics.rowHeight(r), selected, described, r.actions, bare = body is Body.Grid, onHover, onClick, onCustom, calm) { tall ->
         if (body is Body.Grid) { GridBody(body, cell.coerceAtLeast(0), selected, onCell, onPick); return@RowFrame }
-        // A row that grows under its answer keeps its mark and its strip where they were: on the line of the row's first height.
-        val pinned = if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = (Metrics.tall - 36.dp) / 2) else Modifier
+        // A row that grows under its answer keeps its mark and its strip where they were: on the line of the row's first
+        // height. A row that is asked where it stands grows from an ordinary row into that: they travel there with its height.
+        val line = minOf(tall, Metrics.tall)
+        val pinned = if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = ((line - 36.dp) / 2).coerceAtLeast(0.dp)) else Modifier
         if (body is Body.Task) TaskBox(body.done, dim)
         else if (body is Body.Code) QrPlate(body.text, Modifier.padding(start = 4.dp))
         // A swatch is a sample, not a mark: it doesn't swell with the selection.
@@ -391,30 +441,37 @@ fun ResultRow(
 
         when {
             body is Body.Slots -> SlotsBody(body, on)
-            body is Body.Stream -> StreamBody(body, on, onGrow)
             body is Body.Code -> Column(Modifier.weight(1f).padding(start = 20.dp, end = 12.dp)) {
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 3, overflow = TextOverflow.Ellipsis)
                 r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = 1, modifier = Modifier.padding(top = 4.dp)) }
             }
-            else -> Column(Modifier.weight(1f).padding(start = 16.dp, end = 12.dp, top = if (r.answer != null && body == null && r.icon !is RowIcon.Swatch) 3.dp else 0.dp)) {
-                // A row whose actions copy different forms of one value (a colour) shows the armed form large.
-                val big = if (body is Body.Mono) body.text else if (r.icon is RowIcon.Swatch) (r.actions.getOrNull(armed)?.effect as? Effect.CopyText)?.text ?: r.answer else r.answer
-                if (big != null) {
-                    r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                    if (body is Body.Mono) MonoText(big, on)
-                    // A changed answer rolls up into place, like a counter.
-                    else AnimatedContent(big, transitionSpec = { motion.roll() }, label = "answer") { a ->
-                        Text(a, color = on, style = TextStyle(fontFamily = Fonts.round, fontSize = if (a.length > 22) 26.sp else 34.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // A row's name and, once it is asked, the question and its answer stand in one place and change in a fade.
+            else -> Box(Modifier.weight(1f).fillMaxHeight()) {
+                AnimatedContent(body is Body.Stream, transitionSpec = { (fadeIn(motion.fade(110, 40)) togetherWith fadeOut(motion.fade(70))).using(null) }, contentAlignment = Alignment.TopStart, label = "asked") { stream ->
+                    if (stream) lastStream[0]?.let { StreamBody(it, on, onGrow) }
+                    else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+                        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = if (r.answer != null && body == null && r.icon !is RowIcon.Swatch) 3.dp else 0.dp)) {
+                        // A row whose actions copy different forms of one value (a colour) shows the armed form large.
+                        val big = if (body is Body.Mono) body.text else if (r.icon is RowIcon.Swatch) (r.actions.getOrNull(armed)?.effect as? Effect.CopyText)?.text ?: r.answer else r.answer
+                        if (big != null) {
+                            r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            if (body is Body.Mono) MonoText(big, on)
+                            // A changed answer rolls up into place, like a counter.
+                            else AnimatedContent(big, transitionSpec = { motion.roll() }, label = "answer") { a ->
+                                Text(a, color = on, style = TextStyle(fontFamily = Fonts.round, fontSize = if (a.length > 22) 26.sp else 34.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        } else {
+                            // Laid out once at its own width and covered by a fade where the strip takes its room: a name unrolling
+                            // beside it never makes the title swap letters for an ellipsis.
+                            if (body is Body.Keys) Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500), lineHeight = 21.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            else Box(Modifier.fillMaxWidth().fadeEnd()) {
+                                if (body is Body.Task) TaskTitle(r.title, body.done, on)
+                                else Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                            }
+                            r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = if (Metrics.rowHeight(r) > Metrics.row) 2 else 1, overflow = TextOverflow.Ellipsis) }
+                        }
+                        }
                     }
-                } else {
-                    // Laid out once at its own width and covered by a fade where the strip takes its room: a name unrolling
-                    // beside it never makes the title swap letters for an ellipsis.
-                    if (body is Body.Keys) Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500), lineHeight = 21.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    else Box(Modifier.fillMaxWidth().fadeEnd()) {
-                        if (body is Body.Task) TaskTitle(r.title, body.done, on)
-                        else Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
-                    }
-                    r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = if (Metrics.rowHeight(r) > Metrics.row) 2 else 1, overflow = TextOverflow.Ellipsis) }
                 }
             }
         }
@@ -439,7 +496,9 @@ fun ResultRow(
         // A key combination: the caps keep one place in every row, selected or not. The strip's room is kept free
         // after them, and the kind label and the strip trade places inside it.
         if (body is Body.Keys) { KeyCaps(body.keys, dim); Spacer(Modifier.width(16.dp)) }
-        Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = (Metrics.tall - 32.dp) / 2).height(32.dp) else Modifier, contentAlignment = Alignment.CenterEnd) {
+        // An answer's strip has a room of its own, as the key caps have: the text beside it is as wide before the answer as
+        // after it, whichever action is armed, and is never laid out again. A strip wider than its room hangs over to the left.
+        Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = ((line - 32.dp) / 2).coerceAtLeast(0.dp)).height(32.dp).width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else if (streamed) Modifier.width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else Modifier, contentAlignment = Alignment.CenterEnd) {
         val mode = when { selected && r.actions.isNotEmpty() -> 2; opened -> 1; else -> 0 }
         // The arrow turns over when the row's list opens: one turn, whichever of the two arrows is showing.
         val turn = animateFloatAsState(if (opened) 180f else 0f, motion.pop(), label = "turn")
@@ -448,7 +507,8 @@ fun ResultRow(
             // Copy, Pin…), the old strip fades and the new one comes in its place. The room changes at once: no size animation
             // of the container's own, which would wipe the strip and lay the title out again every frame.
             (if (targetState.mode == 2 && initialState.mode != 2) (slideInHorizontally(motion.place()) { it / 4 } + fadeIn(motion.fade(110, 60))) togetherWith fadeOut(motion.fade(60))
-            else fadeIn(motion.fade(110)) togetherWith fadeOut(motion.fade(60))).using(null)
+            // (Strip to strip: the new one waits until the old one has gone, or two panes would stand in one room.)
+            else fadeIn(motion.fade(110, if (initialState.mode == 2 && targetState.mode == 2) 60 else 0)) togetherWith fadeOut(motion.fade(60))).using(null)
         }, contentKey = { it.key }, contentAlignment = Alignment.CenterEnd, label = "trail") { trail ->
             val state = trail.mode
             when {
@@ -472,11 +532,18 @@ fun ResultRow(
 
 /** What stands at a row's right end: its kind (0), the arrow of its open list (1), or the strip of what it can do (2), which is another strip when those are other actions. */
 private class Trail(val mode: Int, val actions: List<Action>) {
-    val key: Any = mode to actions.map { it.id }
+    val key: Any = mode to actions.map { if (it.off) it.id + " off" else it.id }     // (an action going off is another strip: it is drawn anew, dimmed)
+    // Equal by its key: the row is composed again in every frame while its colours move, and a new target each time
+    // would make the transition drop the strip it is fading out.
+    override fun equals(other: Any?) = other is Trail && other.key == key
+    override fun hashCode() = key.hashCode()
 }
 
 /** The room a row of key caps keeps free at its right for its strip ("All shortcuts", Copy), so the caps never move. */
 private val KEYS_ROOM = 200.dp
+
+/** The room an answer's row keeps for its strip: the widest it gets (Copy, Pin, Gemini, with the longest name unrolled). */
+private val STREAM_ROOM = 216.dp
 
 /** A task's box, in the icon column. Ticked, it fills with ink and the check draws itself in the ground's colour. */
 @Composable

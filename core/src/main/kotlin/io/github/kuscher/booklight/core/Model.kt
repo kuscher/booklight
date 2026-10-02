@@ -118,6 +118,14 @@ sealed interface Effect {
     /** The QR code for [text]: copied, saved to Downloads, or shared. */
     data class QrImage(val text: String, val use: ImageUse) : Effect
 
+    /**
+     * Asks the device's own model [prompt] and writes the answer into the row that was asked, under
+     * the caption [name] ("In English"; empty for none). The panel does this itself; the model's
+     * words are only shown, and what is done with them is another action.
+     */
+    data class Ask(val prompt: String, val name: String) : Effect
+    /** "Don't suggest": the thing with this id is no longer one of the rows under the empty field. The panel does it itself. */
+    data class Unsuggest(val id: String) : Effect
     /** Turns a scope's row into the chip in the field; [text] becomes its argument. */
     data class EnterScope(val key: String, val text: String = "") : Effect
     /** Booklight types [text] into the field, a letter at a time (an example from a tip or from the list of everything). The panel does this itself. */
@@ -154,12 +162,22 @@ data class Action(
     val done: String? = null,
     /** Kept behind the row's arrow: a row shows nine actions as icons and opens the rest as a list under it. */
     val more: Boolean = false,
+    /** It cannot be run now (it needs an answer that did not come): it keeps its place, dimmed, and the arming passes over it. */
+    val off: Boolean = false,
 )
 
 /** What a row shows besides, or instead of, its title. */
 sealed interface Body {
-    /** A preview of what was understood: labelled slots that fill as the argument is typed. */
-    data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null) : Body
+    /**
+     * A preview of what was understood: labelled slots that fill as the argument is typed. Or an answer
+     * that is written into slots that stand from the first frame (a flight's two times): then [first]
+     * is the least width of the first slot, in dp, so the second starts in one place whatever the
+     * first holds; [tail] goes on after [note] a step lighter (the status, then where to go);
+     * [struck]: the values will not happen, and are struck through as a done task is; [source]: who
+     * gave the answer and when, which the footer says while the row is selected.
+     */
+    data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null,
+        val first: Int = 0, val tail: String? = null, val struck: Boolean = false, val source: String? = null) : Body
     /** A level from 0 to 100 (volume, brightness). [target]: a typed value, not yet set. [locked]: needs a grant first. */
     data class Level(val percent: Int, val target: Int? = null, val muted: Boolean = false, val locked: Boolean = false) : Body
     /** A grid of characters to pick from; the arrows move between cells. */
@@ -223,8 +241,12 @@ data class Result(
 interface Provider {
     val id: String
     suspend fun query(q: Query): List<Result>
-    /** What to offer before anything is typed. */
-    suspend fun zeroState(): List<Result> = emptyList()
+    /**
+     * The rows for these ids, as typing would find them, for the three under the empty field: from
+     * memory, without a search and without reading anything new. An id that is not this provider's,
+     * or whose thing is gone or switched off, has no row.
+     */
+    fun byIds(ids: Set<String>): List<Result> = emptyList()
 }
 
 /**

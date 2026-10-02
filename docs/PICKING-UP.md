@@ -2,6 +2,47 @@
 
 *Living status. Newest first.*
 
+## 2026-10-02 (night): the copy, flights and your usual are built on a branch; nothing is released
+
+Alex's word for the night: "go" on M1, then "change out the air api with Airlabs ... have a setting for users to
+add their own ... finish the flights work", "a great zero state experience as in issue kuscher/booklight#1 ...
+behind an option to show it or the tips for now defaulting to the tips", a clean-up and review, and a plan for
+commands that control other apps.
+
+- **Where it is.** Branch `m1-the-copy` holds all three, on top of main (2.2). Not merged, not tagged, not
+  pushed; the version is still 2.2 / code 6. `CHANGELOG.md` "Unreleased" says what is in it. Branch
+  `window-on-the-copy` (a git worktree) is the same with the rebuilt settings window on top.
+- **The copy (M1)**: built, seen working on both Googlebooks, reviewed twice by an interaction, a visual and a
+  motion designer (`docs/design/reviews-m1/`, `docs/design/reviews-night/`). As built: `ux-model.md` §15,
+  `design-system.md` §13. Ready-made prompts are kept by reference (settings schema 5).
+- **Flights (M5)**: built by an agent without a device, then tried on both Googlebooks with Alex's own AirLabs
+  key (which is in no file of the repo: it lives in the app's own storage, and for tests in the private config
+  folder). The source is AirLabs, not AeroDataBox: `docs/research/flights.md` §10 has what the service really
+  answers. A flight number in what was copied gets its row under the copy's chip; nothing is asked for it until
+  the user goes to that row. Not built: the usual route without a key (the letter to that table's host is not
+  sent). The drawn page still names the old service.
+- **Your usual (issue 1)**: designed by a group of five and two critics (`docs/design/zero-state.md`, with
+  fourteen decisions for Alex), built with the cuts its head names, behind the switch "Show your usual", off.
+  Tried on the Lenovo only.
+- **The reviews** (`docs/design/reviews-night/README.md`): six code reviewers with a second reader each (fifty
+  findings confirmed, fixed but for three small ones named there), and three designers on the built features.
+- **Found on the devices** (`docs/research/device-findings.md`): the HP's model answers although the system
+  calls it "downloadable" (Booklight now tries it); a text of 1,900 characters is translated whole in 36 s; the
+  Lenovo calls a postcode a phone number.
+- **Next five** (`docs/research/next-five.md`, from `docs/research/intents.md`): commands for other apps.
+  A plan, nothing built. What a player does when asked to play by name is still not verified.
+- **The settings window** is finished and reviewed on its own branch (`worktree-agent-…`, the reviewed state)
+  and, with the night's three new settings carried into it (Start: "Your usual", "What you copied"; Results:
+  "Flights"), on `window-on-the-copy`. Not merged: Alex has not seen it.
+- **The release build** with all three features was tried on the Lenovo with real keys: the line, Tab, an
+  answer in the row, the usual rows, a flight with its answer. About 1 % of frames late in each step.
+- **Not done, or not verified:** the release build on the HP (the HP was not available for the rest of the
+  night; an earlier release build there handed a model's row to Gemini, and what was changed for that is
+  untried there); your usual and flights on the HP at all; the screen reader; a second display; the pointer.
+- **Open for Alex**, beside the fourteen decisions of the zero state: merging and releasing; whether second ink
+  becomes full ink in every list (the visual review's finding 2); whether a typed prompt should wait for Enter
+  as a row under a copy does; the eleven decisions of `next-five.md`.
+
 ## 2026-10-01 (night, later): 2.2 released; the plan is M1 and a new M5; the window is being built
 
 - **2.2 (versionCode 6) is released** on Alex's word ("Yes, release 2.2 now"): everything that was "on main after

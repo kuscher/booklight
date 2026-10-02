@@ -55,13 +55,16 @@ fun Footer(model: OverlayModel) {
     Row(Modifier.fillMaxWidth().height(Metrics.footer + Metrics.pad).padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f)) {
             val word = model.flash
-            AnimatedContent(word ?: grid?.cells?.getOrNull(model.cell)?.name?.let { " $it" }, transitionSpec = {
-                (fadeIn(motion.fade(120)) + slideInHorizontally(motion.place()) { -slide }) togetherWith fadeOut(motion.fade(80))
+            // (Under an answer that came from somewhere else: who gave it and when, said as quietly as a cell's name.)
+            AnimatedContent(word ?: grid?.cells?.getOrNull(model.cell)?.name?.let { " $it" } ?: (r?.body as? Body.Slots)?.source?.let { " $it" }, transitionSpec = {
+                // (No size animation of the box: it would uncover a long word letter by letter, cut through its letters.)
+                ((fadeIn(motion.fade(120)) + slideInHorizontally(motion.place()) { -slide }) togetherWith fadeOut(motion.fade(80))).using(null)
             }, contentAlignment = Alignment.CenterStart, label = "flash") { text ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     when {
                         text == null -> {}
-                        text.startsWith(" ") -> Text(text.trim(), color = ink, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        // (The quiet word is the size of the hints it shares the line with.)
+                        text.startsWith(" ") -> Text(text.trim(), color = ink, style = HINT, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         else -> {
                             // Strong ink and a mark, not a colour: a mid-tone would vanish over the wrong window.
                             if (!model.flashBad) DrawnCheck(true, scheme.onSurface, Modifier.size(16.dp))
@@ -79,6 +82,8 @@ fun Footer(model: OverlayModel) {
         }
         val first: Pair<String, String> = when {
             model.confirming -> "" to ""
+            // The usual rows at rest: nothing is selected, and Down is how to get in.
+            model.zeroUp && r == null -> "↓" to stringResource(R.string.hint_choose)
             model.opened != null -> "←" to stringResource(R.string.hint_less)
             // The text is a keyword: Tab makes it the chip. Said with the scope's own words ("Search settings"), not the app's name.
             model.keyword != null -> "tab" to model.keyword!!.title
@@ -107,10 +112,10 @@ fun Footer(model: OverlayModel) {
 
 /** A key, as on the keyboard. Arrows, Enter and Backspace are drawn as marks: as font glyphs they are hairlines. */
 @Composable
-fun Keycap(label: String, /** In a row, where the caps are the answer: a little taller, at full ink. */ strong: Boolean = false) {
+fun Keycap(label: String, /** In a row, where the caps are the answer: a little taller, at full ink. */ strong: Boolean = false, /** One of the caps that make a column at the panel's right (the field's esc, the tab under it): they are one width. */ wide: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
     val ink = scheme.onSurface.copy(alpha = if (strong) 1f else SECOND)
-    Box(Modifier.height(if (strong) 24.dp else 22.dp).defaultMinSize(minWidth = if (strong) 24.dp else 0.dp).clip(RoundedCornerShape(7.dp)).background(scheme.onSurface.copy(alpha = if (LocalDark.current) 0.14f else 0.10f)).padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.height(if (strong) 24.dp else 22.dp).defaultMinSize(minWidth = if (wide) 36.dp else if (strong) 24.dp else 0.dp).clip(RoundedCornerShape(7.dp)).background(scheme.onSurface.copy(alpha = if (LocalDark.current) 0.14f else 0.10f)).padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
         val marks = label.filter { it != ' ' }
         if (marks.isNotEmpty() && marks.all { it in MARKS }) Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
             for (c in marks) Icon(Symbols.of(if (c == '⏎') "enter" else if (c == '⌫') "backspace" else "arrow"), null, Modifier.size(13.dp).rotate(MARKS.getValue(c)), tint = ink)

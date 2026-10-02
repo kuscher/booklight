@@ -182,9 +182,11 @@
         <item>emoji|answers|smile|emoji|emoji party|Emoji|Ein Raster zum Auswählen; Enter kopiert</item>
         <item>sym|answers|text|sym|zeichen pfeil|Zeichen|Pfeile, Mathematik, Währungen</item>
         <item>abc|answers|letters|abc|abc dänisch|Buchstaben|æ ø å, é, ñ und die Buchstaben anderer Sprachen: nach Sprache, Buchstabe (abc a) oder Zeichen (abc akut)</item>
+        <item>flight|answers|plane||LH455|Flüge|Eine Flugnummer nennt ihre Airline; Enter öffnet die Seite des Flugs. Mit eigenem AirLabs-Schlüssel: Zeiten, Gate und Status</item>
         <item>prompts|text|spark||{prompt}|Prompts|Dein Text, beantwortet vom Modell auf diesem Gerät</item>
         <item>ask|text|spark|ask|frage wie falte ich ein Spannbettlaken|Gemini fragen|Übergibt den Text an die Gemini-App</item>
-        <item>clip|text|clip|clip|clip |Zwischenablage|Was du kopiert hast: Großbuchstaben, eine Notiz, ein QR-Code …</item>
+        <item>clip|text|clip|clip|clip |Zwischenablage|Was du kopiert hast: was darin steht, eine Übersetzung, deine Prompts. Tippe, um mehr zu finden</item>
+        <item>tr|text|spark|tr|tr dänisch bis Samstag|Übersetzen|In eine andere Sprache, vom Modell auf diesem Gerät. Ohne Text: was du kopiert hast</item>
         <item>snip|text|text|snip|snip add sig / Viele Grüße, Alex|Textbausteine|Textstücke unter kurzen Namen</item>
         <item>pin|text|pin|pin|pin Gate B22, 14:05|Anheften|Eine Zeile in einem kleinen Fenster, das oben bleibt</item>
         <item>vol|controls|volume|vol|vol 30|Lautstärke|Oder die Pfeiltasten in ihrer Zeile</item>
@@ -212,8 +214,10 @@
         <item>timer|timer|timer 10m Tee|Timer|startet einen Timer in der Uhr. „Starten und anheften“ zeigt den Countdown</item>
         <item>note|note|notiz Milch kaufen|Notiz|fügt Notes.md eine Zeile mit Datum hinzu</item>
         <item>clip|clip|clip |Zwischenablage|zeigt, was du kopiert hast und was sich damit tun lässt</item>
+        <item>tr|spark|tr dänisch bis Samstag|Übersetzen|wird auf diesem Gerät ins Dänische übersetzt. Viele Sprachen gehen</item>
         <item>sums|calc|12*3,5|Rechnen|wird beim Tippen beantwortet. Enter kopiert</item>
         <item>emoji|smile|emoji party|Emoji|zeigt ein Raster zum Auswählen. Enter kopiert</item>
+        <item>flight|plane|LH455|Eine Flugnummer|nennt die Airline; Enter öffnet die Seite des Flugs. Zeiten mit AirLabs-Schlüssel</item>
     </string-array>
 
     <!-- Das Booklight-Fenster: seine Bereiche -->

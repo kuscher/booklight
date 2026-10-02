@@ -191,9 +191,11 @@
         <item>emoji|answers|smile|emoji|emoji party|Emoji|A grid to pick from; Enter copies</item>
         <item>sym|answers|text|sym|sym arrow|Symbols|Arrows, maths, currency</item>
         <item>abc|answers|letters|abc|abc german|Letters|ä ö ü ß, æ ø å and other languages\' letters: by language, by letter (abc a), by mark (abc umlaut)</item>
+        <item>flight|answers|plane||LH455|Flights|A flight number names its airline; Enter opens the flight’s page. With your own AirLabs key: its times, gate and status</item>
         <item>prompts|text|spark||{prompt}|Prompts|Your text, answered by the model on this device</item>
         <item>ask|text|spark|ask|ask how do I fold a fitted sheet|Ask Gemini|Hands the text to the Gemini app</item>
-        <item>clip|text|clip|clip|clip |Clipboard|What you copied: upper case, a note, a QR code…</item>
+        <item>clip|text|clip|clip|clip |Clipboard|What you copied: what is in it, a translation, your prompts. Type to find more</item>
+        <item>tr|text|spark|tr|tr danish see you on Saturday|Translate|Into another language, by the model on this device. No text: what you copied</item>
         <item>snip|text|text|snip|snip add sig / Best, Alex|Snippets|Pieces of text under short names</item>
         <item>pin|text|pin|pin|pin gate B22, 14:05|Pin|A line in a small window that stays on top</item>
         <item>vol|controls|volume|vol|vol 30|Volume|Or the arrow keys on its row</item>
@@ -222,8 +224,10 @@
         <item>timer|timer|timer 10m tea|Timer|starts a timer in the Clock. Start and pin keeps the countdown in view</item>
         <item>note|note|note buy milk|Note|adds a dated line to Notes.md</item>
         <item>clip|clip|clip |Clipboard|shows what you copied and what can be done with it</item>
+        <item>tr|spark|tr danish see you on Saturday|Translate|is written in Danish on this device. Most languages work</item>
         <item>sums|calc|12*3.5|Sums|is answered as you type. Enter copies</item>
         <item>emoji|smile|emoji party|Emoji|shows a grid to pick from. Enter copies</item>
+        <item>flight|plane|LH455|A flight number|names the airline; Enter opens the flight’s page. Times need an AirLabs key</item>
     </string-array>
 
     <!-- The Booklight window: its sections -->

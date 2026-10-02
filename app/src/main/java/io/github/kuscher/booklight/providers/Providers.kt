@@ -74,6 +74,9 @@ class SettingsProvider(private val context: Context, private val prefs: Prefs) :
         return pages.mapNotNull { p -> score(q.text, p).takeIf { it > 0 }?.let { row(p, it) } }
     }
 
+    override fun byIds(ids: Set<String>): List<Result> =
+        if (!prefs.now.showSettings) emptyList() else pages.filter { "setting:${it.key}" in ids }.map { row(it, 1.0) }
+
     /** For the Settings scope: the pages that match, best first; nothing typed, all of them in their own order. */
     fun find(text: String): List<Result> =
         if (text.isBlank()) pages.map { row(it, 1.0) }
@@ -91,15 +94,18 @@ class CommandsProvider(private val context: Context) : Provider {
         Command("shortcut", R.string.cmd_shortcut, R.string.cmd_shortcut_sub, R.string.cmd_shortcut_words, Effect.Internal("shortcuts")),
     )
 
+    private fun row(c: Command, score: Double) = Result(
+        id = "command:${c.key}", provider = id, kind = Kind.COMMAND, title = context.getString(c.title), subtitle = c.subtitle?.let(context::getString),
+        icon = Icon.Symbol("booklight"), score = score,
+        actions = listOf(Action("open", context.getString(R.string.action_open), c.effect)),
+    )
+
     override suspend fun query(q: Query): List<Result> = all.mapNotNull { c ->
-        val title = context.getString(c.title)
-        val s = maxOf(Matcher.score(q.text, title), context.getString(c.words).split(',').maxOf { Matcher.keyword(q.text, it) })
-        if (s <= 0) null else Result(
-            id = "command:${c.key}", provider = id, kind = Kind.COMMAND, title = title, subtitle = c.subtitle?.let(context::getString),
-            icon = Icon.Symbol("booklight"), score = s,
-            actions = listOf(Action("open", context.getString(R.string.action_open), c.effect)),
-        )
+        val s = maxOf(Matcher.score(q.text, context.getString(c.title)), context.getString(c.words).split(',').maxOf { Matcher.keyword(q.text, it) })
+        if (s <= 0) null else row(c, s)
     }
+
+    override fun byIds(ids: Set<String>): List<Result> = all.filter { "command:${it.key}" in ids }.map { row(it, 1.0) }
 }
 
 /**

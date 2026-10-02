@@ -120,7 +120,6 @@
     <string name="snip_none_sub">Type: add sig / Best, Alex</string>
     <string name="clip_keys">clip,clipboard</string>
     <string name="clip_name">Clipboard</string>
-    <string name="clip_hint">Filter</string>
     <string name="clip_about">What you copied, ready to use</string>
     <string name="clip_empty">The clipboard is empty</string>
     <string name="clip_upper">UPPERCASE</string>

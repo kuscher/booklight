@@ -205,4 +205,51 @@ class JotTest {
         assertEquals(NewSpec(NewKind.FOLDER, "A/B", false), Jot.new("A/B/"))
         assertEquals(NewSpec(NewKind.FILE, "", false), Jot.new(""))
     }
+
+    // A day or a time inside a copied sentence. Today is Thursday 1 October 2026, 10:00.
+
+    private fun copied(text: String, near: String) = Jot.eventIn(text, near, now)?.let { Jot.event(it, now) }
+
+    @Test fun aDateInASentenceIsReadWithItsSentenceAsTheTitle() {
+        val e = copied("Dinner with Anna on Friday at 7pm. Call +49 30 5550 1234 or book at https://example.com/table", "Friday at 7pm")!!
+        assertEquals(LocalDateTime.of(2026, 10, 2, 19, 0), e.start)
+        assertEquals("Dinner with Anna", e.title)
+        // The system may have found only a part of it: the whole expression is still read.
+        assertEquals(LocalDateTime.of(2026, 10, 2, 19, 0), copied("Dinner with Anna on Friday at 7pm. Call", "Friday")!!.start)
+    }
+
+    @Test fun aDateInTheMiddleLeavesTheWordsOnBothSides() {
+        val e = copied("The review is on 12 October at 10:30 in room 4", "12 October at 10:30")!!
+        assertEquals(LocalDateTime.of(2026, 10, 12, 10, 30), e.start)
+        assertEquals("The review is in room 4", e.title)
+        assertEquals("Meeting with Sam", copied("Meeting on Oct 12, 2026 at 3 PM with Sam", "Oct 12, 2026 at 3 PM")!!.title)
+    }
+
+    @Test fun aDayAndATimeMayStandApart() {
+        val e = copied("Am Freitag treffen wir uns um 15 Uhr im Büro.", "Freitag")!!
+        assertEquals(LocalDateTime.of(2026, 10, 2, 15, 0), e.start)
+        assertEquals("treffen wir uns im Büro", e.title)
+        val f = copied("Your order arrives 5 Oct between 9-11", "5 Oct")!!
+        assertEquals(LocalDateTime.of(2026, 10, 5, 9, 0), f.start)
+        assertEquals("Your order arrives", f.title)
+    }
+
+    @Test fun aNumbersDotDoesNotEndTheSentence() {
+        val e = copied("Wir sehen uns am 3. Oktober um 18 Uhr. Bis dann", "3. Oktober um 18 Uhr")!!
+        assertEquals(LocalDateTime.of(2026, 10, 3, 18, 0), e.start)
+        assertEquals("Wir sehen uns", e.title)
+    }
+
+    @Test fun aWordLeftHangingIsDropped() {
+        assertEquals("Abgabe", copied("Abgabe bis 14.10.2026", "14.10.2026")!!.title)
+        assertEquals("See you", copied("See you tomorrow!", "tomorrow")!!.title)
+    }
+
+    @Test fun onlyTheSentenceTheSystemPointedAtIsRead() {
+        // "sun" is a short form of Sunday: it is not read, because the system's date shares no word with it.
+        val e = copied("The sun is out. See you on Sunday", "Sunday")!!
+        assertEquals("See you", e.title)
+        assertNull(Jot.eventIn("The sun is out. See you later", "Sunday", now))
+        assertNull(Jot.eventIn("Nothing here", "", now))
+    }
 }

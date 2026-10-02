@@ -142,8 +142,9 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_EDIT = "edit"
         const val EXTRA_ID = "id"
-        /** Which section to open at: `commands`. */
+        /** Which section to open at: `commands`; [PAGE_FLIGHTS] is Results, on the row where the flight service's key is set. */
         const val EXTRA_PAGE = "page"
+        const val PAGE_FLIGHTS = "flights"
         const val PRIVACY_URL = "https://googlebook.studio/privacy/booklight"
         /** The window that is open, for pictures of it (debug builds). */
         var current: java.lang.ref.WeakReference<MainActivity> = java.lang.ref.WeakReference(null)
@@ -160,7 +161,7 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
     val page = remember { Page() }
     val focus = remember { FocusRequester() }
     /** The section the column says is open, and the one whose page is on screen: the page follows a moment later. */
-    var part by remember { mutableStateOf(Part.of(goto) ?: if (edit != null) Part.YOURS else Part.START) }
+    var part by remember { mutableStateOf(Part.of(goto) ?: if (goto == MainActivity.PAGE_FLIGHTS) Part.RESULTS else if (edit != null) Part.YOURS else Part.START) }
     var shown by remember { mutableStateOf(part) }
     /** The keys are in the column; else in the page. */
     var inColumn by remember { mutableStateOf(false) }
@@ -191,7 +192,11 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
         down = to.ordinal > part.ordinal
         part = to
     }
-    LaunchedEffect(goto) { Part.of(goto)?.let { go(it); inColumn = false; entering = true; onGone() } }
+    LaunchedEffect(goto) {
+        // "Set up times" on a flight's row: Results, with the pill on the row where the key goes.
+        if (goto == MainActivity.PAGE_FLIGHTS) { picked[Part.RESULTS] = FLIGHT_KEY_ROW; go(Part.RESULTS); inColumn = false; entering = true; onGone() }
+        else Part.of(goto)?.let { go(it); inColumn = false; entering = true; onGone() }
+    }
     LaunchedEffect(edit) { if (edit != null) { go(Part.YOURS); inColumn = false } }
     // The page follows the column's pane a moment after it last moved: a held arrow shows no pages in between.
     LaunchedEffect(part) { if (shown != part) { delay(motion.hold(60)); shown = part } }
@@ -275,7 +280,8 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                                 Part.COMMANDS -> Rise(arrive, 1, from) { CommandsPage(page, app) }
                                 Part.YOURS -> Rise(arrive, 1, from) { Commands(page, app, s, edit, onEdited, onTyping = { typing = it; if (!it) focus.requestFocus() }) }
                                 Part.LOOK -> Rise(arrive, 1, from) { LookPage(page, s, app) }
-                                Part.RESULTS -> ResultsPage(page, app, s, arrive, from)
+                                // (Guarded: the page says "no field has the keys" once more as the window closes, when nothing can take them.)
+                                Part.RESULTS -> ResultsPage(page, app, s, arrive, from, onTyping = { typing = it; if (!it) runCatching { focus.requestFocus() } })
                                 Part.ACCESS -> Rise(arrive, 1, from) { AccessPage(page, app, resumed) }
                                 Part.ABOUT -> Rise(arrive, 1, from) { AboutPage(page, app) }
                             }
@@ -360,6 +366,8 @@ private fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, 
     }
     Rise(arrive, 3, from) {
         Column {
+            GroupLabel(stringResource(R.string.set_copy))
+            Toggle(page, "copy", stringResource(R.string.set_copy_show), stringResource(R.string.set_copy_text), s.copyRow, mark = "clip") { v -> set { it.copy(copyRow = v) } }
             GroupLabel(stringResource(R.string.set_tips))
             Toggle(page, "tips", stringResource(R.string.set_tips_show), stringResource(R.string.set_tips_text), s.tips, mark = "spark") { v -> set { it.copy(tips = v) } }
             var again by remember { mutableStateOf(false) }
@@ -369,6 +377,14 @@ private fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, 
                     DrawnCheck(again, it, Modifier.size(16.dp))
                     if (again) Text(stringResource(R.string.set_tips_again_done), color = it, style = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(600)))
                 }
+            }
+            // "Your usual": the rows under the empty field in place of a tip. Off until chosen.
+            GroupLabel(stringResource(R.string.set_usual))
+            Toggle(page, "usual", stringResource(R.string.set_usual_show), stringResource(R.string.set_usual_text), s.zero, mark = "list") { v -> set { it.copy(zero = v) } }
+            val hidden = s.zeroHidden.size
+            PageRow(page, "usual-again", stringResource(R.string.set_usual_again), null, mark = { Icon(Symbols.of("again"), null, tint = it) }, enabled = hidden > 0,
+                onEnter = { set { it.copy(zeroHidden = emptyList()) } }) {
+                if (hidden > 0) Text(androidx.compose.ui.res.pluralStringResource(R.plurals.set_usual_hidden, hidden, hidden), color = it, style = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(600)))
             }
         }
     }
@@ -426,7 +442,7 @@ private fun LookPage(page: Page, s: Settings, app: BooklightApp) {
 
 /** Results: where a search goes, what kinds of rows the list has, and what other apps may put in it. Every row has a mark, so all text starts on one edge. */
 @Composable
-private fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<Float, *>, from: Float) {
+private fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<Float, *>, from: Float, onTyping: (Boolean) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
     Rise(arrive, 1, from) {
@@ -458,6 +474,8 @@ private fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Anim
             }
         }
     }
+    // Flights: the key of the user's own that makes a flight's row answer (`FlightsGroup.kt`).
+    Rise(arrive, 3, from) { FlightsGroup(page, app, onTyping) }
 }
 
 /** An app's own icon in a row's mark box. It fades in when it had to be loaded: nothing cuts in. */
@@ -510,7 +528,11 @@ private fun AboutPage(page: Page, app: BooklightApp) {
             onEnter = {
                 val now = android.os.SystemClock.uptimeMillis()
                 // A second press, a moment later: a double click or a bouncing key doesn't forget everything.
-                if (sure && now - asked >= 350) { app.historyStore.clear(); app.lastText = null; sure = false; done = true }
+                if (sure && now - asked >= 350) {
+                    app.historyStore.clear(); app.lastText = null; sure = false; done = true
+                    // What was learned is gone: so are the seats it gave, and the list of what was not to be suggested.
+                    app.prefs.update { it.copy(zeroHeld = emptyList(), zeroHidden = emptyList()) }
+                }
                 else if (!sure && !done) { sure = true; asked = now }
             }) {
             Text(stringResource(if (done) R.string.set_forgotten else if (sure) R.string.win_forget_again else R.string.action_delete),

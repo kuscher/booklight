@@ -63,6 +63,7 @@ object Metrics {
     fun height(m: OverlayModel): Dp = field + when {
         m.results.isNotEmpty() -> pad + listHeight(m.results) + pad + footer
         m.card != null || m.tip != null -> card + pad
+        m.copy != null -> pad + row + pad
         else -> 0.dp
     }
 

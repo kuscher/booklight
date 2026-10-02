@@ -9,8 +9,9 @@ import io.github.kuscher.booklight.R
 import java.io.File
 
 /**
- * What the pinned window shows. [kind]: `text`, `answer`, `color`, `qr`, `timer`. [text] is what it
- * shows (a colour: its hex), [note] a line with it (the sum; a timer's label), [value] a number
+ * What the pinned window shows. [kind]: `text`, `answer`, `color`, `qr`, `timer`, `flight`. [text] is what it
+ * shows (a colour: its hex; a flight: the line that Copy gives), [note] a line with it (the sum; a timer's
+ * label; a flight: the number as typed and the day it leaves, "LH455 2026-10-01"), [value] a number
  * with it (a colour's ARGB; a timer's seconds), [until] when a timer ends, by the wall clock.
  */
 data class Pinned(val kind: String, val text: String, val value: Long = 0, val note: String = "", val until: Long = 0) {
@@ -26,6 +27,7 @@ data class Pinned(val kind: String, val text: String, val value: Long = 0, val n
     /** What the system calls the window where it names windows. */
     fun label(context: Context): String = context.getString(when (kind) {
         "timer" -> R.string.pin_kind_timer; "answer" -> R.string.pin_kind_answer; "color" -> R.string.pin_kind_color; "qr" -> R.string.pin_kind_qr
+        "flight" -> R.string.pin_kind_flight
         else -> R.string.pin_kind_text
     })
 

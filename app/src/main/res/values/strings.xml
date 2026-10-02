@@ -45,7 +45,7 @@
     <string name="set_show_settings">Settings pages</string>
     <string name="set_show_sums">Sums</string>
     <string name="set_privacy_title">What Booklight keeps</string>
-    <string name="set_privacy_text">Booklight remembers what you pick for the text you type, so your usual choice comes first. It stays on this device.</string>
+    <string name="set_privacy_text">Booklight remembers what you pick for the text you type, so your usual choice comes first. With Show your usual on, the same record gives the rows under the empty field. It stays on this device.</string>
     <string name="set_forget">Forget everything</string>
     <string name="set_forgotten">Forgotten</string>
     <string name="set_version">Version %1$s</string>

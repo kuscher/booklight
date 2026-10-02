@@ -4,4 +4,13 @@ The emoji names and keywords in app/src/main/assets/emoji.tsv come from the Unic
 annotations and the Unicode emoji data files, © Unicode, Inc., used under the Unicode
 License v3 (https://www.unicode.org/license.txt).
 
+The airlines in app/src/main/assets/airlines.tsv (designator, code and name) come from Virtual
+Radar Server's standing data (https://github.com/vradarserver/standing-data); which of two airlines
+with one designator comes first was counted in adsb.lol's copy of its route table
+(https://github.com/adsblol/vrs-standing-data). Both are in the public domain (CC0 1.0).
+
 QR codes are made with ZXing ("core"), Apache License 2.0 (https://github.com/zxing/zxing).
+
+Some of the symbols in app/src/main/java/io/github/kuscher/booklight/ui/Icons.kt (the globe, the
+gear, the magnifier, the link, the calendar, the phone and others) are paths from Google's Material
+Icons, Apache License 2.0 (https://github.com/google/material-design-icons).

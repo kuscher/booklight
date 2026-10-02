@@ -1,7 +1,5 @@
 package io.github.kuscher.booklight.scopes
 
-import android.content.ClipDescription
-import android.content.ClipboardManager
 import android.content.Context
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.ai.OnDevice
@@ -14,16 +12,30 @@ import io.github.kuscher.booklight.core.Prompts
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
 import io.github.kuscher.booklight.data.PromptEntry
+import io.github.kuscher.booklight.device.Clipboard
+
+/**
+ * A scope with a row the device's own model answers, in the row. The panel asks; the scope says
+ * what the row looks like while it is asked, as the words arrive, and when none come.
+ */
+interface Answering {
+    /** The id of the row that is asked after a pause in typing (a prompt typed by its keyword); null when rows are asked on Enter only. */
+    val row: String?
+    /** [r] as it is the moment the model is asked for it ([e] is what Enter ran): at an answer's height, with its caption. */
+    fun asking(r: Result, e: Effect.Ask): Result
+    /** [r] with the model's [text] in it: so far ([busy]), or all of it. */
+    fun answered(r: Result, text: String, busy: Boolean): Result
+    /** [r] when the model gave no answer (busy, over its allowance, gone): the text again, and the way to the Gemini app. */
+    fun unanswered(r: Result): Result
+}
 
 /** What the clipboard holds as text, and whether whoever copied it said it is private (a password manager does; Booklight's own passwords do). */
 class Clipped(val text: String?, val private: Boolean)
 
 fun clipboard(context: Context): Clipped {
-    val private = runCatching {
-        context.getSystemService(ClipboardManager::class.java).primaryClipDescription?.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE) == true
-    }.getOrDefault(false)
+    val private = Clipboard.private(context)
     // Something private is not read at all.
-    return Clipped(if (private) null else clipboardText(context), private)
+    return Clipped(if (private) null else Clipboard.text(context), private)
 }
 
 /**
@@ -42,7 +54,7 @@ class PromptScope(
     private val ai: OnDevice,
     /** The panel was opened from a text field of another app, which takes text back. */
     private val replaces: () -> Boolean,
-) : Scope {
+) : Scope, Answering {
     override val key = key(p)
     override val keywords: List<String> = listOfNotNull(keyword.takeIf { it.isNotEmpty() })
     override val name: String = p.name
@@ -51,7 +63,9 @@ class PromptScope(
     override val about: String? = p.text.replace(Prompts.MARK, "").lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
 
     /** The id of the row that is answered. */
-    val row = "answer:${p.id}"
+    override val row = "answer:${p.id}"
+
+    override fun asking(r: Result, e: Effect.Ask): Result = r
 
     override suspend fun rows(arg: String): List<Result> {
         val typed = arg.trim()
@@ -64,7 +78,8 @@ class PromptScope(
         ))
         val full = Prompts.fill(p.text, text)
         val state = ai.state.value
-        val fits = full.length <= MAX
+        // The same limit as under a copy's chip: a longer rewrite would come back cut and look whole. (A summary may read more.)
+        val fits = full.length <= if (p.seed == io.github.kuscher.booklight.core.Seeds.SUMMARY) TextScope.HERE_SUMMARY else TextScope.HERE
         val here = state == OnDevice.State.READY && fits
         val caption = when {
             state == OnDevice.State.READY && !fits -> context.getString(R.string.prompt_long)
@@ -89,12 +104,11 @@ class PromptScope(
     private fun gemini(full: String, second: Boolean) =
         Action("gemini", context.getString(if (second) R.string.action_in_gemini else R.string.gemini_title), Effect.AskGemini(full.take(HAND_OVER)), symbol = "send")
 
-    /** [r] with the model's [text] in it: so far ([busy]), or all of it. */
-    fun answered(r: Result, text: String, busy: Boolean): Result {
+    override fun answered(r: Result, text: String, busy: Boolean): Result {
         val was = r.body as? Body.Stream ?: return r
         val full = was.ask ?: return r
-        // The model likes two spaces after a full stop and an empty line between paragraphs; the row has four lines.
-        val said = text.replace(SPACES, " ")
+        // The model likes Markdown, two spaces after a full stop and an empty line between paragraphs; the row has four lines of plain text.
+        val said = io.github.kuscher.booklight.core.Plain.of(text).replace(SPACES, " ")
         return r.copy(
             body = Body.Stream(said.replace(BREAKS, "\n"), busy, context.getString(R.string.prompt_device), answer = true, ask = full),
             actions = listOfNotNull(
@@ -106,8 +120,7 @@ class PromptScope(
         )
     }
 
-    /** [r] when the model gave no answer (busy, over its allowance, gone): the text again, and the way to the Gemini app. */
-    fun unanswered(r: Result): Result {
+    override fun unanswered(r: Result): Result {
         val was = r.body as? Body.Stream ?: return r
         val full = was.ask ?: return r
         return r.copy(body = was.copy(caption = context.getString(R.string.prompt_failed), ask = null, busy = false), actions = listOf(gemini(full, false)))

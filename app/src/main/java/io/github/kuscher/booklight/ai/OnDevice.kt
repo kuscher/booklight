@@ -14,9 +14,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 
 /**
  * The device's own model (Gemini Nano, kept and run by the system's AICore service), asked through
@@ -49,12 +51,19 @@ class OnDevice(private val scope: CoroutineScope) {
     /** Debug builds: a state to show instead of the device's (`./bl debug ai downloadable`), to see the rows a device without the model gets. */
     @Volatile var pretend: State? = null
 
+    /** One at a time: a second asker waits for the first one's answer (the try of a "downloadable" model takes a moment). */
+    private val checking = kotlinx.coroutines.sync.Mutex()
+
     /** Asks the system what it has. Cheap enough to do each time an answering scope is entered; never throws. */
-    suspend fun check(): State {
+    suspend fun check(): State = checking.withLock { checked() }
+
+    private suspend fun checked(): State {
         val s = pretend ?: try {
             when (client().checkStatus()) {
                 FeatureStatus.AVAILABLE -> State.READY
-                FeatureStatus.DOWNLOADABLE -> State.DOWNLOADABLE
+                // "Downloadable" is what the system also says of a model it has and answers with, to an app that never
+                // asked for a download (the HP Googlebook: docs/research/device-findings.md). So it is tried.
+                FeatureStatus.DOWNLOADABLE -> if (answers()) State.READY else State.DOWNLOADABLE
                 FeatureStatus.DOWNLOADING -> State.DOWNLOADING
                 else -> State.NONE
             }
@@ -66,6 +75,32 @@ class OnDevice(private val scope: CoroutineScope) {
         }
         _state.value = s
         return s
+    }
+
+    /** The model has answered in this process although the system called it downloadable; and when it was last tried in vain. */
+    @Volatile private var proven = false
+    private var triedAt = 0L
+
+    /**
+     * Whether a model the system calls "downloadable" answers all the same: one question of a few
+     * words, a few tokens back. Nothing is fetched by it. Once it has answered it is not asked again;
+     * in vain, not again for a minute.
+     */
+    private suspend fun answers(): Boolean {
+        if (proven) return true
+        val now = android.os.SystemClock.uptimeMillis()
+        if (triedAt != 0L && now - triedAt < RETRY_MS) return false
+        proven = kotlinx.coroutines.withTimeoutOrNull(PROBE_MS) {
+            runCatching {
+                // Asked the way every answer is asked (as a stream): the one path that is known to work in a release build.
+                val request = GenerateContentRequest.Builder(TextPart("Say OK.")).apply { maxOutputTokens = 4 }.build()
+                client().generateContentStream(request).firstOrNull() != null
+            }.getOrElse { e -> if (e is kotlinx.coroutines.CancellationException) throw e; Log.i(BooklightApp.TAG, "on-device model: tried, ${e.javaClass.simpleName}"); false }
+        } == true
+        // (A try that the panel's closing cut short left by its exception above: it is not "in vain", and the next opening tries again.)
+        if (!proven) triedAt = android.os.SystemClock.uptimeMillis()
+        Log.i(BooklightApp.TAG, "on-device model: called downloadable, ${if (proven) "and it answers" else "no answer"} (${android.os.SystemClock.uptimeMillis() - now} ms)")
+        return proven
     }
 
     /** Loads the model ahead of the first question (about two seconds the first time, nothing after). */
@@ -109,11 +144,14 @@ class OnDevice(private val scope: CoroutineScope) {
     fun close() {
         runCatching { model?.close() }
         model = null
+        triedAt = 0L      // a try that failed because the panel was on its way out says nothing about the next opening
     }
 
     private companion object {
         const val MB = 1_000_000L
-        /** About 2,000 characters: more than the row shows, enough for a corrected paragraph to copy. */
-        const val MAX_OUT = 512
+        const val PROBE_MS = 4_000L
+        const val RETRY_MS = 60_000L
+        /** About 2,700 characters: more than any row lets in to be rewritten or translated (`TextScope.HERE`), so an answer is not cut by this. */
+        const val MAX_OUT = 768
     }
 }

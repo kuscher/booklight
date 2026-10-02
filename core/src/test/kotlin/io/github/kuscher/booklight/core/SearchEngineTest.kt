@@ -19,7 +19,7 @@ class SearchEngineTest {
             val s = Matcher.score(q.text, n)
             if (s > 0) make(n).copy(score = s) else null
         }
-        override suspend fun zeroState() = names.map(make)
+        override fun byIds(ids: Set<String>) = names.map(make).filter { it.id in ids }
     }
 
     private val web = object : Provider {
@@ -49,6 +49,28 @@ class SearchEngineTest {
         assertTrue(r.none { it.title == "Chrome" })
     }
 
+    /** A flight's row as the app scores it: under every local match, and a guess under the ways out too. */
+    private fun flights(score: Double) = object : Provider {
+        override val id = "flights"
+        override suspend fun query(q: Query) = listOf(Result("flight:CA12", id, Kind.OTHER, "CA 12 · Air China", icon = Icon.Symbol("plane"), score = score,
+            actions = listOf(Action("open", "Open", Effect.OpenUrl("https://example.com"))), learnable = false))
+    }
+
+    @Test fun aFlightStandsUnderEveryLocalMatchAndOverTheWeb() = runTest {
+        val r = engine(History(), flights(0.3)).search(Query("ca"))
+        assertEquals("Camera", r.first().title)
+        assertEquals(listOf("flights", "web"), r.takeLast(2).map { it.provider })
+    }
+
+    @Test fun aGuessIsTheLastRow() = runTest {
+        val r = engine(History(), flights(SearchEngine.GUESS)).search(Query("ca"))
+        assertEquals("Camera", r.first().title)
+        assertEquals(listOf("web", "flights"), r.takeLast(2).map { it.provider })
+        // It keeps its place when the list is full, as the web row does.
+        val few = engine(History(), flights(SearchEngine.GUESS)).search(Query("ca"), limit = 3)
+        assertEquals(listOf("apps", "web", "flights"), few.map { it.provider })
+    }
+
     @Test fun answersGoFirst() = runTest {
         val r = engine().search(Query("2+2"))
         assertEquals("4", r.first().answer)
@@ -67,12 +89,14 @@ class SearchEngineTest {
         assertEquals("Chrome", e.search(Query("chr")).first().title)
     }
 
-    @Test fun emptyQueryShowsWhatYouUse() = runTest {
+    @Test fun anEmptyQueryFindsNothingAndIdsFindTheirRows() = runTest {
         val h = History()
         val e = engine(h)
-        assertTrue(e.search(Query("")).isEmpty())
         e.picked(Query("chr"), app("Chrome"))
-        assertEquals(listOf("Chrome"), e.search(Query(" ")).map { it.title })
+        assertTrue(e.search(Query(" ")).isEmpty())
+        assertEquals(listOf(app("Chrome").id), e.used().keys.toList())
+        assertEquals(listOf("Chrome"), e.byIds(e.used().keys).map { it.title })
+        assertTrue(e.byIds(setOf("app:gone")).isEmpty())
     }
 
     @Test fun aSlowOrBrokenProviderIsLeftOut() = runTest {

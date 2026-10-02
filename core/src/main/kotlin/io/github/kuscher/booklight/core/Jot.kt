@@ -83,6 +83,49 @@ object Jot {
     }
 
     /**
+     * A day or a time that stands somewhere in a copied text ("Dinner with Anna on Friday at 7pm.
+     * Call…"), as the line the event row is typed as: when first, then the rest of its sentence
+     * ("on Friday at 7pm Dinner with Anna"). Null when it cannot be read. [near] is the date as the
+     * system found it: only its sentence is read, and the expression must share a word with it, so
+     * "the sun" is never Sunday. A day and a time may stand apart ("Am Freitag treffen wir uns um
+     * 15 Uhr"); a word left hanging where the expression stood ("due by") is dropped.
+     */
+    fun eventIn(text: String, near: String, now: LocalDateTime): String? {
+        val hint = near.lowercase().split(SPACE).map { it.trim { c -> !c.isLetterOrDigit() } }.filter { it.isNotEmpty() }.toSet()
+        if (hint.isEmpty()) return null
+        val sentence = SENTENCE.split(text).firstOrNull { near in it } ?: return null
+        val words = sentence.trim().trimEnd('.', '!', '?').split(SPACE).map { it.trim(',', ';', ':', '(', ')', '"', '„', '“', '”') }.filter { it.isNotEmpty() }.take(WORDS)
+        /** The longest run of [w] that is all of it a day or a time, and passes [fits]; the earliest of the longest. */
+        fun run(w: List<String>, fits: (Moment, List<String>) -> Boolean): IntRange? {
+            for (len in minOf(RUN, w.size) downTo 1) for (i in 0..w.size - len) {
+                val part = w.subList(i, i + len)
+                val m = When.parse(part.joinToString(" "), now) ?: continue
+                if (m.rest.isBlank() && fits(m, part)) return i until i + len
+            }
+            return null
+        }
+        val first = run(words) { _, part -> part.any { it.lowercase().trim { c -> !c.isLetterOrDigit() } in hint } } ?: return null
+        val one = When.parse(words.slice(first).joinToString(" "), now) ?: return null
+        var left = words.subList(0, first.first).dropLastWhile { it.lowercase() in HANGING } + words.subList(first.last + 1, words.size)
+        var expression = words.slice(first)
+        if (one.dayGiven != one.timeGiven) run(left) { m, _ -> m.dayGiven != one.dayGiven && m.timeGiven != one.timeGiven }?.let { second ->
+            expression = expression + left.slice(second)
+            left = left.subList(0, second.first).dropLastWhile { it.lowercase() in HANGING } + left.subList(second.last + 1, left.size)
+        }
+        val line = (expression + left).joinToString(" ")
+        return line.takeIf { event(it, now).let { e -> e.dayGiven || e.timeGiven } }
+    }
+
+    private val SPACE = Regex("\\s+")
+    /** Where a sentence ends: after its mark and a space, but not after a number's dot ("am 3. Oktober"); and at a line break. */
+    private val SENTENCE = Regex("(?<![0-9][.])(?<=[.!?])\\s+|\\n+")
+    /** A word that led up to the day or the time and means nothing without it. */
+    private val HANGING = setOf("on", "at", "by", "until", "till", "for", "from", "between", "this", "next", "am", "um", "den", "bis", "ab", "vom", "von", "zum", "zwischen")
+    /** How many words of a sentence are read, and how long a day and a time are at most. */
+    private const val WORDS = 60
+    private const val RUN = 8
+
+    /**
      * "in 20m stretch" is a timer; a time in the next 24 hours an alarm, labelled with the text;
      * anything later a half-hour event, at 09:00 when only a day was given. No day or time: null.
      */

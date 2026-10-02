@@ -33,31 +33,42 @@ class User(private val context: Context, private val prefs: Prefs) : Provider {
         Action("delete", context.getString(R.string.action_delete), Effect.Delete(kind, id), keepOpen = true, symbol = "trash", danger = true, confirm = true, done = context.getString(R.string.done_deleted)),
     )
 
+    private fun link(link: io.github.kuscher.booklight.data.SiteEntry, score: Double): Result {
+        // {clipboard} and {date} are filled in when the row is made; the clipboard is only read if the link asks for it.
+        val url = Templates.fill(link.url, "", if ("{clipboard}" in link.url) clipboardText(context).orEmpty() else "", LocalDate.now())
+        return Result(
+            id = "link:${link.keyword}", provider = id, kind = Kind.COMMAND, title = link.name, subtitle = url, icon = Icon.Symbol("link"), score = score,
+            actions = listOf(
+                Action("open", context.getString(R.string.action_open), Effect.OpenUrl(url)),
+                Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(url)),
+            ) + own("quicklink", link.keyword),
+        )
+    }
+
+    private fun recipe(r: io.github.kuscher.booklight.data.RecipeEntry, score: Double) = Result(
+        id = "recipe:${r.id}", provider = id, kind = Kind.COMMAND, title = r.name, subtitle = Recipes.describe(context, r), icon = Icon.Symbol("bolt"), score = score,
+        actions = listOf(Action("run", context.getString(R.string.action_run), Recipes.effects(r), symbol = "play")) + own("recipe", r.id),
+    )
+
     override suspend fun query(q: Query): List<Result> {
         val s = prefs.now
         val out = ArrayList<Result>()
         for (link in s.sites) {
             if (Templates.takesArgument(link.url)) continue
             val score = match(q.text, link.keyword, link.name)
-            if (score <= 0) continue
-            // {clipboard} and {date} are filled in when the row is made; the clipboard is only read if the link asks for it.
-            val url = Templates.fill(link.url, "", if ("{clipboard}" in link.url) clipboardText(context).orEmpty() else "", LocalDate.now())
-            out += Result(
-                id = "link:${link.keyword}", provider = id, kind = Kind.COMMAND, title = link.name, subtitle = url, icon = Icon.Symbol("link"), score = score,
-                actions = listOf(
-                    Action("open", context.getString(R.string.action_open), Effect.OpenUrl(url)),
-                    Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(url)),
-                ) + own("quicklink", link.keyword),
-            )
+            if (score > 0) out += link(link, score)
         }
         for (r in s.recipes) {
             val score = match(q.text, r.keyword, r.name)
-            if (score <= 0) continue
-            out += Result(
-                id = "recipe:${r.id}", provider = id, kind = Kind.COMMAND, title = r.name, subtitle = Recipes.describe(context, r), icon = Icon.Symbol("bolt"), score = score,
-                actions = listOf(Action("run", context.getString(R.string.action_run), Recipes.effects(r), symbol = "play")) + own("recipe", r.id),
-            )
+            if (score > 0) out += recipe(r, score)
         }
         return out
+    }
+
+    /** A link that uses `{clipboard}` has no row here: making it would read the clipboard, and nobody asked. */
+    override fun byIds(ids: Set<String>): List<Result> {
+        val s = prefs.now
+        return s.sites.filter { "link:${it.keyword}" in ids && !Templates.takesArgument(it.url) && "{clipboard}" !in it.url }.map { link(it, 1.0) } +
+            s.recipes.filter { "recipe:${it.id}" in ids }.map { recipe(it, 1.0) }
     }
 }

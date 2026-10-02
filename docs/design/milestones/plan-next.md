@@ -19,7 +19,7 @@ grew out of is `plan.md` beside this file; its M2, M3 and M4 are parked, unchang
 | --- | --- | --- | --- |
 | **2.2** | What Alex asked for after 2.1: the opening at Medium on its new curve, glass frosted from its first frame, the white reflection, three placements on an app's row, the see-through selection in dark | Built | On main, reviewed, not released |
 | **M1 · The copy** | Copy something, open Booklight, and one line offers what can be done with it | About 14 days (the engineer's, not re-sized) | Planned and drawn; fourteen checks wait for a device session |
-| **M5 · Flights** | Type a flight number and the row answers with the next flight | About 10 days (not sized by an engineer) | Planned and drawn here; the full answer needs a key of the user's own |
+| **M5 · Flights** | Type a flight number and the row answers with the next flight | About 10 days (not sized by an engineer) | Planned and drawn here; the full answer needs a key of the user's own (AirLabs since 2 October: §4). Built on a branch, not yet on a device |
 
 No new permission in any of it. Parked, not dropped: M2 the picture, M3 the selection, M4 your language.
 
@@ -73,6 +73,13 @@ translation half of 18, and the line in dark over a white window.
 **Alex's words:** "Let's add a new M5 which handles flights. I want to type LH455 and get info about the next
 flight."
 
+**Changed on 2 October 2026, on his word** ("change out the air api with Airlabs … have a setting for users to
+add their own"): the service behind the times is **AirLabs** (airlabs.co), with the user's own key, in place of
+AeroDataBox through RapidAPI. It was tried with a real key the same night (FL §10), so what this section says
+about the answer is now from replies that were seen, except where it still says "not verified". What AirLabs
+changed in the plan is marked **(AirLabs)** below; everything else stands as approved. M5 is built to this
+section, on a branch, without a device: its checks F1 to F8 are still to do.
+
 **The story.** Someone you are meeting is on LH 455. You press the key and type `LH455`. A moment after the
 last letter the first row says: Lufthansa, San Francisco to Frankfurt, leaves 15:05, lands Friday 10:55,
 delayed 25 minutes, Terminal G, gate G4. Enter opens the flight's page with its map. Tab, Tab, Enter keeps the
@@ -91,10 +98,10 @@ such a card without one and do not say where the data comes from.
 
 So M5 has two layers.
 - **For everyone:** the row names the airline, and Enter opens the flight's page.
-- **With a key of the user's own** (AeroDataBox through RapidAPI: a free account, about 200 lookups a month):
-  the row answers as in the story. Booklight ships no key: its code is public and the service's terms forbid a
-  shared one (FL §2). No keyed service was called in the research, because there was no key: every word about
-  the answer's fields is from the service's own description, **not verified**.
+- **With a key of the user's own** (**AirLabs**: a free account, 1,000 lookups a month by what the key's own
+  replies say): the row answers as in the story. Booklight ships no key: its code is public, a shared key
+  would be anyone's to take, and every user's lookups would count against one allowance (FL §10.4). The
+  service was called with a real key on 2 October: the fields below are from its replies (FL §10.2).
 
 ### What is in it
 
@@ -108,6 +115,11 @@ So M5 has two layers.
    go: the terminal and gate before it leaves, the arrival's terminal and belt after. Which flight is "the
    next" is decision 12. A day after the number picks that day's (`LH455 fri`, `LH455 tomorrow`). The answer is
    kept for two minutes, and the footer says who gave it and when.
+   **(AirLabs)** The service answers with the one flight nearest to now and takes no date. So: one request in
+   the usual case; when that flight landed more than three hours ago, a second for the coming ten hours and,
+   if the next one is further off, a third for the timetable. A day after the number is always the
+   timetable's flight: its planned times and "from the timetable", no gate, no delay, even for tomorrow
+   (FL §10.3).
 3. **What to do with it.** Enter opens the page, which has everything else (desks, the aircraft, the map). Copy
    puts one line on the clipboard. Pin keeps it on top. The arrow opens three more as a list under the row: Add
    to calendar, Search the web, Ask Gemini. All four stand in the row from its first frame; one that needs the
@@ -130,6 +142,13 @@ sent for it until the user goes to it (Down or Tab). A flight's row never stands
 the user's links. The keyword `flight` (German `flug`) makes any of them a flight at once. The price is
 decision 13: Ryanair (FR), easyJet (U2), Wizz (W6), JetBlue (B6), Austrian (OS), Alaska (AS), Condor (DE) and
 Qatar (QR) are all weak.
+
+*As built (2 October), two things this paragraph did not settle.* The three-letter form is strong on the same
+terms as the two-letter one: its letters are not an everyday word or abbreviation, it has two to four digits,
+and it is not a year standing apart. A third of all three-letter codes belong to some airline, and among those
+that have both codes are WIN, MAC, RAM, ICE, UPS, USA, ONE and TAX: `win 11`, `ram 16` and `ice 123` are weak
+(the list is in `core/Flights.kt`). And "goes to it" is a key or a click: Down onto the row, Tab on it, a
+click. A pointer passing over the row sends nothing.
 
 ### Deliberately out
 
@@ -155,16 +174,18 @@ written in:
 | 3 | The status in full ink, then where to go: "Delayed 25 min · Terminal G, gate G4" | Small; the status full ink, the rest second ink |
 
 A delay is said, not painted: no red, no warning mark. The strip: Open ⏎ · Copy · Pin · the arrow (Add to
-calendar, Search the web, Ask Gemini). The footer's left end says "AeroDataBox · 13:58" while an answer is
+calendar, Search the web, Ask Gemini). The footer's left end says "AirLabs · 13:58" while an answer is
 shown. The white light's slow lap starts only if the answer takes longer than 600 ms. No new colour, type size
 or row height.
 
-The service's thirteen states and the row's words (from the service's description, **not verified**):
-Unknown, or Expected with no new time: "Planned". Expected with a new time equal to the plan: "On time".
-Delayed, or a later new time: "Delayed 25 min". CheckIn, Boarding, GateClosed: "Check-in open", "Boarding",
-"Gate closed". Departed, EnRoute: "In the air" (with "18 min late" or "on time"). Approaching: "Landing soon".
-Arrived: "Landed" (with "12 min late" or "early"). Diverted: "Diverted", the planned landing struck. Canceled,
-CanceledUncertain: "Cancelled", "May be cancelled".
+**(AirLabs)** The service has four states, not thirteen (seen in its replies: `scheduled`, `en-route` or
+`active`, `landed`, `cancelled`; FL §10.2), and says a delay in minutes. The row's words:
+`scheduled` with no new time: "Planned". With a new time within five minutes of the plan: "On time". With a
+later one: "Delayed 25 min". `en-route`: "In the air" (with "18 min late", "12 min early" or "on time", from the
+expected landing). `landed`: "Landed" (with "12 min late" or "early"). `cancelled`: "Cancelled", its times
+struck. **It has no "Check-in open", "Boarding", "Gate closed", "Landing soon", "Diverted" or "May be
+cancelled"**: those rows of screen 13 cannot be shown with this service ("Diverted" is kept in the code for
+the day it sends one). Five minutes is Booklight's line: the service calls two minutes a delay.
 
 | Screen | What it shows |
 | --- | --- |
@@ -184,8 +205,12 @@ key is typed into the Booklight window ("Flights": the key's field with two line
 for the usual route, the month's count), kept in the app's private storage and out of its backup, and sent to
 that service only. The row is `Body.Slots` with its note line. Add to calendar is the Event row's effect; the
 pin is one more kind of 2.0's pin, with one timer of its own for the lookups while it is pinned. `PRIVACY.md` and the window name the new recipients; Play's data-safety
-answers stay as they are (the data type declared for suggestions: FL §5). The footer names AeroDataBox while an
-answer is shown; its free plan asks for attribution, and whether that line is enough is **not verified**.
+answers stay as they are (the data type declared for suggestions: FL §5). The footer names AirLabs while an
+answer is shown; its terms do not ask for that (FL §10.4).
+**(AirLabs)** As built: the key's row is in the window's Results section under "Flights", with a second row
+that leads to the sign-up; the count shown is what the service's last reply said is left of the month, not a
+count of Booklight's own. The key is a file of its own beside the settings, so that it stays out of the backup
+the settings are in. The usual route and its switch (item 5) are not built: the letter has not been sent.
 
 **About 10 days** (not sized by an engineer): the reader, the table and their tests 1; the row without a key
 and its ways out 1; the request, the key's field, the states and the memory 3; the three more actions and the
@@ -196,17 +221,18 @@ everything, German 1; a pass on both devices and the release build 1. The first 
 
 | Check | What | If it goes badly |
 | --- | --- | --- |
-| F1 | With a real key: LH 455, a short flight in Europe, a codeshare, a number with two legs, one that landed two hours ago. How long an answer takes; which fields come filled at a large and a small airport; whether "revised" is what a traveller calls "expected"; what the reply says when the key's lookups are used up | The row shows less: the times without a gate. The design never shows an empty field |
-| F2 | Which flight the service calls nearest at 23:00 and just after a landing | Booklight asks for a day itself: two requests where there was one |
+| F1 | With a real key: LH 455, a short flight in Europe, a codeshare, a number with two legs, one that landed two hours ago. How long an answer takes; which fields come filled at a large and a small airport; whether "revised" is what a traveller calls "expected"; what the reply says when the key's lookups are used up. **(AirLabs) Done from the Mac on 2 October for all of these but a small airport and the used-up reply (FL §10.2): 0.3 to 0.7 s; terminal and gate everywhere, a belt almost nowhere. On a device it is still to do** | The row shows less: the times without a gate. The design never shows an empty field |
+| F2 | Which flight the service calls nearest at 23:00 and just after a landing. **(AirLabs) Seen: just after a landing, and nine hours after one, it is still the flight that landed (FL §10.2). So Booklight asks on, as the right column says** | Booklight asks for a day itself: two requests where there was one |
 | F3 | The addresses in Chrome on a Googlebook: FlightAware's page for DLH455; whether an installed tracker takes the link | Enter opens a web search for "LH455 flight status" |
 | F4 | Not in the half-day session: a day of Alex's own typing with the reader on, in a build made for it. How often a flight's row turns up for text that was not a flight | The rule gets stricter: only after the keyword |
 | F5 | The row with the longest names and a twelve-hour clock, English and German, both devices | City names give way to the three-letter codes in line one |
-| F6 | What the sign-up really asks for: whether the free plan wants a card | FlightAware's personal key becomes the first choice |
+| F6 | What the sign-up really asks for: whether the free plan wants a card. **(AirLabs) Its form asks for a name, a website or app address, a company, an activity and a description, all mandatory, and no card (read, not submitted: FL §10.4). What the date `expired` in a free key's replies means is not verified** | FlightAware's personal key becomes the first choice |
 | F7 | The answer from the host of the public route table | No usual route without a key |
 | F8 | What the system's own "Track" action for a flight number opens on a Googlebook | Nothing changes: Booklight does not use it |
 
 Also **not verified**: that a user's own key in the app's private storage is what the service's terms allow
-(Raycast's extension does the same; the vendor was not asked).
+(Raycast's extension does the same with another service; AirLabs' terms are silent on it and the vendor was
+not asked: FL §10.4).
 
 ### How we will know it worked
 
@@ -249,7 +275,7 @@ yes. The others are open at their recommended answers.
 | 1 | All | This plan: 2.2, the device session, M1, then M5; the picture, the selection and your language stay parked | Yes | Name what comes back in, or what goes first |
 | 2 | 2.2 | Release what is on main now as 2.2: a GitHub release and a draft on Play's closed testing; production stays empty | Yes | It waits, and goes out with the settings window or with M1 |
 | 3 | M1 | A line under the empty field for something just copied, with a switch | Yes | The empty panel stays empty; Tab there opens the copy |
-| 4 | M5 | The times, gate and status come through a key of the user's own (AeroDataBox through RapidAPI, free, about 200 lookups a month) | Yes | The row names the airline (and the usual route), Enter opens the page, no time is ever shown; about 4 days |
+| 4 | M5 | The times, gate and status come through a key of the user's own (asked as AeroDataBox through RapidAPI; **AirLabs since 2 October, on his word**: free, 1,000 lookups a month) | Yes | The row names the airline (and the usual route), Enter opens the page, no time is ever shown; about 4 days |
 | 5 | M5 | Booklight asks the service a moment after the last letter, for a strong match, once a key is in | Yes | Only on Enter: nothing is sent while typing, the answer is one key press later |
 | 6 | M5 | The usual route without a key, from a public table, behind a switch that starts off, after its host has been asked | Yes, and the first thing to cut | Without a key the row names the airline only; saves about a day |
 | 7 | M5 | Pin a flight. A pinned flight asks the service again every 30 minutes with the panel closed, about twenty lookups for a long flight | Yes | Later (saves about a day); or a pin that never asks again and may be wrong by the time it lands |

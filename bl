@@ -10,7 +10,9 @@
 #                            DARK=true|false ./bl open stay shows it in that theme whatever the system's is
 #   ./bl debug CMD...        test hooks (DebugReceiver.kt, debug builds): ping, apps, find TEXT, type TEXT,
 #                            keys TEXT (one character at a time, as a person types: use this to test typing),
-#                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget
+#                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget,
+#                            pref flightkey KEY|none (the flight service's key; it is never printed),
+#                            flight TEXT (a flight's row, looked up at once, without the panel)
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
 #   ./bl wshot [NAME] [OUT]  the same of the Booklight window
 #   ./bl screen [OUT]        the panel as it looks on screen, blur and shadow included: a crop of a

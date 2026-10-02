@@ -36,6 +36,8 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     /** [system]: came with the device, so it can't be uninstalled. */
     private data class App(val label: String, val pkg: String, val cls: String, val user: Long, val system: Boolean)
 
+    /** Done once the app list has been read for the first time: until then [byIds] has no rows to give. (Declared before anything starts that read.) */
+    val ready = kotlinx.coroutines.CompletableDeferred<Unit>()
     @Volatile private var index: List<App> = emptyList()
     @Volatile var loadedMs: Long = -1; private set
     val count: Int get() = index.size
@@ -84,6 +86,7 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             ensureActive()
             index = out.sortedBy { it.label.lowercase() }
             loadedMs = (System.nanoTime() - t0) / 1_000_000
+            ready.complete(Unit)
             onReload?.invoke()
         }
     }
@@ -160,8 +163,10 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     fun best(text: String): String? = index.map { it to Matcher.score(text, it.label) }.filter { it.second >= Matcher.PREFIX }
         .maxWithOrNull(compareBy<Pair<App, Double>> { it.second }.thenBy { -it.first.label.length })?.first?.pkg
 
-    /** Every app with score 0: the engine keeps only the ones you have used. */
-    override suspend fun zeroState(): List<Result> = index.map { result(it, 0.0, 0) }
+    override fun byIds(ids: Set<String>): List<Result> = index.map { result(it, 1.0, 0) }.filter { it.id in ids }
+
+    /** Every app's id (the debug hook `seed` picks five). */
+    fun ids(): Set<String> = index.mapTo(HashSet()) { result(it, 1.0, 0).id }
 
     private fun result(a: App, score: Double, display: Int) = Result(
         id = "app:${a.pkg}/${a.cls}" + if (a.user != 0L) "#${a.user}" else "",

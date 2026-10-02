@@ -1,6 +1,9 @@
 package io.github.kuscher.booklight.overlay
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
@@ -53,9 +56,13 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -83,21 +90,41 @@ private val VALUE = TextStyle(fontFamily = Fonts.text, fontSize = 17.sp, fontWei
  */
 @Composable
 fun RowScope.SlotsBody(b: Body.Slots, ink: Color) {
-    Column(Modifier.weight(1f).padding(start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+    // A preview follows the typing and changes in the frame of the key. A row that is answered from somewhere else (a
+    // flight's: it keeps a least width for its first slot) is not typing: when its answer or its failure lands, the
+    // old lines fade out and the new ones in, where they stand. While a number is still typed its note stays the same, so
+    // digits change at once as before.
+    if (b.first > 0) {
+        val motion = LocalMotion.current
+        AnimatedContent(b, Modifier.weight(1f), transitionSpec = { (fadeIn(motion.fade(110, 40)) togetherWith fadeOut(motion.fade(70))).using(null) },
+            contentKey = { it.note }, contentAlignment = Alignment.CenterStart, label = "answer") { SlotsColumn(it, ink, Modifier.fillMaxWidth()) }
+    } else SlotsColumn(b, ink, Modifier.weight(1f))
+}
+
+@Composable
+private fun SlotsColumn(b: Body.Slots, ink: Color, modifier: Modifier) {
+    Column(modifier.padding(start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         b.caption?.let { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             b.slots.forEachIndexed { i, s ->
                 // The first slots keep to their share; the last takes what is left, so a growing value never pushes its neighbour away.
                 val last = i == b.slots.lastIndex
-                Row(if (last) Modifier.weight(1f, fill = false) else Modifier.widthIn(max = if (i == 0) 240.dp else 170.dp)) {
+                // (A first slot with a least width: the second starts in one place before and after the first is filled in.)
+                Row(if (last) Modifier.weight(1f, fill = false) else Modifier.widthIn(min = if (i == 0) b.first.dp else 0.dp, max = if (i == 0) 240.dp else 170.dp)) {
                     // Label and value sit on one baseline.
                     Text(s.label.uppercase(), color = ink.copy(alpha = ink.alpha * SECOND), style = HINT, maxLines = 1, modifier = Modifier.alignByBaseline().padding(end = 7.dp))
                     if (s.state == SlotState.EMPTY) Text("–", color = ink.copy(alpha = ink.alpha * 0.40f), style = VALUE, modifier = Modifier.alignByBaseline())
-                    else Text(s.value, color = ink.copy(alpha = ink.alpha * if (s.state == SlotState.GUESSED) SECOND else 1f), style = VALUE, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
+                    // What will not happen is struck through and a step lighter, as a done task is.
+                    else Text(s.value, color = ink.copy(alpha = ink.alpha * if (s.state == SlotState.GUESSED || b.struck) SECOND else 1f), style = if (b.struck) VALUE.copy(textDecoration = TextDecoration.LineThrough) else VALUE,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
                 }
             }
         }
-        b.note?.let { Text(it, color = ink, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        // The note in full ink; what goes on after it a step lighter.
+        if (b.note != null || b.tail != null) Text(buildAnnotatedString {
+            append(b.note.orEmpty())
+            b.tail?.let { withStyle(SpanStyle(color = ink.copy(alpha = ink.alpha * SECOND))) { append(if (b.note.isNullOrEmpty()) it else " · $it") } }
+        }, color = ink, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -112,7 +139,7 @@ private const val SOFT = 14f
  * and the strip keep their places while the row grows.
  */
 @Composable
-fun RowScope.StreamBody(b: Body.Stream, ink: Color, onGrow: () -> Unit) {
+fun StreamBody(b: Body.Stream, ink: Color, onGrow: () -> Unit) {
     val motion = LocalMotion.current
     val line = Metrics.streamLine
     val style = VALUE.copy(lineHeight = with(LocalDensity.current) { line.toSp() })
@@ -123,7 +150,8 @@ fun RowScope.StreamBody(b: Body.Stream, ink: Color, onGrow: () -> Unit) {
     var said by remember { mutableStateOf("") }
     if (b.answer) said = b.text else own = b.text
     val answer by animateFloatAsState(if (b.answer) 1f else 0f, motion.fade(if (b.answer) 110 else 70), label = "answer")
-    Column(Modifier.weight(1f).align(Alignment.Top).padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
+    // At its own height from the row's top, whatever the row has grown to yet: the row's edge uncovers it.
+    Column(Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true).padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
         AnimatedContent(b.caption, transitionSpec = { motion.roll() }, contentAlignment = Alignment.CenterStart, label = "caption") { c ->
             Text(c, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
@@ -153,7 +181,7 @@ private fun Written(text: String, ink: Color, style: TextStyle, modifier: Modifi
     var lines by remember { mutableIntStateOf(0) }
     LaunchedEffect(lines > 2) { if (lines > 2) onGrow() }
     // Laid out at its four lines whatever room the row has yet: the room is what uncovers it.
-    Text(text, color = ink, style = style, maxLines = 4, overflow = TextOverflow.Ellipsis, onTextLayout = { laid = it; lines = it.lineCount },
+    Text(text, color = ink, style = style, maxLines = 4, overflow = TextOverflow.Ellipsis, onTextLayout = { laid = it; lines = it.lineCount.let { n -> if (n > 0 && it.getLineEnd(n - 1, true) == it.getLineStart(n - 1)) n - 1 else n } },
         modifier = modifier.wrapContentHeight(Alignment.Top, unbounded = true)
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {

@@ -65,6 +65,8 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
     private val launcher = context.getSystemService(LauncherApps::class.java)
     private val me = context.getSystemService(UserManager::class.java).getSerialNumberForUser(android.os.Process.myUserHandle())
     private var loading: Job? = null
+    /** Done once other apps' commands have been read for the first time (a job of its own, after the app list). */
+    val ready = kotlinx.coroutines.CompletableDeferred<Unit>()
 
     init { apps.onReload = ::reload; reload() }
 
@@ -93,6 +95,7 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
             offers = (commands.map { Triple(it.owner, it.app to it.cls, it.title) } + keys.map { Triple(it.owner, it.app to it.cls, it.name) })
                 .groupBy { it.first }.map { (owner, all) -> Offer(owner, all.first().second.first, all.first().second.second, all.map { it.third }) }.sortedBy { it.app.lowercase() }
             version++
+            ready.complete(Unit)
         }
     }
 
@@ -254,6 +257,8 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
         label = c.app,
         actions = listOf(Action("open", context.getString(R.string.action_open), Effect.Open(c.owner, fill(c.owner, c.intent, argument)))),
     )
+
+    override fun byIds(ids: Set<String>): List<Result> = commands.filter { "cmd:${it.owner}/${it.id}" in ids && allowed(it.owner) }.map { row(it, 1.0) }
 
     override suspend fun query(q: Query): List<Result> {
         val s = prefs.now

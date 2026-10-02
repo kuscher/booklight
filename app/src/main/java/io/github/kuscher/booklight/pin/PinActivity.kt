@@ -3,8 +3,6 @@ package io.github.kuscher.booklight.pin
 import android.app.ActivityManager
 import android.app.PictureInPictureUiState
 import android.app.PictureInPictureParams
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -212,7 +210,7 @@ class PinActivity : ComponentActivity() {
         when (p.kind) {
             "timer" -> return
             "qr" -> QrImages.use(this, p.text, ImageUse.COPY)
-            else -> getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Booklight", p.text))
+            else -> io.github.kuscher.booklight.device.Clipboard.set(this, p.text)
         }
         copied = System.nanoTime()
     }
@@ -269,6 +267,7 @@ private fun PinWindow(p: Pinned, pip: Boolean, shown: Boolean, copied: Long, onC
             Box(Modifier.requiredSize(w.dp, h.dp).graphicsLayer { scaleX = scale; scaleY = scale }) {
                 when (now.kind) {
                     "timer" -> Countdown(now)
+                    "flight" -> PinnedFlight(now)
                     "answer" -> Column(Modifier.fillMaxSize().padding(horizontal = Pinned.MARGIN.dp), verticalArrangement = Arrangement.Center) {
                         Text(now.note, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.height(20.dp))
                         Spacer(Modifier.height(2.dp))

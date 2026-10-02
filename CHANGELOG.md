@@ -1,5 +1,72 @@
 # Changelog
 
+## Unreleased
+
+**The copy** (M1 of `docs/design/milestones/plan-next.md`).
+
+- **One line for a fresh copy.** Copy something, open Booklight within two minutes, and one line under the
+  empty field says what it is: "Copied 20 s ago · a link and a date". Booklight reads only the system's
+  description of the copy for that, not its text, and Android shows no "pasted" message. No line for a copy
+  marked private or one Booklight made. A switch in the window turns it off.
+- **Tab opens it.** The copy becomes the chip. Under it: a link (Open, or Copy clean without its tracking tail),
+  a date as an event filled in, a phone number, a mail address, a flight number (its row names the airline;
+  it is looked up only when you go to it); then your first three prompts, and Summary for a
+  long text. A text that is not in your language has its translation first.
+- **Answers where they stand.** Enter on a model's row writes the answer into that row and the chip stays the
+  copy. Enter again copies. Backspace on the empty field steps back.
+- **Into any language.** Under the copy's chip, type a language: `danish`. From the empty field:
+  `tr danish see you on Saturday`.
+- **Say what to do with it.** Under the copy's chip, anything that is not a row's name or a language is an
+  instruction for the model: `pull out the tasks as a list`.
+- **`clip`** shows the same, shorter list (the other rows are found by typing their names) and no longer reads
+  a copy marked private. Text another app hands over behaves the same way.
+- **The model on the HP Googlebook answers.** The system calls it "downloadable" there although it has it;
+  Booklight now tries it before handing over to Gemini.
+- A long text is never returned cut: a rewrite or translation of more than about 1,800 characters hands over
+  to Gemini.
+
+**Flights** (M5 of `docs/design/milestones/plan-next.md`). Built without a device: its checks are still to do.
+
+- **A flight number is a row.** `LH455`, `lh 455`, `LH0455` and the callsign `DLH455` name the airline, from a
+  table of 1,375 airlines Booklight carries (`tools/airlines.py`, public domain). Enter opens the flight's page
+  at FlightAware; the other actions search the web and ask Gemini. Nothing leaves the device before Enter.
+- **With a key of your own it answers.** Put a free AirLabs key into the Booklight window › Results › Flights
+  and the row shows who flies it and where, when it leaves and lands in each airport's own time (with the day
+  when it is not your today), the status in words ("Delayed 25 min", "In the air · 18 min late", "Landed"), and
+  where to go: terminal and gate before it leaves, the arrival's terminal and belt after. One lookup, 400 ms
+  after the last key; the answer is kept for two minutes; the footer says who gave it and when. Booklight ships
+  no key.
+- **The next flight.** In the air, or landed under three hours ago, or the next to leave. A day after the number
+  (`LH455 fri`, `LH455 tomorrow`) is that day's, from the timetable.
+- **What only looks like a flight** (`ps5`, `mp3`, `ms 365`, `q4 2026`, `win 11`) is the last row, and nothing is
+  sent for it until you go to it with Down or Tab. `flight u2 8001` (German `flug`) makes anything a flight.
+- **Copy, Pin, and three more behind the arrow**: Add to calendar, Search the web, Ask Gemini. A pinned flight
+  counts down to its take-off, then to its landing, then says "Landed". It follows that one flight, and asks
+  about it again every half hour from three hours before it leaves until it has landed.
+- **When there is no answer** the row says why in plain words (nothing found, the key was not accepted, its
+  lookups are used up, no connection) and keeps its place; Enter still opens the flight's page.
+- Not in it: the usual route without a key (its table's host has not been asked yet).
+- For developers: `core/Flights.kt` (the reader, and which matches are strong), `core/AirLabs.kt` (the replies,
+  and which requests "the next flight" takes), `core/FlightStatus.kt` (the words); `./bl debug pref flightkey KEY`
+  and `./bl debug flight LH455`. `Action.off` (an action that keeps its place, dimmed) and four more fields on
+  `Body.Slots` are new in the model.
+
+**Your usual** (issue 1, `docs/design/zero-state.md`). Behind a switch that starts off: the Booklight window ›
+Your usual › Show your usual. With it off, tips come as before.
+
+- **Two or three rows under the empty field**: the two things you run most from Booklight, and the one you ran
+  last in the past eight hours. Never one row; none until two things have been run twice each. They are ordinary
+  rows, with nothing selected: Enter does nothing until Down (or Tab) brings the highlight to row one.
+- **They hold their seats.** What had seat one or two keeps it until something else weighs a fifth more, so
+  "Down, Enter" means the same thing from one opening to the next.
+- **A fresh copy has the place first**: its line comes, and the rows do not, for those two minutes.
+- **Don't suggest** on each of the rows (in an app's list, the last line before Uninstall) takes a thing out for good;
+  "Suggest everything again" in the window brings all back.
+- **What counts as a run**, for every list: opening a thing or doing its thing. App info, Edit, Delete and
+  Uninstall no longer lift a row's rank.
+- Also for every list: a row that leaves while it is still rising no longer jumps, and what is under the field
+  waits for the glass's edge while the panel opens.
+
 ## 2.2 (1 October 2026)
 
 Alex's notes on 2.1, each taken through a visual and a motion designer (`docs/design/design-system.md` §12).

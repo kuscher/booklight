@@ -37,6 +37,8 @@ class Scopes(
     private val others: (Set<String>) -> List<Scope> = { emptyList() },
     /** What the pinned window shows, if there is one. */
     pinned: () -> io.github.kuscher.booklight.pin.Pinned? = { null },
+    /** A flight number's row, for the keyword `flight`. */
+    private val flights: io.github.kuscher.booklight.providers.FlightsProvider,
 ) {
     /** The tasks: it remembers what was ticked while the panel is open. */
     val todo = TodoScope(context, notes)
@@ -44,8 +46,9 @@ class Scopes(
     private val fixed: List<Scope> = listOf(
         MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, PinScope(context, pinned), EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context), HelpScope(context, guide) { prefs.now.used },
+        io.github.kuscher.booklight.providers.FlightScope(context, flights, ::linkKeywords),
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), LettersScope(context, prefs), QrScope(context), ColorScope(context),
-        SnipScope(context, prefs), TextScope(context, null, web) { prefs.now.prompts },
+        SnipScope(context, prefs), TextScope(context, null, web, { prefs.now.prompts }, ai, flight = { flights.found(it) }), TranslateScope(context, ai, ::linkKeywords) { editable },
         LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),
         // `s` and `k`: the two that give their letter up to a link of the user's own with that keyword.
         SettingsScope(context, settings, ::linkKeywords), KeysScope(context, keys, ::linkKeywords),
@@ -67,7 +70,9 @@ class Scopes(
     /** The text came from a field that can be edited, and the app it is in takes text back: an answer can replace it there. */
     @Volatile var editable = false; private set
 
-    fun receive(text: String, editable: Boolean = false): Scope = TextScope(context, text, web) { prefs.now.prompts }.also { incoming = it; this.editable = editable }
+    /** [copied]: it is what the user copied, opened from the line for a fresh copy; else another app handed it over. */
+    fun receive(text: String, editable: Boolean = false, copied: Boolean = false): Scope =
+        TextScope(context, text, web, { prefs.now.prompts }, ai, { this.editable }, if (copied) TextFrom.COPY else TextFrom.HANDED, flight = { flights.found(it) }).also { incoming = it; this.editable = editable }
 
     /** The panel closed: someone else's text is not kept, and neither is what was read of the user's notes. */
     fun forget() { incoming = null; editable = false; todo.closed(); notes.forget() }

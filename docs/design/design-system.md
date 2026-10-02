@@ -373,3 +373,67 @@ this one is the app.
   The list under the arrow: the three thirds, the two "two thirds", the four quarters, Centre, then Uninstall
   after its gap. Names in that list are full ink; their glyphs second ink.
 
+## 13. The copy's line (M1, October 2026)
+
+Drawn in `milestones/04-design.md` §3.1; as built in `overlay/CopyLine.kt`.
+
+| Part | Layout | Look |
+| --- | --- | --- |
+| Seat | row one's: 8 dp under the field, 56 dp high. The panel is 68 + 8 + 56 + 8 = 140 dp | No fill, no outline, no pill, no footer |
+| Mark | a 36 dp disc centred on x = 38, the clipboard glyph at 20 dp | the disc of a row that is not selected: ink at 0.80, the disc at 0.08 of it (dark 0.12) |
+| Text | from x = 72, one text on one baseline, 14 sp | All of it full ink (over a window of the other brightness the glass is mid-grey, and second ink is too weak there); "Copied 20 s ago · " at weight 500, what it holds at 600. Too long: the 24 dp fade, never an ellipsis |
+| Cap | `tab`, 22 dp high, its right edge at x = 700: under the field's `esc`; both at least 36 dp wide, so they make one column | the footer's cap |
+
+| Transition | What moves | Spec | What stays still |
+| --- | --- | --- | --- |
+| The line arrives | the height goes from 68 to 140; 120 ms later the disc, the text and the cap rise 12 dp and fade in, 22 ms apart | `place`; `fade` 140 · 320 ms after the glass is 85 % open, and only if nothing was typed | the field, and the opening itself |
+| Its words become known late | the second part of the text fades out and in where it stands | `fade` 70 out, 110 in | the first part, the cap, the height |
+| A letter is typed | the line fades where it stands, over the rows that come: its words in 70 ms, its mark in 140 | `fade` | the field |
+| Tab, Down or a click | the line fades the same way; the chip appears where the mark was (no slide: nothing was typed for it); rows cascade; the pill appears on row one, whole | `fade` 110 after 30; rows as row 7 of §6 | the seat: row one's disc comes into the line's disc as it goes |
+| Enter on a model's row | the row grows from 56 to 92 dp with the pill's lower edge; its mark and strip travel with it; the name fades out and the question in; the other rows fade where they are | `place`; `fade` 70 out, 110 in | the row's place, the strip (Gemini keeps its slot beside Ask) |
+| Backspace on the empty field | the same, backwards | the same | the row's place |
+
+The white reflection waits for the line as it waits for a list: the line arriving, and its words settling,
+count as the list changing.
+
+An answer's row keeps a room of 216 dp for its strip, as a row of key caps keeps one: the text beside it is as
+wide before the answer as after it and whichever action is armed, so it is laid out once.
+
+## 14. A flight’s row (M5, 2 October 2026)
+
+Drawn on screens 12 to 15 of `booklight-milestones.html`; built, not yet judged on a device. No new colour,
+type size or row height: it is the preview row (§3c) with four things added to it.
+
+- **The row** is 92 dp from its first frame. Line one: the number, who flies it and where, small, second ink.
+  Line two: two slots, LEAVES and LANDS ("Left", "Landed" once they have; German „Ab“ and „An“ for both), each
+  the airport's three letters and the time in that airport's own time, with the day's short name before the
+  time when it is not the user's today. Line three: the status in full ink, then where to go a step lighter.
+- **A first slot with a least width**, so that "Lands" stands at one x before and after the answer: 176 dp on
+  a 24-hour clock, 196 dp on a 12-hour one, and 24 dp more when a day more than six days off was typed (it is
+  said as a date). The width follows only what is known before the answer, never the answer. (It was 136 dp
+  until the answer showed a departure on another day, which is every lookup with a day and every overnight
+  flight on the day it lands: "Lands" then moved 60 dp. The reviews of 2 October.) Worked out, not measured on
+  a 24-hour device: "LEAVES SFO Wed 2:47 PM" measures 180 dp on the Lenovo (label 65 px, gap 14 px, value
+  191 px at 1.5 px per dp); without " PM" and with a fourth digit "LEAVES SFO Wed 14:47" is about 165 dp, and
+  about 175 dp with the widest airport letters (WAW, MMX), which leaves it one dp; a date for the weekday
+  ("24 Dec") is about 23 dp more. One case still widens the slot as the answer lands: a
+  date nobody typed, the timetable's flight a week from today.
+- **Struck values**: the times of a flight that is cancelled or diverted are struck through and a step lighter, as a done
+  task's words are.
+- **A delay is said, not painted.** No red, no mark. Red stays the colour of what removes something.
+- **A day beside a time** is its short weekday within six days of today ("Fri 10:55") and its date beyond
+  ("24 Dec 14:40"), in the row, the copied line and the pin. To be looked at on a device, on both clocks.
+- **An action that is off** keeps its slot in the strip at 40 % ink and is passed over by the arming.
+- **The footer's left end** names the source of an answer in the small type at second ink.
+- **The light of work** (§12) runs only if the answer has not come 600 ms after the request went out.
+- **Without an answer** the row keeps its three lines and its strip: the slots show their rule, and the third
+  line says why in full ink.
+- **Without a key**, and for a guess nobody has gone to, it is an ordinary 56 dp row with the plane in the icon
+  column and "Flight" at its right end.
+- **Pinned**: the timer's window (280 × 118), a small line at second ink and a figure in the round face at 34 sp,
+  in words ("1 h 07 min", "42 min", "Landed"): beside the timer's "7:42", "1:07" would read as 67 seconds. The
+  figure rolls when the minute changes, as a changed answer does in the panel.
+- **In the window**: one group, "Flights", at the end of Results: a row that says what is sent and when and
+  whether a key is in (Enter opens one field under it, as an editor opens under its row on the Yours page), and
+  a row that leads to where a key is got. The key that is in is never shown.
+

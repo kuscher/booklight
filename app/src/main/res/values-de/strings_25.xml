@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_unsuggest">Nicht vorschlagen</string>
+    <string name="done_unsuggested">Wird nicht mehr vorgeschlagen</string>
+    <string name="hint_choose">Auswählen</string>
+    <string name="a11y_usual">Das Übliche: %1$s. Pfeil nach unten zum Auswählen.</string>
+
+    <string name="set_usual">Das Übliche</string>
+    <string name="set_usual_show">Das Übliche zeigen</string>
+    <string name="set_usual_text">Ohne Eingabe zeigt Booklight anstelle eines Tipps die zwei Dinge, die du von hier am häufigsten startest, und, falls es eines gibt, das zuletzt gestartete. Pfeil nach unten, dann Enter. Bis du zwei Dinge je zweimal gestartet hast, ändert sich nichts. Deine Links und Rezepte werden noch nicht vorgeschlagen. Dafür zählt nur, was du aus Booklight startest, und das bleibt auf diesem Gerät.</string>
+    <string name="set_usual_again">Wieder alles vorschlagen</string>
+    <plurals name="set_usual_hidden">
+        <item quantity="one">%d wird nicht vorgeschlagen</item>
+        <item quantity="other">%d werden nicht vorgeschlagen</item>
+    </plurals>
+</resources>

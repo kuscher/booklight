@@ -284,6 +284,56 @@ pin were still ringing in Clock two hours later. `adb shell am start --user curr
 android.intent.action.DISMISS_TIMER` stops every expired timer without opening Clock. Do that after any test
 that presses Enter on a timer.
 
+## A copy: what the system says about it, and what it finds (HP Googlebook 14, 2 October 2026)
+
+The checks M1 (the copy) asked for, run with a small helper app that copies a text the way any other app does,
+and Booklight's panel in front.
+
+- **Looking is silent, reading is announced once.** `getPrimaryClipDescription()` (kind, age, what was found, the
+  private flag, the label) shows nothing. `getPrimaryClip()` on another app's copy makes the system put up one
+  toast, "Booklight pasted from your clipboard"; a second read of the same copy makes none. So the line under
+  the empty field costs no message, and Tab costs one.
+- **The system looks at short copies only, and quickly.** Up to 400 characters: `getClassificationStatus()` is
+  complete about 170 ms after the copy. Over 400 characters it is "not performed", always; such a copy can only
+  be called "text" before it is read.
+- **A copy marked private says so** (`EXTRA_IS_SENSITIVE` in the description's extras), and a copy Booklight
+  made carries its label. Both are readable without reading the content: neither gets a line.
+- **What the classifier finds after the read.** The copy's item comes with the system's `TextLinks` for short
+  texts. Asked directly (`TextClassifier.generateLinks`), it took 20 ms for 400 characters, 41 ms for 2,000 and
+  80 to 108 ms for 8,000; it refuses more than 10,000. Links, dates and times, phone numbers and mail addresses
+  were found in every test text, and **street addresses were found on the HP** (they were not on the Lenovo the
+  day before). A flight is an entity of its own with the action "Track": found for `LH 455`, `LH455`, `lh455`
+  and `UA 90`, and also for `PS5` and `H264`, which are not flights; not for `U2 8001`.
+- **The language of a text** (`detectLanguage`): 3 to 14 ms. A clear German sentence scored 0.98; a sentence
+  with English names in it 0.66 and 0.57; a few words, or German written without its umlauts, "unknown". A
+  threshold of 0.5 keeps the mixed sentences.
+- **What answers.** `tel:`, `geo:`, an `https` maps address and `mailto:` each have exactly one app that answers
+  on the HP.
+- **The HP's model answers, though the system calls it "downloadable".** `checkStatus()` says `DOWNLOADABLE`
+  there, which reads as "not fetched", and so every prompt's row said "Gemini" and handed over. Asked all the
+  same, the model answered at once: a German sentence came back in English within a quarter of a second,
+  streamed, and "teh quick brown fox" corrected. `warmup()` returns in 32 ms either way and proves nothing; the
+  status stays `DOWNLOADABLE` after an answer. So Booklight now tries a model in that state once (a question of
+  two words, four tokens back) and treats it as ready if it answers (`OnDevice.answers`). Nothing was
+  downloaded: "Get the on-device model" was not pressed, and what it would fetch on the HP is not known.
+- **Translations, on the HP.** One German sentence through `tr` into English, Danish, French, Spanish, Italian,
+  Swedish, Norwegian, Polish, Dutch, Portuguese and Japanese: each came back as one clean sentence in that
+  language, without an introduction. (Read by someone who knows only some of them: none looked wrong; nobody
+  fluent has checked.) A short sentence is answered within a quarter of a second and streams.
+- **A long text.** A German text of 1,914 characters was translated whole in 36 seconds: first words within
+  four seconds, then about 55 characters a second. That was 1,847 characters out, close to the 512 tokens the
+  answer was then limited to. So a row now takes at most 1,800 characters of prompt and text for a rewrite or a
+  translation (a summary may read 8,000), the answer may be 768 tokens, and it is given a minute; a longer text
+  hands over to Gemini instead of coming back cut.
+- **The Lenovo, the same checks** (2 October): the line, Tab and the answer in the row behave as on the HP; the
+  three translations tried (Danish, Polish, Japanese) came back word for word the same, and a text of 1,489
+  characters was translated in 21 seconds. Two differences. No app answers `tel:` there, so a phone number's
+  row offers Copy only. And its classifier called the postcode in "10117 Berlin" a phone number, ahead of the
+  real one: the row now takes the first candidate with seven digits or more (`Clip.pick`). The street address
+  was again not found there.
+- **Reading the HP's log.** It writes some 20,000 lines in 2.5 seconds, so a line is gone from `logcat -d` before
+  it can be read: a probe's answer has to be read from a stream that was started before the probe.
+
 ## Why Chrome's "New tab" is not offered (Lenovo Googlebook 15, 1 October 2026)
 
 Alex: "it doesnt show the actions for apps like chrome which has new tab as one."

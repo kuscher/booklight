@@ -239,3 +239,111 @@ The table of keys for 2.0 is `reviews-2.0/ux.md` §5. The rules that are new, as
 - **The window**: Tab and Shift + Tab go between the column and the page; ← from a row without a control goes
   to the column; ↑ ↓ in the column change the section at once; → or Enter goes into the page.
 - **The pin never has the keys.** Copy and Unpin are in the panel, on the row `pin` shows.
+
+## 15. The copy (M1, October 2026)
+
+The plan and its drawings: `milestones/plan.md` §4 and `milestones/04-design.md` §3. As built:
+
+- **One line under the empty field.** Something copied in the last two minutes gets one line a moment after
+  the panel has opened: "Copied 20 s ago · a link and a date". It is not a row: nothing is selected, Enter does
+  nothing, and there is no footer. Tab, Down or a click opens it. Tab on the empty field opens a fresh copy
+  whether the line is there or not: before it has come, after typing put it away, or with the line switched
+  off. A typed letter takes the line away, and it stays away for that opening. A first-run
+  card has the place before it; it has the place before a tip. No line for a copy marked private, for a copy
+  Booklight made, or with the switch off (the window › What you copied).
+- **What Booklight knows before Tab** is the system's description only: that it is text, how old it is, and
+  which kinds of thing the system found (it looks at copies of up to 400 characters; a longer one is "text").
+  The age is said once, as it was when the panel opened.
+- **Tab makes the copy the chip.** Under it: the translation first when the text is not in the app's language;
+  what was found in it, one row for each kind and three at most (a link: Open, Copy clean; a date: the event
+  row, filled in; a phone number: Call, Copy; a mail address: Compose, Copy; a flight number: the airline's row,
+  looked up only when the user goes to it); the first three prompts, of which
+  the ready-made translation knows its direction; Summary for a text of 1,000 characters or more.
+- **Typing under the chip** narrows the rows by their names and finds the rest (Note, Mail, QR code, the other
+  writings, a web search, Gemini). Rows are found by what they are called, never by the copied text, and not by
+  scattered letters. A language's name is the translation into it ("danish", "in danish", from four letters, or its
+  tag; under four letters a row whose name starts that way comes first).
+  What matches nothing is an instruction: "With what you copied".
+- **A model's row is answered where it stands.** Enter asks, and only Enter: the row takes the first place at an
+  answer's height, the others go, the answer is written in, and the chip stays the copy. Enter then copies;
+  Pin and Gemini are beside it. Backspace on the empty field goes back one step for each press (a held key stops at
+  the empty field): from the answer to the rows, from the rows to the line, which says the age it said before. A prompt typed by its own keyword (`fix …`, `tr …`) is still asked after a pause,
+  as in 2.0.
+- **How much the model takes.** A rewrite or a translation of up to about 1,800 characters is answered in the
+  row; a summary may read 8,000. A longer text hands over to Gemini: the row says "Gemini".
+- **`tr`**: `tr danish see you on Saturday`. A language, then the text; with no text, what was copied. A
+  language the table does not hold, with a text after it, hands over to Gemini.
+- **`clip`** opens the same list at any age, and says "What you copied is marked private" instead of reading
+  such a copy. **Text another app hands over** (its selection menu, its share sheet) gets the same list and
+  the same answers in place; where the text came from a field that takes it back, Replace comes first.
+
+## 16. What flights added to the model (M5, 2 October 2026)
+
+The plan is `milestones/plan-next.md` §4; the facts about the service are `research/flights.md` §10. As built,
+not yet seen on a device:
+
+- **A row that answers from elsewhere.** A flight's row stands in its full height, with its lines and its
+  actions, from its first frame, and the answer is written into it. The panel asks once, 400 ms after the last
+  key; a new letter before that sends nothing. One request at a time; a request that was sent finishes and is
+  kept (two minutes) even if the text moved on, so the lookup it cost is not lost.
+- **A guess is the last row.** Text that only looks like a flight number (`ps5`, `ms 365`, `q4 2026`) gets a
+  plain row under the ways out to the web, and nothing is sent for it. It is the one kind of row that stands
+  under "Search the web". Going to it (Down onto it, Tab on it, a click) makes it a flight's row and looks it
+  up at once. A pointer passing over it is not going to it.
+- **Never above a local match.** A flight's row ranks under every app, sum, setting and link that matched, and
+  over the web search.
+- **An action that waits.** Copy, Pin and Add to calendar stand in the row before the answer does. Enter on
+  one of them while the answer is on its way runs it when the answer is in (as Enter on an answer being
+  written waits for all of it).
+- **An action that is off.** When no answer came, Copy and Pin keep their places, dimmed; Tab, the arrows and
+  the pointer pass over them. Enter still opens the flight's page. When the key was refused, "Booklight
+  settings" stands where they stood. A row that says "No connection" or "No answer this time" is asked again
+  when the user goes to it, once ten seconds have passed (`FlightsProvider.retry`).
+- **What is not offered.** "Add to calendar" is there only for a flight that is still to come or in the air,
+  and whose times are sure to the hour: not for one that has landed, was diverted or cancelled, not for a
+  timetable's flight whose time has passed, and not for one dated after a clock change at either airport (the
+  timetable gives no zone, so the event could be an hour out). Pin is dimmed for a timetable's flight whose
+  time to leave has passed.
+- **Who said it.** While a row that was answered from elsewhere is selected, the footer's left end says who
+  gave the answer and when ("AirLabs · 13:58"), as quietly as it names a grid's cell. A word that just
+  happened ("Copied") takes its place for its moment.
+- **The keyword** `flight` (German `flug`): after it, whatever reads as a flight number is one. With a key
+  in, the row stands empty under the chip before the number is complete.
+- **A day after the number** (`LH455 fri`, `LH455 tomorrow`, `LH455 3.10.`) is that day's flight; a weekday
+  that is today is today. A day is taken from three letters on. While it is being typed (one or two letters,
+  or the beginning of a day's word: `LH455 s`, `LH455 mo`, `LH455 tomor`) the number's own row stays, so the
+  answer does not go away for a key and nothing is asked for a day nobody meant. A day beside a time is its
+  weekday within six days of today, and its date beyond ("24 Dec").
+- **A timetable's flight goes by the clock.** It has no state of its own: once its time to leave has passed it
+  is not "Planned" any more, its labels say "Left" and "Landed" as its times pass, and its third line says
+  only "From the timetable".
+- **The pinned flight** follows one flight, the number on the day it leaves, never "the next" of its number.
+  It counts by itself, a minute at a time, and asks the service again while its window is on screen: every
+  half hour from three hours before it leaves until it has landed, every three hours before that, and not at
+  all for a timetable's plan more than ten hours off. One request each time. A flight that was to land more
+  than three hours ago says "Landed" and asks nothing, whatever was last heard of it; when the service
+  answers with another day's flight, the asking ends. It is the one place where Booklight asks with the panel
+  closed.
+- **No key, no request.** Without a key the row is an ordinary one that names the airline; its last action,
+  "Set up times", opens the Booklight window on the row where a key goes.
+
+## 17. Your usual (issue 1, 2 October 2026)
+
+The design: `zero-state.md`. Behind the switch "Show your usual", off unless chosen. As built:
+
+- **What stands under the empty field** is one thing at most, in this order: a first-run card, the line for a
+  fresh copy, your usual, a tip (`Under.choose` in `core`, with its truth table as a test). The usual rows come
+  as the glass lands when it is already known that no copy is fresh, else a moment later with the line and the
+  tip, and never after that.
+- **The rows** are the two things run most from Booklight (a faded count of 1.5 or more: run twice, for eleven
+  days) and the one run last in the past eight hours. Two or three, never one. Each is one line.
+- **Nothing is selected.** Enter does nothing. Down, Tab, a pointer that has moved 4 dp on a row, or Ctrl + digit
+  choose. Up from row one goes back to rest; Up at rest brings the last text back; each needs a press of its own.
+- **A letter** is typed at once; the rows stand until the typed list lands, and a thing that is in both keeps
+  its row. When the field is empty again the same rows stand again.
+- **Don't suggest** takes the row out, and the panel is back at rest. It is not a run, and nothing is deleted.
+  On an app it stands in the list behind the arrow, the last line before Uninstall; on any other row it is the
+  last icon before anything that removes. Ctrl + digit never runs it.
+- **One line each.** A thing whose row has a second line (a link, a recipe) is not suggested in this version.
+- **What counts as a run** (for every list): any action that is not dangerous and is not App info, Edit or Delete.
+

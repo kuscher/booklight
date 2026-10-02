@@ -3,6 +3,9 @@ package io.github.kuscher.booklight.data
 import android.content.Context
 import android.util.Log
 import io.github.kuscher.booklight.BooklightApp
+import io.github.kuscher.booklight.core.Kept
+import io.github.kuscher.booklight.core.Seed
+import io.github.kuscher.booklight.core.Seeds
 import io.github.kuscher.booklight.core.Engine
 import io.github.kuscher.booklight.core.Engines
 import io.github.kuscher.booklight.core.Site
@@ -36,9 +39,13 @@ data class StepEntry(val kind: String, val a: String = "", val b: String = "", v
 @Serializable
 data class RecipeEntry(val id: String, val name: String, val keyword: String = "", val steps: List<StepEntry> = emptyList())
 
-/** A prompt the user keeps: a name, a keyword (may be empty) and the text, with `{text}` where what is typed goes. */
+/**
+ * A prompt the user keeps: a name, a keyword (may be empty) and the text, with `{text}` where what is typed goes.
+ * [seed]: it is still the ready-made prompt at that place of the table, word for word, and its words come from
+ * the resources each time the settings are read (core `Seeds`); null for the user's own and for an edited one.
+ */
 @Serializable
-data class PromptEntry(val id: String, val name: String, val keyword: String = "", val text: String)
+data class PromptEntry(val id: String, val name: String, val keyword: String = "", val text: String, val seed: Int? = null)
 
 /** Everything the user can choose, plus which first-run cards are still to show. */
 @Serializable
@@ -70,6 +77,18 @@ data class Settings(
     val recipes: List<RecipeEntry> = emptyList(),
     /** Prompts: `fix teh text`. Five to start with, in the device's language when Booklight first ran. */
     val prompts: List<PromptEntry> = emptyList(),
+    /** A line under the empty field for something copied in the last two minutes: what kind of thing it is, and Tab opens it. */
+    val copyRow: Boolean = true,
+    /**
+     * "Your usual" under the empty field: the two things run most from Booklight and the one run last, in place of
+     * the tips. Off until chosen. [zeroHidden]: what the user said "Don't suggest" for. [zeroHeld]: which two had
+     * seats one and two at the last showing, so they do not swap from one opening to the next (core `Zero`).
+     */
+    val zero: Boolean = false,
+    val zeroHidden: List<String> = emptyList(),
+    val zeroHeld: List<String> = emptyList(),
+    /** Since when a holder of one of those seats has had no row (its app was removed, or its kind of row switched off), by the wall clock; 0 = neither is away. */
+    val zeroAway: Long = 0L,
     /** The folder notes go to, as the tree address the user granted; null until they have. */
     val notesFolder: String? = null,
     val emojiRecent: List<String> = emptyList(),
@@ -91,7 +110,9 @@ data class Settings(
     val keySeen: Boolean = false,
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
-    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2. */
+    /** How many of the ready-made prompts this installation has been given: a version that brings a new one adds it once. */
+    val seeded: Int = 0,
+    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference. */
     val schema: Int = 1,
 ) {
     fun engine(): Engine = Engines.byId(engine)
@@ -103,13 +124,17 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "settings.json")
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val writing = Mutex()
-    private companion object { const val SCHEMA = 4 }
+    private companion object {
+        const val SCHEMA = 5
+        /** The ready-made prompts 2.0 came with: what an installation from before schema 5 has been given. */
+        const val FIRST_SEEDS = 5
+    }
     private val _state = MutableStateFlow(load())
     val state: StateFlow<Settings> = _state
     val now: Settings get() = _state.value
 
     private fun load(): Settings = try {
-        if (file.exists()) migrate(json.decodeFromString(Settings.serializer(), file.readText())) else started(Settings(schema = SCHEMA))
+        if (file.exists()) current(migrate(json.decodeFromString(Settings.serializer(), file.readText()))) else started(Settings(schema = SCHEMA))
     } catch (e: Exception) {
         // The file holds what the user made (links, snippets, recipes): put it aside rather than write over it.
         // Only the kind of error is logged: the message of a parse error quotes the file.
@@ -136,7 +161,29 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
         if (s.schema < 3) s = started(s).copy(keySeen = !s.shortcutCard || File(context.filesDir, "history.json").length() > 8)
         // 2.2: the opening is at medium speed unless chosen otherwise. Fast was what everyone had, chosen or not.
         if (s.schema < 4 && s.opening == "fast") s = s.copy(opening = "medium")
+        // The ready-made prompts are kept by reference: the ones nobody changed are recognised, in English or German.
+        if (s.schema < 5) {
+            val tables = listOf("en", "de").map { seeds(it) }
+            s = s.copy(prompts = s.prompts.map { it.copy(seed = Seeds.of(it.kept(), tables)) }, seeded = FIRST_SEEDS)
+        }
         return s.copy(schema = SCHEMA)
+    }
+
+    /** The ready-made prompts in the device's language, or in [language]'s. */
+    private fun seeds(language: String? = null): List<Seed> {
+        val res = if (language == null) context.resources else
+            context.createConfigurationContext(android.content.res.Configuration(context.resources.configuration).apply { setLocale(java.util.Locale.forLanguageTag(language)) }).resources
+        return Seeds.parse(res.getStringArray(io.github.kuscher.booklight.R.array.prompt_seeds).toList())
+    }
+
+    private fun PromptEntry.kept() = Kept(id, name, keyword, text, seed)
+    private fun taken(s: Settings) = (s.sites.map { it.keyword } + s.recipes.map { it.keyword }).mapTo(HashSet()) { it.lowercase() }
+
+    /** Each time the settings are read: the unchanged ready-made prompts in the device's language as it is now, and a new one added once. */
+    private fun current(s: Settings): Settings {
+        val seeds = seeds()
+        val now = Seeds.current(s.prompts.map { it.kept() }, seeds, s.seeded, taken(s)).map { PromptEntry(it.id, it.name, it.keyword, it.text, it.seed) }
+        return if (now == s.prompts && s.seeded >= seeds.size) s else s.copy(prompts = now, seeded = maxOf(s.seeded, seeds.size))
     }
 
     /**
@@ -146,12 +193,31 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
      */
     private fun started(s: Settings): Settings {
         if (s.prompts.isNotEmpty()) return s
-        val used = (s.sites.map { it.keyword } + s.recipes.map { it.keyword }).mapTo(HashSet()) { it.lowercase() }
-        val seeds = context.resources.getStringArray(io.github.kuscher.booklight.R.array.prompt_seeds).mapNotNull { line ->
-            val (keyword, name, text) = line.split('|', limit = 3).takeIf { it.size == 3 } ?: return@mapNotNull null
-            PromptEntry("p-$keyword", name, if (keyword.lowercase() in used) "" else keyword, text)
+        val seeds = seeds()
+        return s.copy(prompts = Seeds.fresh(seeds, taken(s)).map { PromptEntry(it.id, it.name, it.keyword, it.text, it.seed) }, seeded = seeds.size)
+    }
+
+    /**
+     * The user's own key for the flight service: what makes a flight's row answer with times. It is a
+     * file of its own, `files/flights.key`, and not a line of the settings: the settings travel with
+     * the user's backup and to a new device, and a key must not. It is sent to that service and
+     * nowhere else, and never logged.
+     */
+    private val keyFile = File(context.filesDir, "flights.key")
+    private val _flightKey = MutableStateFlow(runCatching { if (keyFile.exists()) keyFile.readText().trim() else "" }.getOrDefault(""))
+    val flightKey: StateFlow<String> = _flightKey
+
+    /** [key] empty takes the key away. */
+    fun setFlightKey(key: String) {
+        val k = key.trim()
+        _flightKey.value = k
+        scope.launch(Dispatchers.IO) {
+            // One write at a time; each writes the newest key, so the last one to run leaves the newest file.
+            writing.withLock {
+                val now = _flightKey.value
+                runCatching { if (now.isEmpty()) keyFile.delete() else keyFile.writeText(now) }.onFailure { Log.w(BooklightApp.TAG, "flight key not saved (${it.javaClass.simpleName})") }
+            }
         }
-        return s.copy(prompts = seeds)
     }
 
     fun update(change: (Settings) -> Settings) {

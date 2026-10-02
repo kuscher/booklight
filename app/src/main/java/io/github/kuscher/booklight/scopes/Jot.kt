@@ -24,6 +24,25 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+// Days and times as the device shows them: "Fri 2 Oct", "15:00" or "3:00 pm".
+private fun locale(context: Context): Locale = context.resources.configuration.locales[0]
+internal fun day(context: Context, t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE d MMM", locale(context)))
+internal fun clock(context: Context, t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern(if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a", locale(context)))
+/** As [clock], but a full hour on the 12-hour clock is just "3 PM": a range has to fit its slot. */
+private fun short(context: Context, t: LocalDateTime): String = if (!DateFormat.is24HourFormat(context) && t.minute == 0) t.format(DateTimeFormatter.ofPattern("h a", locale(context))) else clock(context, t)
+
+/** When an event is, as its row says it: "Fri 2 Oct, 19:00–20:00". */
+internal fun span(context: Context, e: EventDraft): String = when {
+    e.allDay -> context.getString(R.string.jot_all_day, day(context, e.start))
+    else -> {
+        // "3–4 PM", not "3:00 PM–4:00 PM": the half of the day is said once when both ends share it.
+        val from = short(context, e.start)
+        val to = short(context, e.end)
+        val half = to.substringAfterLast(' ', "")
+        "${day(context, e.start)}, ${if (half.isNotEmpty() && from.endsWith(" $half")) from.removeSuffix(" $half") else from}–$to"
+    }
+}
+
 /**
  * The scopes that jot something down: a mail, a note, an event, a reminder, a timer, an alarm,
  * a new file. Each reads its one line with a parser from the core and shows what it understood
@@ -48,23 +67,9 @@ abstract class JotScope(protected val context: Context, final override val key: 
 
     protected fun copy(text: String) = Action("copy", text(R.string.action_copy), Effect.CopyText(text))
 
-    // Days and times as the device shows them: "Fri 2 Oct", "15:00" or "3:00 pm".
-    private val locale: Locale get() = context.resources.configuration.locales[0]
-    protected fun day(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))
-    protected fun clock(t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern(if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a", locale))
-    /** As [clock], but a full hour on the 12-hour clock is just "3 PM": a range has to fit its slot. */
-    private fun short(t: LocalDateTime): String = if (!DateFormat.is24HourFormat(context) && t.minute == 0) t.format(DateTimeFormatter.ofPattern("h a", locale)) else clock(t)
-
-    protected fun span(e: EventDraft): String = when {
-        e.allDay -> text(R.string.jot_all_day, day(e.start))
-        else -> {
-            // "3–4 PM", not "3:00 PM–4:00 PM": the half of the day is said once when both ends share it.
-            val from = short(e.start)
-            val to = short(e.end)
-            val half = to.substringAfterLast(' ', "")
-            "${day(e.start)}, ${if (half.isNotEmpty() && from.endsWith(" $half")) from.removeSuffix(" $half") else from}–$to"
-        }
-    }
+    protected fun day(t: LocalDateTime): String = day(context, t)
+    protected fun clock(t: LocalDateTime): String = clock(context, t)
+    protected fun span(e: EventDraft): String = span(context, e)
 
     protected fun insert(e: EventDraft): Effect {
         // An all-day event is midnight to midnight in UTC, whatever the device's zone: that is how calendars store one.

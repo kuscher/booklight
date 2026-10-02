@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 2.3 · M1, the copy. The line under the empty field for a fresh copy: "Copied 20 s ago · a link and a date". -->
+    <string name="copy_line">Copied %1$s</string>
+    <string name="copy_age_now">just now</string>
+    <string name="copy_age_s">%d s ago</string>
+    <string name="copy_age_min">1 min ago</string>
+    <string name="copy_text">text</string>
+    <string name="copy_link">a link</string>
+    <string name="copy_date">a date</string>
+    <string name="copy_phone">a phone number</string>
+    <string name="copy_mail">an email address</string>
+    <string name="copy_two">%1$s and %2$s</string>
+    <string name="copy_more">%1$s, %2$s and more</string>
+
+    <!-- A thing as the chip (a copy, text another app handed over): the placeholder, and the rows under it. -->
+    <string name="thing_hint">What to do with it</string>
+    <string name="label_link">Link</string>
+    <string name="label_event">Event</string>
+    <string name="label_phone">Phone</string>
+    <string name="label_mail">Mail</string>
+    <string name="label_gemini" translatable="false">Gemini</string>
+    <string name="action_copy_clean">Copy clean</string>
+    <string name="action_add_event">Add…</string>
+    <string name="action_call">Call</string>
+    <string name="clip_private">What you copied is marked private</string>
+
+    <!-- An answer written into the row that was asked. "In Danish", then "In Danish · on this device". -->
+    <string name="tr_in">In %s</string>
+    <string name="answer_here">%s · on this device</string>
+    <string name="with_copy">With what you copied</string>
+    <string name="with_text">With this text</string>
+
+    <!-- tr danish see you on Saturday -->
+    <string name="tr_keys" translatable="false">tr</string>
+    <string name="tr_name">Translate</string>
+    <string name="tr_hint">A language, then the text</string>
+    <string name="tr_about">Into another language, on this device</string>
+    <string name="tr_which">Which language?</string>
+    <!-- How the device's model is asked. The names of languages in these two are English: the model reads them best. -->
+    <string name="tr_prompt" translatable="false">Translate this text into {language}. Reply with only the translation.\n\n{text}</string>
+    <string name="tr_prompt_other" translatable="false">Translate this. If its first word is the name of a language, translate the rest into that language; otherwise translate all of it into English, or into German if it is English. Reply with only the translation.\n\n{text}</string>
+    <string name="instruction_prompt" translatable="false">{instruction}\n\nReply with only the result, without an introduction.\n\n{text}</string>
+
+    <!-- The switch in the window. -->
+    <string name="set_copy">What you copied</string>
+    <string name="set_copy_show">Offer it when Booklight opens</string>
+    <string name="set_copy_text">Open Booklight within two minutes of copying something, and one line offers what can be done with it. Until you open it, Booklight knows only what kind of thing it is, not what it says.</string>
+    <!-- Words that may stand before a language's name under a copy's chip: "in danish", "into danish". Lower case, comma-separated. -->
+    <string name="tr_lead" translatable="false">in,into,to</string>
+</resources>

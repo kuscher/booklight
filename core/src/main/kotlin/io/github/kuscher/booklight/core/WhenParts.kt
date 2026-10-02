@@ -36,6 +36,12 @@ internal object Days {
         lists.forEachIndexed { i, list -> for (w in list.split(' ')) put(w, i + 1) }
     }
 
+    /** True if [prefix] is how a day's word begins ("tom" of tomorrow, "fre" of Freitag, "ok" of Oktober): a day that is still being typed. */
+    fun begins(prefix: String): Boolean {
+        val f = Matcher.fold(prefix)
+        return f.isNotEmpty() && (WORDS.keys.any { it.startsWith(f) } || WEEKDAYS.keys.any { it.startsWith(f) } || MONTHS.keys.any { it.startsWith(f) })
+    }
+
     fun parse(words: List<String>, today: LocalDate): Day? = when {
         words.isEmpty() -> null
         words.size == 1 -> one(words[0], today)

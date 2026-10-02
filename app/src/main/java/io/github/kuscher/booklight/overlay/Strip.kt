@@ -181,7 +181,8 @@ fun ActionStrip(
                 val bad = act?.danger == true
                 // On the selection the ink is the panel's own, at full strength. What removes something is red at
                 // rest and takes its container's ink once the pane is on it.
-                val ink by animateColorAsState(if (!bad) scheme.onSurface else if (k == at) scheme.onErrorContainer else scheme.error, motion.fade(120), label = "ink")
+                // What cannot be run now keeps its place, dimmed.
+                val ink by animateColorAsState(if (act?.off == true) scheme.onSurface.copy(alpha = 0.40f) else if (!bad) scheme.onSurface else if (k == at) scheme.onErrorContainer else scheme.error, motion.fade(120), label = "ink")
                 // The slot's icon. In the last slot the arrow and a typed action trade places on one centre.
                 val symbol = act?.symbol ?: "more"
                 AnimatedContent(symbol, transitionSpec = { fadeIn(motion.fade(80)) togetherWith fadeOut(motion.fade(80)) using SizeTransform(clip = false) { _, _ -> motion.arm() } }, label = "icon") { sym ->

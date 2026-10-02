@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 2.4 · M5, flights. A flight number is a row: "LH 455 · Lufthansa". With a key of the user's own for AirLabs it answers:
+         LH 455 · Lufthansa · San Francisco → Frankfurt / LEAVES SFO 15:05  LANDS FRA Fri 10:55 / Delayed 25 min · Terminal G, gate G4 -->
+    <string name="flight_keys">flight</string>
+    <string name="flight_name">Flight</string>
+    <string name="flight_hint">A flight number: LH455</string>
+    <string name="flight_about">Who flies it; with your own AirLabs key, its times, gate and status</string>
+    <string name="flight_kind">Flight</string>
+    <string name="flight_who">%1$s · %2$s</string>
+    <string name="flight_route">%1$s → %2$s</string>
+    <string name="flight_leaves">Leaves</string>
+    <string name="flight_left">Left</string>
+    <string name="flight_lands">Lands</string>
+    <string name="flight_landed_at">Landed</string>
+    <string name="flight_looking">Looking it up</string>
+
+    <!-- The status, in two or three words. A delay is said, never painted. %s is a length of time: "25 min", "1 h 15 min". -->
+    <string name="flight_planned">Planned</string>
+    <string name="flight_timetable">from the timetable</string>
+    <string name="flight_on_time">On time</string>
+    <string name="flight_delayed">Delayed %s</string>
+    <string name="flight_air">In the air</string>
+    <string name="flight_air_on_time">on time</string>
+    <string name="flight_air_late">%s late</string>
+    <string name="flight_air_early">%s early</string>
+    <string name="flight_landed">Landed</string>
+    <string name="flight_landed_late">Landed %s late</string>
+    <string name="flight_landed_early">Landed %s early</string>
+    <string name="flight_diverted">Diverted</string>
+    <string name="flight_cancelled">Cancelled</string>
+    <string name="flight_min">%d min</string>
+    <string name="flight_h">%d h</string>
+    <string name="flight_h_min">%1$d h %2$d min</string>
+
+    <!-- Where to go: "Terminal G, gate G4" before it leaves, "Terminal 1, belt 12" after. -->
+    <string name="flight_terminal">Terminal %s</string>
+    <string name="flight_gate">gate %s</string>
+    <string name="flight_belt">belt %s</string>
+
+    <!-- When no answer comes. The row keeps its lines; these stand where the status would. -->
+    <string name="flight_none">Nothing found for this number</string>
+    <string name="flight_no_day">It does not fly on that day</string>
+    <string name="flight_no_answer">No answer this time</string>
+    <string name="flight_offline">No connection</string>
+    <string name="flight_used_up">This month’s AirLabs lookups are used up</string>
+    <string name="flight_refused">AirLabs did not accept the key</string>
+
+    <string name="action_get_times">Set up times</string>
+    <string name="action_flight_key">Booklight settings</string>
+    <string name="action_calendar">Add to calendar</string>
+    <string name="action_search_web">Search the web</string>
+    <!-- What is copied: LH 455 San Francisco 15:05 → Frankfurt Fri 10:55, delayed 25 min, Terminal G, gate G4 -->
+    <string name="flight_line">%1$s %2$s %3$s → %4$s %5$s</string>
+    <string name="flight_search">%s flight status</string>
+    <string name="flight_question">What is the status of flight %s?</string>
+    <!-- Who gave the answer and when, at the footer's left end: AirLabs · 13:58 -->
+    <string name="flight_source">%1$s · %2$s</string>
+
+    <!-- The pinned flight: a small line, then the time to go in words (the timer beside it counts in minutes and seconds). -->
+    <string name="pin_kind_flight">Pinned flight</string>
+    <string name="pin_flight_gate">gate %s</string>
+    <string name="pin_flight_lands">lands %s</string>
+    <string name="pin_flight_was">was %s</string>
+    <string name="pin_flight_h_min">%1$d h %2$02d min</string>
+
+    <!-- The Booklight window: where the key is set. -->
+    <string name="set_flights">Flights</string>
+    <string name="set_flight_key">Your AirLabs key</string>
+    <string name="set_flight_key_text">A flight number names its airline without any key. With a key of your own, the number you typed is sent with the key to AirLabs (airlabs.co) a moment after you stop typing, and the row answers with the times, the gate and the status. A pinned flight asks again until it has landed: every three hours, and every half hour from three hours before it leaves. The key is kept only on this device and goes to AirLabs alone.</string>
+    <string name="set_flight_key_hint">Paste the key here</string>
+    <string name="set_flight_key_in">A key is in</string>
+    <string name="set_flight_key_none">No key</string>
+    <string name="set_flight_left">About %d lookups are left this month.</string>
+    <string name="set_flight_get">Get a key</string>
+    <string name="set_flight_get_text">A free account at airlabs.co: 1,000 lookups a month</string>
+    <string name="action_take_out">Take out</string>
+</resources>

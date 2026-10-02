@@ -85,6 +85,7 @@ class OverlayActivity : ComponentActivity() {
         val screen = windowManager.maximumWindowMetrics.bounds
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screen.height() / resources.displayMetrics.density))
         model.typeStep = motion::typeStep
+        model.onSay = { say(it) }
         stay = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)
         solid = settings.glass == "solid"
         Look.use(GlassLevel.of(settings.glass))
@@ -302,6 +303,7 @@ class OverlayActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) model.focused = true
         if (hasFocus || stay || handedOver) return
         // Whatever started the panel (the taskbar, a widget, the Apps list) may still be closing and
         // take focus for a moment: early on, only close if focus is still gone a little later.
@@ -328,7 +330,9 @@ class OverlayActivity : ComponentActivity() {
         if (!app.executor.run(a.effect, this)) { say(getString(R.string.failed), bad = true); return }
         // Asking for a grant runs nothing yet: what was typed (the first note) is kept, in case the picker is cancelled.
         ran = a.effect !is Effect.Grant
-        model.learn(r)
+        // What counts as a run: opening it, or doing its thing. Not looking at its details, changing it or removing it:
+        // "chrome uninstall", Enter, Cancel must not make Chrome the thing that was run last.
+        if (!a.danger && a.id !in NOT_A_RUN) model.learn(r) else app.lastText = null
         model.used(r, a)
         // An emoji that was picked comes first next time.
         if (r.body is Body.Grid && r.provider == "emoji") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(emojiRecent = (listOf(c.text) + (it.emojiRecent - c.text)).take(14)) } }
@@ -394,6 +398,8 @@ class OverlayActivity : ComponentActivity() {
     }
 
     companion object {
+        /** Actions that do not count as running the thing: App info, Edit, Delete (and whatever is marked as removing). */
+        private val NOT_A_RUN = setOf("info", "edit", "delete")
         const val EXTRA_STAY = "stay"
         const val EXTRA_DARK = "dark"
         /** Who starts the launcher activity with a button of their own that says "Open". */

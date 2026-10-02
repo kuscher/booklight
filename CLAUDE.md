@@ -6,7 +6,7 @@ Material 3 Expressive (material3 1.5.0-alpha, pinned). Since 1.1 it also does th
 events, timers, volume, emoji, the user's own links and recipes. Since 2.0: prompts answered by the system's
 own model, a pinned window, other apps' commands, `?`, tips, `s` and `k`, places, a window with sections.
 
-**Permissions:** `INTERNET` (suggestions, off until the user turns them on), `REQUEST_DELETE_PACKAGES`
+**Permissions:** `INTERNET` (suggestions, off until the user turns them on; a flight's times, only with a key the user put in), `REQUEST_DELETE_PACKAGES`
 (Uninstall; Android confirms), `SET_ALARM` (Clock), `WRITE_SETTINGS` (brightness; inert until the user
 flips the switch); since 2.0, merged in from Google's ML Kit GenAI library (shipped as it is, Alex's decision):
 AICore's `BIND_SERVICE` and `ACCESS_NETWORK_STATE`, and the library's usage reporting to Google. No runtime
@@ -39,9 +39,15 @@ private projects and paths into their repos, and where keys are backed up. Those
   - `Matcher.kt`, `History.kt`, `Calc.kt`, `Web.kt`, `Sites.kt`, `Suggest.kt`: as in 1.0.
   - Parsers, each with its tests: `Verbs.kt` ("chrome uninstall"), `When.kt` + `WhenParts.kt` + `Durations.kt`
     (dates and times, English and German), `Jot.kt` (mail, event, reminder, timer, new), `Colors.kt`,
-    `Templates.kt` (link placeholders), `Clip.kt`, `Secrets.kt`, `Emoji.kt`, `Letters.kt` (`abc`: other
+    `Templates.kt` (link placeholders), `Clip.kt` (the clipboard's transforms, and when a fresh copy is offered),
+    `Zero.kt` (your usual: which rows stand under the empty field, and `Under`: what has that place),
+    `Links.kt` (a link without its tracking tail), `Languages.kt`, `Plain.kt` (an answer without Markdown), `Secrets.kt`, `Emoji.kt`, `Letters.kt` (`abc`: other
     languages' letters), `Jumps.kt`, `Ask.kt`, `Places.kt` (where a window goes), `NoteText.kt` (notes and
     tasks as lines), `Prompts.kt`.
+  - Flights (M5): `Flights.kt` (a flight number read off the line, strong or weak; the airline table),
+    `AirLabs.kt` (the flight service's replies read, and which requests "the next flight" takes),
+    `FlightStatus.kt` (one flight as a small model, and what its row says). Their tests read real replies
+    kept in `core/src/test/resources/airlabs/`, without the `request` object the service repeats the key in.
 - `app/` — Compose app, package `io.github.kuscher.booklight`.
   - `BooklightApp` the process: providers, scopes, engine, stores. **Register a new provider here.**
   - `Guide.kt` everything Booklight does, as one table in the string resources (`guide`): the list behind `?`,
@@ -52,18 +58,21 @@ private projects and paths into their repos, and where keys are backed up. Those
   - `providers/` apps (with typed verbs), sums, settings pages, commands, web (addresses, ports, Gemini),
     `Dials.kt` (volume, brightness, media), `Answers.kt` (colour, password, UUID), `User.kt` (the user's
     links and recipes), `AppCommands.kt` (what other apps offer: docs/EXTENSIONS.md), `Keys.kt` (the system's
-    shortcuts, and the `s` and `k` scopes), `SuggestProvider` (the only network code of Booklight's own).
+    shortcuts, and the `s` and `k` scopes), `SuggestProvider` and `Flights.kt` (the only network code of Booklight's
+    own: suggestions once switched on, and a flight's times once the user has put in their own AirLabs key;
+    `FlightsProvider` is the row, `FlightScope` the keyword `flight`).
   - `scopes/` rows that take text: `Scopes.kt` (the registry: **a new scope is one line there**; links that
     take text, prompts), `Jot.kt` (mail, note, event, remind, timer, alarm, new, ask), `Picks.kt` (emoji, symbols,
-    QR, colour, snippets, clipboard, text from another app), `NotesScopes.kt` (notes, todo, pin),
+    QR, colour, snippets; `TextScope`: what was copied or handed over, and what can be done with it; `tr`), `NotesScopes.kt` (notes, todo, pin),
     `Prompts.kt` (a prompt's row and its answer), `Help.kt` (`?`).
   - `Executor.kt` performs effects: the only place that starts activities, writes the clipboard or changes
-    a system value. Helpers in `device/` (audio, screen, files, QR images) and `data/Notes.kt`.
+    a system value. Helpers in `device/` (audio, screen, files, QR images; `Clipboard`, the one place that
+    touches the system's clipboard and its text classifier) and `data/Notes.kt`.
   - `overlay/` the panel: `OverlayActivity` (window, icon-or-shortcut routing, text from other apps),
     `OverlayModel` (chip, text, rows, selection, arming, an opened row, grid cell, confirmation, the answer of
     the model, tips, Booklight typing), `Panel` (keys, the unfold arrival, the tip card), `Field` (the scope
     chip), `Rows` (and an opened row's list), `Strip` (the action row and the option strip), `Bodies` (slots,
-    level, grid, QR, the answer being written), `Marks` (the drawn check), `Footer`, `Metrics`, `Glass`
+    level, grid, QR, the answer being written), `Marks` (the drawn check), `CopyLine` (the line for a fresh copy), `Footer`, `Metrics`, `Glass`
     (shader, edge light, the shadow's settings), `PanelOutline` (the blur's corners; `GlassFrame`, where the glass stands; keeps the shadow off the
     glass), `Motion`.
   - `window/` the Booklight window the icon opens: `MainActivity` (the sections' pages, the keys), `Nav` (the
@@ -72,6 +81,10 @@ private projects and paths into their repos, and where keys are backed up. Those
   - `entry/` the widget, the tile, the notes-folder picker. `data/` settings (`Prefs`), history, notes, recipes.
   - `app/src/debug/…/DebugReceiver.kt` adb hooks (DUMP-guarded, debug builds only: they print what is typed).
 - `app/src/main/assets/emoji.tsv` is generated by `tools/emoji.py` (Unicode data; see `NOTICE`).
+- `app/src/main/assets/airlines.tsv` is generated by `tools/airlines.py` (Virtual Radar Server's standing data, CC0; see `NOTICE`).
+- **No key of anyone's in the repo.** The flight service's key is the user's own (`files/flights.key`, set in the
+  window or with `./bl debug pref flightkey KEY`). The service repeats the key in every reply: a reply saved as a
+  test file loses its `request` object first.
 - `bl` — the helper script (its header lists every command).
 
 ## Dev loop
@@ -80,7 +93,8 @@ private projects and paths into their repos, and where keys are backed up. Those
   drives the panel without injecting input (`dump` shows the chip, each row's body and actions, and which is armed).
   Also: `guide` (every example of the list of everything, run through the engine), `ai none|downloadable|downloading|real`
   (a prompt's rows on a device in that state), `pin KIND TEXT` and `unpin`, `pref tips again`, `pref key seen|no`,
-  `pref shadow off|low|medium|high`. `./bl open stay slow=4 shade=high key` (every spring four times as long; the shadow; as if a
+  `pref shadow off|low|medium|high`, `pref flightkey KEY|none` (the flight service's key; never printed) and
+  `flight TEXT` (a flight's row, looked up at once, without the panel). `./bl open stay slow=4 shade=high key` (every spring four times as long; the shadow; as if a
   key had opened it). `./bl wshot NAME` = PNG of the Booklight window.
   **`./bl debug keys TEXT` types one character at a time**: use it for anything about typing; `type` sets the whole text at
   once and so never shows a row changing under the selection (a crash hid behind that in 1.1's review). `./bl shot NAME` = PNG of the panel's own window (debug builds).
@@ -113,14 +127,17 @@ private projects and paths into their repos, and where keys are backed up. Those
   The system accepts only shortcuts with the Action key, and one per app (docs/research/device-findings.md).
 
 ## Design rules
-- One panel, one ranked list, row one selected. Enter runs its armed action. No groups, no tabs, no toolbars.
+- One panel, one ranked list. Row one is selected in every list that typing made; Enter runs its armed action. With
+  "Show your usual" on, two or three rows stand under the empty field with none selected, and Enter does nothing
+  until Down. No groups, no tabs, no toolbars.
 - A row shows all it can do as icons; the armed one is unrolled. One highlight per level (the list's pill,
   the row's pane, the grid's square), and it travels; never two, never a fade between two places.
 - Flat glass: visibly see-through, blurred, a thin tint, a crisp white outline. No bevels, glows or
   sculpted highlights (Alex: "not too 3D esp the highlights. I do like the white outline").
 - Motion everywhere, all from `Motion.kt`: highlights move, lists cascade in, names unroll, nothing pops.
   Sizes are known before anything moves; typed text changes in the same frame. Never hold up typing.
-- Nothing typed = nothing shown (after the two first-run cards).
+- Nothing typed = nothing shown, apart from one thing that may stand under the empty field, in this order: a
+  first-run card, the line for a fresh copy, your usual (a switch, off unless chosen), a tip (core `Under`).
 - The window is exactly the panel: never WRAP_CONTENT, never bigger than what is drawn, and never resized in
   width (it is neither smooth nor symmetric). The arrival grows the glass inside a window that stays put.
   **The blur is the window's root view**, so before each frame that view is framed to the glass

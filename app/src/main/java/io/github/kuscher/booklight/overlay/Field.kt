@@ -1,6 +1,7 @@
 package io.github.kuscher.booklight.overlay
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
@@ -79,9 +80,16 @@ fun Field(
         AnimatedContent(
             model.chip,
             transitionSpec = {
-                val enter = if (targetState != null) fadeIn(motion.fade(110)) + slideInHorizontally(motion.place()) { it / 2 } else scaleIn(motion.pop(), 0.6f) + fadeIn(motion.fade(110))
+                // A typed keyword's chip comes from where the keyword stood. A chip nobody typed (what was copied, text another
+                // app handed over) has nowhere to come from: it appears where the mark was.
+                val typed = !targetState?.keywords.isNullOrEmpty()
+                val enter = if (targetState != null) fadeIn(motion.fade(110, if (typed) 0 else UNTYPED_AFTER_MS)) + slideInHorizontally(motion.place()) { if (typed) it / 2 else 0 } else scaleIn(motion.pop(), 0.6f) + fadeIn(motion.fade(110))
                 val exit = if (targetState != null) scaleOut(targetScale = 0.6f) + fadeOut(motion.fade(80)) else fadeOut(motion.fade(80))
-                (enter togetherWith exit).using(SizeTransform(clip = false) { _, _ -> motion.place() })
+                // A typed keyword's chip takes its room on a spring, as the text slides over. A chip nobody typed takes its room in
+                // one step, once the old placeholder has faded where it stood, and then appears in it: its name is drawn in
+                // full from its first frame, and the caret never runs through it.
+                val springs = typed || !initialState?.keywords.isNullOrEmpty()
+                (enter togetherWith exit).using(SizeTransform(clip = false) { _, _ -> if (springs) motion.place() else motion.fade(1, UNTYPED_AFTER_MS, LinearEasing) })
             },
             contentKey = { it?.key }, contentAlignment = Alignment.CenterStart, label = "mark", modifier = Modifier.graphicsLayer { alpha = ends() },
         ) { chip ->
@@ -98,7 +106,10 @@ fun Field(
                 // The placeholder says what to type: what Booklight finds, or what the scope takes.
                 // While a tip shows, its example stands here: where it would be typed, in the ink that means "not typed yet".
                 AnimatedContent(model.chip?.hint ?: model.tip?.takeIf { !model.tipOff }?.example?.trim() ?: stringResource(R.string.search_hint), transitionSpec = {
-                    (fadeIn(motion.fade(140, 60)) + slideInHorizontally(motion.place()) { it / 40 }) togetherWith fadeOut(motion.fade(60))
+                    // Their box changes its width on our spring and without a clip: a longer placeholder is never cut through its
+                    // letters while it comes.
+                    ((fadeIn(motion.fade(140, 60)) + slideInHorizontally(motion.place()) { it / 40 }) togetherWith fadeOut(motion.fade(60)))
+                        .using(SizeTransform(clip = false) { _, _ -> motion.place() })
                 }, contentAlignment = Alignment.CenterStart, label = "hint") { hint ->
                     Text(hint, style = style.copy(color = scheme.onSurface.copy(alpha = THIRD), fontWeight = FontWeight(400)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 2.dp))
                 }
@@ -120,9 +131,16 @@ fun Field(
             )
         }
         // The footer says "esc Close" once there is one; until then the field does.
-        AnimatedVisibility(model.results.isEmpty(), Modifier.graphicsLayer { alpha = ends() }, enter = fadeIn(motion.fade(120)), exit = fadeOut(motion.fade(120))) { Keycap("esc") }
+        // Rows that come while the glass is still opening (the usual rows) take the cap away before it was ever seen: from
+        // then on it never gets brighter than it was at that moment, or it would flash in the middle of its own leaving.
+        val none = model.results.isEmpty()
+        val most = remember(none) { if (none) 1f else androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { ends() } }
+        AnimatedVisibility(none, Modifier.graphicsLayer { alpha = minOf(ends(), most) }, enter = fadeIn(motion.fade(120)), exit = fadeOut(motion.fade(120))) { Keycap("esc", wide = true) }
     }
 }
+
+/** A chip nobody typed comes this long after the key: the placeholder it replaces has faded by then. */
+private const val UNTYPED_AFTER_MS = 60
 
 /**
  * The scope's chip: its icon where the mark was, and its name. Neutral, like a key cap: the

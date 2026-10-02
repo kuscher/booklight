@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="copy_line">%1$s kopiert</string>
+    <string name="copy_age_now">Gerade eben</string>
+    <string name="copy_age_s">Vor %d s</string>
+    <string name="copy_age_min">Vor 1 Min.</string>
+    <string name="copy_text">Text</string>
+    <string name="copy_link">ein Link</string>
+    <string name="copy_date">ein Datum</string>
+    <string name="copy_phone">eine Telefonnummer</string>
+    <string name="copy_mail">eine E-Mail-Adresse</string>
+    <string name="copy_two">%1$s und %2$s</string>
+    <string name="copy_more">%1$s, %2$s und mehr</string>
+
+    <string name="thing_hint">Was damit geschehen soll</string>
+    <string name="label_link">Link</string>
+    <string name="label_event">Termin</string>
+    <string name="label_phone">Telefon</string>
+    <string name="label_mail">Mail</string>
+    <string name="action_copy_clean">Sauber kopieren</string>
+    <string name="action_add_event">Hinzufügen …</string>
+    <string name="action_call">Anrufen</string>
+    <string name="clip_private">Das Kopierte ist als privat markiert</string>
+
+    <string name="tr_in">Auf %s</string>
+    <string name="answer_here">%s · auf diesem Gerät</string>
+    <string name="with_copy">Mit dem Kopierten</string>
+    <string name="with_text">Mit diesem Text</string>
+
+    <string name="tr_name">Übersetzen</string>
+    <string name="tr_hint">Eine Sprache, dann der Text</string>
+    <string name="tr_about">In eine andere Sprache, auf diesem Gerät</string>
+    <string name="tr_which">In welche Sprache?</string>
+
+    <string name="set_copy">Das Kopierte</string>
+    <string name="set_copy_show">Beim Öffnen anbieten</string>
+    <string name="set_copy_text">Öffnest du Booklight innerhalb von zwei Minuten nach dem Kopieren, bietet eine Zeile an, was sich damit tun lässt. Bis du sie öffnest, weiß Booklight nur, was für eine Art von Inhalt es ist, nicht, was darin steht.</string>
+    <string name="tr_lead" translatable="false">auf,ins,in,nach</string>
+</resources>

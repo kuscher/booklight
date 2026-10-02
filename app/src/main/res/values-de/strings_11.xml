@@ -120,7 +120,6 @@
     <string name="snip_none_sub">Tippe: add gruss / Viele Grüße, Alex</string>
     <string name="clip_keys">clip,clipboard,zwischenablage</string>
     <string name="clip_name">Zwischenablage</string>
-    <string name="clip_hint">Filtern</string>
     <string name="clip_about">Was du kopiert hast, zum Weiterverwenden</string>
     <string name="clip_empty">Die Zwischenablage ist leer</string>
     <string name="clip_upper">GROSSBUCHSTABEN</string>

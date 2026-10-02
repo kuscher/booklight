@@ -46,4 +46,16 @@ class HistoryTest {
         copy.forget("a")
         assertEquals(0.0, copy.boost("chr", "a", 6), 0.0)
     }
+
+    @Test fun itemsAreWhatWasRunWithoutWhatWasTyped() {
+        val h = History()
+        h.record("chr", "app:chrome", 1_000)
+        h.record("", "setting:wifi", 2_000)
+        assertEquals(setOf("app:chrome", "setting:wifi"), h.items().keys)
+        assertEquals(1.0, h.items().getValue("app:chrome").count, 0.0)
+        // A copy: what is recorded later does not change it.
+        val before = h.items()
+        h.record("x", "app:x", 3_000)
+        assertEquals(2, before.size)
+    }
 }

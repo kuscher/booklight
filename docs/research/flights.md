@@ -3,6 +3,9 @@
 *Desk research, 1 October 2026 (the calls were made between 04:50 and 05:10 UTC on 2 October, from a Mac on
 the US west coast). No device was touched, no code was changed, nothing was built.*
 
+*Since then: Alex chose AirLabs for the keyed road and it was tried with a real key. That is section 10,
+which wins over what sections 2 and 8 say about AirLabs and about which service to build on.*
+
 **The question.** The owner types a flight number (LH455, "lh 455", "UA 90") and wants a row that answers with
 the next flight of that number: airline, route, scheduled and expected times, terminal or gate, status. Where
 can that honestly come from, with no server of Booklight's own, no secret key in the APK, and nothing typed
@@ -189,7 +192,7 @@ None was called: there was no key. "Free" means a key from a free account.
 | **AeroDataBox** (RapidAPI; also API.Market and direct) | RapidAPI "Basic": 400 units a month, 1 request a second and 1,000 an hour. A flight status call is tier 2 = 2 units, so **200 lookups a month**. API.Market's free plan is a 7-day trial | RapidAPI Pro $8 a month, 5,000 units; API.Market Pro $7.50; direct from $19 | **Yes** | A RapidAPI account; whether RapidAPI asks for a card on the free plan is not verified. HTTPS only | `GET https://aerodatabox.p.rapidapi.com/flights/number/LH455` with `X-RapidAPI-Key` and `X-RapidAPI-Host`. The number may be IATA or ICAO, with or without a space, in any case ("KL1395, Klm 1395"), so no table is needed for this call. Without a date it returns the flight "operating on the nearest date (either in past or in future)"; with `/{dateLocal}` that day. Also by callsign, registration or transponder address. (The path value is listed as `Number` in the enum and written `number` in the description) | Per end: airport, `scheduledTime`, `revisedTime`, `predictedTime`, `runwayTime` (each in UTC and local), `terminal`, `checkInDesk`, `gate`, `baggageBelt`, `runway`. `status`: Unknown, Expected, EnRoute, CheckIn, Boarding, GateClosed, Departed, Delayed, Approaching, Arrived, Canceled, Diverted, CanceledUncertain. `codeshareStatus`, aircraft (registration, model), airline, optional position | Keys "are strictly confidential and must not be shared with any third parties"; exposing one "within a source code published in a GitHub repository" is named a breach. Free plans: non-commercial use, attribution required. Not for anything safety-related. (Terms of 19 September 2026) | docs ([pricing][adb-pricing], [terms][adb-terms], [OpenAPI][adb-doc]) |
 | **FlightAware AeroAPI** | "Personal": no monthly minimum, "up to $5 free per month"; `/flights/{ident}` is $0.005 a result set, so up to 1,000 lookups (a result set is a page of up to 15 flights and the reply covers about 14 days: with `max_pages=1` a lookup is one page); 10 result sets a minute | Standard: $100 a month minimum | **Yes**; the tier is for exactly this: "personal or academic purposes only" | An account; whether a card is needed for Personal is not stated on the page: not verified. | `GET https://aeroapi.flightaware.com/aeroapi/flights/DLH455` with `x-apikey`. Returns "approximately 14 days of recent and scheduled flight information… ordered by `scheduled_out`… descending": the app picks the next one. "It is highly recommended to specify ICAO flight ident rather than IATA"; `ident_type=designator` forces a flight number | `scheduled_out` / `estimated_out` / `actual_out`, the same for `off`, `on`, `in`; `gate_origin`, `gate_destination`, `terminal_origin`, `terminal_destination`, `baggage_claim`, `status`, `progress_percent`, delays, aircraft type | Personal tier: no business use, no commercialisation | docs ([tiers and per-query fees][aeroapi], [OpenAPI 4.17.1][aeroapi-spec]) |
 | **aviationstack** | 100 requests a month; HTTPS is listed in the free plan today; real-time flights yes, schedules and future flights no; "Non-Commercial Use" | Basic $49.99 a month, 10,000 requests | Barely: three a day | Account (apilayer); card not verified | `https://api.aviationstack.com/v1/flights?access_key=KEY&flight_iata=LH455` (memory; the docs page gave no text). The key travels in the address | scheduled, estimated, actual, terminal, gate, delay, baggage on arrival; `flight_status` scheduled, active, landed, cancelled, incident, diverted (memory) | Not read | docs ([pricing][avstack]) for the plans; the rest memory |
-| **AirLabs** | A free plan exists ("Get a FREE package"); its quota is not verified (the price table is drawn by script). **On the free plan the flight endpoint returns only some fields**: airports, `dep_time`, `arr_time`, position, airline, flight number, aircraft type. Not the estimated times, terminals, gates, baggage or `status` | Not verified; the home page's comparison says $19 per 10,000 queries | No: the free fields are the schedule only | Account | `https://airlabs.co/api/v9/flight?flight_iata=LH455&api_key=KEY`. "Only one closest (live, scheduled or landed) flight returns" | Paid: `dep_time`, `dep_estimated`, `arr_time`, `arr_estimated`, `dep_terminal`, `dep_gate`, `arr_terminal`, `arr_gate`, `arr_baggage`, `dep_delayed`, `arr_delayed`, `status` (scheduled, en-route, landed), aircraft | Replies carry: "Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited" | docs ([flight endpoint][airlabs-flight]) |
+| **AirLabs** (**tried with a key on 2 October: section 10 corrects this line**) | A free plan exists ("Get a FREE package"); its quota is not verified (the price table is drawn by script). **On the free plan the flight endpoint returns only some fields**: airports, `dep_time`, `arr_time`, position, airline, flight number, aircraft type. Not the estimated times, terminals, gates, baggage or `status` | Not verified; the home page's comparison says $19 per 10,000 queries | No: the free fields are the schedule only | Account | `https://airlabs.co/api/v9/flight?flight_iata=LH455&api_key=KEY`. "Only one closest (live, scheduled or landed) flight returns" | Paid: `dep_time`, `dep_estimated`, `arr_time`, `arr_estimated`, `dep_terminal`, `dep_gate`, `arr_terminal`, `arr_gate`, `arr_baggage`, `dep_delayed`, `arr_delayed`, `status` (scheduled, en-route, landed), aircraft | Replies carry: "Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited" | docs ([flight endpoint][airlabs-flight]) |
 | **Aviation Edge** | "Free API Key with limited data and API calls"; limits not verified | Developer: $7 a month shown as a reduced price (from $299), 30,000 calls | Not verified | Account | Timetable and flight-tracker endpoints; exact address not verified | Not verified | Not read | docs ([pricing][avedge]) |
 | **FlightLabs** (goflightlabs) | None: "7-day trial for FREE or up to 50 requests, whichever comes first" | Starter $24.99 a month, 4,000 calls | No | Account | Not read | Not read | Not read | docs ([home page][flightlabs]) |
 | **Amadeus Self-Service** (On-Demand Flight Status) | Not verified: the portal's pages gave no text. From memory: `GET /v2/schedule/flights?carrierCode=LH&flightNumber=455&scheduledDepartureDate=…` with an OAuth token from a key and a secret, a free monthly quota. **From memory, Amadeus announced in early 2026 that the Self-Service portal closes in July 2026.** Check before spending a minute on it | | | | | | | memory, not verified |
@@ -463,8 +466,154 @@ row answer. Steps 2 and 3 are a nice middle for users without a key and cost two
 
 ---
 
+## 10. AirLabs, tried 2 October 2026
+
+*Added on 2 October 2026, after Alex chose AirLabs for the keyed road and gave a free key of his own to try
+it with. 26 requests in all between 07:26 and 08:15 UTC, from a Mac on the US west coast, with `curl` and
+the user agent `Booklight`, and three of them through Booklight's own code (`AirLabs.lookup` in the core).
+Every reply quoted here is kept, without its `request` object, as a test file in
+`core/src/test/resources/airlabs/`. *called* = asked and seen today; *docs* = read on
+[airlabs.co/docs][airlabs-docs] today; everything else is marked not verified.*
+
+**What this changes above.** Section 2's line on AirLabs ("on the free plan the flight endpoint returns only
+some fields … not the estimated times, terminals, gates, baggage or `status`") was written from its
+documentation and is wrong: the free key got every field (called). Section 2's ranking stands as research;
+the build uses AirLabs.
+
+### 10.1 What a free key may call, and how much
+
+| | | Sure |
+| --- | --- | --- |
+| Address | `https://airlabs.co/api/v9/<endpoint>?<parameters>&api_key=<key>`. HTTPS, GET; the key goes in the address. JSON by default | called |
+| Answered with data for the free key | `ping`, `flight`, `schedules`, `routes`, `airlines` | called |
+| Not tried | `flights` (live positions), `delays`, `airports`, `cities`, `fleets`, `nearby`, `suggest`, the alert service | not verified |
+| Allowance | The reply's own `request.key` says: `type: free`, `limits_by_month: 1000`, `limits_by_hour: 2500`, `limits_by_minute: 250`. `limits_total` is what is left of the month: 1000 on the first call, 984 after the twenty-fourth. It lags (two replies a second apart said 991 and 994) and did not go down by one for every call, so it is "about", not a counter | called |
+| An `expired` date | `request.key` carries one, a few weeks ahead for this key. Whether it is the day the month's allowance starts again or the day a free key stops working is **not verified** | called (the field), not verified (its meaning) |
+| Price list | The site's table is drawn by a script from an endpoint that itself wants a key: not read. The home page's comparison says $19 per 10,000 | not verified |
+| Time to answer | 0.31 to 0.71 s per request (median 0.38 s); `flight` took about 80 to 125 ms on their side (`request.time`) | called |
+| Size | `flight`: about 2.5 KB. `schedules` by airport or airline: 80 to 94 KB, 100 rows whatever `limit` said (`limit=5` was ignored) | called |
+
+### 10.2 The three questions
+
+**`flight?flight_iata=LH455`** (also `flight_icao=DLH455`: the same reply). One flight, "only one closest
+(live, scheduled or landed) flight returns" (docs). Called for ten numbers:
+
+| Asked at 07:26 to 07:58 UTC | What came | `status` |
+| --- | --- | --- |
+| LH455 (San Francisco to Frankfurt), in the air, 35 minutes out | That flight: left 14:47 for 14:40, expected 10:01 for 10:25, gate G13, terminal INTL; position, `percent: 95`, `eta: 34` | `en-route` |
+| LH455 again five minutes after it landed | The same flight, `percent: 100`, no `arr_actual` yet, `arr_estimated` 09:56 | `landed` |
+| JL101 (Tokyo to Osaka), landed nine hours before, the next one fourteen hours off | **The one that landed**, not the next | `landed` |
+| LH454, to leave in an hour | Planned times, terminal 1, gate Z58, no estimated time | `scheduled` |
+| LH152, 45 minutes late and not yet gone | `dep_estimated` 09:35 for 08:50, `dep_delayed: 45`, `arr_delayed: 45` | `scheduled` |
+| LH1184, cancelled | Its planned times, no estimated ones | `cancelled` |
+| LH96 (Frankfurt to Munich), landed | All three times at both ends, arrival gate; no belt | `landed` |
+| LH9152, a Lufthansa number on a United flight | The flight, with `cs_flight_iata: UA945`; `airline_name` stays Lufthansa | `en-route` |
+| SQ26 (Singapore to Frankfurt to New York) | The leg in the air, Frankfurt to New York | `en-route` |
+| LH9999, U28001 | `{"error":{"message":"Flight not found","code":"not_found"}}` | |
+
+- **Times.** Three per end: `dep_time` (planned), `dep_estimated`, `dep_actual`, and the same for `arr_`.
+  Each as `2026-10-01 14:40` **in the airport's own time**, again with `_utc`, and as `_ts` (seconds since
+  1970). No zone name: the airport's distance from UTC is the difference of the two (called).
+- **Where.** `dep_terminal` ("INTL" at San Francisco, "1" at Frankfurt), `dep_gate`, `arr_terminal`,
+  `arr_gate`, `arr_baggage`. Terminal and departure gate were filled for every flight seen; the belt was
+  `null` in all ten `flight` replies and "21" once in a `schedules` row (called).
+- **Status.** `scheduled`, `en-route`, `landed`, `cancelled` were seen; the documentation names the first
+  three. **There is no "delayed", "boarding", "gate closed" or "diverted"**: a delay is `dep_delayed` and
+  `arr_delayed` in minutes (any minute after the plan: 2, 3, 7 were seen) and the estimated times.
+- **Names**, which the documentation does not list: `airline_name`, `dep_city`, `arr_city`, `dep_name`,
+  `arr_name`. So the row needs no table of airports. They come with `flight` only (called).
+- **Codeshare**: `cs_airline_iata`, `cs_flight_iata`, `cs_flight_number` name the flight that is really
+  flown (called for two).
+- **The day.** There is no date parameter (docs). The day of the flight is in its times.
+
+**`schedules?flight_iata=LH455`**: "results up to 10 hours ahead at most" (docs). For LH455 one row, the
+flight in the air; for SQ26 three: the leg in the air, the leg that landed two hours before (with a belt),
+and the next departure eight hours off (called). The same fields as `flight`
+without the names and the aircraft, and `status` says `active` where `flight` says `en-route`.
+
+**`routes?flight_iata=LH455`**: the timetable. One row: `dep_time: 14:40`, `dep_time_utc: 21:40`,
+`arr_time: 10:25`, `duration: 645`, `days: [mon … sun]`, `dep_terminals: ["INTL","2"]`,
+`arr_terminals: ["1"]` (called). "This data is not real-time data and does not display flight statuses" (docs).
+For a number nobody flies (U28001) it answers with an empty list, not with an error (called).
+
+**Errors** come with the HTTP status 200 and an `error` object. Seen: `not_found`, `unknown_api_key` (a made-up
+key), `wrong_params` (no number, and no key). From the documentation, not tried: `expired_api_key`,
+`minute_limit_exceeded`, `hour_limit_exceeded`, `month_limit_exceeded`, `unknown_method`, `internal_error`.
+
+**The reply repeats the request**: a `request` object with the key, the caller's IP address, the city and
+provider that address belongs to, and the limits above. Nothing of it but the count is read, and none of it is
+in the test files (called).
+
+### 10.3 What "the next flight" needs
+
+`flight` alone is right while a flight is in the air, about to leave or just landed. It is wrong for
+decision 12 once the flight has been on the ground for hours: it still answers with that one. So Booklight
+asks in up to three steps (`AirLabs.lookup`, tried against the service for LH455 and for "LH455 sat"):
+
+1. `flight`. If it is in the air, still to leave, or landed under three hours ago: that is the answer. One request.
+2. Landed more than three hours ago: `schedules`, and from it the one in the air, else the next to leave.
+3. Nothing there (the next one is more than about ten hours off): `routes`, and the next day it flies,
+   as a plan: "Planned · from the timetable", no gate.
+
+A day after the number (`LH455 sat`) is `flight` (for the names, and in case it is that day's) and then
+`routes`: two requests, and the answer is always the timetable's, even for tomorrow. A number `flight` does not
+know is looked for in `routes` once before the row says "Nothing found" (a flight that goes once a week;
+whether `flight` really answers `not_found` for such a one between its days is **not verified**).
+
+**After the code review (2 October, later).** Five things in this section were tightened, each with a test
+(`FlightRulesTest`): a cancelled row in `schedules` is the answer ("Cancelled"), not passed over for the
+timetable's plan; of several lines in `routes` the soonest flight wins, not the first line; a pinned flight
+asks with one `flight` request about the one flight it follows, not with this whole lookup; "not found" is
+kept for an hour, since finding it out costs two requests; and the timetable's clocks:
+
+- `routes` gives each time as a clock time and the same in UTC, with no date. Ten hours behind UTC and
+  fourteen ahead are then the same two clocks. They are read as between eleven behind and thirteen ahead:
+  right for Hawaii, New Zealand, Fiji and Tonga, wrong for American Samoa, Niue and Kiritimati. Where the
+  `flight` reply has the same airport, its clock (read off a date) is taken.
+- `routes` gives no time zone, so a flight dated after a clock change (Europe: 25 October 2026; the US:
+  1 November) is shown at the timetable's own times, but the moments behind them may be an hour out. Booklight
+  marks such a flight (any place whose clock stands where the airport's stands today changes it before that
+  day) and offers no calendar event for it; a pin of it counts an hour out until the service knows that day.
+  Bundling each airport's zone would put it right; that is a new table, and not done.
+
+What this cannot do: decision 12's "one that landed in the last three hours" before "the next to leave" is
+the service's own choice in step 1, not Booklight's; which of two flights of one number a day `flight`
+prefers at a given hour is **not verified** beyond the cases in the table.
+
+### 10.4 Terms, and why the key is the user's
+
+- The [terms of service][airlabs-terms] (dated 20 July 2021) say nothing about keys in apps. They make the
+  account holder "responsible for maintaining the confidentiality of your account" and for "any and all
+  activities or actions that occur under your account" (docs).
+- Every reply ends: "Unauthorized access is prohibited and punishable by law. Reselling data 'As Is' without
+  AirLabs.Co permission is strictly prohibited" (called).
+- The documentation offers a signature made "on your backend" so that a front end can ask "more securely
+  without passing the API key itself": a key is not meant to be readable by the public (docs).
+- So a key inside a public app is out three ways: anyone could take it from the repository or the APK, every
+  user's lookups would count against one allowance of 1,000 a month, and it would be the developer's account
+  that answers for them. Each user's own key, kept on their device and sent to AirLabs only, is the reading
+  that fits; AirLabs was not asked, so that reading is mine (**not verified** with the vendor).
+- Signing up asks for a name, a website or app address, a company name, an activity (one choice is
+  "Personal"), a description, an email address and a password; all are mandatory; no card (docs, the form;
+  not submitted).
+- Attribution is not asked for in the terms; the row's footer names AirLabs anyway.
+
+### 10.5 FlightAware's page for the numbers above
+
+`https://www.flightaware.com/live/flight/<callsign form>` answered with the right flight for DLH455,
+DLH9152 (the codeshare, under its own number), DLH152, SIA26 and EZY8301 (called, the page's title only,
+as in section 3). So Open needs nothing from AirLabs: the bundled table is enough.
+
+[airlabs-docs]: https://airlabs.co/docs/
+[airlabs-terms]: https://airlabs.co/terms-of-service
+
+---
+
 ## What could not be verified
 
+- AirLabs (section 10): what its `expired` date means; its prices; what it says when the month's lookups are
+  used up (the code is from its documentation); which flight `flight` prefers for a number that flies twice a
+  day; whether its terms allow a user's own key inside an app (the vendor was not asked).
 - Why LH455 was absent from the live feeds (out of receiver range, or not flying).
 - Google's flight card and Flightradar24's page for a typed number (bot walls); every airline's own status page.
 - airplanes.live (403 for every call; its guide is behind a check).

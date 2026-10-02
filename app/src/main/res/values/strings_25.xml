@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- "Your usual": the rows under the empty field (issue 1). Off until the switch is turned on. -->
+    <string name="action_unsuggest">Don’t suggest</string>
+    <string name="done_unsuggested">Won’t be suggested</string>
+    <string name="hint_choose">Choose</string>
+    <string name="a11y_usual">Your usual: %1$s. Down arrow to choose.</string>
+
+    <!-- The switch in the window. -->
+    <string name="set_usual">Your usual</string>
+    <string name="set_usual_show">Show your usual</string>
+    <string name="set_usual_text">With nothing typed, Booklight shows the two things you run most from here and, if there is one, the one you ran last, in place of a tip. Down, then Enter. Until you have run two things twice each, nothing changes. Your links and recipes are not suggested yet. This uses only what you ran from Booklight, and it stays on this device.</string>
+    <string name="set_usual_again">Suggest everything again</string>
+    <plurals name="set_usual_hidden">
+        <item quantity="one">%d is not suggested</item>
+        <item quantity="other">%d are not suggested</item>
+    </plurals>
+</resources>

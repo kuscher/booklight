@@ -5,7 +5,8 @@ Written the way the app says it, for the Play data-safety answers and the privac
 ## The short version
 Booklight keeps what it learns on the device and sends nothing anywhere, with one exception that is
 **off until the user turns it on**: search suggestions. With suggestions on, the text being typed is sent
-to the chosen search engine to get suggested searches.
+to the chosen search engine to get suggested searches. (M5, not released yet: a second one, which needs
+the user's own key before anything is sent: a flight number goes to AirLabs. See "Flight lookups".)
 
 ## What is stored on the device
 - `files/history.json`: for results the user picked, the result's id (for an app: its package and
@@ -48,6 +49,31 @@ to the chosen search engine to get suggested searches.
   (64 entries at most). It is not written to storage.
 - Booklight's developer receives nothing: there is no Booklight server.
 
+**Flight lookups (M5; only with a key of the user's own, none by default).**
+- Booklight ships no key. Until the user pastes their own AirLabs key into the Booklight window (Results ›
+  Flights), a flight number is read on the device from a bundled table of airlines and nothing is sent.
+- With a key in: one HTTPS GET request to `https://airlabs.co/api/v9/flight?flight_iata=<number>&api_key=<the user's key>`
+  (`flight_icao=` for a callsign), 400 ms after the last key, for a strong match only (the rule is
+  `Flights.read` in the core, with tests); for a weak match (`ps5`) only when the user moves to its row;
+  after the keyword `flight`. Never per letter. When the flight that answers landed more than three hours
+  ago, or a day was typed after the number, up to two more requests follow for the same number:
+  `…/schedules?flight_iata=<number>&api_key=…` and `…/routes?flight_iata=<number>&api_key=…`.
+  A pinned flight asks again while its window is on screen and it has not landed (and was not to land more
+  than three hours ago): one request, `…/flight`, every 30 minutes from three hours before it leaves, every
+  three hours before that, and none while it is a plan from the timetable more than ten hours off; after a
+  lookup that got no answer, after 2 minutes, then 4, 8, 16, and 30. It asks about the one flight that was
+  pinned: when the service answers with another day's flight, it stops.
+- The request carries the flight number, the user's key, an `Accept: application/json` header and the user
+  agent `Booklight`. No cookies, no advertising ID, no device identifier, no location. It reveals the device's
+  IP address to AirLabs, and AirLabs can tie the lookups to the account the key belongs to.
+- The reply is kept in memory for two minutes and not written to storage. AirLabs' reply repeats the request
+  (the key, the caller's address); Booklight reads none of that but the count of lookups left.
+- The key is `files/flights.key` in the app's storage: not in the Android backup, not in device transfer,
+  never logged.
+- For the form: the same data type as suggestions (App activity › In-app search history, to a third party the
+  user chose, optional): the answers stay as they are. A third party's API key that the user supplies has no
+  data type of its own in Play's form; whether Play wants one declared is not verified.
+
 **Choosing a web row.** "Search Google for …", a keyword search, a suggestion or a typed address opens
 that address in the user's browser. That is the user sending it, in their browser, not Booklight in the
 background.
@@ -85,7 +111,10 @@ user sees open:
   Android hand-overs, not collection or sharing by Booklight.
 - **Received from other apps:** selected or shared plain text (`PROCESS_TEXT`, `SEND`). Shown in the panel,
   not stored, not sent.
-- **The clipboard:** read only on the user's request (`clip`, or a link with `{clipboard}`).
+- **The clipboard:** its description (kind, age, what the system found) is looked at when the panel opens, for the
+  line for a fresh copy; its content is read only on the user's request (Tab, Down or a click on that line; `clip`;
+  `tr` or a prompt with nothing typed; a link with `{clipboard}`). It stays on the device; with the user's own
+  AirLabs key in, a flight number found in it is sent to AirLabs only when the user goes to that flight's row.
 - **Suggestions:** unchanged, and still off by default. Text typed after a keyword (inside a chip) is never sent.
 
 ## 2.0: what changed for the form

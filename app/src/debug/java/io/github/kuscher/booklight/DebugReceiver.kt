@@ -26,6 +26,12 @@ import java.io.FileOutputStream
  *   pref theme auto|light|dark | pref tint on|off | pref dim on|off | pref cards (show the first-run cards again) | pref nocards
  *   activity PKG/CLASS (is that activity open to other apps: why an app's shortcut is or is not offered)
  *   think on|off (the light of the model at work, without the model) | turn MS (close, and the key again MS later)
+ *   pref zero on|off ("Show your usual") | zero (the usual rows as they would stand now; needs no panel) | seed (after forget:
+ *   five apps as if run 8, 5, 3, 2 and 1 times) | unhide (empties the "Don't suggest" list)
+ *   in TEXT (types under the chip that is there, which `type` would leave first)
+ *   copy TEXT (puts TEXT on the clipboard the way another app would: without Booklight's label, so its line is offered;
+ *   `copy private TEXT` marks it private) | key tab and key down open the copy's line, key back is Backspace on the empty field
+ *   pref flightkey KEY|none (the user's key for the flight service; never printed) | flight TEXT (a flight's row, looked up at once)
  */
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -39,7 +45,24 @@ class DebugReceiver : BroadcastReceiver() {
         when (parts[0]) {
             "ping" -> out("pong ${BuildConfig.VERSION_NAME}")
             "apps" -> out("${app.apps.count} apps, indexed in ${app.apps.loadedMs} ms")
-            "forget" -> { app.historyStore.clear(); out("ok") }
+            "forget" -> { app.historyStore.clear(); app.prefs.update { it.copy(zeroHeld = emptyList(), zeroHidden = emptyList()) }; out("ok") }
+            // The usual rows as they would stand now: id, why, weight, age; the held and hidden ids; how long it took. Needs no panel.
+            "zero" -> app.scope.launch {
+                val u = app.usual(); val now = System.currentTimeMillis(); val s = app.prefs.now
+                out("zero=${if (s.zero) "on" else "off"} rows=" + u.picks.joinToString(" | ") { "${it.id} ${it.why} ${"%.2f".format(it.weight)} ${(now - it.last) / 60_000}min" } +
+                    " held=${s.zeroHeld} keep=${u.held} hidden=${s.zeroHidden} took=${u.micros}us")
+            }
+            // After `forget`: five apps of this device as if run 8, 5, 3, 2 and 1 times, from 30 days to 5 minutes ago.
+            "seed" -> app.scope.launch {
+                app.apps.ready.await()
+                val ids = app.apps.ids().sorted().take(5)
+                val now = System.currentTimeMillis(); val day = 24L * 60 * 60 * 1000
+                val runs = listOf(8 to 30 * day, 5 to 3 * day, 3 to 2 * day, 2 to 1 * day, 1 to 5 * 60 * 1000L)
+                ids.zip(runs).forEach { (id, r) -> repeat(r.first) { app.historyStore.history.record("", id, now - r.second) } }
+                app.historyStore.changed()
+                out("seeded ${ids.size}")
+            }
+            "unhide" -> { app.prefs.update { it.copy(zeroHidden = emptyList()) }; out("ok") }
             "pref" -> {
                 val (k, v) = (arg.split(' ') + "").let { it[0] to it[1] }
                 // A name alone only prints: without a value it would store an empty one (`pref glass` once did).
@@ -50,6 +73,7 @@ class DebugReceiver : BroadcastReceiver() {
                     "opening" -> app.prefs.update { it.copy(opening = v) }
                     "theme" -> app.prefs.update { it.copy(theme = v) }
                     "tint" -> app.prefs.update { it.copy(tint = v == "on") }
+                    "zero" -> app.prefs.update { it.copy(zero = v == "on") }
                     "dim" -> app.prefs.update { it.copy(dim = v == "on") }
                     // tips on|off|again (from the first one)|at ID (that tip next)
                     "tips" -> app.prefs.update { s -> when (v) {
@@ -61,14 +85,21 @@ class DebugReceiver : BroadcastReceiver() {
                     "cards" -> app.prefs.update { it.copy(shortcutCard = true, suggestionsCard = true, suggestions = false, keySeen = false) }
                     "key" -> app.prefs.update { it.copy(keySeen = v == "seen") }
                     "nocards" -> app.prefs.update { it.copy(shortcutCard = false, suggestionsCard = false) }
+                    // The user's key for the flight service: `pref flightkey KEY`, `pref flightkey none`. It is never printed.
+                    "flightkey" -> app.prefs.setFlightKey(if (v == "none") "" else v)
                 }
-                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim}" })
+                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim} tips=${it.tips} zero=${it.zero} flightkey=${if (app.prefs.flightKey.value.isEmpty()) "none" else "set"}" })
             }
             "find" -> app.scope.launch {
                 val t0 = System.nanoTime()
                 val scoped = app.engine.scopeFor(arg)
                 val r = if (scoped != null) app.engine.search(Query(scoped.text, scoped.scope.key, scoped.word)) else app.engine.search(Query(arg))
                 out("${(System.nanoTime() - t0) / 1000} us | " + r.joinToString(" | ") { describe(it) })
+            }
+            // A flight's row without the panel, looked up at once: `flight LH455`, `flight lh455 fri`, `flight ps5`. With a key in, this asks the service.
+            "flight" -> app.scope.launch {
+                val row = app.flights.rows(arg).firstOrNull() ?: return@launch out("not a flight")
+                out(describe(app.flights.answer(row.id, pause = false) ?: row) + " left=${app.flights.left.value}")
             }
             "keys" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
@@ -78,18 +109,20 @@ class DebugReceiver : BroadcastReceiver() {
                 arg.forEachIndexed { i, c -> main.postDelayed({ m.type(m.query + c) }, 40L * (i + 1)) }
                 main.postDelayed({ out("ok") }, 40L * (arg.length + 2))
             }
+            // Under whatever chip is there (the copy's, a scope's): `type` leaves it first.
+            "in" -> main.post { act?.model?.type(arg); out(if (act != null) "ok" else "no panel") }
             "type" -> main.post { act?.model?.let { m -> while (m.leaveScope()) {}; m.type(arg) }; out(if (act != null) "ok" else "no panel") }
             "key" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
                 when (arg) {
-                    "down" -> if (!m.moveCell(0, 1)) m.move(1)
-                    "up" -> if (!m.moveCell(0, -1) && !m.restoreLast()) m.move(-1)
+                    "down" -> m.down(false)
+                    "up" -> m.up(false)
                     "right" -> if (!m.moveCell(1, 0) && !m.nudge(1) && m.opened == null) { if (m.onMore) m.open() else m.arm(1, wrap = false) }
                     "left" -> if (m.opened != null) m.close() else if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
-                    "tab" -> if (m.tip != null) m.tipTab() else if (m.keyword != null) m.enterKeyword() else if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
+                    "tab" -> if (m.tip != null) m.tipTab() else if (m.zeroUp && m.current == null && m.chip == null && m.query.isBlank()) m.down(false) else if (m.copy != null || m.bare) m.tabCopy() else if (m.keyword != null) m.enterKeyword() else if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
                     "backtab" -> if (m.opened != null) m.step(-1) else m.arm(-1, wrap = true)
                     "more" -> { m.current?.let { m.armAt(it.actions.size) } }
-                    "back" -> m.leaveScope()
+                    "back" -> m.back()
                     "esc" -> if (!m.cancelConfirm()) act.close()
                     "enter" -> if (m.tip != null) m.tipEnter() else m.enter { r, a -> act.run(r, a) }
                     "stay" -> m.enter { r, a -> act.run(r, a, keep = true) }
@@ -116,8 +149,17 @@ class DebugReceiver : BroadcastReceiver() {
             }.getOrElse { "not found: ${it.javaClass.simpleName}" })
             // The panel is put away and the key comes again MS later: the turn, at a moment adb could never hit.
             "turn" -> main.post { act?.let { a -> a.close(); main.postDelayed({ a.turn(Intent()) }, arg.toLongOrNull() ?: 60L) }; out("ok") }
+            "copy" -> {
+                val secret = arg.startsWith("private ")
+                val clip = android.content.ClipData.newPlainText("test", arg.removePrefix("private "))
+                if (secret) clip.description.extras = android.os.PersistableBundle().apply { putBoolean(android.content.ClipDescription.EXTRA_IS_SENSITIVE, true) }
+                context.getSystemService(android.content.ClipboardManager::class.java).setPrimaryClip(clip)
+                out("ok")
+            }
             "think" -> main.post { act?.model?.pretendThinking(arg == "on"); out("ok") }
             "ai" -> app.scope.launch {
+                // `ai warm`: what loading the model says, whatever the system reports about it (nothing is fetched by this).
+                if (arg == "warm") { out(runCatching { com.google.mlkit.genai.prompt.Generation.getClient().let { c -> val t = android.os.SystemClock.uptimeMillis(); c.warmup(); "loaded in ${android.os.SystemClock.uptimeMillis() - t} ms, status ${c.checkStatus()}" } }.getOrElse { "${it.javaClass.simpleName}: ${it.message}" }); return@launch }
                 app.onDevice.pretend = when (arg) {
                     "none" -> io.github.kuscher.booklight.ai.OnDevice.State.NONE
                     "downloadable" -> io.github.kuscher.booklight.ai.OnDevice.State.DOWNLOADABLE
@@ -157,7 +199,7 @@ class DebugReceiver : BroadcastReceiver() {
                 val d = act.window.decorView
                 val loc = IntArray(2).also { d.getLocationOnScreen(it) }
                 out("chip=${m.chip?.key} query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
-                    "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} tip=${m.tip?.id}${if (m.tipArmed != 0) ":" + m.tipArmed else ""}${if (m.tipOff) " off" else ""} rows=" +
+                    "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} zero=${if (m.zeroUp) m.results.count { it.kind != io.github.kuscher.booklight.core.Kind.ACTION } else 0} copy=${m.copy?.let { "${it.age}:${it.things.joinToString("+")}${if (it.looking) "…" else ""}" }} tip=${m.tip?.id}${if (m.tipArmed != 0) ":" + m.tipArmed else ""}${if (m.tipOff) " off" else ""} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
             }
             // A picture of the Booklight window's own content (PixelCopy: no other apps): `wshot NAME`.
@@ -195,7 +237,7 @@ class DebugReceiver : BroadcastReceiver() {
     private fun describe(r: io.github.kuscher.booklight.core.Result): String {
         val body = when (val b = r.body) {
             null -> ""
-            is io.github.kuscher.booklight.core.Body.Slots -> " {" + listOfNotNull(b.caption).plus(b.slots.map { "${it.label}=${it.value}${if (it.state == io.github.kuscher.booklight.core.SlotState.GUESSED) "?" else ""}" }).plus(listOfNotNull(b.note)).joinToString("; ") + "}"
+            is io.github.kuscher.booklight.core.Body.Slots -> " {" + listOfNotNull(b.caption).plus(b.slots.map { "${it.label}=${it.value}${if (it.state == io.github.kuscher.booklight.core.SlotState.GUESSED) "?" else ""}" }).plus(listOfNotNull(b.note, b.tail, b.source?.let { "from $it" }, "struck".takeIf { b.struck })).joinToString("; ") + "}"
             is io.github.kuscher.booklight.core.Body.Level -> " {${b.percent}%${if (b.muted) " muted" else ""}${if (b.locked) " locked" else ""}${b.target?.let { " →$it" } ?: ""}}"
             is io.github.kuscher.booklight.core.Body.Grid -> " {${b.cells.size} cells: ${b.cells.take(6).joinToString("") { it.glyph }}…}"
             is io.github.kuscher.booklight.core.Body.Code -> " {qr}"
@@ -204,7 +246,7 @@ class DebugReceiver : BroadcastReceiver() {
             is io.github.kuscher.booklight.core.Body.Task -> if (b.done) " {done}" else " {open}"
             is io.github.kuscher.booklight.core.Body.Stream -> " {${b.caption}${if (b.answer) " =" else ":"} ${b.text}${if (b.busy) "…" else ""}${if (b.tall) " tall" else ""}${if (b.ask != null && !b.answer) " ?" else ""}}"
         }
-        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (a.more) "+" else "") }.joinToString(",")
+        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (a.more) "+" else "") + (if (a.off) "(off)" else "") }.joinToString(",")
         return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.label ?: r.kind}]$body <$acts>"
     }
 }

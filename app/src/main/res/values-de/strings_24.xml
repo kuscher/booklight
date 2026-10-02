@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="flight_keys">flug,flight</string>
+    <string name="flight_name">Flug</string>
+    <string name="flight_hint">Eine Flugnummer: LH455</string>
+    <string name="flight_about">Wer ihn fliegt; mit deinem eigenen AirLabs-Schlüssel Zeiten, Gate und Status</string>
+    <string name="flight_kind">Flug</string>
+    <string name="flight_who">%1$s · %2$s</string>
+    <string name="flight_route">%1$s → %2$s</string>
+    <string name="flight_leaves">Ab</string>
+    <string name="flight_left">Ab</string>
+    <string name="flight_lands">An</string>
+    <string name="flight_landed_at">An</string>
+    <string name="flight_looking">Wird nachgeschlagen</string>
+
+    <string name="flight_planned">Geplant</string>
+    <string name="flight_timetable">laut Flugplan</string>
+    <string name="flight_on_time">Pünktlich</string>
+    <string name="flight_delayed">%s verspätet</string>
+    <string name="flight_air">In der Luft</string>
+    <string name="flight_air_on_time">pünktlich</string>
+    <string name="flight_air_late">%s verspätet</string>
+    <string name="flight_air_early">%s früher</string>
+    <string name="flight_landed">Gelandet</string>
+    <string name="flight_landed_late">%s verspätet gelandet</string>
+    <string name="flight_landed_early">%s früher gelandet</string>
+    <string name="flight_diverted">Umgeleitet</string>
+    <string name="flight_cancelled">Gestrichen</string>
+    <string name="flight_min">%d Min.</string>
+    <string name="flight_h">%d Std.</string>
+    <string name="flight_h_min">%1$d Std. %2$d Min.</string>
+
+    <string name="flight_terminal">Terminal %s</string>
+    <string name="flight_gate">Gate %s</string>
+    <string name="flight_belt">Band %s</string>
+
+    <string name="flight_none">Zu dieser Nummer wurde nichts gefunden</string>
+    <string name="flight_no_day">An diesem Tag fliegt er nicht</string>
+    <string name="flight_no_answer">Diesmal keine Antwort</string>
+    <string name="flight_offline">Keine Verbindung</string>
+    <string name="flight_used_up">Die AirLabs-Abfragen dieses Monats sind aufgebraucht</string>
+    <string name="flight_refused">AirLabs hat den Schlüssel nicht angenommen</string>
+
+    <string name="action_get_times">Zeiten einrichten</string>
+    <string name="action_flight_key">Booklight-Einstellungen</string>
+    <string name="action_calendar">In den Kalender</string>
+    <string name="action_search_web">Im Web suchen</string>
+    <string name="flight_line">%1$s %2$s %3$s → %4$s %5$s</string>
+    <string name="flight_search">%s Flugstatus</string>
+    <string name="flight_question">Wie ist der Status von Flug %s?</string>
+    <string name="flight_source">%1$s · %2$s</string>
+
+    <string name="pin_kind_flight">Angehefteter Flug</string>
+    <string name="pin_flight_gate">Gate %s</string>
+    <string name="pin_flight_lands">landet %s</string>
+    <string name="pin_flight_was">war %s</string>
+    <string name="pin_flight_h_min">%1$d Std. %2$02d Min.</string>
+
+    <string name="set_flights">Flüge</string>
+    <string name="set_flight_key">Dein AirLabs-Schlüssel</string>
+    <string name="set_flight_key_text">Eine Flugnummer nennt ihre Airline ganz ohne Schlüssel. Mit einem eigenen Schlüssel wird die getippte Nummer zusammen mit dem Schlüssel an AirLabs (airlabs.co) gesendet, einen Moment nachdem du aufhörst zu tippen, und die Zeile antwortet mit den Zeiten, dem Gate und dem Status. Ein angehefteter Flug fragt bis zur Landung neu: alle drei Stunden, ab drei Stunden vor dem Abflug jede halbe Stunde. Der Schlüssel wird nur auf diesem Gerät gespeichert und geht nur an AirLabs.</string>
+    <string name="set_flight_key_hint">Schlüssel hier einfügen</string>
+    <string name="set_flight_key_in">Ein Schlüssel ist eingetragen</string>
+    <string name="set_flight_key_none">Kein Schlüssel</string>
+    <string name="set_flight_left">In diesem Monat sind noch etwa %d Abfragen übrig.</string>
+    <string name="set_flight_get">Schlüssel holen</string>
+    <string name="set_flight_get_text">Ein kostenloses Konto bei airlabs.co: 1.000 Abfragen im Monat</string>
+    <string name="action_take_out">Entfernen</string>
+</resources>
