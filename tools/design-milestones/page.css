@@ -1,0 +1,313 @@
+/* Layout: one reading column (46rem) for prose; every drawn panel is 720 px = 720 dp, on a desk of its own that breaks out to 64rem and scrolls inside itself on a narrow screen. */
+/* What the opening and the edge light animate: registered, so that each can have its own curve. */
+@property --cv { syntax: "<length>"; inherits: true; initial-value: 0px }
+@property --ch { syntax: "<length>"; inherits: true; initial-value: 0px }
+@property --cr { syntax: "<length>"; inherits: true; initial-value: 32px }
+@property --u { syntax: "<number>"; inherits: true; initial-value: 0 }
+@property --tail { syntax: "<number>"; inherits: true; initial-value: 77 }
+:root {
+  --bg: #F3F3FA; --surface: #FFFFFF; --surface-2: #E9EAF5; --ink: #181A2A; --muted: #565A70; --line: #D3D5E5;
+  --accent: #3D4FCF; --accent-ink: #FFFFFF; --accent-soft: #E0E4FF; --lamp: #FFC94D; --good: #1B7A44; --warn: #8A5A00;
+  /*APP-LIGHT*/
+  --display: "Google Sans Flex", "Google Sans", "Product Sans", system-ui, sans-serif;
+  --body: "Google Sans Flex", "Google Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Google Sans Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --col: 46rem; --wide: 64rem;
+  --place: cubic-bezier(.22, 1.1, .36, 1); --lead: cubic-bezier(.3, 1.25, .4, 1); --pop: cubic-bezier(.3, 1.7, .5, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11121B; --surface: #1A1C29; --surface-2: #232538; --ink: #E8E8F3; --muted: #A3A6BC; --line: #31344B;
+  --accent: #B7C0FF; --accent-ink: #141A4A; --accent-soft: #272D5F; --lamp: #FFC94D; --good: #7BD9A0; --warn: #F0C36A;
+  /*APP-DARK*/
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11121B; --surface: #1A1C29; --surface-2: #232538; --ink: #E8E8F3; --muted: #A3A6BC; --line: #31344B;
+  --accent: #B7C0FF; --accent-ink: #141A4A; --accent-soft: #272D5F; --lamp: #FFC94D; --good: #7BD9A0; --warn: #F0C36A;
+  /*APP-DARK*/
+  color-scheme: dark }
+/* A drawing says which theme it shows, whatever the page's own theme is. */
+.th-light { /*APP-LIGHT*/ }
+.th-dark { /*APP-DARK*/ }
+
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 1rem; line-height: 1.55; margin: 0; padding-inline: 1.25rem; padding-block: 2.5rem 5rem; -webkit-font-smoothing: antialiased }
+main { max-width: var(--wide); margin-inline: auto; display: flex; flex-direction: column; gap: 4rem }
+section { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0 }
+.prose { max-width: var(--col) }
+h1, h2, h3, h4 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.14 }
+h1 { font-size: clamp(2.1rem, 5.5vw, 3.1rem); font-weight: 740; font-variation-settings: "ROND" 100; letter-spacing: -0.02em }
+h2 { font-size: clamp(1.5rem, 3.6vw, 2.05rem); font-weight: 680; font-variation-settings: "ROND" 100; letter-spacing: -0.01em }
+h3 { font-size: 1.22rem; font-weight: 660 }
+h4 { font-size: 1.05rem; font-weight: 650 }
+p { margin: 0 }
+code, kbd { font-family: var(--mono); font-size: 0.86em }
+code { background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 0.35em; overflow-wrap: anywhere }
+kbd { display: inline-block; background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 0.45em; padding: 0.02em 0.42em; font-weight: 500; white-space: nowrap }
+.muted { color: var(--muted) } .small { font-size: 0.88rem }
+.src { color: var(--muted); font-size: 0.86em; white-space: nowrap }
+ul, ol { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem }
+header { display: flex; flex-direction: column; gap: 1.1rem }
+.brand { display: flex; align-items: center; gap: 0.9rem }
+.brand svg { width: 3.2rem; height: 3.2rem; flex: none }
+.lede { font-size: 1.18rem; max-width: 44rem; line-height: 1.5 }
+.meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; color: var(--muted); font-size: 0.9rem }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface); max-width: 100% }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line) }
+tr:last-child td { border-bottom: 0 }
+th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; background: var(--surface-2); white-space: nowrap }
+td.n { white-space: nowrap; font-variant-numeric: tabular-nums }
+td.k { font-weight: 600; min-width: 9rem }
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 650; padding: 0.06rem 0.5rem; border-radius: 999px; background: var(--accent-soft); color: var(--ink); white-space: nowrap; vertical-align: 0.08em }
+.tag.rec { background: color-mix(in srgb, var(--good) 18%, var(--surface)); color: var(--good) }
+.tag.nv { background: color-mix(in srgb, var(--lamp) 30%, var(--surface)); color: var(--warn) }
+.notice { border-left: 3px solid var(--lamp); padding: 0.2rem 0 0.2rem 1rem }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1.5rem 2rem }
+.controls { display: flex; flex-wrap: wrap; gap: 0.5rem 0.6rem; align-items: center; font-size: 0.88rem }
+.controls .lbl { font-weight: 650; margin-right: 0.2rem }
+.controls button { font: inherit; font-weight: 600; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.9rem; cursor: pointer }
+.controls button:hover { border-color: var(--accent) }
+.controls button:disabled { opacity: .45; cursor: default; border-color: var(--line) }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+/* ---- the page's own pieces ---- */
+.glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr)); gap: 0.9rem }
+.gcard { background: var(--surface); border: 1px solid var(--line); border-radius: 1.1rem; padding: 1rem 1.1rem 1.05rem; display: flex; flex-direction: column; gap: 0.5rem; color: inherit; text-decoration: none }
+.gcard:hover { border-color: var(--accent) }
+.gcard .num { font-family: var(--display); font-weight: 720; font-size: 0.86rem; letter-spacing: 0.06em; color: var(--accent) }
+.gcard h3 { font-size: 1.3rem; font-variation-settings: "ROND" 100 }
+.gcard p { font-size: 0.95rem; line-height: 1.45 }
+.gcard .size { margin-top: auto; padding-top: 0.4rem; font-size: 0.84rem; color: var(--muted); font-variant-numeric: tabular-nums }
+.thread { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 0.6rem 1.5rem; font-size: 0.95rem }
+.thread b { display: block }
+.ms { gap: 2.2rem }
+.mshead { display: flex; flex-direction: column; gap: 0.7rem }
+.mline { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.8rem }
+.mtag { font-family: var(--display); font-weight: 720; font-size: 0.86rem; letter-spacing: 0.06em; color: var(--accent-ink); background: var(--accent); border-radius: 999px; padding: 0.12rem 0.7rem }
+.mname { font-family: var(--display); font-weight: 650; font-size: 1.05rem }
+.msize { color: var(--muted); font-size: 0.9rem }
+.blk { display: flex; flex-direction: column; gap: 0.8rem; min-width: 0 }
+.feat { counter-reset: f; list-style: none; padding: 0; gap: 1.1rem }
+.feat > li { counter-increment: f; display: grid; grid-template-columns: 1.8rem minmax(0, 1fr); gap: 0.1rem 0.3rem }
+.feat > li::before { content: counter(f); font-family: var(--display); font-weight: 700; color: var(--accent); font-size: 1.05rem }
+.feat > li > div { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0 }
+.eg { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.15rem 0.8rem; font-size: 0.92rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.7rem; padding: 0.55rem 0.8rem }
+.eg .k { color: var(--muted); font-weight: 600 }
+.screen { display: flex; flex-direction: column; gap: 1rem; min-width: 0 }
+.scrhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.7rem }
+.scrn { font-size: 0.76rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent) }
+.shot { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0 }
+.lab { font-size: 0.76rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted) }
+.capt { max-width: var(--col); font-size: 0.93rem; color: var(--muted) }
+.capt b { color: var(--ink); font-weight: 620 }
+.why { max-width: var(--col); font-size: 0.95rem }
+.plan { counter-reset: t; list-style: none; padding: 0; gap: 0.7rem }
+.plan li { counter-increment: t; display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 0.4rem }
+.plan li::before { content: counter(t); font-family: var(--display); font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700 }
+.qs { counter-reset: q; list-style: none; padding: 0; gap: 1rem }
+.qs li { counter-increment: q; display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 0.2rem 0.4rem }
+.qs li::before { content: counter(q); font-family: var(--display); font-weight: 700; font-size: 1.2rem; color: var(--accent) }
+.qs li > div { display: flex; flex-direction: column; gap: 0.25rem }
+.qs .rec { color: var(--muted) } .qs .rec b { color: var(--good) }
+.qs .alt { color: var(--muted); font-size: 0.92rem }
+h3 + .qs, h3 + .prose { margin-top: -0.3rem }
+h3.gap { margin-top: 1.2rem }
+.checks li::marker { color: var(--good) }
+details { border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface); padding: 0.7rem 1rem; max-width: 100% }
+details > summary { cursor: pointer; font-weight: 650 }
+details[open] > summary { margin-bottom: 0.7rem }
+details .tablewrap { border: 0; border-radius: 0 }
+
+/* ---- drawn at 1 px = 1 dp ---- */
+.scroll { overflow-x: auto; max-width: 100%; border-radius: 1.3rem }
+svg.i { width: 18px; height: 18px; fill: currentColor; flex: none; display: block }
+svg.ent { width: 14px; height: 14px }
+.desk { width: max-content; min-width: 100%; padding: 28px 24px 32px; border-radius: 1.3rem; background: var(--wall); position: relative; overflow: hidden; border: 1px solid var(--deskline); isolation: isolate; display: flex; flex-direction: column; gap: 18px; align-items: center; color: rgb(var(--on)) }
+.desk::before { content: ""; position: absolute; z-index: -1; left: 5%; top: 10px; width: 50%; height: 130%; border-radius: 16px; background: var(--paper); box-shadow: 0 12px 40px rgb(10 14 40 / .14) }
+.desk::after { content: ""; position: absolute; z-index: -1; right: 4%; top: 44px; width: 42%; height: 130%; border-radius: 16px; background: var(--deskwin); box-shadow: 0 12px 40px rgb(10 14 40 / .14) }
+.desk.plain::before, .desk.plain::after { display: none }
+.dtag { align-self: flex-start; margin: -8px 0 -8px calc(50% - 360px); font-size: 12px; line-height: 20px; font-weight: 600; padding: 0 9px; border-radius: 10px; background: rgb(var(--veil) / .7); color: rgb(var(--on)) }
+.dtag.over { background: var(--errc); color: var(--onerrc) }
+.pwrap { position: relative; width: 720px; flex: none }
+.pwrap.guided { padding-top: 34px }
+.gl { position: absolute; top: 0; bottom: -8px; width: 0; border-left: 1px dashed var(--guide); z-index: 3; pointer-events: none }
+.gl b { position: absolute; top: 0; left: 3px; font: 600 11px/14px var(--mono); color: var(--guide); white-space: nowrap }
+.gl.rt b { left: auto; right: 3px }
+.gl.lo b { top: 15px }
+.gh { position: absolute; left: -14px; right: -14px; height: 0; border-top: 1px dashed var(--guide); z-index: 3; pointer-events: none }
+.panel { position: relative; width: 720px; flex: none; border-radius: 32px; background: rgb(var(--veil) / var(--tint)); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); box-shadow: inset 0 0 0 1.25px rgb(255 255 255 / var(--rim)), 0 0 0 1px rgb(0 0 0 / var(--hair)), 0 26px 50px -22px rgb(8 10 30 / var(--shade)); color: rgb(var(--on)); overflow: hidden; font-size: 15px; line-height: 1.3; text-align: left }
+/* the field: 68. Mark or chip from 20, text from 72, the esc cap ends at 700 */
+.fld { height: 68px; display: flex; align-items: center; padding: 0 20px; font-size: 24px; font-weight: 500; white-space: nowrap }
+.fld .g { width: 36px; text-align: center; font-family: var(--display); font-variation-settings: "ROND" 100; font-weight: 600; flex: none; margin-right: 16px }
+.chip { height: 36px; display: inline-flex; align-items: center; padding: 0 14px 0 8px; border-radius: 18px; background: rgb(var(--on) / var(--capfill)); box-shadow: inset 0 0 0 1px rgb(255 255 255 / var(--rim2)); font-size: 15px; font-weight: 600; flex: none; margin-right: 12px }
+.chip svg.i { width: 20px; height: 20px; margin-right: 6px }
+.chip .nm { max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis }
+.chip.pic { padding-left: 4px }
+.chip .thumb { width: 28px; height: 28px; border-radius: 50%; margin-right: 6px; overflow: hidden; position: relative; flex: none }
+.chip .thumb::after, .pimg::after, .markpic::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgb(var(--on) / .2) }
+.chip .thumb svg, .pimg svg, .markpic svg, .pinpic svg { display: block }
+.fld .typed { overflow: hidden; flex: 0 1 auto; min-width: 0 }
+.fld .caret { width: 2px; height: 30px; background: var(--primary); flex: none; border-radius: 1px }
+.fld .ph { color: rgb(var(--on) / .6); font-weight: 400; flex: 0 1 auto; min-width: 0; overflow: hidden }
+.fld .esc { margin-left: auto; flex: none }
+/* rows: 56 on the list's 8 dp inset. Disc centred on 38, text from 72, the right end at 700 */
+.rows { position: relative; padding: 8px 8px 0 }
+.panel.cut .rows { padding-bottom: 8px }
+.r { position: relative; height: 56px; display: flex; align-items: center; padding: 0 12px; border-radius: 24px; min-width: 0 }
+.r.on { background: rgb(var(--sel) / var(--sela)); box-shadow: inset 0 0 0 1px rgb(255 255 255 / var(--rim2)) }
+.r.fade { opacity: .28 }
+.ic { flex: none; width: 36px; height: 36px; display: grid; place-items: center }
+.ic.app { border-radius: 11px; background: var(--c); color: #fff; font-weight: 700; font-size: 15px }
+.ic.sym { border-radius: 50%; background: rgb(var(--on) / var(--disc)); color: rgb(var(--on) / .8) }
+.ic.sym svg.i { width: 20px; height: 20px }
+.r.on > .ic.sym { color: rgb(var(--on)); transform: scale(1.06) }
+.t { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0 12px 0 16px }
+.t b { font-size: 17px; font-weight: 500; line-height: 22px; white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent) }
+.t i { font-style: normal; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 18px; color: rgb(var(--on) / .8); white-space: nowrap; overflow: hidden }
+.r.on .t > i { color: rgb(var(--on)) }
+.kind { flex: none; font-size: 14px; font-weight: 500; letter-spacing: .1px; color: rgb(var(--on) / .8); white-space: nowrap }
+/* the strip: slots at a 32 dp pitch, icons 18; the armed slot is 9 · icon · 7 · name · 6 · mark 14 · 9 on a pane of the panel's own glass */
+.strip { flex: none; display: flex; align-items: center; height: 32px }
+.a { width: 32px; height: 32px; display: grid; place-items: center; flex: none }
+.a.arm { width: auto; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 16px; background: rgb(var(--veil) / var(--pane)); box-shadow: inset 0 0 0 1px rgb(255 255 255 / var(--rim2)); margin: 0 4px }
+.a.arm:last-child { margin-right: 0 } .a.arm:first-child { margin-left: 0 }
+.a.arm b { font-size: 14px; font-weight: 500; letter-spacing: .1px; margin: 0 6px 0 7px; white-space: nowrap }
+.a.off { opacity: .4 }
+.a.chev { color: rgb(var(--on)) }
+/* an answer: 92, grown once to 136. Caption 14/500 at 0.80, text 17/500 on 22 dp lines; the disc and the strip keep the line of the first height */
+.r.ans { height: 92px; align-items: flex-start; transition: height .36s var(--place) }
+.r.ans.grown { height: 136px }
+.r.ans > .ic { margin-top: 28px }
+.r.ans > .t { padding: 12px 16px 0 }
+.r.ans > .strip, .r.pic > .strip { margin-top: 30px }
+.r.ans > .kind, .r.pic > .kind { margin-top: 30px; line-height: 32px }
+.cap { font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 19px; color: rgb(var(--on) / .8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.txt { margin-top: 3px; font-size: 17px; font-weight: 500; line-height: 22px; height: 44px; overflow: hidden; white-space: normal }
+.r.grown .txt { height: 88px }
+.txt.own { color: rgb(var(--on) / .8); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2 }
+/* a preview with slots (an event): 92, the slot's label 12/600 in capitals, its value 17/500 */
+.r.tall { height: 92px }
+.r.tall > .t { gap: 3px }
+.sl { display: flex; gap: 20px; white-space: nowrap; overflow: hidden; font-size: 17px; font-weight: 500; line-height: 24px; align-items: baseline }
+.sl em { font-style: normal; font-size: 12px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: rgb(var(--on) / .8); margin-right: 7px }
+.txt .ln { display: block; white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent) }
+.txt span.w { animation: word .16s both } @keyframes word { from { opacity: 0 } to { opacity: 1 } }
+/* a picture's row: 136 from its first frame. The picture hangs from x = 24, y = 16 and is fitted into 176 x 104; the text starts at 220 */
+.r.pic { height: 136px; align-items: flex-start; padding: 0 12px 0 16px }
+.r.pic.low { height: 92px }
+.r.pic.low .pslot { height: 60px }
+.pslot { width: 176px; height: 104px; margin-top: 16px; flex: none }
+.pimg { position: relative; border-radius: 12px; overflow: hidden }
+.r.pic > .t { padding: 12px 16px 0 20px }
+/* what the recogniser read: the small type at 0.80 on 19 dp lines, wrapping, four lines at most, the last one fading. The answer is the only title-size text */
+.txt.rec { height: 76px; font-size: 14px; letter-spacing: .1px; line-height: 19px; color: rgb(var(--on) / .8);
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 19px) no-repeat, linear-gradient(to right, #000 calc(100% - 56px), transparent) bottom / 100% 19px no-repeat;
+  mask: linear-gradient(#000 0 0) top / 100% calc(100% - 19px) no-repeat, linear-gradient(to right, #000 calc(100% - 56px), transparent) bottom / 100% 19px no-repeat }
+.txt.rec .ln { white-space: normal; overflow: visible; -webkit-mask-image: none; mask-image: none }
+.r.pic.low .txt.rec, .r.ans .txt.rec { height: 38px }
+/* a picture as a mark: 36 dp like every mark (edges at 20 and 56), radius 11, the ring */
+.ic.markpic { position: relative; border-radius: 11px; overflow: hidden }
+/* the quiet line: row one's seat, no highlight. One text from 72 in the small type, the cap ends at 700. In dark both of its parts are full ink */
+.quiet { height: 72px; margin: 0 8px; padding: 8px 12px; display: flex; align-items: center }
+.qt { flex: 1; min-width: 0; margin: 0 16px; font-size: 14px; font-weight: 500; letter-spacing: .1px; white-space: nowrap; overflow: hidden; color: rgb(var(--on)); -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent) }
+.qt .age { color: rgb(var(--on) / var(--qage)) }
+.r.say { padding: 0 12px }
+/* the footer: 36 and the list's lower 8, hints 13/500, caps 22 */
+.foot { height: 44px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; font-size: 13px; font-weight: 500; letter-spacing: .1px; color: rgb(var(--on) / .8); white-space: nowrap }
+.fk { height: 22px; padding: 0 7px; border-radius: 7px; background: rgb(var(--on) / var(--capfill)); display: inline-grid; place-items: center; font-size: 13px; font-weight: 500; letter-spacing: .1px; color: rgb(var(--on) / .8); flex: none }
+.fk svg.i { width: 13px; height: 13px }
+.foot .fk { margin: 0 6px 0 16px }
+.foot .done { margin-right: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: rgb(var(--on)) }
+.foot .done svg.i { width: 16px; height: 16px }
+/* the tip card: 96 and the 8 under it */
+.card { height: 96px; margin: 0 8px 8px; display: flex; align-items: center; padding: 0 12px }
+.card .t { padding: 0 14px 0 16px }
+.card .t b { font-size: 15px; font-weight: 600; line-height: 20px; -webkit-mask-image: none; mask-image: none; text-overflow: ellipsis }
+.card .t i { font-size: 13px; white-space: normal; line-height: 17px; max-height: 34px; overflow: hidden }
+.card em { font-style: normal; color: rgb(var(--on)) }
+.card .fk { margin-right: 10px }
+.opts { flex: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600; letter-spacing: .1px }
+.opts span { height: 32px; padding: 0 32px 0 14px; display: flex; align-items: center; color: rgb(var(--on) / .8); white-space: nowrap }
+
+/* ---- what plays ---- */
+.under { overflow: hidden; transition: height .36s var(--place) }
+.under.cut { transition: none }
+.risein { animation: rise .32s var(--place) both; animation-delay: calc(var(--i, 0) * 22ms) }
+@keyframes rise { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+.fadein { animation: fadein .14s both } @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+.popin { animation: popin .3s var(--pop) both } @keyframes popin { from { opacity: 0; transform: scale(.6) } to { opacity: 1; transform: none } }
+/* The opening at Medium, design-system.md §12: the seam grows for 160 ms on (0.2, 0, 0, 1); the glass widens from 60 ms for 360 ms on (0.55, 0, 0.1, 1): slow, fast, slow.
+   At rest at 420 ms. The field's contents fade in while the glass is 35 to 85 % open (179 to 257 ms); the G and the esc cap last, from 92 % (291 ms). */
+.seam { position: absolute; inset: var(--cv) var(--ch); border-radius: var(--cr); box-shadow: inset 0 0 0 1.25px #fff; opacity: 0; pointer-events: none; z-index: 2 }
+.panel.opening { clip-path: inset(var(--cv) var(--ch) round var(--cr)); animation: seamv .16s cubic-bezier(.2, 0, 0, 1) both, glassh .36s cubic-bezier(.55, 0, .1, 1) .06s both }
+.panel.opening .seam { animation: seamout .36s cubic-bezier(.55, 0, .1, 1) .06s both }
+.panel.opening .fld > * { animation: uncover .42s linear both }
+.panel.opening .fld > .g, .panel.opening .fld > .esc { animation-name: uncoverlast }
+@keyframes seamv { from { --cv: 31px } to { --cv: 0px } }
+@keyframes glassh { from { --ch: 357px; --cr: 3px } to { --ch: 0px; --cr: 32px } }
+@keyframes seamout { from { opacity: 1 } to { opacity: 0 } }
+@keyframes uncover { 0%, 42.6% { opacity: 0 } 61.2%, 100% { opacity: 1 } }
+@keyframes uncoverlast { 0%, 69.3% { opacity: 0 } 100% { opacity: 1 } }
+/* The light on the edge, design-system.md §12: the outline at full white, 2.0 dp in light and 1.75 in dark, its inner edge softened over 3 dp at 16 or 12 %. No glow.
+   A front of 40 dp and a tail of 36 to 140 dp that grows with its speed, measured along the outline. --u is how far round it is; --P the outline's length in dp. */
+.edge { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; opacity: 0; transition: opacity .24s linear; --s0: 328 }
+.edge rect { fill: none; stroke: #fff; stroke-dasharray: calc((40 + var(--tail) * var(--t)) * 1px) calc(var(--P) * 1px); stroke-dashoffset: calc((40 + var(--tail) * var(--t) - var(--s0) - var(--u) * var(--P)) * 1px) }
+.edge .e1 { x: calc(var(--ew) / 2); y: calc(var(--ew) / 2); width: calc(100% - var(--ew)); height: calc(100% - var(--ew)); rx: calc(32px - var(--ew) / 2); stroke-width: var(--ew) }
+.edge .e2 { x: calc(var(--ew) + .75px); y: calc(var(--ew) + .75px); width: calc(100% - 2 * var(--ew) - 1.5px); height: calc(100% - 2 * var(--ew) - 1.5px); rx: calc(31.25px - var(--ew)); stroke-width: 1.5px; stroke-opacity: var(--soft) }
+.edge .e3 { x: calc(var(--ew) + 2.25px); y: calc(var(--ew) + 2.25px); width: calc(100% - 2 * var(--ew) - 4.5px); height: calc(100% - 2 * var(--ew) - 4.5px); rx: calc(29.75px - var(--ew)); stroke-width: 1.5px; stroke-opacity: calc(var(--soft) * .4) }
+/* the reflection: once round from the middle of the top edge, 1 ms for each dp, on (0.3, 0, 0.5, 1); in over the first 5 % of the way, out over the last 18 % */
+.panel.reflect .edge { animation: lapu var(--lap, 1665ms) cubic-bezier(.3, 0, .5, 1) both, tail var(--lap, 1665ms) linear both, glint var(--lap, 1665ms) linear both }
+/* the model at work: steady laps at 1.5 ms for each dp, 75 % as bright, in over 200 ms and out over 240 */
+.panel.think .edge { opacity: .75; transition-duration: .2s; --tail: 77; animation: lapu var(--work, 2700ms) linear infinite }
+.panel.lapstill .edge { opacity: .75; --u: .215; --tail: 77 }
+@keyframes lapu { from { --u: 0 } to { --u: 1 } }
+@keyframes tail { 0% { --tail: 36 } 10% { --tail: 80 } 20% { --tail: 117 } 30% { --tail: 137 } 40% { --tail: 140 } 50% { --tail: 130 } 60% { --tail: 112 } 70% { --tail: 93 } 80% { --tail: 72 } 90% { --tail: 53 } 100% { --tail: 36 } }
+@keyframes glint { 0% { opacity: 0 } 11.7% { opacity: 1 } 65.2% { opacity: 1 } 100% { opacity: 0 } }
+
+/* ---- the timeline beside screen 1: 140 px to the second ---- */
+.tl { position: relative; width: 720px; height: 102px; flex: none; font-size: 12px; font-weight: 600; color: var(--ink) }
+.tl .lb { position: absolute; white-space: nowrap; line-height: 16px }
+.tl .seg { position: absolute; top: 22px; height: 18px; border-radius: 9px; background: var(--accent); border: 1px solid var(--accent); display: grid; place-items: center; font-style: normal; font-weight: 500; font-size: 11px; color: var(--muted) }
+.tl .seg.still { background: none; border: 1px dashed var(--muted) }
+.tl .seg.white { background: #fff; border-color: #fff }
+.tl .tk { position: absolute; left: 0; top: 18px; width: 2px; height: 26px; background: var(--ink); border-radius: 1px }
+.tl .ax { position: absolute; left: 0; right: 0; top: 76px; height: 1px; background: var(--muted) }
+.tl .tick { position: absolute; top: 71px; width: 1px; height: 6px; background: var(--muted) }
+.tl .tm { position: absolute; top: 82px; white-space: nowrap; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 16px }
+.tlwrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface-2); padding: 14px 20px 8px }
+
+/* ---- windows drawn behind and beside the panel ---- */
+.win { border-radius: 16px; background: var(--win); color: rgb(var(--on)); box-shadow: 0 0 0 1px var(--winline), 0 14px 36px rgb(10 14 40 / .2); overflow: hidden; flex: none; font-size: 15px; line-height: 1.3 }
+.syscap { height: 36px; display: flex; align-items: center; padding: 0 14px; font-size: 13px; color: rgb(var(--on) / .6) }
+.syscap span { margin-left: auto; white-space: pre }
+.mail { width: 640px }
+.mail .line { display: flex; gap: 10px; padding: 9px 20px; border-top: 1px solid var(--winline); font-size: 14px }
+.mail .line span { color: rgb(var(--on) / .6); width: 56px; flex: none }
+.mail .bodytx { padding: 16px 20px 22px; border-top: 1px solid var(--winline); font-size: 15px; line-height: 24px; background: var(--paper2) }
+.mail .bodytx p + p { margin-top: 10px }
+mark.selx { background: var(--seltext); color: inherit; border-radius: 2px; padding: 2px 0 }
+.sysmenu { width: 208px; border-radius: 12px; background: var(--win); color: rgb(var(--on)); box-shadow: 0 0 0 1px var(--winline), 0 12px 30px rgb(10 14 40 / .26); padding: 6px 0; font-size: 14px; flex: none }
+.sysmenu div { height: 36px; display: flex; align-items: center; padding: 0 16px }
+.sysmenu hr { border: 0; border-top: 1px solid var(--winline); margin: 6px 0 }
+.sysmenu .ours { font-weight: 600 }
+.stage { position: relative; flex: none }
+.note { position: absolute; font-size: 12px; line-height: 16px; font-weight: 600; color: rgb(var(--on)); background: rgb(var(--veil) / .78); border-radius: 8px; padding: 4px 8px; max-width: 200px }
+.editor { width: 600px }
+.editor .code { padding: 8px 0 18px; font: 500 13px/22px var(--mono); background: var(--paper2); border-top: 1px solid var(--winline) }
+.editor .code div { padding: 0 18px 0 0; white-space: pre; display: flex }
+.editor .code div i { font-style: normal; width: 44px; text-align: right; margin-right: 16px; color: rgb(var(--on) / .45); flex: none }
+.editor .code div.hit { background: var(--errc); color: var(--onerrc) }
+.editor .code div.hit i { color: inherit }
+/* pins: the system's small window that stays on top. A picture fills it edge to edge */
+.pinrow { display: flex; flex-wrap: wrap; gap: 24px 20px; align-items: flex-end; justify-content: center; max-width: 600px }
+.pinbox { display: flex; flex-direction: column; gap: 6px; align-items: flex-start }
+.pinbox > span { font-size: 12px; line-height: 16px; font-weight: 600; color: rgb(var(--on)); background: rgb(var(--veil) / .7); border-radius: 8px; padding: 2px 8px }
+.pin { border-radius: 16px; background: var(--win); color: rgb(var(--on)); box-shadow: 0 0 0 1px var(--winline), 0 10px 30px rgb(10 14 40 / .3); overflow: hidden; flex: none; font-size: 15px; line-height: 1.3 }
+.pin .in { padding: 22px 20px 0 }
+.pin .pcap { font-size: 14px; font-weight: 500; color: rgb(var(--on) / .8); line-height: 20px; margin-bottom: 2px }
+.pin .fig { font-family: var(--display); font-variation-settings: "ROND" 100; font-size: 34px; font-weight: 600; line-height: 42px; font-variant-numeric: tabular-nums }
+.pin .ptxt { font-size: 17px; font-weight: 500; line-height: 24px }
+.pinpic { display: grid; place-items: center }
+
+@media (prefers-reduced-motion: reduce) { .panel, .panel *, .under { transition: none !important; animation: none !important; clip-path: none } }

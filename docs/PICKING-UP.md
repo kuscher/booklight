@@ -25,8 +25,11 @@ round and its confirmation and four motion rounds of recordings on the Lenovo, a
 - `docs/design/window-redesign.md` and its page (`docs/design/booklight-window.html`,
   https://claude.ai/artifact/Qp9U7LtwivskDF1dNTmouf): the Booklight window as a desktop window, navigation on
   the leading edge, five sections, Material 3 Expressive parts; nine decisions for him; about nine days.
-- The four milestones (the copy, the picture, the selection, your language): `docs/design/milestones.md` and
-  its page, once the team's page is in.
+- The four milestones (the copy, the picture, the selection, your language): `docs/design/milestones/plan.md`
+  (with the team's four papers beside it) and its page (`docs/design/booklight-milestones.html`, made by
+  `tools/design-milestones/gen.py`, https://claude.ai/artifact/YWPmPVwvSFiY1keZCbyCYt): eleven screens drawn at
+  real size, fourteen decisions for him (eight large, six small), about 65 days with the language groundwork.
+  It starts with a half-day device session on both Googlebooks, before M1.
 
 **Device mishaps of this session, both put right:** six test timers had been ringing in Clock for two hours
 (stopped; rule in `device-findings.md`); a recording helper resized another app's window on the Lenovo by mistake
