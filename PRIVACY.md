@@ -19,7 +19,8 @@ their own packages. It starts one only when you press Enter on its row, and thos
 
 **Search suggestions are off until you turn them on.** If you turn them on, the text you type is sent
 over HTTPS to the search engine you chose (Google by default; DuckDuckGo, Bing, Brave Search or Ecosia
-if you change it) to get suggested searches. Sums, web addresses, and anything typed after a keyword
+if you change it) to get suggested searches. Sums, web addresses, an app's own address, an app's
+name followed by what to look for in it (`spotify daft punk`), and anything typed after a keyword
 (a note, a mail, a search of one site) are not sent. No cookies or identifiers are added; like any
 internet request it shows the search engine your IP address. Turn suggestions off again in the
 Booklight window › Web search.
@@ -27,7 +28,7 @@ Booklight window › Web search.
 **Flights: nothing is sent unless you put in a key of your own.** A flight number you type (`LH455`) is
 read on the device: Booklight carries a table of airlines, names the airline, and Enter opens the
 flight's page in your browser. If you put a key of your own for AirLabs (airlabs.co, a flight data
-service) into the Booklight window › Results › Flights, the row also shows the flight's times, gate
+service) into the Booklight window › Labs › Flights, the row also shows the flight's times, gate
 and status. For that, the flight number and your key are sent over HTTPS to airlabs.co, and nothing
 else is: no cookies, no identifiers; like any internet request it shows AirLabs your IP address, and
 AirLabs can tie the lookups to the account the key belongs to. When: once, a moment after you stop
@@ -41,6 +42,27 @@ in memory for two minutes (that a number is not known, for an hour) and written 
 part of your backup and goes to AirLabs only. Take it out in the same place and nothing is sent again.
 Booklight ships no key and its developer sees neither yours nor your lookups.
 
+**Spotify: nothing is sent unless you put in a key of your own.** `play … on spotify` hands your text to
+the Spotify app on your device, which shows its search results; Booklight itself sends nothing. If you put
+a key of your own for Spotify's Web API (a client ID and its secret, from developer.spotify.com) into the
+Booklight window › Labs, Booklight looks the name up so that Spotify can play it. For that,
+the text you typed after `play` (without the app's name) and the country your device is set to are sent
+over HTTPS to api.spotify.com, with a token Booklight gets by sending your key to accounts.spotify.com, and
+nothing else is: no cookies, no identifiers; like any internet request it shows Spotify your IP address, and
+Spotify can tie the lookups to the account the key belongs to. The token is the key's, not yours as a
+listener: nothing of your Spotify account (your playlists, what you listen to) is read. When: each
+time you pause typing after `play` for about half a second, the text as it stands then (so a slow hand
+sends the start of a name before the whole of it), while Spotify is the app the row is aimed at because you chose
+it (you named it, you used it last, or it is the only music app; where it merely comes first of several,
+nothing is sent); never while you are typing without a pause, never for a single letter, and never for text another app handed
+over. Nor while another row stands above the row of `play` (`play store` finds the Play Store first),
+unless you move to that row. An album takes a second request (for its first song), and so does an artist (for a song of their
+own). What Spotify found is kept in memory for five minutes, and the token until it runs
+out (an hour); neither is written anywhere. If you make a recipe step of a song that was found, the song's
+link is kept with the recipe. The key is a file in the app's own storage; it is not part of your backup and
+goes to Spotify only. Take it out in the same place and nothing is sent again. Booklight ships no key and
+its developer sees neither yours nor your lookups.
+
 **Handing things to other apps.** A web row opens in your browser. A mail, an event, a note for Keep, a
 timer or a question for Gemini is handed to the app that opens: your mail app, your calendar, the Clock,
 Gemini. Booklight sends none of it anywhere itself, and a mail or a Gemini question is only filled in:
@@ -53,7 +75,9 @@ and the system's service does not keep them. That library, like all of ML Kit, *
 to Google**: the device model and Android version, Booklight's name and version, an identifier made for
 this installation, which feature ran, how long it took, how large the input and the answer were, and
 error codes. Not the text. It sends this in the background when the network allows. Booklight cannot
-switch that off in this version; if you never use a prompt, the model is never asked. Where the device has
+switch that off in this version; if you never use a prompt, the model is never asked. (The row of `play`
+has one such question behind its arrow, "Which song is this?": the model is given what you typed after
+`play` when you press Enter on it, and only then.) Where the device has
 no such model, a prompt opens the Gemini app with your text in its prompt instead, and you send it there
 or you don't.
 
@@ -71,7 +95,7 @@ The line can be turned off in the Booklight window › What you copied.
 **Text from another app** (its selection menu, its share sheet) is shown in the panel and forgotten when
 the panel closes.
 
-**Permissions.** Internet, for suggestions, for flight lookups with your own key, and for the library's usage reports. Asking Android to
+**Permissions.** Internet, for suggestions, for flight and Spotify lookups with your own keys, and for the library's usage reports. Asking Android to
 uninstall an app (Android asks you before it does). Setting alarms and timers in the Clock app. Changing
 the brightness, which does nothing until you switch on "Modify system settings" for Booklight yourself.
 Since 2.0, from Google's library: connecting to the system's on-device AI service, and seeing whether the

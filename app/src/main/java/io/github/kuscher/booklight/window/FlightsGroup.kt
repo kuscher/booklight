@@ -142,7 +142,7 @@ fun FlightsGroup(page: Page, app: BooklightApp, onTyping: (Boolean) -> Unit) {
                 })
         }
         row("flight-get") { place ->
-            PageRow(page, "flight-get", stringResource(R.string.set_flight_get), stringResource(R.string.set_flight_get_text), place = place, mark = { MarkIcon("key") },
+            PageRow(page, "flight-get", stringResource(R.string.set_flight_get), stringResource(R.string.set_flight_get_text), place = place, onTitleLine = true, mark = { MarkIcon("key") },
                 onEnter = { app.executor.run(Effect.OpenUrl(AirLabs.SIGN_UP), activity) }) { Opens() }
         }
     }

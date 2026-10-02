@@ -118,7 +118,7 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             Verb("open", words(R.string.verb_open)),
             Verb("window", words(R.string.verb_window), atStart = false),      // "new window" at the start is the New scope
             Verb("info", words(R.string.verb_info)),
-        ) + spots.map { Verb(it.id, words(it.words), atStart = false) } + Verb("uninstall", words(R.string.verb_uninstall), min = 3)
+        ) + spots.map { Verb(it.id, words(it.words), atStart = false) } + AppPages.verbs(context) + Verb("uninstall", words(R.string.verb_uninstall), min = 3)
     }
 
     /** "… on display 2" at the end of the text: the words before the number, and how many screens there are. */
@@ -151,7 +151,7 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             }
             if (best <= 0 && dangling != null) Matcher.score(dangling, apps[i].label).let { if (it >= Matcher.WORD_PREFIX) best = it * VERB }
             if (best <= 0) continue
-            val row = result(apps[i], best, display)
+            val row = result(apps[i], best, display, page = verb?.takeIf { it in AppPages.ids })
             // The verb arms its action on the app's own row. An app without that action (it came with the device: no Uninstall) has no such reading.
             val armed = verb?.let { v -> row.actions.indexOfFirst { it.id == v } }
             if (armed == null) out += row else if (armed >= 0) out += row.copy(armed = armed) else if (plain[i] > 0) out += result(apps[i], plain[i], display)
@@ -163,12 +163,24 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     fun best(text: String): String? = index.map { it to Matcher.score(text, it.label) }.filter { it.second >= Matcher.PREFIX }
         .maxWithOrNull(compareBy<Pair<App, Double>> { it.second }.thenBy { -it.first.label.length })?.first?.pkg
 
+    /** The app of this user with the package [pkg], as the launcher shows it: its name, and the activity its icon is of. Null for one Booklight does not see. */
+    fun shown(pkg: String): Pair<String, String>? = index.firstOrNull { it.pkg == pkg && it.user == me }?.let { it.label to it.cls }
+
     override fun byIds(ids: Set<String>): List<Result> = index.map { result(it, 1.0, 0) }.filter { it.id in ids }
+
+    /** An app of the user Booklight runs as, by what names it: its package, the name it shows, and the activity its icon comes from. */
+    class Installed(val pkg: String, val label: String, val cls: String)
+
+    /** The apps a command of the user's own can be made for, by name; one entry for each app. */
+    fun installed(): List<Installed> = index.filter { it.user == me }.distinctBy { it.pkg }.map { Installed(it.pkg, it.label, it.cls) }
+
+    /** The app with this package, if it is in the list. */
+    fun installed(pkg: String): Installed? = index.firstOrNull { it.pkg == pkg && it.user == me }?.let { Installed(it.pkg, it.label, it.cls) }
 
     /** Every app's id (the debug hook `seed` picks five). */
     fun ids(): Set<String> = index.mapTo(HashSet()) { result(it, 1.0, 0).id }
 
-    private fun result(a: App, score: Double, display: Int) = Result(
+    private fun result(a: App, score: Double, display: Int, /** A page of the app in Settings that was asked for by its word (AppPages). */ page: String? = null) = Result(
         id = "app:${a.pkg}/${a.cls}" + if (a.user != 0L) "#${a.user}" else "",
         provider = id, kind = Kind.APP, title = a.label,
         subtitle = if (display > 0) context.getString(R.string.place_on_display, display) else null,
@@ -181,6 +193,11 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             Action("window", context.getString(R.string.action_new_window), Effect.LaunchApp(a.pkg, a.cls, a.user, newWindow = true, display = display)).takeIf { a.user == me },
             Action("info", context.getString(R.string.action_app_info), Effect.AppInfo(a.pkg, a.cls, a.user)),
         ) + spots.map { Action(it.id, context.getString(it.label), Effect.LaunchApp(a.pkg, a.cls, a.user, place = it.place, display = display), more = it.more) } +
+            // Its own pages in Settings (AppPages), for the user Booklight runs as: Settings shows that user's apps. Only the one
+            // that was typed ("spotify notifications"): four more lines under every app's row would take its list past the
+            // screen's lower edge on a Googlebook 14, and App info, one icon away, leads to all of them.
+            (if (a.user == me && page != null) AppPages.actions(context, a.pkg).filter { it.id == page } else emptyList()) +
+            listOfNotNull(AppSearches.action(context, a.pkg, a.user)) +     // "Search", behind the arrow, for an app that can be searched (AppSearch.kt)
             listOfNotNull(Action("uninstall", context.getString(R.string.action_uninstall), Effect.Uninstall(a.pkg, a.user), symbol = "trash", danger = true, more = true).takeIf { !a.system }),
     )
 }

@@ -19,10 +19,12 @@ class Tips(private val context: Context, private val prefs: Prefs) {
 
     fun all(): List<Tip> {
         val prompt = prefs.now.prompts.firstOrNull { it.keyword.isNotEmpty() }?.let { "${it.keyword} ${context.getString(R.string.guide_prompt_text)}" }
+        // A tip about an app of this device that can be searched; where there is none, there is no such tip.
+        val searched = (context.applicationContext as BooklightApp).guide.appSearch()
         return context.resources.getStringArray(R.array.tips).mapNotNull { row ->
             val f = row.split('|')
             if (f.size < 5) return@mapNotNull null
-            Tip(f[0], f[1], (if (f[2] == "{prompt}") prompt else f[2]) ?: return@mapNotNull null, f[3], f[4])
+            Tip(f[0], f[1], when (f[2]) { "{prompt}" -> prompt; Guide.APP_SEARCH -> searched; else -> f[2] } ?: return@mapNotNull null, f[3], f[4])
         }
     }
 

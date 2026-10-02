@@ -14,6 +14,7 @@ import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.BuildConfig
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.AppSearch
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Kind
@@ -42,6 +43,9 @@ import org.xmlpull.v1.XmlPullParser
  *
  * A command is kept only if it leads to an activity of the app that declared it, open to other
  * apps and asking for no permission; the same is checked again when it is run (`Executor`).
+ *
+ * A search inside an app ("spotify daft punk") is read here too and held by [search]: an app's own
+ * keyword first, then a bundled table, then what the app declares for everyone (`AppSearch.kt`).
  */
 class AppCommands(private val context: Context, private val prefs: Prefs, private val scope: CoroutineScope, private val apps: AppsProvider) : Provider {
     override val id = SearchEngine.COMMANDS
@@ -67,6 +71,8 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
     private var loading: Job? = null
     /** Done once other apps' commands have been read for the first time (a job of its own, after the app list). */
     val ready = kotlinx.coroutines.CompletableDeferred<Unit>()
+    /** Where a search inside an app goes, for every app that has one. Read with the commands: an app's own file comes first. */
+    val search = AppSearches(context, prefs, this)
 
     init { apps.onReload = ::reload; reload() }
 
@@ -79,21 +85,30 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
             val cmds = ArrayList<Command>()
             val keys = ArrayList<Keyword>()
             val seen = HashSet<String>()
+            val listed = ArrayList<AppSearches.Listed>()
             for (a in launcher.getActivityList(null, android.os.Process.myUserHandle())) {
                 ensureActive()
                 val pkg = a.componentName.packageName
                 if (pkg == SETTINGS || (pkg == own && !BuildConfig.DEBUG)) continue
                 val label = a.label.toString()
                 val cls = a.componentName.className
+                listed += AppSearches.Listed(pkg, cls, label)
                 runCatching { shortcuts(pkg, cls, label) }.onFailure { Log.w(BooklightApp.TAG, "shortcuts of $pkg not read: ${it.javaClass.simpleName}") }
                     .getOrNull()?.filterTo(cmds) { Matcher.fold(it.title) !in taken }
                 if (seen.add(pkg)) runCatching { file(pkg, cls, label, cmds, keys) }.onFailure { Log.w(BooklightApp.TAG, "commands of $pkg not read: ${it.javaClass.simpleName}") }
             }
             ensureActive()
+            // After the files: a keyword of the app's own that takes text is its search, before the table and before what it declares.
+            val searches = runCatching { search.read(listed, keys) }.onFailure { Log.w(BooklightApp.TAG, "searches not read: ${it.javaClass.simpleName}") }.getOrNull()
+            ensureActive()
             commands = cmds.distinctBy { it.owner + "/" + it.id }
             keywords = keys
-            offers = (commands.map { Triple(it.owner, it.app to it.cls, it.title) } + keys.map { Triple(it.owner, it.app to it.cls, it.name) })
-                .groupBy { it.first }.map { (owner, all) -> Offer(owner, all.first().second.first, all.first().second.second, all.map { it.third }) }.sortedBy { it.app.lowercase() }
+            searches?.let(search::use)
+            // An app that is only searched is in the window's list too, so it can be turned off there like the others.
+            val searched = context.getString(R.string.action_search)
+            offers = (commands.map { Triple(it.owner, it.app to it.cls, it.title) } + keys.map { Triple(it.owner, it.app to it.cls, it.name) } +
+                searches?.found.orEmpty().filter { it.name == null }.map { Triple(it.pkg, it.app to it.cls, searched) })
+                .groupBy { it.first }.map { (owner, all) -> Offer(owner, all.first().second.first, all.first().second.second, all.map { it.third }.distinct()) }.sortedBy { it.app.lowercase() }
             version++
             ready.complete(Unit)
         }
@@ -204,10 +219,14 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
         val probe = intent(pkg, action, cls, data?.replace(ARGUMENT, "x"), extras.mapValues { it.value.replace(ARGUMENT, "x") })
         if (safe(pkg, probe) == null) return null
         if (!argument && (data?.contains(ARGUMENT) == true || extras.values.any { ARGUMENT in it })) return null
-        return TEMPLATE + listOf(action.orEmpty(), cls.orEmpty(), data.orEmpty()).plus(extras.flatMap { listOf(it.key, it.value) }).joinToString(SEP)
+        return template(action, cls, data, extras)
     }
 
-    private fun intent(pkg: String, action: String?, cls: String?, data: String?, extras: Map<String, String>): Intent {
+    /** An intent's parts as they are kept until the text is typed: `{argument}` may stand in [data] and in an extra. */
+    internal fun template(action: String?, cls: String?, data: String?, extras: Map<String, String>): String =
+        TEMPLATE + listOf(action.orEmpty(), cls.orEmpty(), data.orEmpty()).plus(extras.flatMap { listOf(it.key, it.value) }).joinToString(SEP)
+
+    internal fun intent(pkg: String, action: String?, cls: String?, data: String?, extras: Map<String, String>): Intent {
         val i = Intent(action ?: if (data != null) Intent.ACTION_VIEW else Intent.ACTION_MAIN)
         if (cls != null) i.setClassName(pkg, cls) else i.setPackage(pkg)
         if (data != null) i.data = Uri.parse(data)
@@ -215,21 +234,21 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
         return i
     }
 
-    /** A file's command as the address the executor starts, with [argument] where the file says `{argument}`. */
-    private fun fill(pkg: String, template: String, argument: String): String {
+    /** A file's command as the address the executor starts, with [argument] where the file says `{argument}`: escaped in the data, as typed in an extra. */
+    internal fun fill(pkg: String, template: String, argument: String): String {
         if (!template.startsWith(TEMPLATE)) return template
         val parts = template.removePrefix(TEMPLATE).split(SEP)
         val extras = LinkedHashMap<String, String>()
         var i = 3
         while (i + 1 < parts.size) { extras[parts[i]] = parts[i + 1].replace(ARGUMENT, argument); i += 2 }
-        return intent(pkg, parts[0].ifEmpty { null }, parts[1].ifEmpty { null }, parts[2].ifEmpty { null }?.replace(ARGUMENT, Uri.encode(argument)), extras).toUri(Intent.URI_INTENT_SCHEME)
+        return intent(pkg, parts[0].ifEmpty { null }, parts[1].ifEmpty { null }, parts[2].ifEmpty { null }?.let { AppSearch.address(it, argument) }, extras).toUri(Intent.URI_INTENT_SCHEME)
     }
 
     /**
      * [intent] as an address, if another app may start it: it leads to an activity of [pkg] itself,
      * open to other apps, that asks for no permission. Null otherwise.
      */
-    private fun safe(pkg: String, intent: Intent): String? {
+    internal fun safe(pkg: String, intent: Intent): String? {
         val i = Intent(intent)
         if (i.component == null) i.setPackage(pkg) else if (i.component?.packageName != pkg) return null
         val a = pm.resolveActivity(i, 0)?.activityInfo ?: return null
@@ -279,6 +298,8 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
             if (score <= 0 && named && c.owner == lead && byName < 3) { score = BY_NAME; byName++ }
             if (score > 0) out += row(c, score)
         }
+        // "spotify daft punk": the search inside the app that is named, under everything that matched.
+        out += search.rows(text)
         return out
     }
 
@@ -300,7 +321,7 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
             if (free.isEmpty()) return@mapNotNull null
             used += free.map { it.lowercase() }
             Ext(k, free, "ext:${k.owner}/${k.id}" in s.usedScopes)
-        }
+        } + search.scopes()
     }
 
     private inner class Ext(private val k: Keyword, override val keywords: List<String>, override val spaceEnters: Boolean) : Scope {
@@ -325,7 +346,7 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
         /** The attributes of a `<shortcut>`, in the ascending order the system asks for. */
         val SHORTCUT = intArrayOf(android.R.attr.enabled, android.R.attr.shortcutId, android.R.attr.shortcutShortLabel, android.R.attr.shortcutLongLabel).sortedArray()
         const val META = "io.github.kuscher.booklight.commands"
-        const val ARGUMENT = "{argument}"
+        const val ARGUMENT = AppSearch.ARGUMENT
         /** How a file's command is kept until it is run: its parts, not yet an address (the typed text is still to come). */
         const val TEMPLATE = "booklight-open:"
         const val SEP = "\u0001"

@@ -36,11 +36,14 @@ class SuggestTest {
         // Addresses of every kind, complete or not.
         for (t in listOf("192.168.1.1", "10.0.0.5:8080/admin", "alex@gmail.com", "https://exa", "http://", "localhost:3000", "github.com/kuscher", "me@"))
             assertFalse("sent: $t", Suggest.worthAsking(t))
+        // An address with an app's own scheme, with or without a digit in it, and while it is being typed.
+        for (t in listOf("spotify:search:daftpunk", "spotify:track:abc", "spotify:", "spotify:sea", "mailto:anna", "tel:home", "slack://channel", "market://search?q=notes", "Spotify:search:daftpunk", "javascript:alert"))
+            assertFalse("sent: $t", Suggest.worthAsking(t))
         // No letters: nothing to suggest for.
         for (t in listOf("42", "2026-10-01", "+49 30 1234", "...", "  "))
             assertFalse("sent: $t", Suggest.worthAsking(t))
         // Ordinary words, digits included, are fine.
-        for (t in listOf("weather berlin", "iphone 17 review", "c++ tutorial", "top 10 films", "3d printer"))
+        for (t in listOf("weather berlin", "iphone 17 review", "c++ tutorial", "top 10 films", "3d printer", "note: milk", "re: lunch on friday", "spotify", "what is tcp: a short answer"))
             assertTrue("not sent: $t", Suggest.worthAsking(t))
     }
 }

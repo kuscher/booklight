@@ -110,7 +110,10 @@ import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Query
+import io.github.kuscher.booklight.core.Read
+import io.github.kuscher.booklight.core.Requests
 import io.github.kuscher.booklight.core.Result
+import io.github.kuscher.booklight.core.Schemes
 import io.github.kuscher.booklight.core.Templates
 import io.github.kuscher.booklight.data.PromptEntry
 import io.github.kuscher.booklight.data.RecipeEntry
@@ -157,8 +160,8 @@ class CommandsState {
      */
     val draft = mutableStateMapOf<String, String>()
     var steps by mutableStateOf<List<StepEntry>?>(null)
-    /** Something in the open editor was changed and is not saved. (What is typed to look for a step is not a change.) */
-    val dirty: Boolean get() = steps != null || draft.keys.any { it != SEARCH }
+    /** Something in the open editor was changed and is not saved. (What is typed to look for a step, pasted to be read, or typed to try a command with is not a change.) */
+    val dirty: Boolean get() = steps != null || draft.keys.any { it !in SCRATCH }
     /** Leaving a changed editor was asked for once: Cancel says so, and the next time it is left. */
     var discard by mutableStateOf(false)
     /** The row of what was just saved: the keys go to it when its editor has closed. */
@@ -178,16 +181,22 @@ class CommandsState {
         return true
     }
 
-    /** A new link, snippet, recipe or prompt: its editor opens at the end of its group. */
+    /** A new link, snippet, recipe, prompt or app command: its editor opens at the end of its group. */
     fun new(kind: String) { if (leave(kind to "")) { yours = true; find = "" } }
 
-    companion object { const val SEARCH = "search" }
+    companion object {
+        const val SEARCH = "search"
+        const val PASTE = "paste"
+        const val TRY = "try"
+        /** What an editor holds that is no part of what it saves. */
+        private val SCRATCH = setOf(SEARCH, PASTE, TRY)
+    }
 }
 
 /**
  * Commands: everything Booklight does (the same table as the list behind `?`, each row with its example;
  * Enter opens the panel and Booklight types it) and, in its other half, what the user made: links, snippets,
- * recipes and prompts, each opening its editor in place. One switch between the two, one field that
+ * recipes, prompts and app commands, each opening its editor in place. One switch between the two, one field that
  * narrows whichever shows, and one button that makes a new one.
  */
 @Composable
@@ -231,14 +240,14 @@ fun CommandsPage(
 }
 
 /**
- * New link, and an arrow for the other three: Material's split button. Enter on it is a new link; Right opens the
+ * New link, and an arrow for the other four: Material's split button. Enter on it is a new link; Right opens the
  * arrow's menu. In a column under 400 dp (the smallest window) the first button is only its plus, with its name as
  * a tooltip: beside Built in · Yours the words would leave 4 dp between the two.
  */
 @Composable
 private fun New(page: Page, cs: CommandsState) {
     var menu by remember { mutableStateOf(false) }
-    val more = stringResource(R.string.win_new_more)
+    val more = stringResource(R.string.win_new_more_all)
     val name = stringResource(R.string.win_new_link)
     val short = LocalColumn.current < 400.dp
     Stop(page, "new", onEnter = { cs.new("quicklink") }, onStep = { d -> if (d > 0) { menu = true; true } else false }) {
@@ -264,7 +273,7 @@ private fun New(page: Page, cs: CommandsState) {
                         }
                     }
                     Menu(menu, { menu = false }) {
-                        val kinds = listOf("snippet" to R.string.win_new_snippet, "recipe" to R.string.win_new_recipe, "prompt" to R.string.win_new_prompt)
+                        val kinds = listOf("snippet" to R.string.win_new_snippet, "recipe" to R.string.win_new_recipe, "prompt" to R.string.win_new_prompt, "appcommand" to R.string.win_new_app_command)
                         val first = remember { FocusRequester() }
                         LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
                         kinds.forEachIndexed { i, (kind, name) ->
@@ -413,7 +422,8 @@ private fun yours(s: Settings, app: BooklightApp, find: String): List<String> =
     s.sites.filter { matches(find, it.name, it.keyword, it.url) }.map { "quicklink:${it.keyword}" } +
         s.snippets.filter { matches(find, it.key, it.text) }.map { "snippet:${it.key}" } +
         s.recipes.filter { matches(find, it.name, it.keyword, Recipes.describe(app, it)) }.map { "recipe:${it.id}" } +
-        s.prompts.filter { matches(find, it.name, it.keyword, it.text) }.map { "prompt:${it.id}" }
+        s.prompts.filter { matches(find, it.name, it.keyword, it.text) }.map { "prompt:${it.id}" } +
+        s.ownCommands.filter { matches(find, it.name, it.keyword, app.apps.installed(it.app)?.label) }.map { "appcommand:${it.id}" }
 
 /** One of the user's own, as its row shows it and as the page works on it. */
 private class Mine(
@@ -440,7 +450,8 @@ private fun kinds(app: BooklightApp, s: Settings, cs: CommandsState): List<Kind>
     // A link can't have a keyword one of Booklight's own scopes answers to: it would never be reached. Nor one a prompt has.
     val words = s.prompts.mapNotNull { it.keyword.lowercase().takeIf { k -> k.isNotEmpty() } }.toSet()
     val recipeWords = s.recipes.mapNotNull { it.keyword.lowercase().takeIf { k -> k.isNotEmpty() } }.toSet()
-    val taken = s.sites.map { it.keyword.lowercase() }.toSet() + app.scopes.reserved + words + recipeWords
+    val commandWords = s.ownCommands.mapNotNull { it.keyword.lowercase().takeIf { k -> k.isNotEmpty() } }.toSet()
+    val taken = s.sites.map { it.keyword.lowercase() }.toSet() + app.scopes.reserved + words + recipeWords + commandWords
     // A prompt's keyword must be free of links, recipes, Booklight's own and the other prompts.
     val used = taken + recipeWords
     val snippetKeys = s.snippets.map { it.key.lowercase() }.toSet()
@@ -486,12 +497,25 @@ private fun kinds(app: BooklightApp, s: Settings, cs: CommandsState): List<Kind>
                 duplicate = { "p${System.currentTimeMillis()}".also { id -> set { st -> st.copy(prompts = st.prompts + prompt.copy(id = id, keyword = "", seed = null)) } } },
                 delete = { set { st -> st.copy(prompts = st.prompts.filter { it.id != prompt.id }) } })
         }) { PromptEditor(cs, null, used, onSave = { new -> set { it.copy(prompts = it.prompts + new) }; close("prompt:${new.id}") }, onDelete = null, onClose = ::cancel) },
+        Kind("appcommand", R.string.win_app_commands, R.string.win_kind_app_command, R.string.win_new_app_command, s.ownCommands.map { command ->
+            // Its row says which app it asks, and for what.
+            val asks = (Requests.read(command.intent) as? Read.Ok)?.request?.let { app.getString(whatName(it.what)) }
+            Mine(command.id, command.name, listOfNotNull(app.apps.installed(command.app)?.label ?: command.app, asks).joinToString(" · "), "open", command.keyword,
+                editor = {
+                    AppCommandEditor(cs, app, command, taken,
+                        onSave = { new -> set { st -> st.copy(ownCommands = st.ownCommands.map { if (it.id == command.id) new else it }) }; close("appcommand:${new.id}") },
+                        onDelete = { set { st -> st.copy(ownCommands = st.ownCommands.filter { it.id != command.id }) }; close() }, onClose = ::cancel)
+                },
+                // A copy has no keyword: a keyword is one thing's alone.
+                duplicate = { "c${System.currentTimeMillis()}".also { id -> set { st -> st.copy(ownCommands = st.ownCommands + command.copy(id = id, keyword = "")) } } },
+                delete = { set { st -> st.copy(ownCommands = st.ownCommands.filter { it.id != command.id }) } })
+        }) { AppCommandEditor(cs, app, null, taken, onSave = { new -> set { it.copy(ownCommands = it.ownCommands + new) }; close("appcommand:${new.id}") }, onDelete = null, onClose = ::cancel) },
     )
 }
 
 /**
- * The user's half: the links (1.0's keyword searches, now with placeholders), the snippets, the recipes and
- * the prompts they made. A row opens its editor in place, under it, and is in the selection's colour while
+ * The user's half: the links (1.0's keyword searches, now with placeholders), the snippets, the recipes, the
+ * prompts and the app commands they made. A row opens its editor in place, under it, and is in the selection's colour while
  * it is open; a new one's editor opens at the end of its group. A right-click offers Edit, Duplicate and
  * Delete. Delete (the key, or the menu) asks once more on the row itself, then deletes: the panel's rule.
  */
@@ -560,15 +584,15 @@ private fun Yours(page: Page, app: BooklightApp, s: Settings, cs: CommandsState,
     }
 }
 
-/** Booklight's two one-letter keywords, which a link of the user's may take, and the long keyword that then still works. */
-private val LETTERS = mapOf("s" to "settings", "k" to "keys")
+/** Booklight's two one-letter keywords, which a link or an app command of the user's may take, and the long keyword that then still works. */
+internal val LETTERS = mapOf("s" to "settings", "k" to "keys")
 
 /** Inside an editor the keys are Material's own, from field to field and to the buttons: its focus mark is the window's ring, drawn by Material. */
 private val RING_THEME = RippleThemeConfiguration(RippleThemeConfiguration.Focus.InsetRing(0.dp, 2.dp, 0.dp, 0.dp))
 
 /** The open editor's first field and its last button: Tab goes round between them and never out of the editor. And the page's state, which knows the field the keys were in. */
-private class Ends(val cs: CommandsState) { val first = FocusRequester(); val last = FocusRequester() }
-private val LocalEnds = compositionLocalOf<Ends?> { null }
+internal class Ends(val cs: CommandsState) { val first = FocusRequester(); val last = FocusRequester() }
+internal val LocalEnds = compositionLocalOf<Ends?> { null }
 
 /**
  * An editor opens under its row (a new item's at the end of its group) and closes back into it: the page makes
@@ -641,7 +665,7 @@ private fun EditorFrame(cs: CommandsState, corner: Dp, onEscape: () -> Unit, con
 
 /**
  * The Commands page's second pane (a window of 1332 dp or more). On the user's half: the editor of the link,
- * snippet, recipe or prompt that is open, under its name, while its row in the list is in the selection's
+ * snippet, recipe, prompt or app command that is open, under its name, while its row in the list is in the selection's
  * colour; it fades in and rises 12 dp; while nothing is open, a line that says what the pane is for. On the
  * built-in half: the panel with the example of the command the keys are on (the first one, until they are on
  * one), and under it that command's name.
@@ -683,7 +707,7 @@ fun CommandsSide(page: Page, app: BooklightApp, s: Settings, cs: CommandsState, 
  * in any field ([onSubmit]; a held key does not).
  */
 @Composable
-private fun Input(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, lines: Int = 1, hint: String = "", /** The editor's first field: it has the keys when the editor opens. */ first: Boolean = false, onSubmit: (() -> Unit)? = null) {
+internal fun Input(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, lines: Int = 1, hint: String = "", /** The editor's first field: it has the keys when the editor opens. */ first: Boolean = false, onSubmit: (() -> Unit)? = null) {
     val scheme = MaterialTheme.colorScheme
     val ends = LocalEnds.current
     val focus = remember(ends, first) { if (first && ends != null) ends.first else FocusRequester() }
@@ -722,7 +746,7 @@ private fun Input(label: String, value: String, onChange: (String) -> Unit, modi
 
 /** A line of help under an editor's fields, on the fields' text edge. */
 @Composable
-private fun Help(text: String, strong: Boolean = false, modifier: Modifier = Modifier) {
+internal fun Help(text: String, strong: Boolean = false, modifier: Modifier = Modifier) {
     Text(text, color = if (strong) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = modifier.padding(horizontal = 16.dp))
 }
 
@@ -732,7 +756,7 @@ private fun Help(text: String, strong: Boolean = false, modifier: Modifier = Mod
  * While Save cannot be pressed and something was typed, a line over the buttons says what is missing ([why]).
  */
 @Composable
-private fun Buttons(cs: CommandsState, why: Int?, onSave: () -> Unit, onDelete: (() -> Unit)?, onClose: () -> Unit) {
+internal fun Buttons(cs: CommandsState, why: Int?, onSave: () -> Unit, onDelete: (() -> Unit)?, onClose: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val ends = LocalEnds.current
@@ -758,6 +782,14 @@ private fun Buttons(cs: CommandsState, why: Int?, onSave: () -> Unit, onDelete: 
     }
 }
 
+/** What keeps an address from being saved, as the line over an editor's buttons says it; null if nothing does. */
+internal fun whyNot(why: Schemes.Why?): Int? = when (why) {
+    Schemes.Why.NONE -> R.string.win_why_scheme
+    Schemes.Why.REFUSED -> R.string.win_why_scheme_refused
+    Schemes.Why.EMPTY -> R.string.win_why_address_empty
+    null -> null
+}
+
 /** A link is a keyword nobody else has, a name and an address. What it holds while it is edited is the window's ([CommandsState.draft]). */
 @Composable
 private fun LinkEditor(cs: CommandsState, initial: SiteEntry?, taken: Set<String>, onSave: (SiteEntry) -> Unit, onDelete: (() -> Unit)?, onClose: () -> Unit) {
@@ -771,16 +803,17 @@ private fun LinkEditor(cs: CommandsState, initial: SiteEntry?, taken: Set<String
         ' ' in keyword -> R.string.win_why_space
         keyword.lowercase() in taken && !keyword.equals(initial?.keyword, ignoreCase = true) -> R.string.win_why_taken
         name.isBlank() -> R.string.win_why_name
-        !(url.startsWith("https://") || url.startsWith("http://")) || url.length <= 10 -> R.string.win_why_address
-        else -> null
+        // Any scheme will do (an app's own opens in that app), but for a few that are never a link.
+        else -> whyNot(Schemes.refused(url))
     }
-    val save = { if (why == null) onSave(SiteEntry(keyword, name.trim(), url)) }
+    val save = { if (why == null) onSave(SiteEntry(keyword, name.trim(), Schemes.tidy(url))) }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Input(stringResource(R.string.set_site_keyword), keyword, { cs.type("keyword", it.trim().take(16), was.keyword) }, Modifier.weight(1f), hint = "jira", first = true, onSubmit = save)
         Input(stringResource(R.string.set_site_name), name, { cs.type("name", it.take(40), was.name) }, Modifier.weight(2f), hint = "Jira", onSubmit = save)
     }
     Input(stringResource(R.string.win_link_address), url, { cs.type("url", it.trim(), was.url) }, hint = "https://example.com/browse/{argument}", onSubmit = save)
     Help(stringResource(R.string.win_link_help))
+    Help(stringResource(R.string.win_link_app))
     // A link may take one of Booklight's two letters; the long keyword still reaches what the letter did.
     LETTERS[keyword.lowercase()]?.let { long -> Help(stringResource(R.string.win_link_letter, keyword.lowercase(), long), strong = true) }
     Buttons(cs, why, save, onDelete, onClose)

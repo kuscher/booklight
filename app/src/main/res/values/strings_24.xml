@@ -67,7 +67,7 @@
     <!-- The Booklight window: where the key is set. -->
     <string name="set_flights">Flights</string>
     <string name="set_flight_key">Your AirLabs key</string>
-    <string name="set_flight_key_text">A flight number names its airline without any key. With a key of your own, the number you typed is sent with the key to AirLabs (airlabs.co) a moment after you stop typing, and the row answers with the times, the gate and the status. A pinned flight asks again until it has landed: every three hours, and every half hour from three hours before it leaves. The key is kept only on this device and goes to AirLabs alone.</string>
+    <string name="set_flight_key_text">With a key, a flight number’s row shows times, gate and status. The number goes to AirLabs (airlabs.co) when you pause typing; a pinned flight asks again until it has landed. The key stays on this device and goes only to AirLabs.</string>
     <string name="set_flight_key_hint">Paste the key here</string>
     <string name="set_flight_key_in">A key is in</string>
     <string name="set_flight_key_none">No key</string>

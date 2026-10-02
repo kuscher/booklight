@@ -1,9 +1,18 @@
 # Booklight: the next five, commands for other apps
 
-*2 October 2026. A plan from desk research; the test Googlebook was only asked which requests have an app that answers (intents.md, "Asked of the test Googlebook"). Nothing is built. It answers
+*2 October 2026. A plan from desk research. **Later that day: Alex said to build all five, and the device session was held** (intents.md, "Tried on a Googlebook"); what it changed is in the box below. It answers
 Alex's request: "Brainstorm the next 5 features. I want more features to control other apps, like I want to tell
 Spotify to play a certain song. Gemini does this through intents I think, so could we construct intents to send
 other apps?"*
+
+> **After the device session (2 October).** Spotify takes "play from search" in every mode and only shows its
+> search results; it never starts playing, and it refuses a media connection from an app it does not know. So
+> feature 1's row for Spotify reads **Search in Spotify** (decision 4), and its "second step" is dropped. New:
+> **a Spotify link plays** (`spotify:track:…`, or the address its Share gives), so a link of your own with a
+> keyword (feature 3) and a copied Spotify link are the way to "play exactly this". The per-app settings pages
+> of feature 5 all work, with battery use as a fourth. Feature 2's links work for Spotify, the Play Store and
+> the Googlebook's web apps (YouTube, YouTube Music, Meet). Built with every decision at its recommended answer,
+> except decision 10: all of feature 4 is built, each keyword shown only where an app answers it.
 
 **What it rests on.**
 - [intents.md](intents.md): the research. What one app can tell another on Android 14 to 17 with no new

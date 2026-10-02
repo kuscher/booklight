@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Reaching into other apps: an app's own pages in Settings, the Clock's lists, and the keywords that open an app with -->
+<!-- something filled in (go, meet, call, sms, wa, tg). Keyword lists are comma-separated; the German lists keep the English words. -->
+<resources>
+    <!-- An app's own pages in Settings: a word after the app's name ("spotify notifications") puts that page on its row and arms it. -->
+    <string name="page_notifications">Notifications</string>
+    <string name="page_language">Language</string>
+    <string name="page_defaults">Open by default</string>
+    <string name="page_battery">Battery use</string>
+    <string name="verb_notifications">notifications,notification</string>
+    <string name="verb_language">language,languages</string>
+    <string name="verb_defaults">defaults,default,open by default</string>
+    <string name="verb_battery">battery,battery use</string>
+
+    <!-- The Clock's two lists -->
+    <string name="cmd_alarms">All alarms</string>
+    <string name="cmd_alarms_words">alarms</string>
+    <string name="cmd_timers">All timers</string>
+    <string name="cmd_timers_words">timers</string>
+    <string name="cmd_clock_sub">The list in the Clock app</string>
+
+    <!-- Another app, with something filled in. Each keyword's row is a preview of what was understood; Booklight dials and sends nothing. -->
+    <!-- A caption has one line beside the row's actions: about 70 characters beside one action, about 55 beside two (go, call, a meeting by its code). -->
+    <string name="reach_from">From</string>
+    <string name="reach_to">To</string>
+    <string name="reach_by">By</string>
+    <string name="reach_code">Code</string>
+    <string name="action_open_chat">Open chat</string>
+    <string name="chat_about">A chat, with your text in its field</string>
+
+    <string name="go_keys">go,route,directions</string>
+    <string name="go_name">Directions</string>
+    <string name="go_hint">A place, or: from … to … by train</string>
+    <string name="go_about">The way there</string>
+    <string name="go_caption">Opens in Maps.</string>
+    <string name="go_caption_web">Opens Google Maps in your browser.</string>
+    <string name="go_here">Here</string>
+    <string name="action_directions">Directions</string>
+    <string name="travel_transit">Public transport</string>
+    <string name="travel_walk">On foot</string>
+    <string name="travel_bike">Bike</string>
+    <string name="travel_car">Car</string>
+
+    <string name="meet_keys" translatable="false">meet</string>
+    <string name="meet_name" translatable="false">Meet</string>
+    <string name="meet_title">Start or join a meeting</string>
+    <string name="meet_hint">A code to join, or nothing for a new meeting</string>
+    <string name="meet_about">A new one in Meet, or one by its code</string>
+    <string name="meet_caption_new">A new meeting. Opens in Meet.</string>
+    <string name="meet_caption_join">Opens this meeting in Meet. You join there.</string>
+    <string name="meet_caption_code">A meeting’s code looks like abc-defg-hij</string>
+    <string name="action_join">Join</string>
+
+    <string name="call_keys">call</string>
+    <string name="call_name">Call</string>
+    <string name="call_hint">A phone number</string>
+    <string name="call_about">The phone app, with the number filled in</string>
+    <string name="call_caption">Opens the phone app. You press call there.</string>
+    <string name="action_dial">Open phone</string>
+
+    <string name="sms_keys" translatable="false">sms</string>
+    <string name="sms_name" translatable="false">SMS</string>
+    <string name="sms_hint">A number, then your text</string>
+    <string name="sms_about">A text message, filled in</string>
+    <string name="sms_caption">New message. Opens in your messages app; nothing is sent.</string>
+
+    <string name="wa_keys" translatable="false">wa,whatsapp</string>
+    <string name="wa_name" translatable="false">WhatsApp</string>
+    <string name="wa_title">Write on WhatsApp</string>
+    <string name="wa_hint">A number with its country code, then your text</string>
+    <string name="wa_caption">Opens the WhatsApp chat with your text in it; nothing is sent.</string>
+    <string name="wa_caption_code">WhatsApp needs the country code: + and the code, then the number.</string>
+
+    <string name="tg_keys" translatable="false">tg,telegram</string>
+    <string name="tg_name" translatable="false">Telegram</string>
+    <string name="tg_title">Write on Telegram</string>
+    <string name="tg_hint">A user name or a number, then your text</string>
+    <string name="tg_caption">Opens the Telegram chat with your text in it; nothing is sent.</string>
+    <string name="tg_caption_who">A user name, or a number that starts with + and its country code.</string>
+</resources>

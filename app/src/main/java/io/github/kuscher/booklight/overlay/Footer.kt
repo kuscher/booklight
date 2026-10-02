@@ -90,7 +90,7 @@ fun Footer(model: OverlayModel) {
             grid != null -> "↑↓←→" to stringResource(R.string.hint_move)
             r?.body is Body.Level -> if ((r.body as Body.Level).locked) "" to "" else "← →" to stringResource(R.string.hint_adjust)
             r?.nudge != null -> "← →" to stringResource(R.string.hint_skip)
-            r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope -> "tab" to stringResource(R.string.hint_fill)
+            !model.inAnswer && r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope -> "tab" to stringResource(R.string.hint_fill)
             (r?.actions?.size ?: 0) > 1 -> "tab" to stringResource(R.string.hint_actions)
             model.chip != null && model.query.isEmpty() -> "⌫" to stringResource(R.string.hint_leave)
             else -> "" to ""
@@ -103,8 +103,10 @@ fun Footer(model: OverlayModel) {
                 }
             }
             Keycap("esc")
-            AnimatedContent(model.confirming, transitionSpec = { fadeIn(motion.fade(120)) togetherWith fadeOut(motion.fade(80)) }, label = "esc") { sure ->
-                Text(stringResource(if (sure) R.string.hint_cancel else R.string.hint_close), color = ink, style = HINT)
+            // What Escape does now: cancel a waiting confirmation, go back from an answer to the rows it was asked from, or close.
+            AnimatedContent(if (model.confirming) R.string.hint_cancel else if (model.escapeLeaves) R.string.hint_back else R.string.hint_close,
+                transitionSpec = { fadeIn(motion.fade(120)) togetherWith fadeOut(motion.fade(80)) }, label = "esc") { word ->
+                Text(stringResource(word), color = ink, style = HINT)
             }
         }
     }

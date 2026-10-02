@@ -169,20 +169,30 @@
     <string-array name="guide">
         <item>apps|open|open||chrome|Apps|Type a name; the icons on its row are what else it can do</item>
         <item>places|open|left||chrome left|An app, in a place|left, right third, top left, full… for an app that is not open yet</item>
+        <item>pages|open|settings||chrome notifications|An app’s own settings|notifications, language, defaults or battery after an app’s name: that page of it in Settings</item>
         <item>commands|open|bolt||{command}|What other apps offer|Their own shortcuts and commands, as rows</item>
+        <item>appsearch|open|search||{appsearch}|Search inside an app|An app’s name, then what to look for: Enter lands on its results. Also Search, behind the arrow on the app’s row</item>
         <item>settings|open|settings|settings|s wifi|Settings|s, then Tab: every settings page</item>
         <item>keys|open|key|keys|k snap|Keyboard shortcuts|k, then Tab: what the system’s keys do</item>
         <item>links|open|search||{link}|Your links|A keyword, then what to search for</item>
+        <item>own|open|open||{own}|Your app commands|A keyword of yours asks another app: to open a link of its own, to search, to take a text</item>
         <item>web|open|globe||weather berlin|The web|The last row searches for what you typed</item>
+        <item>go|open|directions|go|go hamburg hbf|Directions|The way there. Both ends, and how: go berlin to hamburg by train</item>
+        <item>meet|open|video|meet|meet |Meet|A new meeting; with a meeting’s code (abc-defg-hij), that one</item>
+        <item>call|open|phone|call|call +49 30 23125 123|Call|The phone app with the number in it; you press call there</item>
         <item>note|write|note|note|note buy milk|Note|A dated line in Notes.md</item>
         <item>notes|write|note|notes|notes milk|Find a note|Lines of Notes.md, newest first</item>
         <item>todo|write|check|todo|todo call the bank|To-do|A task for Todo.md; todo alone shows what is open</item>
         <item>mail|write|mail|mail|mail anna@example.com Lunch? / See you at 1|Mail|The compose window, filled in</item>
+        <item>sms|write|chat|sms|sms +49 30 23125 123 running late|SMS|The messages app, filled in; nothing is sent</item>
+        <item>wa|write|chat|wa|wa +49 30 23125 123 running late|WhatsApp|The chat with that number, your text in its field; nothing is sent</item>
+        <item>tg|write|chat|tg|tg anna on my way|Telegram|The chat with that user name, or a number, your text in its field; nothing is sent</item>
         <item>event|write|event|event|event Fri 3pm Dentist|Event|The calendar’s editor, filled in</item>
         <item>remind|write|bell|remind|remind 5pm call the bank|Reminder|A timer, an alarm or an event, depending on when</item>
         <item>new|write|plus|new|new doc Q3 plan|New|A file, a folder, a doc, a sheet or slides</item>
         <item>timer|time|timer|timer|timer 10m tea|Timer|The Clock starts it; Start and pin keeps the countdown on top</item>
         <item>alarm|time|bell|alarm|alarm 7:30 gym|Alarm|The Clock sets it</item>
+        <item>alarms|time|bell||alarms|Alarms and timers|alarms and timers open the Clock’s two lists</item>
         <item>sums|answers|calc||12*3.5|Sums|Enter copies the answer</item>
         <item>color|answers|edit||#3478f6|Colours|The same colour in HEX, RGB, HSL and OKLCH, each to copy</item>
         <item>password|answers|key||password 20|Passwords|A new one each time</item>
@@ -199,8 +209,9 @@
         <item>pin|text|pin|pin|pin gate B22, 14:05|Pin|A line in a small window that stays on top</item>
         <item>vol|controls|volume|vol|vol 30|Volume|Or the arrow keys on its row</item>
         <item>brightness|controls|sun|brightness|brightness 60|Brightness|Or the arrow keys on its row</item>
-        <item>play|controls|music|play|play lofi|Play|Asks the music app</item>
-        <item>window|booklight|booklight||booklight|Booklight’s window|Settings, and your links, snippets, recipes and prompts</item>
+        <item>play|controls|music|play|play lofi|Play|A music app plays it or shows its results. Also: play album …, play … on spotify; play alone resumes</item>
+        <item>media|controls|pause||pause|Media keys|pause, play, stop, next, previous: for whatever is playing</item>
+        <item>window|booklight|booklight||booklight|Booklight’s window|Settings, and your links, snippets, recipes, prompts and app commands</item>
     </string-array>
 
     <!-- Tips -->
@@ -215,18 +226,22 @@
     <string-array name="tips">
         <item>help|list|?|Everything|lists all that Booklight does, each with an example to try</item>
         <item>places|left|chrome left|An app, in a place|opens Chrome in the left half if it is not open yet. Also: top left, full</item>
+        <item>appsearch|search|{appsearch}|Search inside an app|opens the app on its results. An app’s name, then what to look for</item>
         <item>settings|settings|s wifi|Settings|goes to a settings page. s, Tab, then its name</item>
         <item>keys|key|k snap|Keyboard shortcuts|shows the keys for it. k, Tab, then what you want to do</item>
+        <item>pages|settings|chrome notifications|An app’s own settings|opens its page in Settings. Also: language, defaults, battery</item>
         <item>todo|check|todo call the bank|To-do|adds a task to Todo.md. todo alone shows what is open</item>
         <item>prompts|spark|{prompt}|Prompts|is corrected on this device, or handed to Gemini where it cannot be</item>
         <item>pin|pin|pin gate B22, 14:05|Pin|keeps a line in a small window on top of the others</item>
         <item>timer|timer|timer 10m tea|Timer|starts a timer in the Clock. Start and pin keeps the countdown in view</item>
         <item>note|note|note buy milk|Note|adds a dated line to Notes.md</item>
+        <item>go|directions|go hamburg hbf|Directions|opens the way there. Also: go berlin to hamburg by train</item>
         <item>clip|clip|clip |Clipboard|shows what you copied and what can be done with it</item>
         <item>tr|spark|tr danish see you on Saturday|Translate|is written in Danish on this device. Most languages work</item>
         <item>sums|calc|12*3.5|Sums|is answered as you type. Enter copies</item>
         <item>emoji|smile|emoji party|Emoji|shows a grid to pick from. Enter copies</item>
         <item>flight|plane|LH455|A flight number|names the airline; Enter opens the flight’s page. Times need an AirLabs key</item>
+        <item>play|music|play artist daft punk|Play|asks your music app. End with “on” and an app’s name to choose which</item>
     </string-array>
 
     <!-- The Booklight window: its sections -->

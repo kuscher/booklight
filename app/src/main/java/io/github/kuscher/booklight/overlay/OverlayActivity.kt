@@ -1,5 +1,6 @@
 package io.github.kuscher.booklight.overlay
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -7,12 +8,16 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.setContent
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -116,7 +121,7 @@ class OverlayActivity : ComponentActivity() {
         take(intent)
         placeWindow()
 
-        setContent {
+        val content = ComposeView(this).apply { setContent {
             BooklightTheme(dark, tint = settings.tint) {
                 CompositionLocalProvider(LocalMotion provides motion) {
                     BackHandler { close() }
@@ -127,7 +132,8 @@ class OverlayActivity : ComponentActivity() {
                     )
                 }
             }
-        }
+        } }
+        setContentView(KeysFirst(this, content))
         // A row of the window's Commands page: Booklight types its example, once the panel has opened.
         app.example?.let { text ->
             app.example = null; model.guided = true
@@ -327,7 +333,9 @@ class OverlayActivity : ComponentActivity() {
         // A pinned text exists nowhere else: when another pin takes its place, the footer says which one went.
         fun pins(e: Effect): Boolean = e is Effect.Pin || (e is Effect.Steps && e.steps.any(::pins))
         val replaced = app.pinned.value?.takeIf { it.kind == "text" && pins(a.effect) }?.title(this)?.let { getString(R.string.pin_replaced, if (it.length > 24) it.take(23) + "…" else it) }
-        if (!app.executor.run(a.effect, this)) { say(getString(R.string.failed), bad = true); return }
+        // The row stays, and the footer says why. A link's address, or what another app was asked for, found nobody to open it
+        // (an app's own address is no browser's business).
+        if (!app.executor.run(a.effect, this)) { say(getString(if (a.effect is Effect.OpenUrl || a.effect is Effect.Open) R.string.failed_open else R.string.failed), bad = true); return }
         // Asking for a grant runs nothing yet: what was typed (the first note) is kept, in case the picker is cancelled.
         ran = a.effect !is Effect.Grant
         // What counts as a run: opening it, or doing its thing. Not looking at its details, changing it or removing it:
@@ -398,8 +406,8 @@ class OverlayActivity : ComponentActivity() {
     }
 
     companion object {
-        /** Actions that do not count as running the thing: App info, Edit, Delete (and whatever is marked as removing). */
-        private val NOT_A_RUN = setOf("info", "edit", "delete")
+        /** Actions that do not count as running the thing: App info and the app's other pages in Settings, Edit, Delete (and whatever is marked as removing). */
+        private val NOT_A_RUN = setOf("info", "edit", "delete") + io.github.kuscher.booklight.providers.AppPages.ids
         const val EXTRA_STAY = "stay"
         const val EXTRA_DARK = "dark"
         /** Who starts the launcher activity with a button of their own that says "Open". */
@@ -413,3 +421,29 @@ class OverlayActivity : ComponentActivity() {
         var current: WeakReference<OverlayActivity> = WeakReference(null)
     }
 }
+
+/**
+ * The panel's content, in a view that takes a typed key before the input method does. On a Googlebook every key of
+ * the keyboard goes to the input method first, which hands the letter back as text a moment later. When the panel
+ * changes the field's text itself in that moment (a keyword becomes the chip), the input method is started anew and
+ * the letter it was still holding is lost, or lands after the next one: "fix teh" arrived as "fix eh" and as "fix
+ * eth". So keys that print, Space and Backspace go straight to the field, where each is in the text before the next
+ * is looked at. Keys with Ctrl, Alt or the Action key are left to the input method, and so is all typing in a
+ * language that is put together by the input method itself ([COMPOSED]).
+ */
+private class KeysFirst(context: Context, private val content: View) : FrameLayout(context) {
+    private val composed = context.getSystemService(InputMethodManager::class.java)?.currentInputMethodSubtype?.languageTag.orEmpty().substringBefore('-').lowercase() in COMPOSED
+
+    init { addView(content) }
+
+    override fun dispatchKeyEventPreIme(e: KeyEvent): Boolean {
+        val plain = !e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed
+        // Only a key that prints something as it is pressed now (a number-pad key with Num Lock off is an arrow), and only if
+        // the field took it: what nobody took goes the usual way, and keeps what the system makes of it.
+        if (plain && !composed && (e.unicodeChar != 0 || e.keyCode == KeyEvent.KEYCODE_DEL) && content.dispatchKeyEvent(e)) return true
+        return super.dispatchKeyEventPreIme(e)
+    }
+}
+
+/** Languages whose text the input method puts together from several keys: their typing must go through it. */
+private val COMPOSED = setOf("zh", "ja", "ko", "vi", "hi", "bn", "mr", "ta", "te", "kn", "ml", "gu", "pa", "ne", "si", "th", "km", "lo", "my")

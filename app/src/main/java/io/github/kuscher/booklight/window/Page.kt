@@ -1,5 +1,6 @@
 package io.github.kuscher.booklight.window
 
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.graphics.Shape
@@ -200,6 +201,9 @@ class RowAction(val label: String, val danger: Boolean = false, val run: () -> U
  * row's. The whole row is one target for the pointer: hover and press are Material's own. It is one stop for
  * the keys: when they are on it the window's ring is round it and it takes Material's focused shape.
  */
+/** The widest a row's second text gets: where a page's lead ends. */
+private val MEASURE = 564.dp
+
 @Composable
 fun PageRow(
     page: Page, key: String, title: String, subtitle: String? = null,
@@ -282,7 +286,8 @@ fun PageRow(
     // second child kept the old last baseline (seen on the Lenovo: after the rail had closed, every command's row stayed
     // 88 dp high, because for a few frames of that its example had stood under its text).
     val supporting: (@Composable () -> Unit)? = if (subtitle == null && below == null) null else ({
-        val line: @Composable () -> Unit = { subtitle?.let { Text(it, maxLines = if (lines > 0) lines else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis) } }
+        // (Never wider than a page's lead: a line of a hundred characters is hard to read back from.)
+        val line: @Composable () -> Unit = { subtitle?.let { Text(it, maxLines = if (lines > 0) lines else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = MEASURE)) } }
         if (below == null) line() else Column { line(); below() }
     })
     val name: @Composable () -> Unit = {

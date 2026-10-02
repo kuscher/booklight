@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Suchen in einer App: „spotify daft punk“, oder „Suchen“ hinter dem Pfeil in der Zeile der App. -->
+    <string name="app_search_title">In %1$s nach „%2$s“ suchen</string>
+    <string name="guide_search_text">jazz</string>
+</resources>

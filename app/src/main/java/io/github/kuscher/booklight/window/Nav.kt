@@ -1,5 +1,10 @@
 package io.github.kuscher.booklight.window
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -67,12 +72,16 @@ enum class Part(val id: String, val symbol: String, val title: Int) {
     COMMANDS("commands", "list", R.string.nav_commands),
     LOOK("look", "palette", R.string.nav_look),
     RESULTS("results", "search", R.string.nav_results),
+    LABS("labs", "labs", R.string.nav_labs),
     PRIVACY("privacy", "lock", R.string.nav_privacy);
 
     companion object {
         fun of(id: String?) = entries.firstOrNull { it.id == id }
     }
 }
+
+/** The room a section's name keeps to its neighbour's in the bar. */
+private val NAME_GAP = 8.dp
 
 /** The rail's two widths (Material's own). */
 val RAIL_COLLAPSED = 96.dp
@@ -175,15 +184,25 @@ fun Rail(nav: NavState, current: Part, expanded: Boolean, /** A small dot on Sta
 @Composable
 fun Bar(nav: NavState, current: Part, dot: Boolean, onPick: (Part) -> Unit, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
-    Box(modifier.fillMaxWidth()) {
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        // Six names stand side by side only where the widest of them has its room in one item (in German "Datenschutz" and
+        // "Ergebnisse" need the most). In a narrower window none is written: marks and the indicator only, every mark on one line.
+        val measurer = rememberTextMeasurer()
+        val style = MaterialTheme.typography.labelMedium
+        val names = Part.entries.map { stringResource(it.title) }
+        val widest = remember(names, style, density.density, density.fontScale) { names.maxOf { measurer.measure(it, style, maxLines = 1).size.width } }
+        val all = with(density) { (maxWidth / Part.entries.size).toPx() } >= widest + with(density) { NAME_GAP.toPx() }
         Indicator(nav, current, Modifier.matchParentSize())
         ShortNavigationBar(containerColor = Color.Transparent, contentColor = scheme.onSurface, windowInsets = WindowInsets(0, 0, 0, 0)) {
             for (p in Part.entries) {
                 ShortNavigationBarItem(
                     selected = p == current, onClick = { onPick(p) },
-                    icon = { Mark(p, nav, dot) }, label = { Name(p, nav, bar = true) },
+                    icon = { Mark(p, nav, dot) },
+                    label = if (all) ({ Name(p, nav, bar = true) }) else null,
                     colors = ShortNavigationBarItemDefaults.colors(selectedIndicatorColor = Color.Transparent),
-                    modifier = Modifier.focusProperties { canFocus = false },
+                    // (Without its name under it, the mark still says which section it is to a screen reader.)
+                    modifier = Modifier.focusProperties { canFocus = false }.then(if (all) Modifier else Modifier.semantics { contentDescription = names[p.ordinal] }),
                 )
             }
         }

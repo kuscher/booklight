@@ -111,7 +111,7 @@ import kotlinx.coroutines.launch
  * top edge.
  */
 class MainActivity : ComponentActivity() {
-    /** What the panel asked to be edited (`snippet`, `quicklink`, `recipe`, `prompt`) and which one; consumed by the page. */
+    /** What the panel asked to be edited (`snippet`, `quicklink`, `recipe`, `prompt`, `appcommand`) and which one; consumed by the page. */
     private var edit by mutableStateOf<Pair<String, String>?>(null)
     /** The section the panel asked for ("All commands"); consumed by the window. */
     private var goto by mutableStateOf<String?>(null)
@@ -186,9 +186,11 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_EDIT = "edit"
         const val EXTRA_ID = "id"
-        /** Which section to open at: `commands`; [PAGE_FLIGHTS] is Results, on the row where the flight service's key is set. */
+        /** Which section to open at: `commands`; [PAGE_FLIGHTS] is Labs, on the row where the flight service's key is set. */
         const val EXTRA_PAGE = "page"
         const val PAGE_FLIGHTS = "flights"
+        /** The same for the row where the key for Spotify is set: it opens wherever the flight key's row does. */
+        const val PAGE_SONGS = "songs"
         const val PRIVACY_URL = "https://googlebook.studio/privacy/booklight"
         /** The window that is open, for pictures of it (debug builds). */
         var current: java.lang.ref.WeakReference<MainActivity> = java.lang.ref.WeakReference(null)
@@ -213,7 +215,7 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
      * The section the rail says is open, and the one whose page is on screen: the page follows a moment later. The
      * window opens on the section it was left on (a first run: Start), unless the panel asked for one.
      */
-    var part by remember { mutableStateOf(Part.of(goto) ?: if (goto == MainActivity.PAGE_FLIGHTS) Part.RESULTS else if (edit != null) Part.COMMANDS else Part.of(s.windowPart) ?: Part.START) }
+    var part by remember { mutableStateOf(Part.of(goto) ?: if (goto == MainActivity.PAGE_FLIGHTS || goto == MainActivity.PAGE_SONGS) Part.LABS else if (edit != null) Part.COMMANDS else Part.of(s.windowPart) ?: Part.START) }
     var shown by remember { mutableStateOf(part) }
     val rail = remember { NavState(part, bar = false) }
     val bar = remember { NavState(part, bar = true) }
@@ -270,8 +272,9 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
     // The panel's two ways in. "All commands": the Commands section, built in, with the keys in Find. "Edit…": the
     // Commands section on the user's own, with that item's editor open (the page does that part).
     LaunchedEffect(goto) {
-        // "Set up times" on a flight's row: Results, with the keys on the row where the key goes.
-        if (goto == MainActivity.PAGE_FLIGHTS) { picked[Part.RESULTS] = FLIGHT_KEY_ROW; landing = true; go(Part.RESULTS); inNav = false; entering = true; byKeys = true; onGone(); return@LaunchedEffect }
+        // "Set up times" on a flight's row: Labs, with the keys on the row where the key goes.
+        // "Set up playing" on the row of `play`: the same, on the row where Spotify's key goes.
+        if (goto == MainActivity.PAGE_FLIGHTS || goto == MainActivity.PAGE_SONGS) { picked[Part.LABS] = if (goto == MainActivity.PAGE_SONGS) SONG_KEY_ROW else FLIGHT_KEY_ROW; landing = true; go(Part.LABS); inNav = false; entering = true; byKeys = true; onGone(); return@LaunchedEffect }
         val to = Part.of(goto) ?: return@LaunchedEffect
         go(to); inNav = false
         if (to == Part.COMMANDS) { commands.yours = false; commands.ask = true } else entering = true
@@ -515,7 +518,8 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                                         Part.COMMANDS -> CommandsPage(page, app, s, commands, edit, onEdited, onTyping = { editing = it; if (!it) focus.requestFocus() }, onGrow = ::follow, arrive, from)
                                         Part.LOOK -> LookPage(page, s, app, arrive, from)
                                         // (Guarded: the page says "no field has the keys" once more as the window closes, when nothing can take them.)
-                                        Part.RESULTS -> ResultsPage(page, app, s, arrive, from, onTyping = { editing = it; if (!it) runCatching { focus.requestFocus() } })
+                                        Part.RESULTS -> ResultsPage(page, app, s, arrive, from)
+                                        Part.LABS -> LabsPage(page, app, arrive, from, onTyping = { editing = it; if (!it) runCatching { focus.requestFocus() } })
                                         Part.PRIVACY -> PrivacyPage(page, app, resumed, arrive, from)
                                     }
                                 }
@@ -568,7 +572,8 @@ private val DIGITS = listOf(Key.One, Key.Two, Key.Three, Key.Four, Key.Five, Key
 @Composable
 private fun lead(p: Part, yours: Boolean): String? = when (p) {
     Part.START -> stringResource(R.string.win_lead)
-    Part.COMMANDS -> stringResource(if (yours) R.string.win_commands_text else R.string.win_commands_lead)
+    Part.COMMANDS -> stringResource(if (yours) R.string.win_yours_lead else R.string.win_commands_lead)
+    Part.LABS -> stringResource(R.string.win_labs_lead)
     Part.PRIVACY -> stringResource(R.string.win_privacy_lead)
     else -> null
 }

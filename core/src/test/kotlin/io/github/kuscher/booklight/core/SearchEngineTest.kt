@@ -305,4 +305,61 @@ class SearchEngineTest {
         assertEquals("setting:wifi", SearchEngine(listOf(page), History(), scopes = { listOf(scope(false)) }).search(Query("wifi")).first().id)
         assertEquals("scope:ext:wifi", SearchEngine(listOf(page), History(), scopes = { listOf(scope(true)) }).search(Query("wifi")).first().id)
     }
+
+    /** A search inside an app, as the app makes its rows: for each of [names] that starts the text, a row under every local match. */
+    private class InApps(private val names: List<String>) : Provider {
+        override val id = SearchEngine.COMMANDS
+        override suspend fun query(q: Query) = AppSearch.readings(q.text).flatMap { r ->
+            names.filter { Matcher.fold(it) == r.name }.map { n ->
+                Result(SearchEngine.IN_APP + n, id, Kind.COMMAND, "Search $n for ${r.text}", icon = Icon.Symbol("app"), score = 0.02 + r.name.length * 0.0001,
+                    actions = listOf(Action("search", "Search", Effect.Open(n, "intent:#Intent;end"))), learnable = false, label = n)
+            }
+        }
+    }
+
+    private fun searched(vararg scopes: Scope) = SearchEngine(
+        listOf(Names(listOf("Spotify", "Spotify Desktop", "Google", "Google Maps", "Google Meet", "YouTube", "YouTube Music", "YT Music", "Maps", "Play Store"), ::app), web,
+            InApps(listOf("Spotify", "Google", "YouTube", "YouTube Music", "YT Music", "Maps", "Play Store"))),
+        History(), clock = { 1000 }, scopes = { scopes.toList() },
+        fallback = { text -> listOf(Result("web:search", "web", Kind.WEB, "Search for $text", icon = Icon.Symbol("search"), score = 0.1,
+            actions = listOf(Action("search", "Search", Effect.OpenUrl(Engines.default.search(text)))), learnable = false)) },
+    )
+
+    @Test fun `a search inside an app is the first row when nothing else matches`() = runTest {
+        assertEquals(listOf("Search Spotify for daft punk", "Search the web"), searched().search(Query("spotify daft punk")).map { it.title })
+        // Both readings of a name of two words, the longer name first.
+        assertEquals(listOf("Search YouTube Music for daft punk", "Search YouTube for music daft punk", "Search the web"), searched().search(Query("youtube music daft punk")).map { it.title })
+    }
+
+    @Test fun `a search inside an app never stands above a local match`() = runTest {
+        // An app whose name is the whole text is still row one, on every letter of the way.
+        assertEquals(listOf("app:Spotify Desktop", "appsearch:Spotify", "web:search"), searched().search(Query("spotify d")).map { it.id })
+        assertEquals(listOf("app:Google Maps", "app:Google Meet", "appsearch:Google", "web:search"), searched().search(Query("google m")).map { it.id })
+        assertEquals(listOf("app:Google Maps", "appsearch:Google", "web:search"), searched().search(Query("google maps")).map { it.id })
+        // The name alone, with or without a space after it, is the app.
+        assertEquals(listOf("app:Spotify", "app:Spotify Desktop", "web:search"), searched().search(Query("spotify ")).map { it.id })
+        // Not even once it has been run for that very text: it is the text itself, and nothing is learned from it.
+        val history = History()
+        val e = SearchEngine(listOf(Names(listOf("Google Maps"), ::app), web, InApps(listOf("Google"))), history, clock = { 1000 })
+        val row = e.search(Query("google m")).first { it.id == "appsearch:Google" }
+        repeat(5) { e.picked(Query("google m"), row) }
+        assertEquals("app:Google Maps", e.search(Query("google m")).first().id)
+    }
+
+    @Test fun `under a keyword's chip an app's name that goes on into the text is searched first`() = runTest {
+        val yt = Words("yt", listOf("yt"), "YouTube")
+        val play = Words("play", listOf("play"), "Play")
+        val maps = Words("maps", listOf("maps"), "Maps")
+        val e = searched(yt, play, maps)
+        // "yt music daft punk": YT Music is an app, and "daft punk" is looked for there before YouTube is searched for all of it.
+        assertEquals(listOf("appsearch:YT Music", "yt:first", "yt:second", "web:search"), e.search(Query("music daft punk", scope = "yt", keyword = "yt")).map { it.id })
+        assertEquals(listOf("appsearch:Play Store", "play:first", "play:second", "web:search"), e.search(Query("store calculator", scope = "play", keyword = "play")).map { it.id })
+        // The name alone is the app, as before; and then its search.
+        assertEquals("app:YT Music", e.search(Query("music", scope = "yt", keyword = "yt")).first().id)
+        // An app called what the keyword is called: the keyword was typed, and its scope answers.
+        assertEquals(listOf("maps:first", "maps:second", "web:search"), e.search(Query("coffee", scope = "maps", keyword = "maps")).map { it.id })
+        assertEquals(listOf("maps:first", "maps:second", "web:search"), e.search(Query("coffee", scope = "maps", keyword = "MAPS")).map { it.id })
+        // A chip that was entered from its row: no word of a name was typed, and the scope answers.
+        assertEquals(listOf("yt:first", "yt:second", "web:search"), e.search(Query("music daft punk", scope = "yt")).map { it.id })
+    }
 }

@@ -1,0 +1,665 @@
+<title>Rubber highlight</title>
+<style>
+  /* Layout: one column as wide as the panel (720) plus its desk; controls above the panel, the last move drawn under it, the numbers last. */
+  :root {
+    --bg: #F3F3FA; --surface: #FFFFFF; --line: rgba(23,28,43,0.12);
+    --ink: #171C2B; --ink-2: rgba(23,28,43,0.74); --ink-3: rgba(23,28,43,0.58);
+    --accent: #3A5BA9; --seg: rgba(23,28,43,0.07); --seg-on: #FFFFFF; --seg-shadow: rgba(23,28,43,0.16);
+    /* the desk behind the panel: a wallpaper, a white page and a dark terminal (the two windows are the same in both looks) */
+    --desk-a: #B7C6EA; --desk-b: #E6D2E6; --paper: #FFFFFF; --paper-line: #C9CEDA; --term: #14161C; --term-line: #4E5566; --dim: rgba(0,0,0,0.10);
+    /* the panel: Booklight's own values */
+    --veil: rgba(255,255,255,0.42); --outline: rgba(255,255,255,0.80); --hair: rgba(0,0,0,0.20); --shade: rgba(0,0,0,0.24);
+    --pill: rgba(195,210,250,0.78); --pill-rim: rgba(255,255,255,0.55);
+    --pane: rgba(255,255,255,0.62); --pane-hair: rgba(23,28,43,0.20);
+    --disc: rgba(23,28,43,0.08); --cap: rgba(23,28,43,0.10); --caret: #3A5BA9;
+    /* the graph */
+    --band: rgba(132,158,232,0.42); --grid: rgba(23,28,43,0.10); --mark: rgba(23,28,43,0.38);
+    --mask-on: #000;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --slow: 1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1117; --surface: #191B23; --line: rgba(227,230,242,0.14);
+      --ink: #E3E6F2; --ink-2: rgba(227,230,242,0.76); --ink-3: rgba(227,230,242,0.58);
+      --accent: #AFC6FF; --seg: rgba(227,230,242,0.09); --seg-on: #33353D; --seg-shadow: rgba(0,0,0,0.5);
+      --desk-a: #1B2440; --desk-b: #3A2A45; --dim: rgba(0,0,0,0.22);
+      --veil: rgba(14,16,22,0.50); --outline: rgba(255,255,255,0.44); --hair: rgba(0,0,0,0.28); --shade: rgba(0,0,0,0.34);
+      --pill: rgba(51,69,111,0.42); --pill-rim: rgba(255,255,255,0.30);
+      --pane: rgba(14,16,22,0.36); --pane-hair: rgba(227,230,242,0.20);
+      --disc: rgba(227,230,242,0.12); --cap: rgba(227,230,242,0.14); --caret: #AFC6FF;
+      --band: rgba(110,138,214,0.46); --grid: rgba(227,230,242,0.12); --mark: rgba(227,230,242,0.42);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1117; --surface: #191B23; --line: rgba(227,230,242,0.14);
+    --ink: #E3E6F2; --ink-2: rgba(227,230,242,0.76); --ink-3: rgba(227,230,242,0.58);
+    --accent: #AFC6FF; --seg: rgba(227,230,242,0.09); --seg-on: #33353D; --seg-shadow: rgba(0,0,0,0.5);
+    --desk-a: #1B2440; --desk-b: #3A2A45; --dim: rgba(0,0,0,0.22);
+    --veil: rgba(14,16,22,0.50); --outline: rgba(255,255,255,0.44); --hair: rgba(0,0,0,0.28); --shade: rgba(0,0,0,0.34);
+    --pill: rgba(51,69,111,0.42); --pill-rim: rgba(255,255,255,0.30);
+    --pane: rgba(14,16,22,0.36); --pane-hair: rgba(227,230,242,0.20);
+    --disc: rgba(227,230,242,0.12); --cap: rgba(227,230,242,0.14); --caret: #AFC6FF;
+    --band: rgba(110,138,214,0.46); --grid: rgba(227,230,242,0.12); --mark: rgba(227,230,242,0.42);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; margin: 0; }
+  .page { max-width: 816px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 64px; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-size: 28px; line-height: 1.15; font-weight: 650; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  h2 { font-size: 17px; line-height: 1.3; font-weight: 650; margin: 0; }
+  p { margin: 0; }
+  .lead { color: var(--ink-2); max-width: 62ch; }
+  .head { display: flex; flex-direction: column; gap: 8px; }
+
+  /* controls */
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-end; }
+  .control { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .control > span { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+  .seg { display: inline-flex; background: var(--seg); border-radius: 12px; padding: 3px; gap: 2px; }
+  .seg button { font: inherit; font-size: 14px; font-weight: 600; color: var(--ink-2); background: none; border: 0; border-radius: 9px; padding: 7px 14px; cursor: pointer; min-width: 44px; }
+  .seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--ink); box-shadow: 0 1px 3px var(--seg-shadow); }
+  .seg button:focus-visible, .plain:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .what { color: var(--ink-2); min-height: 4.5em; max-width: 68ch; }
+  .what b { color: var(--ink); font-weight: 650; }
+  .prose { color: var(--ink-2); max-width: 68ch; }
+  .plain { font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: var(--seg); border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+  .tryrow { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; color: var(--ink-2); }
+  .still-note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; color: var(--ink-2); }
+
+  /* the desk and the panel */
+  .desk { position: relative; border-radius: 20px; overflow: hidden; padding: 36px 32px 44px; background: linear-gradient(135deg, var(--desk-a), var(--desk-b)); }
+  .win { position: absolute; border-radius: 12px; overflow: hidden; }
+  .win.paper { left: -24px; top: 22px; bottom: -30px; width: 52%; background: var(--paper); padding: 34px 28px 0 84px; display: flex; flex-direction: column; gap: 15px; }
+  .win.paper i { display: block; height: 9px; border-radius: 5px; background: var(--paper-line); }
+  .win.term { right: -24px; top: 64px; bottom: 18px; width: 50%; background: var(--term); padding: 30px 24px; display: flex; flex-direction: column; gap: 13px; }
+  .win.term i { display: block; height: 7px; border-radius: 4px; background: var(--term-line); }
+  .desk::after { content: ""; position: absolute; inset: 0; background: var(--dim); pointer-events: none; }
+  .panel { position: relative; z-index: 1; width: 100%; max-width: 720px; margin: 0 auto; border-radius: 32px; background: var(--veil);
+    -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px);
+    box-shadow: 0 0 0 1px var(--hair), inset 0 0 0 1.25px var(--outline), 0 28px 64px var(--shade); color: var(--ink); }
+  .field { height: 68px; padding: 0 20px; display: flex; align-items: center; }
+  .field .mark { width: 36px; height: 36px; display: grid; place-items: center; flex: none; opacity: 0.8; }
+  .field .typed { margin-left: 16px; font-size: 24px; font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 2px; }
+  .field .caret { width: 2px; height: 28px; background: var(--caret); border-radius: 1px; }
+  .list { position: relative; margin: 8px 8px 0; border-radius: 24px; outline: none; cursor: default; -webkit-tap-highlight-color: transparent; }
+  .list:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .pill { position: absolute; left: 0; right: 0; top: 0; height: 56px; border-radius: 24px; background: var(--pill); box-shadow: inset 0 0 0 1px var(--pill-rim); will-change: transform, height; pointer-events: none; }
+  .row { position: relative; display: flex; align-items: center; padding: 0 12px; border-radius: 24px; user-select: none; -webkit-user-select: none; }
+  .disc { width: 36px; height: 36px; border-radius: 50%; background: var(--disc); display: grid; place-items: center; flex: none; transition: transform calc(220ms * var(--slow)) cubic-bezier(0.3, 1.5, 0.5, 1); }
+  .disc.high { align-self: flex-start; margin-top: 28px; }
+  .row.on .disc { transform: scale(1.06); }
+  .dim { opacity: 0.8; transition: opacity calc(120ms * var(--slow)) cubic-bezier(0.4, 0, 0.2, 1); }
+  .row.on .dim { opacity: 1; }
+  .text { flex: 1; min-width: 0; margin-left: 16px; display: flex; flex-direction: column; -webkit-mask-image: linear-gradient(to right, var(--mask-on) calc(100% - 24px), transparent); mask-image: linear-gradient(to right, var(--mask-on) calc(100% - 24px), transparent); }
+  .title { font-size: 17px; font-weight: 500; line-height: 22px; white-space: nowrap; }
+  .small { font-size: 14px; font-weight: 500; letter-spacing: 0.1px; line-height: 20px; white-space: nowrap; }
+  .slots { display: flex; gap: 20px; white-space: nowrap; }
+  .slots > span:first-child { min-width: 176px; }
+  .slots em { font-style: normal; font-size: 12px; font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; margin-right: 8px; }
+  .slots b { font-size: 17px; font-weight: 500; line-height: 26px; font-variant-numeric: tabular-nums; }
+  .end { flex: none; margin-left: 12px; display: grid; justify-items: end; align-items: center; }
+  .end > * { grid-area: 1 / 1; }
+  .kind { font-size: 14px; font-weight: 500; letter-spacing: 0.1px; opacity: 0.8; transition: opacity calc(110ms * var(--slow)) cubic-bezier(0.4, 0, 0.2, 1); }
+  .row.on .kind { opacity: 0; transition-duration: calc(60ms * var(--slow)); }
+  .strip { opacity: 0; transform: translateX(12px); transition: opacity calc(60ms * var(--slow)) cubic-bezier(0.4, 0, 0.2, 1), transform 0s calc(60ms * var(--slow)); }
+  .row.on .strip { opacity: 1; transform: none; transition: opacity calc(110ms * var(--slow)) cubic-bezier(0.4, 0, 0.2, 1) calc(60ms * var(--slow)), transform calc(260ms * var(--slow)) cubic-bezier(0.2, 0.9, 0.2, 1) calc(60ms * var(--slow)); }
+  .pane { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 14px; border-radius: 16px; background: var(--pane); box-shadow: inset 0 0 0 1px var(--pill-rim), 0 0 0 1px var(--pane-hair); font-size: 14px; font-weight: 600; letter-spacing: 0.1px; white-space: nowrap; }
+  .foot { height: 44px; padding: 0 20px; display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; font-weight: 500; letter-spacing: 0.1px; }
+  .foot span { opacity: 0.8; }
+  .foot .cap { height: 22px; padding: 0 7px; border-radius: 7px; background: var(--cap); display: inline-flex; align-items: center; }
+  .foot .gap { width: 10px; }
+  svg.g { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .still .dim, .still .kind, .still .strip, .still .disc, .still .row.on .strip, .still .row.on .kind { transition: none; }
+
+  /* the last move */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .fact { min-width: 0; }
+  .fact dt { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+  .fact dd { margin: 2px 0 0; font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .fact dd small { font-size: 13px; font-weight: 500; color: var(--ink-3); }
+  dl { margin: 0; }
+  .graph { position: relative; height: 250px; }
+  .graph canvas { width: 100%; height: 100%; display: block; }
+  .tip { position: absolute; top: 4px; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; box-shadow: 0 4px 14px var(--seg-shadow); }
+  .cap-text { font-size: 13px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 180px; padding-left: 0; }
+  thead th { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+  tbody th { font-weight: 500; color: var(--ink-2); }
+  tbody tr.sub th { padding-top: 16px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); max-width: 68ch; }
+  ul b { color: var(--ink); font-weight: 650; }
+
+  @media (max-width: 560px) {
+    .page { padding-block: 20px 48px; }
+    h1 { font-size: 24px; }
+    .desk { padding: 18px 8px 22px; border-radius: 16px; }
+    .panel { border-radius: 28px; }
+    .field { padding: 0 14px; }
+    .foot { padding: 0 14px; }
+    .facts { grid-template-columns: 1fr 1fr; }
+    .fact dd { font-size: 19px; }
+    .graph { height: 220px; }
+    .card { padding: 14px; }
+    .kind { display: none; }
+    table { font-size: 13px; }
+    th, td { padding: 8px 5px; }
+    th:first-child, td:first-child { min-width: 118px; }
+    tbody tr.sub th { white-space: normal; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="g-search" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="5.2"/><path d="M12.6 12.6 L17 17"/></symbol>
+  <symbol id="g-plane" viewBox="0 0 20 20"><path d="M2.5 11.2 L17.3 6.1 C18.3 5.8 18.6 7 17.8 7.5 L8.2 13.6 L4.6 13.4 Z M8.6 9.2 L4.9 5.6 M10.4 12.4 L10.9 16.2"/></symbol>
+  <symbol id="g-enter" viewBox="0 0 14 14"><path d="M11.5 2.5 V7.5 H3 M5.5 5 L3 7.5 L5.5 10"/></symbol>
+</svg>
+
+<main class="page" id="page">
+  <header class="head">
+    <h1>Rubber highlight</h1>
+    <p class="lead">The highlight behind the selected row, in three versions. Today is what Booklight does now. A and B make it more like rubber: the front edge goes first, the old edge holds on for a moment and then follows. A is the one proposed; B is the same idea one step stronger, to show how much is enough.</p>
+    <p class="lead"><b>Two things to decide:</b> A, B, or leave it as it is today; and whether the square in the emoji grid takes the same motion in the same release. Nothing is built into the app until you say.</p>
+  </header>
+
+  <section class="controls" aria-label="Settings">
+    <div class="control"><span id="l-version">Version</span>
+      <div class="seg" role="group" aria-labelledby="l-version">
+        <button type="button" id="v-today" data-v="today" aria-pressed="false">Today</button>
+        <button type="button" id="v-a" data-v="A" aria-pressed="true">A</button>
+        <button type="button" id="v-b" data-v="B" aria-pressed="false">B</button>
+      </div>
+    </div>
+    <div class="control"><span id="l-speed">Speed</span>
+      <div class="seg" role="group" aria-labelledby="l-speed">
+        <button type="button" id="s-full" data-s="1" aria-pressed="true">Full</button>
+        <button type="button" id="s-quarter" data-s="4" aria-pressed="false">Quarter speed</button>
+      </div>
+    </div>
+    <div class="control"><span id="l-look">Look</span>
+      <div class="seg" role="group" aria-labelledby="l-look">
+        <button type="button" id="t-system" data-t="" aria-pressed="true">System</button>
+        <button type="button" id="t-light" data-t="light" aria-pressed="false">Light</button>
+        <button type="button" id="t-dark" data-t="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="what" id="what"><b>A: lets go a moment later, gathers faster.</b> The old edge stays where it is for five frames of the screen, then follows quickly. The highlight stretches about twice as far as today and is at rest sooner. Nothing bounces.</p>
+
+  <div class="still-note" id="still-note" hidden>
+    <span>Your system asks for less motion, so the highlight cuts from row to row here. Booklight does the same when animations are off.</span>
+    <button type="button" class="plain" id="still-off">Show the motion anyway</button>
+  </div>
+
+  <div class="tryrow">
+    <span><b style="color:var(--ink)">Click the list, then use the arrow keys.</b> Hold a key to run through the rows. Or move the pointer over the rows, or click one.</span>
+  </div>
+
+  <div class="desk">
+    <div class="win paper" aria-hidden="true"><i style="width:62%"></i><i style="width:88%"></i><i style="width:80%"></i><i style="width:84%"></i><i style="width:46%"></i><i style="width:0"></i><i style="width:86%"></i><i style="width:78%"></i><i style="width:90%"></i><i style="width:58%"></i><i style="width:0"></i><i style="width:82%"></i><i style="width:88%"></i><i style="width:70%"></i><i style="width:86%"></i><i style="width:40%"></i><i style="width:0"></i><i style="width:84%"></i><i style="width:76%"></i><i style="width:88%"></i><i style="width:64%"></i><i style="width:80%"></i></div>
+    <div class="win term" aria-hidden="true"><i style="width:38%"></i><i style="width:72%"></i><i style="width:56%"></i><i style="width:64%"></i><i style="width:30%"></i><i style="width:0"></i><i style="width:48%"></i><i style="width:80%"></i><i style="width:66%"></i><i style="width:42%"></i><i style="width:0"></i><i style="width:58%"></i><i style="width:74%"></i><i style="width:36%"></i><i style="width:68%"></i><i style="width:52%"></i><i style="width:0"></i><i style="width:44%"></i><i style="width:70%"></i><i style="width:60%"></i></div>
+
+    <div class="panel">
+      <div class="field">
+        <span class="mark"><svg class="g" style="width:22px;height:22px"><use href="#g-search"/></svg></span>
+        <span class="typed">ab 123<span class="caret"></span></span>
+      </div>
+      <div class="list" id="list" tabindex="0" role="listbox" aria-label="Results. Use the up and down arrow keys.">
+        <div class="pill" id="pill"></div>
+        <div class="row on" data-h="56" style="height:56px" role="option" aria-selected="true">
+          <span class="disc dim"><svg class="g"><use href="#g-search"/></svg></span>
+          <span class="text"><span class="title">ab 123</span></span>
+          <span class="end"><span class="kind">Web</span><span class="strip"><span class="pane">Search <svg class="g" style="width:14px;height:14px"><use href="#g-enter"/></svg></span></span></span>
+        </div>
+        <div class="row" data-h="56" style="height:56px" role="option" aria-selected="false">
+          <span class="disc dim"><svg class="g"><use href="#g-search"/></svg></span>
+          <span class="text"><span class="title">ab 123 flight status</span></span>
+          <span class="end"><span class="kind">Suggestion</span><span class="strip"><span class="pane">Search <svg class="g" style="width:14px;height:14px"><use href="#g-enter"/></svg></span></span></span>
+        </div>
+        <div class="row" data-h="92" style="height:92px" role="option" aria-selected="false">
+          <span class="disc dim high"><svg class="g"><use href="#g-plane"/></svg></span>
+          <span class="text">
+            <span class="small dim">AB 123 · Example Air · Berlin → Lisbon</span>
+            <span class="slots"><span><em class="dim">Leaves</em><b>BER 14:05</b></span><span><em class="dim">Lands</em><b>LIS 16:40</b></span></span>
+            <span class="small">On time <span class="dim">· Terminal 1, gate B12</span></span>
+          </span>
+          <span class="end"><span class="kind">Flight</span><span class="strip"><span class="pane">Copy <svg class="g" style="width:14px;height:14px"><use href="#g-enter"/></svg></span></span></span>
+        </div>
+        <div class="row" data-h="56" style="height:56px" role="option" aria-selected="false">
+          <span class="disc dim"><svg class="g"><use href="#g-search"/></svg></span>
+          <span class="text"><span class="title">ab 123 seat map</span></span>
+          <span class="end"><span class="kind">Suggestion</span><span class="strip"><span class="pane">Search <svg class="g" style="width:14px;height:14px"><use href="#g-enter"/></svg></span></span></span>
+        </div>
+        <div class="row" data-h="56" style="height:56px" role="option" aria-selected="false">
+          <span class="disc dim"><svg class="g"><use href="#g-search"/></svg></span>
+          <span class="text"><span class="title">ab 123 arrivals</span></span>
+          <span class="end"><span class="kind">Suggestion</span><span class="strip"><span class="pane">Search <svg class="g" style="width:14px;height:14px"><use href="#g-enter"/></svg></span></span></span>
+        </div>
+        <div class="row" data-h="56" style="height:56px" role="option" aria-selected="false">
+          <span class="disc dim"><svg class="g"><use href="#g-search"/></svg></span>
+          <span class="text"><span class="title">ab 123 gate</span></span>
+          <span class="end"><span class="kind">Suggestion</span><span class="strip"><span class="pane">Search <svg class="g" style="width:14px;height:14px"><use href="#g-enter"/></svg></span></span></span>
+        </div>
+        <div class="row" data-h="56" style="height:56px" role="option" aria-selected="false">
+          <span class="disc dim"><svg class="g"><use href="#g-search"/></svg></span>
+          <span class="text"><span class="title">ab 123 baggage belt</span></span>
+          <span class="end"><span class="kind">Suggestion</span><span class="strip"><span class="pane">Search <svg class="g" style="width:14px;height:14px"><use href="#g-enter"/></svg></span></span></span>
+        </div>
+      </div>
+      <div class="foot"><span class="cap">tab</span><span>Actions</span><span class="gap"></span><span class="cap">esc</span><span>Close</span></div>
+    </div>
+  </div>
+
+  <div class="tryrow">
+    <span>No keyboard, or a slow key repeat?</span>
+    <button type="button" class="plain" id="run-down">Run down the rows</button>
+    <button type="button" class="plain" id="run-up">Run back up</button>
+    <span class="cap-text">A row every 50 ms (thousandths of a second), which is how fast Android repeats a held key unless a device changes it. What a Googlebook really does has not been measured.</span>
+  </div>
+
+  <section class="card" aria-label="The last move">
+    <h2>The last move</h2>
+    <dl class="facts">
+      <div class="fact"><dt>Front edge at the new row</dt><dd id="f-there">–</dd></div>
+      <div class="fact"><dt>At rest</dt><dd id="f-rest">–</dd></div>
+      <div class="fact"><dt>Longest</dt><dd id="f-long">–</dd></div>
+    </dl>
+    <div class="graph" id="graph">
+      <canvas id="canvas" role="img" aria-label="The highlight's top and bottom edge over time for the last move"></canvas>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <p class="cap-text">Time runs to the right, in thousandths of a second (ms); the rows run down as they do in the list. The band is the highlight: its upper line is the top edge, its lower line the bottom edge. Where the band is tall, the highlight is stretched. Times are the real ones, also at quarter speed. Lengths are in dp, the app's unit; on this page 1 dp is 1 px. <span id="dashed" hidden>A dashed line is a new key that arrived while the highlight was still moving.</span></p>
+  </section>
+
+  <section class="card" aria-label="The three versions in numbers">
+    <h2>The three in numbers</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th></th><th>Today</th><th>A</th><th>B</th></tr></thead>
+        <tbody>
+          <tr class="sub"><th colspan="4">One row down (rows are 56 dp high)</th></tr>
+          <tr><th>The old edge stays put for (in A five frames of the screen, in B six)</th><td>0 ms</td><td>42 ms</td><td>50 ms</td></tr>
+          <tr><th>Front edge at the new row after</th><td>111 ms</td><td>105 ms</td><td>98 ms</td></tr>
+          <tr><th>Everything at rest after</th><td>255 ms</td><td>197 ms</td><td>215 ms</td></tr>
+          <tr><th>Longest the highlight gets</th><td>74 dp</td><td>90 dp</td><td>95 dp</td></tr>
+          <tr><th>Furthest an edge goes past its place</th><td>0.6 dp</td><td>0.3 dp</td><td>0.6 dp</td></tr>
+          <tr class="sub"><th colspan="4">From row 1 to row 6 at once (316 dp). B is the same as A here</th></tr>
+          <tr><th>Front edge at the new row after</th><td>205 ms</td><td>124 ms</td><td>124 ms</td></tr>
+          <tr><th>Everything at rest after</th><td>288 ms</td><td>221 ms</td><td>221 ms</td></tr>
+          <tr><th>Longest the highlight gets</th><td>155 dp</td><td>111 dp</td><td>111 dp</td></tr>
+          <tr class="sub"><th colspan="4">A key held down this list, a row every 50 ms. Simulated, not filmed on a device</th></tr>
+          <tr><th>Longest the highlight gets (it passes the 92 dp row)</th><td>153 dp</td><td>96 dp</td><td>101 dp</td></tr>
+          <tr><th>Most the front edge still has to go when the next key arrives</th><td>70 dp</td><td>39 dp</td><td>38 dp</td></tr>
+          <tr><th>At rest after the last key</th><td>291 ms</td><td>146 ms</td><td>146 ms</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-label="What to try">
+    <h2>What to try</h2>
+    <ul>
+      <li><b>One step,</b> then the same step in the other two versions. Quarter speed shows what the old edge does.</li>
+      <li><b>Hold the key.</b> In A and B the highlight keeps its shape and stays close to the selected row. Today it falls behind and gets long. That is what the code does in this simulation; it has not been filmed on a device.</li>
+      <li><b>Down and straight back up.</b> The highlight turns round from where it is; it never jumps.</li>
+      <li><b>Onto the tall row and off it.</b> The highlight grows to the row's height on the way.</li>
+      <li><b>Click a row far away.</b> In A and B the highlight is never more than one row (56 dp) longer than its own row, however far it goes, and it arrives in one move.</li>
+    </ul>
+    <p class="cap-text">The rows are examples. Today is drawn from the numbers in Booklight's code. Why it falls behind on a held key in this simulation: when a new key arrives while the highlight is still moving, the code starts both of its edges again from a standstill. That was found by reading the code and testing the library it uses. Nobody has filmed it on a Googlebook yet.</p>
+  </section>
+
+  <section class="card" aria-label="What this changes">
+    <h2>What this changes, and what it leaves alone</h2>
+    <p class="prose">Only the list's highlight changes. The same kind of highlight exists in three more places: the square in the emoji grid, the pane on a row's actions, and the rail of the Booklight window.</p>
+    <ul>
+      <li><b>The grid's square</b> is built the same way, from two edges. It could take A in the same release.</li>
+      <li><b>The pane on a row's actions</b> is built differently: one movement carries the pane and the names that unroll beside it. It needs its own look before it changes.</li>
+      <li><b>The window's rail</b> can follow later.</li>
+    </ul>
+    <p class="prose">Which of them follow, and when, is yours to decide. At full speed A and B are close; the quarter-speed switch shows the difference. If you cannot tell them apart at full speed, A is enough.</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── The highlight's two edges, moved the way Compose moves them ─────────────────────────────────────────────
+  // spring(dampingRatio, stiffness), mass 1: acceleration = stiffness × (target − x) − 2 × dampingRatio × √stiffness × velocity
+  var PLACE = [0.86, 520];            // the spring a row's own height changes on
+  var FRAME = 1000 / 120;             // one frame of the device, ms
+  var KNEE = 40, MOST = 56;           // the stretch is drawn as it is up to 40; beyond that it eases towards 56 and never passes it
+  var NEAR = 98;                      // a move counts as one row if the front edge has at most this far to go; beyond that it is a long way
+
+  // The hold is counted in frames of the device's screen (120 a second), so it is the same on every press.
+  var VARIANTS = {
+    // Booklight today: Motion.lead() and Motion.trail()
+    today: { lead: [0.82, 1100], trail: [0.9, 420], hold: 0, today: true },
+    // one row from rest: the old edge holds five frames, then spring(0.86, 900). A long way: two frames, then spring(0.9, 1400).
+    A: { lead: [0.85, 1400], trail: [0.86, 900], hold: 5 * FRAME, farTrail: [0.9, 1400], farHold: 2 * FRAME, run: null },
+    // one step stronger, for a single row from rest only; everything else as A
+    B: { lead: [0.85, 1600], trail: [0.82, 1400], hold: 6 * FRAME, run: 'A' }
+  };
+
+  function soft(extra) {
+    if (extra <= KNEE) return extra;
+    var room = MOST - KNEE;
+    return KNEE + room * (1 - Math.exp(-(extra - KNEE) / room));
+  }
+  function makePill(top, height) {
+    function edge(x) { return { x: x, v: 0, t: x, k: PLACE[1], z: PLACE[0], stall: 0 }; }
+    return { up: edge(top), lo: edge(top + height), down: true, hold: null, rest: height, restT: height, restV: 0, h: height };
+  }
+  function running(e) { return Math.abs(e.t - e.x) > 0.01 || Math.abs(e.v) > 0.5; }
+  function setSpec(e, s) { e.z = s[0]; e.k = s[1]; }
+
+  // where the two edges are drawn
+  function shown(p, V) {
+    var u = p.up.x, l = p.lo.x;
+    if (!V.today) {
+      var extra = (l - u) - p.rest;
+      if (extra > KNEE) { var L = p.rest + soft(extra); if (p.down) u = l - L; else l = u + L; }
+    }
+    if (l - u < 12) l = u + 12;
+    return [u, l];
+  }
+
+  // the selection went to a row at `top`, `height` high
+  function goal(p, V, top, height) {
+    var up = p.up, lo = p.lo, down;
+    if (V.today) {
+      // Today both edges' animations are cancelled and started anew: the edge loses its speed,
+      // and one that was moving shows its first movement a frame later.
+      var flying = running(up) || running(lo);
+      up.v = 0; lo.v = 0;
+      if (top === up.x) { lo.t = top + height; setSpec(lo, PLACE); lo.stall = flying ? FRAME : 0; p.h = height; return; }
+      down = top + height / 2 > (up.t + lo.t) / 2;
+      up.t = top; lo.t = top + height; up.stall = lo.stall = flying ? FRAME : 0;
+      setSpec(up, down ? V.trail : V.lead); setSpec(lo, down ? V.lead : V.trail);
+      p.down = down; p.h = height; return;
+    }
+    // A and B: every edge goes on from where it is drawn, with the speed it has
+    var s = shown(p, V); up.x = s[0]; lo.x = s[1];
+    var holding = !!p.hold;
+    var wasResting = !running(up) && !running(lo) && !holding;
+    p.hold = null;
+    p.restT = Math.max(p.h, height);
+    if (wasResting) { p.rest = Math.max(p.restT, s[1] - s[0]); p.restV = 0; }
+    if (top === up.t && !holding) { lo.t = top + height; setSpec(lo, PLACE); p.h = height; return; }   // only its height changed
+    down = top + height / 2 > (up.t + lo.t) / 2;
+    var lead = down ? lo : up, trail = down ? up : lo;
+    var leadT = down ? top + height : top, trailT = down ? top : top + height;
+    var R = VARIANTS[V.run] || V;
+    var far = Math.abs(leadT - lead.x) > NEAR;
+    var own = wasResting && !far;       // a step of one row from rest: the version's own pair and its own hold
+    lead.t = leadT; setSpec(lead, own ? V.lead : R.lead);
+    // the old edge: on a long way a firmer spring, so that it arrives with the front edge and does not slow down and start again
+    var spec = own ? V.trail : far ? R.farTrail : R.trail;
+    // from rest it holds on for a moment (shorter on a long way); a highlight that is already moving does not wait
+    var hold = !wasResting ? 0 : own ? V.hold : R.farHold;
+    if (hold > 0) p.hold = { edge: trail, t: trailT, spec: spec, left: hold };
+    else { trail.t = trailT; setSpec(trail, spec); }
+    p.down = down; p.h = height;
+  }
+
+  function advance(p, ms) {
+    var H = 0.25, e, a, i, edges = [p.up, p.lo];
+    for (var done = 0; done < ms - 1e-9; done += H) {
+      var dt = Math.min(H, ms - done) / 1000;
+      if (p.hold) { p.hold.left -= dt * 1000; if (p.hold.left <= 1e-9) { p.hold.edge.t = p.hold.t; setSpec(p.hold.edge, p.hold.spec); p.hold = null; } }
+      for (i = 0; i < 2; i++) {
+        e = edges[i];
+        if (e.stall > 0) { e.stall -= dt * 1000; continue; }
+        a = e.k * (e.t - e.x) - 2 * e.z * Math.sqrt(e.k) * e.v;
+        e.v += a * dt; e.x += e.v * dt;
+      }
+      a = PLACE[1] * (p.restT - p.rest) - 2 * PLACE[0] * Math.sqrt(PLACE[1]) * p.restV;
+      p.restV += a * dt; p.rest += p.restV * dt;
+    }
+  }
+  function atRest(p) { return !p.hold && !running(p.up) && !running(p.lo); }
+
+  // ── The page ────────────────────────────────────────────────────────────────────────────────────────────────
+  var $ = function (id) { return document.getElementById(id); };
+  var root = document.documentElement, page = $('page'), list = $('list'), pillEl = $('pill');
+  var rows = Array.prototype.slice.call(list.querySelectorAll('.row'));
+  var heights = rows.map(function (r) { return +r.getAttribute('data-h'); });
+  var tops = []; (function () { var y = 0; heights.forEach(function (h) { tops.push(y); y += h; }); })();
+
+  var variant = 'A', slow = 1, selected = 0, still = false;
+  var pill = makePill(tops[0], heights[0]);
+  var clock = 0, lastFrame = 0, looping = false, auto = null;
+  var trace = null;       // { t0, samples: [[t, top, bottom]], keys: [t], fromTop, top, height, done }
+  var hoverT = null;
+
+  var WHAT = {
+    today: '<b>Today: both edges set off together.</b> The old edge is the slower one, so the highlight grows a little and then closes up. On a held key it falls behind and gets long here; that part is a simulation of how the code works and has not been filmed on a device.',
+    A: '<b>A: lets go a moment later, gathers faster.</b> The old edge stays where it is for five frames of the screen, then follows quickly. The highlight stretches about twice as far as today and is at rest sooner. Nothing bounces.',
+    B: '<b>B: one step stronger than A.</b> The front edge is a little quicker, the old edge holds on one frame longer and gathers faster still. A little more stretch, and still no bounce. Over more than one row and on a held key it is the same as A.'
+  };
+
+  // In whole pixels of this screen. A and B: each edge rounded by itself, the height is what lies between them.
+  // Today, as the code does it: the top rounded, then the length rounded and added (the bottom can step back by a pixel).
+  function paint() {
+    var s = shown(pill, VARIANTS[variant]), d = window.devicePixelRatio || 1;
+    var top = Math.round(s[0] * d), bottom = VARIANTS[variant].today ? top + Math.round((s[1] - s[0]) * d) : Math.round(s[1] * d);
+    pillEl.style.transform = 'translateY(' + (top / d) + 'px)';
+    pillEl.style.height = ((bottom - top) / d) + 'px';
+    return s;
+  }
+  function mark() {
+    rows.forEach(function (r, i) { var on = i === selected; r.classList.toggle('on', on); r.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  }
+
+  function select(i) {
+    i = Math.max(0, Math.min(rows.length - 1, i));
+    if (i === selected) return;
+    selected = i; mark();
+    if (still) { pill = makePill(tops[i], heights[i]); paint(); trace = null; facts(); draw(); return; }
+    var resting = atRest(pill), before = shown(pill, VARIANTS[variant]);
+    goal(pill, VARIANTS[variant], tops[i], heights[i]);
+    if (resting || !trace) trace = { t0: clock, samples: [[0, before[0], before[1]]], keys: [], fromTop: before[0], done: false };
+    else { trace.keys.push(clock - trace.t0); trace.done = false; }
+    trace.top = tops[i]; trace.height = heights[i];
+    hoverT = null; $('tip').hidden = true;
+    start();
+  }
+
+  function start() { if (!looping) { looping = true; lastFrame = 0; requestAnimationFrame(frame); } }
+  function frame(now) {
+    var left = lastFrame ? Math.min(now - lastFrame, 50) / slow : 0, s;
+    lastFrame = now;
+    // in steps of 2 ms, so that the numbers do not depend on how often this screen draws
+    do {
+      var step = Math.min(2, left);
+      left -= step; clock += step;
+      while (auto && clock >= auto.next) {
+        var to = selected + auto.dir;
+        if (to < 0 || to >= rows.length) { auto = null; break; }
+        select(to); auto.next += 50;
+      }
+      advance(pill, step);
+      if (trace && !trace.done && step > 0) {
+        s = shown(pill, VARIANTS[variant]);
+        trace.samples.push([clock - trace.t0, s[0], s[1]]);
+        if (atRest(pill)) { pill.up.x = pill.up.t; pill.lo.x = pill.lo.t; pill.up.v = pill.lo.v = 0; trace.done = true; }
+      }
+    } while (left > 1e-9);
+    paint();
+    if (trace) { facts(); draw(); }
+    if (auto || !atRest(pill) || Math.abs(pill.rest - pill.restT) > 0.05) requestAnimationFrame(frame);
+    else looping = false;
+  }
+
+  // ── The numbers of the last move ────────────────────────────────────────────────────────────────────────────
+  function facts() {
+    var a = $('f-there'), b = $('f-rest'), c = $('f-long');
+    if (!trace) { a.textContent = b.textContent = c.textContent = '–'; return; }
+    var down = trace.top + trace.height / 2 > trace.samples[0][1] + (trace.samples[0][2] - trace.samples[0][1]) / 2;
+    var tu = trace.top, tl = trace.top + trace.height, there = 0, rest = 0, longest = 0;
+    // the first moment from which the front edge stays within 2 px of its place, and both edges within half a pixel of theirs
+    trace.samples.forEach(function (s, n) {
+      var lead = down ? s[2] : s[1], leadT = down ? tl : tu, next = trace.samples[n + 1] || s;
+      if (Math.abs(lead - leadT) > 2) there = next[0];
+      if (Math.abs(s[1] - tu) > 0.5 || Math.abs(s[2] - tl) > 0.5) rest = next[0];
+      longest = Math.max(longest, s[2] - s[1]);
+    });
+    var last = trace.samples[trace.samples.length - 1];
+    var arrived = Math.abs((down ? last[2] : last[1]) - (down ? tl : tu)) <= 2;
+    // a run of several keys is timed from its last key
+    var from = trace.keys.length ? trace.keys[trace.keys.length - 1] : 0, after = trace.keys.length ? ' <small>ms after the last key</small>' : ' <small>ms</small>';
+    a.innerHTML = arrived ? Math.max(0, Math.round(there - from)) + after : '…';
+    b.innerHTML = trace.done ? Math.max(0, Math.round(rest - from)) + after : '…';
+    c.innerHTML = Math.round(longest) + ' <small>dp, its row is ' + trace.height + '</small>';
+  }
+
+  // ── The graph ───────────────────────────────────────────────────────────────────────────────────────────────
+  var canvas = $('canvas'), ctx = canvas.getContext('2d'), geo = null;
+  function color(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function draw() {
+    var w = canvas.clientWidth, h = canvas.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (!w || !h) return;
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    var ink = color('--ink'), ink3 = color('--ink-3'), grid = color('--grid'), band = color('--band'), markC = color('--mark');
+    var narrow = w < 460;
+    var L = narrow ? 44 : 54, R = narrow ? 86 : 96, T = 10, B = 26, pw = w - L - R, ph = h - T - B;
+    ctx.font = '12px ' + color('--sans'); ctx.textBaseline = 'middle';
+
+    // which stretch of the list, and how much time
+    var y0 = tops[selected], y1 = tops[selected] + heights[selected], tMax = 300;
+    if (trace) {
+      trace.samples.forEach(function (s) { y0 = Math.min(y0, s[1]); y1 = Math.max(y1, s[2]); });
+      y0 = Math.min(y0, trace.top); y1 = Math.max(y1, trace.top + trace.height);
+      tMax = Math.max(300, Math.ceil(trace.samples[trace.samples.length - 1][0] / 100) * 100);
+    }
+    // whole rows only
+    var first = 0, lastRow = rows.length - 1, i;
+    for (i = 0; i < rows.length; i++) { if (tops[i] <= y0 + 0.5) first = i; }
+    for (i = rows.length - 1; i >= 0; i--) { if (tops[i] + heights[i] >= y1 - 0.5) lastRow = i; }
+    var lo = tops[first] - 6, hi = tops[lastRow] + heights[lastRow] + 6;
+    var X = function (t) { return L + (t / tMax) * pw; };
+    var Y = function (y) { return T + ((y - lo) / (hi - lo)) * ph; };
+    geo = { L: L, pw: pw, tMax: tMax, T: T, ph: ph };
+
+    // rows: a faint line at each row's edge, its name at the left
+    ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.fillStyle = ink3; ctx.textAlign = 'right';
+    for (i = first; i <= lastRow; i++) {
+      var ya = Math.round(Y(tops[i])) + 0.5, yb = Math.round(Y(tops[i] + heights[i])) + 0.5;
+      ctx.beginPath(); ctx.moveTo(L, ya); ctx.lineTo(L + pw, ya); ctx.stroke();
+      if (i === lastRow) { ctx.beginPath(); ctx.moveTo(L, yb); ctx.lineTo(L + pw, yb); ctx.stroke(); }
+      if (trace && yb - ya >= 14) ctx.fillText('Row ' + (i + 1), L - 8, (ya + yb) / 2);
+    }
+    // time
+    var stepT = tMax <= 600 ? 100 : tMax <= 1200 ? 200 : 500;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (var t = 0; t <= tMax + 0.5; t += stepT) {
+      var x = Math.round(X(t)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, T + ph); ctx.lineTo(x, T + ph + 4); ctx.strokeStyle = markC; ctx.stroke();
+      ctx.fillStyle = ink3; ctx.fillText(t === 0 ? '0' : t + (t + stepT > tMax ? ' ms' : ''), x, T + ph + 8);
+    }
+    ctx.textBaseline = 'middle';
+
+    if (!trace) {
+      $('dashed').hidden = true;
+      ctx.fillStyle = ink3; ctx.textAlign = 'center';
+      ctx.fillText(narrow ? 'Move the highlight to draw its path.' : 'Move the highlight and its path is drawn here.', L + pw / 2, T + ph / 2);
+      return;
+    }
+    var S = trace.samples, endS = S[S.length - 1];
+    if (trace.done && endS[0] < tMax) S = S.concat([[tMax, endS[1], endS[2]]]);
+    // a new key while it was still moving
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = markC;
+    trace.keys.forEach(function (k) { var x = Math.round(X(k)) + 0.5; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke(); });
+    ctx.setLineDash([]);
+    // the highlight: a band between its two edges
+    ctx.beginPath();
+    S.forEach(function (s, n) { if (n) ctx.lineTo(X(s[0]), Y(s[1])); else ctx.moveTo(X(s[0]), Y(s[1])); });
+    for (i = S.length - 1; i >= 0; i--) ctx.lineTo(X(S[i][0]), Y(S[i][2]));
+    ctx.closePath(); ctx.fillStyle = band; ctx.fill();
+    ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    [1, 2].forEach(function (c) { ctx.beginPath(); S.forEach(function (s, n) { if (n) ctx.lineTo(X(s[0]), Y(s[c])); else ctx.moveTo(X(s[0]), Y(s[c])); }); ctx.stroke(); });
+    // the edges, named where they end
+    var yu = Y(endS[1]), yl = Y(endS[2]);
+    ctx.fillStyle = ink; ctx.textAlign = 'left';
+    if (yl - yu < 16) { var mid = (yu + yl) / 2; yu = mid - 8; yl = mid + 8; }
+    ctx.fillText('top edge', L + pw + 8, yu); ctx.fillText('bottom edge', L + pw + 8, yl);
+    $('dashed').hidden = !trace.keys.length;
+
+    // under the pointer
+    if (hoverT !== null) {
+      var near = trace.samples[0]; trace.samples.forEach(function (s) { if (Math.abs(s[0] - hoverT) < Math.abs(near[0] - hoverT)) near = s; });
+      var hx = Math.round(X(near[0])) + 0.5;
+      ctx.strokeStyle = markC; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(hx, T); ctx.lineTo(hx, T + ph); ctx.stroke();
+      ctx.fillStyle = ink; [1, 2].forEach(function (c) { ctx.beginPath(); ctx.arc(X(near[0]), Y(near[c]), 4, 0, Math.PI * 2); ctx.fill(); });
+      var tip = $('tip');
+      tip.textContent = Math.round(near[0]) + ' ms · top ' + near[1].toFixed(1) + ' · bottom ' + near[2].toFixed(1) + ' · ' + (near[2] - near[1]).toFixed(1) + ' dp long';
+      tip.hidden = false;
+      var tw = tip.offsetWidth, left = Math.min(Math.max(hx - tw / 2, 0), w - tw);
+      tip.style.left = left + 'px';
+    }
+  }
+  $('graph').addEventListener('pointermove', function (e) {
+    if (!trace || !geo) return;
+    var r = canvas.getBoundingClientRect(), t = ((e.clientX - r.left - geo.L) / geo.pw) * geo.tMax;
+    hoverT = Math.max(0, Math.min(t, trace.samples[trace.samples.length - 1][0])); draw();
+  });
+  $('graph').addEventListener('pointerleave', function () { hoverT = null; $('tip').hidden = true; draw(); });
+
+  // ── Keys, pointer, switches ─────────────────────────────────────────────────────────────────────────────────
+  list.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); auto = null; select(selected + (e.key === 'ArrowDown' ? 1 : -1)); }
+  });
+  rows.forEach(function (r, i) {
+    r.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) { auto = null; select(i); } });
+    r.addEventListener('click', function () { auto = null; select(i); list.focus({ preventScroll: true }); });
+  });
+  function press(group, btn) { Array.prototype.forEach.call(group.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); }); }
+  ['v-today', 'v-a', 'v-b'].forEach(function (id) {
+    $(id).addEventListener('click', function () {
+      variant = this.getAttribute('data-v'); press(this.parentNode, this);
+      $('what').innerHTML = WHAT[variant];
+      auto = null; pill = makePill(tops[selected], heights[selected]); paint(); trace = null; facts(); draw();
+    });
+  });
+  ['s-full', 's-quarter'].forEach(function (id) {
+    $(id).addEventListener('click', function () { slow = +this.getAttribute('data-s'); press(this.parentNode, this); root.style.setProperty('--slow', slow); });
+  });
+  ['t-system', 't-light', 't-dark'].forEach(function (id) {
+    $(id).addEventListener('click', function () {
+      var t = this.getAttribute('data-t'); press(this.parentNode, this);
+      if (t) root.setAttribute('data-theme', t); else root.removeAttribute('data-theme');
+      draw();
+    });
+  });
+  (function () { var t = root.getAttribute('data-theme'); if (t === 'light') press($('t-light').parentNode, $('t-light')); else if (t === 'dark') press($('t-dark').parentNode, $('t-dark')); })();
+  function run(dir) {
+    if (still) { select(dir > 0 ? rows.length - 1 : 0); return; }
+    if ((dir > 0 && selected === rows.length - 1) || (dir < 0 && selected === 0)) return;
+    auto = { dir: dir, next: clock }; start();
+  }
+  $('run-down').addEventListener('click', function () { run(1); });
+  $('run-up').addEventListener('click', function () { run(-1); });
+
+  // less motion: it cuts, as Booklight does with animations off
+  function setStill(on) { still = on; page.classList.toggle('still', on); $('still-note').hidden = !on; }
+  var less = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  if (less && less.matches) setStill(true);
+  $('still-off').addEventListener('click', function () { setStill(false); });
+
+  if (window.matchMedia) { var dark = window.matchMedia('(prefers-color-scheme: dark)'); if (dark.addEventListener) dark.addEventListener('change', draw); }
+  if (window.MutationObserver) new MutationObserver(draw).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  window.addEventListener('resize', draw);
+
+  paint(); mark(); facts(); draw();
+})();
+</script>

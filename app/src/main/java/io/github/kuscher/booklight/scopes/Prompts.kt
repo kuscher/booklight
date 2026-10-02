@@ -21,6 +21,8 @@ import io.github.kuscher.booklight.device.Clipboard
 interface Answering {
     /** The id of the row that is asked after a pause in typing (a prompt typed by its keyword); null when rows are asked on Enter only. */
     val row: String?
+    /** False where the model is a helper beside what the scope does (a song's name, for `play`): it is not loaded before somebody asks it. */
+    val eager: Boolean get() = true
     /** [r] as it is the moment the model is asked for it ([e] is what Enter ran): at an answer's height, with its caption. */
     fun asking(r: Result, e: Effect.Ask): Result
     /** [r] with the model's [text] in it: so far ([busy]), or all of it. */

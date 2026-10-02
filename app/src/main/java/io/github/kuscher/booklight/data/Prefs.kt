@@ -47,6 +47,13 @@ data class RecipeEntry(val id: String, val name: String, val keyword: String = "
 @Serializable
 data class PromptEntry(val id: String, val name: String, val keyword: String = "", val text: String, val seed: Int? = null)
 
+/**
+ * An app command of the user's own: a name, a keyword (it can do without one, unless it takes text), the app
+ * it asks, and what it asks: an `intent:` address with `{argument}` where the typed text goes (core `Requests`).
+ */
+@Serializable
+data class OwnCommandEntry(val id: String, val name: String, val keyword: String = "", val app: String, val intent: String)
+
 /** Everything the user can choose, plus which first-run cards are still to show. */
 @Serializable
 data class Settings(
@@ -77,6 +84,11 @@ data class Settings(
     val recipes: List<RecipeEntry> = emptyList(),
     /** Prompts: `fix teh text`. Five to start with, in the device's language when Booklight first ran. */
     val prompts: List<PromptEntry> = emptyList(),
+    /**
+     * App commands: `sp daft punk` asks one app for something, put together in the Booklight window. They are made
+     * there and nowhere else (see [Prefs], where this list is read).
+     */
+    val ownCommands: List<OwnCommandEntry> = emptyList(),
     /** A line under the empty field for something copied in the last two minutes: what kind of thing it is, and Tab opens it. */
     val copyRow: Boolean = true,
     /**
@@ -89,6 +101,8 @@ data class Settings(
     val zeroHeld: List<String> = emptyList(),
     /** Since when a holder of one of those seats has had no row (its app was removed, or its kind of row switched off), by the wall clock; 0 = neither is away. */
     val zeroAway: Long = 0L,
+    /** The music app `play` was last sent to, as its package: it is the one armed next time. Null until one was asked. */
+    val player: String? = null,
     /** The folder notes go to, as the tree address the user granted; null until they have. */
     val notesFolder: String? = null,
     val emojiRecent: List<String> = emptyList(),
@@ -114,7 +128,7 @@ data class Settings(
     val windowPart: String = "start",
     /** How many of the ready-made prompts this installation has been given: a version that brings a new one adds it once. */
     val seeded: Int = 0,
-    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference. */
+    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference, 6 = app commands of the user's own. */
     val schema: Int = 1,
 ) {
     fun engine(): Engine = Engines.byId(engine)
@@ -127,7 +141,7 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val writing = Mutex()
     private companion object {
-        const val SCHEMA = 5
+        const val SCHEMA = 6
         /** The ready-made prompts 2.0 came with: what an installation from before schema 5 has been given. */
         const val FIRST_SEEDS = 5
     }
@@ -135,6 +149,18 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
     val state: StateFlow<Settings> = _state
     val now: Settings get() = _state.value
 
+    /**
+     * The rule for what is read here. An app command ([Settings.ownCommands]) and a recipe's `open` step are a
+     * request to another app, kept as an `intent:` address, and Booklight runs them on one Enter. So they are only
+     * ever made by the user, in the editors of the Booklight window (an app command in its editor; a recipe's step
+     * chosen there from the rows Booklight itself offers: another app's declared command, a search inside an app, an
+     * app's own address the user typed): this file, written by Booklight and carried by
+     * the user's own backup, is the one place they are read from. An `intent:` address that arrives from outside
+     * (another app, a link, a file somebody shares, a pack of commands one day) must never be put into these lists,
+     * and never run, without the user having made it a command there, where every field of it can be seen. What
+     * is read is still checked each time it runs (`Executor.open`): only an activity of the named app that is open
+     * to other apps and asks for no permission, with nothing granted along.
+     */
     private fun load(): Settings = try {
         if (file.exists()) current(migrate(json.decodeFromString(Settings.serializer(), file.readText()))) else started(Settings(schema = SCHEMA))
     } catch (e: Exception) {
@@ -168,6 +194,10 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
             val tables = listOf("en", "de").map { seeds(it) }
             s = s.copy(prompts = s.prompts.map { it.copy(seed = Seeds.of(it.kept(), tables)) }, seeded = FIRST_SEEDS)
         }
+        // Schema 6: app commands of the user's own, and recipe steps that ask another app for something. A file from before
+        // has none that were made here (a build from before ignored such a step): whatever it holds of either is not taken.
+        // Nothing else changed its shape.
+        if (s.schema < 6) s = s.copy(ownCommands = emptyList(), recipes = s.recipes.map { r -> r.copy(steps = r.steps.filter { it.kind != "open" }) })
         return s.copy(schema = SCHEMA)
     }
 
@@ -179,7 +209,7 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
     }
 
     private fun PromptEntry.kept() = Kept(id, name, keyword, text, seed)
-    private fun taken(s: Settings) = (s.sites.map { it.keyword } + s.recipes.map { it.keyword }).mapTo(HashSet()) { it.lowercase() }
+    private fun taken(s: Settings) = (s.sites.map { it.keyword } + s.recipes.map { it.keyword } + s.ownCommands.map { it.keyword }).mapTo(HashSet()) { it.lowercase() }
 
     /** Each time the settings are read: the unchanged ready-made prompts in the device's language as it is now, and a new one added once. */
     private fun current(s: Settings): Settings {
@@ -218,6 +248,30 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
             writing.withLock {
                 val now = _flightKey.value
                 runCatching { if (now.isEmpty()) keyFile.delete() else keyFile.writeText(now) }.onFailure { Log.w(BooklightApp.TAG, "flight key not saved (${it.javaClass.simpleName})") }
+            }
+        }
+    }
+
+    /**
+     * The user's own key for Spotify: a client id and its secret, which make `play … on spotify` find
+     * the song and play it. A file of its own, `files/spotify.key`, for the flight key's reasons: it
+     * is not part of a backup and does not travel to a new device. It is sent to Spotify and nowhere
+     * else, never logged, and never shown again once it is in. Here: the id, a line break, the
+     * secret; empty for none.
+     */
+    private val songFile = File(context.filesDir, "spotify.key")
+    private val _spotifyKey = MutableStateFlow(runCatching { if (songFile.exists()) songFile.readText().trim().takeIf { it.lines().size == 2 }.orEmpty() else "" }.getOrDefault(""))
+    val spotifyKey: StateFlow<String> = _spotifyKey
+
+    /** Both halves, or the key is taken away. */
+    fun setSpotifyKey(id: String, secret: String) {
+        val i = id.trim(); val s = secret.trim()
+        _spotifyKey.value = if (i.isEmpty() || s.isEmpty() || '\n' in i || '\n' in s) "" else "$i\n$s"
+        scope.launch(Dispatchers.IO) {
+            // One write at a time; each writes the newest key, so the last one to run leaves the newest file.
+            writing.withLock {
+                val now = _spotifyKey.value
+                runCatching { if (now.isEmpty()) songFile.delete() else songFile.writeText(now) }.onFailure { Log.w(BooklightApp.TAG, "spotify key not saved (${it.javaClass.simpleName})") }
             }
         }
     }

@@ -506,6 +506,63 @@ One request was really sent, with the music volume at zero: `MEDIA_PLAY_FROM_SEA
 player. It confirms the cost named in section 3: the request raises the player's window. What a set-up player
 then does with the request is still **not verified**.
 
+## Tried on a Googlebook (2 October 2026, the device session of section 9)
+
+Requests were started from adb with the music volume at zero, the windows they opened were closed again, and
+nothing was sent to anybody. One player was tried: Spotify 9.1, signed in.
+
+| Request | What happened |
+| --- | --- |
+| `MEDIA_PLAY_FROM_SEARCH` to Spotify's package: free text, the song, artist and playlist modes | Its window comes to the front **on its search results** for the `query` text. Nothing starts playing, in any mode; the mode's extras change nothing |
+| The same with an empty query | Its search page with the recent searches. It does not resume |
+| `spotify:search:<text>` and `https://open.spotify.com/search/<text>` to the package | The same search results |
+| `ACTION_SEARCH` with `query` to the package | The same search results |
+| `spotify:track:<id>` to the package (also with `:play`) | The album's page opens and **the track plays** |
+| A media browser connection from an app Spotify does not know | **Refused** (`onConnectionFailed`). No play-from-search behind the window, no metadata |
+| The Play key with the player paused; the Pause key | It resumes; it pauses |
+| `APP_NOTIFICATION_SETTINGS` (package as the extra), `APP_LOCALE_SETTINGS`, `APP_OPEN_BY_DEFAULT_SETTINGS`, `VIEW_ADVANCED_POWER_USAGE_DETAIL` (package as `package:` data) | Each opens Settings on that app's own page: notifications, language, open by default, battery use. All four activities are exported and ask for no permission. `PICTURE_IN_PICTURE_SETTINGS` resolves too (not opened) |
+| `SHOW_ALARMS`, `SHOW_TIMERS` | The Clock opens |
+| Play Store: `https://play.google.com/store/search?q=…&c=apps` and `market://search?q=…&c=apps` to its package | Its search results, both ways |
+| YouTube `…/results?search_query=…`, YouTube Music `…/search?q=…`, `https://meet.google.com/new`, each to the app's package | On a Googlebook these three are web apps: the link opens in the app's own window (a browser tab without the browser's frame) on the right page: results, results, a new meeting. The first time, the system asks once "How do you want to open … links?" |
+| Netflix (signed in): `https://www.netflix.com/search/<text>` to its package | Its search results for the text. The `?q=` form opens the search page with an empty field; its own search activity is not exported; `nflx://` does not resolve |
+| A copied Spotify song link (`https://open.spotify.com/track/…`), from Booklight 2.3: the copy's line, Tab, Enter on the link's row | Spotify opens and the song plays. Nothing new is needed for this |
+| `ACTION_SEARCH` to an app that does not declare it | "Unable to resolve": nothing opens. Booklight's check (`AppCommands.safe`) would not have offered it |
+
+### Later that day: playing by name after all, with a key of the user's own
+
+The owner asked for "a play on Spotify function which finds the song link and plays it". What was tried:
+
+| Tried | Result |
+| --- | --- |
+| `spotify:playlist:<id>:play` to Spotify | The playlist **plays** (without `:play` only its page opens) |
+| `spotify:album:<id>`, with and without `:play`; `spotify:artist:<id>`, with and without `:play` | Only the page |
+| `spotify:track:<id>?context=spotify%3Aalbum%3A<albumId>` | The track plays **and the album is what goes on**: Next is the album's second track |
+| `spotify:track:<id>?context=spotify%3Aartist%3A<artistId>` | The track plays and Next stays with the artist's songs |
+| A name to a link without any key: a public search (Deezer) for the song's ISRC, then MusicBrainz for the Spotify link | 14 of 20 test songs; seconds per song; two wrong versions. Not built |
+| song.link's public API | Refuses requests without a key since 2026 (`PUBLIC_API_ACCESS_DEPRECATED`) |
+| Spotify's own app: a search provider, its media browser service | Nothing another app can ask |
+| **Spotify's Web API with a client id and secret of the user's own** (client credentials: no login, no user data) | `GET /v1/search` found the right song first for 11 of 12 requests ("smoke on the water", "golden kpop demon hunters", even "the song from titanic"); it does not forgive typos ("bohemian rapsody quen" found a wrong song). Albums, artists and playlists are found the same way; Spotify's own playlists come back empty for such a key, users' playlists are found. An album's first track: `GET /v1/albums/{id}/tracks`. **An artist's top tracks are refused (403)**: a track search with `artist:"…"` gives them instead |
+| The device's own model, asked which song is meant | Right for descriptions and typos ("that queen song about the poor boy", "bohemian rapsody quen", "the song from titanic"); wrong for "the daft punk song with pharrell", and it turned the correct title "smoke on the water" into another song. It cannot know a Spotify id. So it never rewrites what was typed: it is one more action on the row |
+
+So: with the user's own Spotify key in (the Booklight window › Labs), `play bohemian rhapsody` shows what Spotify
+found and Enter plays exactly that; without a key the row is "Search in Spotify". The key is the same idea as the
+flight service's: Booklight ships none.
+
+What this settles:
+- **"Play X on Spotify" cannot start one named song.** The honest row is "Search in Spotify": one Enter, and the
+  song is the first result there. Decision 4 of `next-five.md` applies.
+- **A Spotify link plays.** A track, album or playlist link (`spotify:…`, or the `open.spotify.com` address
+  Spotify's own Share gives) sent to Spotify starts it. So "play exactly this" works for anything the user has
+  the link of: a link of their own with a keyword, or a link they copied.
+- **The media session road is closed for Spotify** (section 3.5): no second step for it.
+- **The per-app settings pages work**, and there is a fourth one, battery use.
+- **Search inside an app** has three working sources on a Googlebook: `ACTION_SEARCH` where declared, the app's own
+  scheme, and an `https` link sent to the package (for the web apps too).
+
+Still not tried: a second player; `wa.me`, `smsto:` and `tel:`
+(they would open a chat or a call screen on somebody's account); the calendar's `time/` link; `ACTION_SEND` to a
+named app.
+
 ## What could not be verified
 
 - What Spotify does with `MEDIA_PLAY_FROM_SEARCH` today, with and without Premium, in any mode.

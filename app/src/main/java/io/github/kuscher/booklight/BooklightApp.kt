@@ -53,6 +53,8 @@ class BooklightApp : Application() {
     lateinit var commands: AppCommands private set
     /** A flight number's row. With a key of the user's own it asks a flight service: the other network code, beside [suggest]. */
     lateinit var flights: FlightsProvider private set
+    /** What Spotify has by a name, for `play`. With a key of the user's own it asks Spotify: network code like [flights]'. */
+    lateinit var songs: io.github.kuscher.booklight.providers.Songs private set
     /** What was typed when the panel last closed without running anything (the chip's key, the text): Up brings it back. */
     var lastText: Pair<String?, String>? = null
     /** An example the Booklight window asks the panel to type when it next opens (a row of its Commands page). Booklight's own, in its own process: no other app can put text here. */
@@ -99,7 +101,7 @@ class BooklightApp : Application() {
         apps = AppsProvider(this, scope)
         notes = Notes(this, prefs)
         Recipes.me = getSystemService(android.os.UserManager::class.java).getSerialNumberForUser(android.os.Process.myUserHandle())
-        val web = WebProvider(this, prefs)
+        val web = WebProvider(this, prefs, apps)
         executor = Executor(this)
         val dials = Dials(this, executor)
         commands = AppCommands(this, prefs, scope, apps)
@@ -109,8 +111,9 @@ class BooklightApp : Application() {
         guide = Guide(this, prefs, commands)
         tips = Tips(this, prefs)
         flights = FlightsProvider(this, prefs, scope)
-        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, onDevice, guide, others = { commands.scopes(it) }, pinned = { pinned.value }, flights = flights)
-        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), pages, CommandsProvider(this), dials, User(this, prefs), commands, keys, flights, web)
+        songs = io.github.kuscher.booklight.providers.Songs(this, prefs, scope)
+        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, onDevice, guide, others = { commands.scopes(it) }, pinned = { pinned.value }, flights = flights, installed = { apps.installed(it) })
+        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), pages, CommandsProvider(this), dials, User(this, prefs, apps), commands, keys, flights, web)
         engine = SearchEngine(
             providers, historyStore.history,
             scopes = { scopes.all() },

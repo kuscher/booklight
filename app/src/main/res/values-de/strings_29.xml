@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="page_notifications">Benachrichtigungen</string>
+    <string name="page_language">Sprache</string>
+    <string name="page_defaults">Standardmäßig öffnen</string>
+    <string name="page_battery">Akkunutzung</string>
+    <string name="verb_notifications">notifications,notification,benachrichtigungen,benachrichtigung</string>
+    <string name="verb_language">language,languages,sprache,sprachen</string>
+    <string name="verb_defaults">defaults,default,open by default,standard,standards,standardmäßig öffnen</string>
+    <string name="verb_battery">battery,battery use,akku,akkunutzung,batterie</string>
+
+    <string name="cmd_alarms">Alle Wecker</string>
+    <string name="cmd_alarms_words">alarms,wecker</string>
+    <string name="cmd_timers">Alle Timer</string>
+    <string name="cmd_timers_words">timers,timer</string>
+    <string name="cmd_clock_sub">Die Liste in der Uhr-App</string>
+
+    <string name="reach_from">Von</string>
+    <string name="reach_to">Nach</string>
+    <string name="reach_by">Wie</string>
+    <string name="reach_code">Code</string>
+    <string name="action_open_chat">Chat öffnen</string>
+    <string name="chat_about">Ein Chat, mit deinem Text im Feld</string>
+
+    <string name="go_keys">route,go,directions</string>
+    <string name="go_name">Route</string>
+    <string name="go_hint">Ein Ort, oder: von … nach … mit dem Zug</string>
+    <string name="go_about">Der Weg dorthin</string>
+    <string name="go_caption">Öffnet sich in Maps.</string>
+    <string name="go_caption_web">Öffnet Google Maps in deinem Browser.</string>
+    <string name="go_here">Hier</string>
+    <string name="action_directions">Route</string>
+    <string name="travel_transit">Bahn und Bus</string>
+    <string name="travel_walk">Zu Fuß</string>
+    <string name="travel_bike">Fahrrad</string>
+    <string name="travel_car">Auto</string>
+
+    <string name="meet_title">Meeting starten oder beitreten</string>
+    <string name="meet_hint">Ein Code zum Beitreten, oder nichts für ein neues Meeting</string>
+    <string name="meet_about">Ein neues in Meet, oder eines per Code</string>
+    <string name="meet_caption_new">Ein neues Meeting. Öffnet sich in Meet.</string>
+    <string name="meet_caption_join">Öffnet dieses Meeting in Meet. Du trittst dort bei.</string>
+    <string name="meet_caption_code">Der Code eines Meetings sieht so aus: abc-defg-hij</string>
+    <string name="action_join">Beitreten</string>
+
+    <string name="call_keys">anruf,call</string>
+    <string name="call_name">Anruf</string>
+    <string name="call_hint">Eine Telefonnummer</string>
+    <string name="call_about">Die Telefon-App, mit der Nummer ausgefüllt</string>
+    <string name="call_caption">Öffnet die Telefon-App. Den Anruf startest du dort.</string>
+    <string name="action_dial">Telefon öffnen</string>
+
+    <string name="sms_hint">Eine Nummer, dann dein Text</string>
+    <string name="sms_about">Eine SMS, ausgefüllt</string>
+    <string name="sms_caption">Neue SMS in deiner Nachrichten-App; nichts wird gesendet.</string>
+
+    <string name="wa_title">Auf WhatsApp schreiben</string>
+    <string name="wa_hint">Eine Nummer mit Ländervorwahl, dann dein Text</string>
+    <string name="wa_caption">Öffnet den WhatsApp-Chat mit deinem Text; nichts wird gesendet.</string>
+    <string name="wa_caption_code">WhatsApp braucht die Ländervorwahl: + und Vorwahl, dann die Nummer.</string>
+
+    <string name="tg_title">Auf Telegram schreiben</string>
+    <string name="tg_hint">Ein Nutzername oder eine Nummer, dann dein Text</string>
+    <string name="tg_caption">Öffnet den Telegram-Chat mit deinem Text; nichts wird gesendet.</string>
+    <string name="tg_caption_who">Ein Nutzername, oder eine Nummer mit + und Ländervorwahl.</string>
+</resources>

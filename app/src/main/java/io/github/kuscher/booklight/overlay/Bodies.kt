@@ -104,7 +104,8 @@ fun RowScope.SlotsBody(b: Body.Slots, ink: Color) {
 @Composable
 private fun SlotsColumn(b: Body.Slots, ink: Color, modifier: Modifier) {
     Column(modifier.padding(start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        b.caption?.let { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        // (Too long, it fades at its end like the panel's other texts: never an ellipsis.)
+        b.caption?.let { Box(Modifier.fillMaxWidth().fadeEnd()) { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) } }
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             b.slots.forEachIndexed { i, s ->
                 // The first slots keep to their share; the last takes what is left, so a growing value never pushes its neighbour away.

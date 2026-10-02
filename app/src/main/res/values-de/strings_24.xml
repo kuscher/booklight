@@ -58,7 +58,7 @@
 
     <string name="set_flights">Flüge</string>
     <string name="set_flight_key">Dein AirLabs-Schlüssel</string>
-    <string name="set_flight_key_text">Eine Flugnummer nennt ihre Airline ganz ohne Schlüssel. Mit einem eigenen Schlüssel wird die getippte Nummer zusammen mit dem Schlüssel an AirLabs (airlabs.co) gesendet, einen Moment nachdem du aufhörst zu tippen, und die Zeile antwortet mit den Zeiten, dem Gate und dem Status. Ein angehefteter Flug fragt bis zur Landung neu: alle drei Stunden, ab drei Stunden vor dem Abflug jede halbe Stunde. Der Schlüssel wird nur auf diesem Gerät gespeichert und geht nur an AirLabs.</string>
+    <string name="set_flight_key_text">Mit Schlüssel zeigt die Zeile einer Flugnummer Zeiten, Gate und Status. Die Nummer geht an AirLabs (airlabs.co), sobald du kurz nicht tippst; ein angehefteter Flug fragt bis zur Landung wieder nach. Der Schlüssel bleibt auf diesem Gerät und geht nur an AirLabs.</string>
     <string name="set_flight_key_hint">Schlüssel hier einfügen</string>
     <string name="set_flight_key_in">Ein Schlüssel ist eingetragen</string>
     <string name="set_flight_key_none">Kein Schlüssel</string>

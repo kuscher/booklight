@@ -27,7 +27,23 @@ enum class Kind {
  */
 sealed interface Icon {
     /** The launcher icon of an activity. [user] is the profile's serial number (0 = the owner). */
-    data class App(val packageName: String, val className: String, val user: Long = 0) : Icon
+    data class App(val packageName: String, val className: String, val user: Long = 0) : Icon {
+        /** This icon as an action's symbol: an action that hands something to an app is marked by the app's own icon. */
+        val symbol: String get() = "$SYMBOL$packageName/$className#$user"
+
+        companion object {
+            private const val SYMBOL = "app:"
+
+            /** The app's icon a symbol names; null for one of Booklight's own symbols. */
+            fun of(symbol: String): App? {
+                if (!symbol.startsWith(SYMBOL)) return null
+                val slash = symbol.indexOf('/')
+                val hash = symbol.lastIndexOf('#')
+                if (slash <= SYMBOL.length || hash <= slash + 1) return null
+                return App(symbol.substring(SYMBOL.length, slash), symbol.substring(slash + 1, hash), symbol.substring(hash + 1).toLongOrNull() ?: return null)
+            }
+        }
+    }
     /** One of Booklight's own symbols, by name (`ui/Icons.kt`). */
     data class Symbol(val name: String) : Icon
     /** A patch of one colour (a colour value typed into the panel). */
@@ -46,10 +62,17 @@ enum class Place {
     TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, CENTER, FULL,
 }
 
-enum class MediaKey { PLAY_PAUSE, NEXT, PREVIOUS }
+/**
+ * A media key. [PLAY] resumes whatever played last and [PAUSE] can never start anything; [PLAY_PAUSE] is the
+ * one key that does either. Recipes save a key by its name.
+ */
+enum class MediaKey { PLAY_PAUSE, NEXT, PREVIOUS, PLAY, PAUSE, STOP }
 
 /** What to do with a picture Booklight made (a QR code). */
 enum class ImageUse { COPY, SAVE, SHARE }
+
+/** One of an app's own pages in the system's Settings. */
+enum class AppPage { NOTIFICATIONS, LANGUAGE, DEFAULTS, BATTERY }
 
 /**
  * What running an action does, as data. The core never touches Android: the app's `Executor`
@@ -60,9 +83,15 @@ sealed interface Effect {
     data class LaunchApp(val packageName: String, val className: String, val user: Long = 0, val place: Place = Place.NONE, val newWindow: Boolean = false, val display: Int = 0) : Effect
     data class AppInfo(val packageName: String, val className: String, val user: Long = 0) : Effect
     /**
-     * Something another app offers (one of its own shortcuts, or a command from its Booklight file):
-     * [intent] as an `intent:` address. The executor starts it only if it leads to an activity of
-     * [owner] that is open to other apps and asks for no permission.
+     * One of an app's own pages in the system's Settings: its notifications, its language, what it
+     * opens by default, its battery use. The page is opened; the switches on it are the user's.
+     */
+    data class AppSettings(val page: AppPage, val packageName: String) : Effect
+    /**
+     * Something another app offers (one of its own shortcuts, or a command from its Booklight file), or
+     * what an app command of the user's own asks an app for: [intent] as an `intent:` address. The
+     * executor starts it only if it leads to an activity of [owner] that is open to other apps and asks
+     * for no permission.
      */
     data class Open(val owner: String, val intent: String) : Effect
     /** Asks the system to remove an app; the system shows its own confirmation. */
@@ -77,6 +106,12 @@ sealed interface Effect {
 
     /** The mail app's compose window, filled in. Nothing is sent. */
     data class Compose(val to: List<String>, val subject: String, val body: String) : Effect
+    /**
+     * The phone app's dial screen with [number] in it, or, with [message], the messages app's new
+     * message to [number] with [text] in its field. [number] is digits, with a + in front when it
+     * was typed so. Nothing is dialled and nothing is sent: the last click is the user's.
+     */
+    data class Phone(val number: String, val message: Boolean = false, val text: String = "") : Effect
     /** A line for the user's notes: [file] empty is Notes.md, [TODAY] the day's own file, else that file in the notes folder. */
     data class AppendNote(val text: String, val file: String = "") : Effect {
         companion object { const val TODAY = "@today" }
@@ -93,6 +128,8 @@ sealed interface Effect {
     data class InsertEvent(val title: String, val startMillis: Long, val endMillis: Long, val allDay: Boolean, val place: String) : Effect
     data class SetTimer(val seconds: Int, val label: String) : Effect
     data class SetAlarm(val hour: Int, val minute: Int, val label: String) : Effect
+    /** The Clock's list of alarms, or its list of [timers]. */
+    data class ClockList(val timers: Boolean) : Effect
     /** A new file or folder in Documents. [pick]: ask where instead. */
     data class NewFile(val name: String, val folder: Boolean, val pick: Boolean = false) : Effect
     /** Hands text to the Gemini app, which shows it in its prompt; the user sends it there. */
@@ -111,8 +148,20 @@ sealed interface Effect {
     data class SetVolume(val percent: Int) : Effect
     data object ToggleMute : Effect
     data class Media(val key: MediaKey) : Effect
-    /** "Play this" to whichever music app answers. */
-    data class PlayMusic(val query: String) : Effect
+    /**
+     * "Play this", asked of the music app [packageName], or of whichever answers when it is null.
+     * [mode] says what kind of thing is named, and the fields after it are that mode's names (empty:
+     * not given); [query] is always sent too, for a player that does not know the modes. The executor
+     * starts only an activity of that app that is open to other apps and asks for no permission.
+     * What the player does with it (play, or show its search results) is the player's choice.
+     * [link]: an address of the player's own that plays exactly this, where a lookup found one
+     * (`spotify:track:…`); it is sent to [packageName] in place of the request.
+     */
+    data class PlayMusic(
+        val query: String, val packageName: String? = null, val mode: PlayMode = PlayMode.ANY,
+        val title: String = "", val artist: String = "", val album: String = "", val playlist: String = "", val genre: String = "",
+        val link: String = "",
+    ) : Effect
     data class SetBrightness(val percent: Int) : Effect
 
     /** The QR code for [text]: copied, saved to Downloads, or shared. */
@@ -134,7 +183,7 @@ sealed interface Effect {
     data class Grant(val what: String) : Effect
 
     data class SaveSnippet(val key: String, val text: String) : Effect
-    /** Removes something the user made: `snippet`, `quicklink`, `recipe`. */
+    /** Removes something the user made: `snippet`, `quicklink`, `recipe`, `appcommand`. */
     data class Delete(val kind: String, val id: String) : Effect
     /** Opens the editor for something the user made, or for a new one ([id] empty). */
     data class Edit(val kind: String, val id: String) : Effect
@@ -152,7 +201,7 @@ data class Action(
     val effect: Effect,
     /** Leave the panel open afterwards. */
     val keepOpen: Boolean = false,
-    /** The action's icon, by name (`ui/Icons.kt`). */
+    /** The action's icon, by name (`ui/Icons.kt`), or an app's own icon ([Icon.App.symbol]). */
     val symbol: String = id,
     /** Removes or uninstalls: drawn last and in the error colour, never armed unless asked for by name. */
     val danger: Boolean = false,
@@ -274,5 +323,11 @@ interface Scope {
     val words: List<String> get() = emptyList()
     /** False for a keyword the user has not chosen yet (another app's): it is entered from its row, not by a Space. */
     val spaceEnters: Boolean get() = true
+    /**
+     * Keywords of it that are too short to take the first row when typed alone: "go" is also how Google starts, "wa" how
+     * WhatsApp and Wallpaper do. Typed alone, such a keyword is a hint under the apps and settings of that start; with its
+     * space it enters the scope like any other.
+     */
+    val shy: List<String> get() = emptyList()
     suspend fun rows(arg: String): List<Result>
 }

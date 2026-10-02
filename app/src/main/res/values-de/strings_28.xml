@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Commands for other apps of the user's own (docs/research/next-five.md, feature 3). -->
+
+    <!-- A link may have any scheme, an app's own too: spotify:search:{argument}. Why Save is grey: -->
+    <string name="win_why_scheme">Die Adresse braucht einen Anfang wie https:// oder spotify:</string>
+    <string name="win_why_scheme_refused">Booklight öffnet keine Adresse mit javascript:, file:, content:, intent: oder data:</string>
+    <string name="win_why_address_empty">Es braucht eine Adresse.</string>
+    <string name="win_link_app">Auch die eigene Adresse einer App geht: spotify:search:{argument} sucht in Spotify.</string>
+    <!-- The footer, when nothing answers a link's address or what another app was asked. -->
+    <string name="failed_open">Nichts auf diesem Gerät öffnet das</string>
+    <!-- A typed or pasted address with an app's own scheme: "Open in Spotify". -->
+    <string name="web_open_in">In %1$s öffnen</string>
+
+    <!-- What Enter does on an app command's row that hands a text over: beside Open, Search and Play. -->
+    <string name="action_send">Senden</string>
+
+    <!-- An app command: the fifth kind on Commands › Yours. -->
+    <string name="win_app_commands">App-Befehle</string>
+    <string name="win_kind_app_command">App-Befehl</string>
+    <string name="win_new_app_command">Neuer App-Befehl</string>
+    <string name="win_new_more_all">Neuer Textbaustein, neues Rezept, neuer Prompt oder neuer App-Befehl</string>
+    <string name="win_yours_lead">Links, die du mit einem Stichwort erreichst, Textstücke, die du oft einfügst, Rezepte, die mehreres auf einmal tun, Prompts für das Modell auf diesem Gerät und Befehle für deine anderen Apps.</string>
+
+    <!-- Its editor. Labels are short: English and German both fit a window 400 dp wide. -->
+    <!-- What the name's field suggests: what the command does, not only its app (its chip would read like the app). -->
+    <string name="cmd_name_hint">Spotify-Suche</string>
+    <string name="cmd_app">App</string>
+    <string name="cmd_app_hint">Name der App</string>
+    <string name="cmd_what">Was</string>
+    <string name="cmd_what_link">Link öffnen</string>
+    <string name="cmd_what_send">Text senden</string>
+    <string name="cmd_what_search">Suchen</string>
+    <string name="cmd_what_play">Musik abspielen</string>
+    <string name="cmd_what_custom">Eigene Aktion</string>
+    <string name="cmd_query">Suchen nach</string>
+    <string name="cmd_action">Aktion</string>
+    <string name="cmd_activity">Activity</string>
+    <string name="cmd_type">Typ</string>
+    <string name="cmd_extra">Extra %1$d</string>
+    <string name="cmd_value">Wert %1$d</string>
+    <string name="cmd_kind_text">Text</string>
+    <string name="cmd_kind_number">Zahl</string>
+    <string name="cmd_kind_yes_no">Ja/Nein</string>
+    <string name="cmd_yes">Ja</string>
+    <string name="cmd_no">Nein</string>
+    <string name="cmd_add_extra">Extra hinzufügen</string>
+    <string name="cmd_help">{argument} ist, was du nach dem Stichwort tippst. Damit nimmt der Befehl Text an; ohne startet ihn Enter. Booklight öffnet immer nur ein Fenster dieser App, das sie anderen Apps erlaubt.</string>
+    <string name="cmd_paste">Zeile einfügen</string>
+    <string name="cmd_paste_help">Eine Zeile „am start …“ oder eine intent:-Adresse füllt das Formular aus. Enter liest, was du getippt hast.</string>
+    <string name="cmd_try_with">Ausprobieren mit</string>
+
+    <!-- Why Save is grey. -->
+    <string name="cmd_why_keyword">Er nimmt Text an, also braucht er ein Stichwort.</string>
+    <string name="cmd_why_app">Wähle eine App.</string>
+    <string name="cmd_why_query">Es fehlt, wonach gesucht wird.</string>
+    <string name="cmd_why_action">Es braucht eine Aktion oder eine Activity.</string>
+    <string name="cmd_why_extra_name">Jedes Extra braucht einen Namen.</string>
+    <string name="cmd_why_extra_twice">Zwei Extras haben denselben Namen.</string>
+    <string name="cmd_why_number">Ein Zahl-Extra enthält eine ganze Zahl.</string>
+    <string name="cmd_why_extras">Höchstens acht Extras.</string>
+
+    <!-- What the paste box says. %1$s is the flag, the word or the value it could not read. -->
+    <string name="cmd_paste_done">Ins Formular übernommen. Prüfe es, dann speichern.</string>
+    <string name="cmd_paste_no_app">Ins Formular übernommen. %1$s ist nicht auf diesem Gerät: Wähle die App.</string>
+    <string name="cmd_paste_not">Das ist weder eine Zeile „am start“ noch eine intent:-Adresse.</string>
+    <string name="cmd_paste_quote">Ein Anführungszeichen ist nicht geschlossen.</string>
+    <string name="cmd_paste_flag">Booklight liest %1$s nicht. Nimm es heraus oder fülle das Formular von Hand aus.</string>
+    <string name="cmd_paste_value">Nach %1$s fehlt ein Wert.</string>
+    <string name="cmd_paste_word">„%1$s“ ist ein Wort zu viel.</string>
+    <string name="cmd_paste_component">%1$s ist nicht App/Activity.</string>
+    <string name="cmd_paste_two">Die Zeile nennt zwei Apps.</string>
+    <string name="cmd_paste_extra">Booklight liest Extras mit Text, Zahl und Ja/Nein, nicht %1$s</string>
+    <string name="cmd_paste_end">Die intent:-Adresse ist abgeschnitten.</string>
+    <string name="cmd_paste_number">%1$s ist keine ganze Zahl.</string>
+    <string name="cmd_paste_yes_no">%1$s ist weder true noch false.</string>
+
+    <!-- What Try says. %1$s is the app's name. Booklight cannot know what the app did: "Sent", never "Playing". -->
+    <string name="cmd_try_text">Tippe einen Text zum Ausprobieren.</string>
+    <string name="cmd_try_number">Der Text zum Ausprobieren muss eine ganze Zahl sein.</string>
+    <string name="cmd_try_sent">An %1$s gesendet.</string>
+    <string name="cmd_try_gone">%1$s ist nicht auf diesem Gerät.</string>
+    <string name="cmd_try_nothing">%1$s hat nichts, was das annimmt.</string>
+    <string name="cmd_try_closed">%1$s lässt das von anderen Apps nicht öffnen.</string>
+    <string name="cmd_try_permission">%1$s verlangt dafür eine Berechtigung, und Booklight fragt nach keiner.</string>
+    <string name="cmd_try_unreadable">Android kann das nicht lesen.</string>
+    <string name="cmd_try_failed">%1$s hat es nicht geöffnet.</string>
+</resources>

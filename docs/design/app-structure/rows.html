@@ -1,0 +1,668 @@
+<title>Booklight: one structure for apps</title>
+<style>
+/* Layout: one column of sections. In each, drawings stand as Today beside Proposed and stack on a narrow screen.
+   The drawings use the panel's own measures: field 68, row 56, list line 40, mark 36 centred at 38, text from 72. */
+:root {
+  --page: #F4F1F8;
+  --ink: #1D1B20;
+  --ink-2: #4B4654;
+  --ink-3: #736D7C;
+  --rule: #DAD4E3;
+  --accent: #5B4B8A;
+  --tag: #E3DAF4;
+  --tag-ink: #3A2F5E;
+  --tag-quiet: #E4E0EA;
+  --tag-quiet-ink: #4B4654;
+  --desk: #CDC6DA;
+  --glass: #FAF9FC;
+  --glass-edge: #FFFFFF;
+  --hair: rgb(0 0 0 / 0.20);
+  --pill: #E7DEF7;
+  --pill-edge: rgb(255 255 255 / 0.75);
+  --pane: #F9F7FD;
+  --pane-edge: #FFFFFF;
+  --pane-hair: rgb(29 27 32 / 0.14);
+  --disc: rgb(29 27 32 / 0.08);
+  --cap: rgb(29 27 32 / 0.10);
+  --danger: #B3261E;
+  --app-edge: rgb(0 0 0 / 0.10);
+  --spotify: #1ED760;
+  --spotify-dark: #121212;
+  --netflix-bg: #141414;
+  --netflix: #E50914;
+  --c-red: #EA4335;
+  --c-yellow: #FBBC04;
+  --c-green: #34A853;
+  --c-blue: #4285F4;
+  --c-white: #FFFFFF;
+  --calc-bg: #3F5270;
+  --calc-ink: #EAF0F8;
+  --yt: #FF0033;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #121016;
+    --ink: #E6E0E9;
+    --ink-2: #C5BECD;
+    --ink-3: #9A93A3;
+    --rule: #2F2B37;
+    --accent: #CFBCFF;
+    --tag: #3B3350;
+    --tag-ink: #E4DAFB;
+    --tag-quiet: #2A2731;
+    --tag-quiet-ink: #C5BECD;
+    --desk: #3C3846;
+    --glass: #1A181F;
+    --glass-edge: rgb(255 255 255 / 0.44);
+    --hair: rgb(0 0 0 / 0.40);
+    --pill: #3A3448;
+    --pill-edge: rgb(255 255 255 / 0.30);
+    --pane: #19171E;
+    --pane-edge: rgb(255 255 255 / 0.30);
+    --pane-hair: rgb(0 0 0 / 0.30);
+    --disc: rgb(230 224 233 / 0.12);
+    --cap: rgb(230 224 233 / 0.14);
+    --danger: #F2B8B5;
+    --app-edge: rgb(255 255 255 / 0.16);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #121016;
+  --ink: #E6E0E9;
+  --ink-2: #C5BECD;
+  --ink-3: #9A93A3;
+  --rule: #2F2B37;
+  --accent: #CFBCFF;
+  --tag: #3B3350;
+  --tag-ink: #E4DAFB;
+  --tag-quiet: #2A2731;
+  --tag-quiet-ink: #C5BECD;
+  --desk: #3C3846;
+  --glass: #1A181F;
+  --glass-edge: rgb(255 255 255 / 0.44);
+  --hair: rgb(0 0 0 / 0.40);
+  --pill: #3A3448;
+  --pill-edge: rgb(255 255 255 / 0.30);
+  --pane: #19171E;
+  --pane-edge: rgb(255 255 255 / 0.30);
+  --pane-hair: rgb(0 0 0 / 0.30);
+  --disc: rgb(230 224 233 / 0.12);
+  --cap: rgb(230 224 233 / 0.14);
+  --danger: #F2B8B5;
+  --app-edge: rgb(255 255 255 / 0.16);
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.5 var(--sans); }
+.wrap { max-width: 1160px; margin-inline: auto; padding-inline: 16px; padding-block: 36px 72px; display: flex; flex-direction: column; gap: 56px; }
+.intro, section { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+h1 { margin: 0; font-size: 32px; line-height: 1.15; font-weight: 650; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 650; text-wrap: balance; }
+h3 { margin: 0; font-size: 16px; line-height: 1.4; font-weight: 600; }
+h3 span { font-weight: 400; color: var(--ink-2); }
+p { margin: 0; max-width: 66ch; }
+.lead { font-size: 20px; line-height: 1.4; font-weight: 500; max-width: 40ch; }
+.note { color: var(--ink-2); }
+section > h2 { padding-top: 20px; border-top: 1px solid var(--rule); }
+kbd { font: 500 12px/1 var(--sans); display: inline-block; padding: 4px 7px; border-radius: 6px; background: var(--cap); color: var(--ink); white-space: nowrap; }
+code { font: 500 0.92em/1 var(--mono); padding: 2px 5px; border-radius: 5px; background: var(--cap); white-space: nowrap; }
+
+/* The five places of an app's row */
+.order { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px 20px; counter-reset: place; }
+.order li { counter-increment: place; display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 12px; row-gap: 2px; align-items: start; }
+.order .mk { grid-column: 1; grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 50%; background: var(--tag); color: var(--tag-ink); display: grid; place-items: center; }
+.order .mk svg { width: 18px; height: 18px; }
+.order b { grid-column: 2; grid-row: 1; font-weight: 600; line-height: 1.4; padding-top: 1px; }
+.order b::before { content: counter(place) "  "; color: var(--ink-3); font-weight: 500; font-variant-numeric: tabular-nums; white-space: pre; }
+.order .d { grid-column: 2; grid-row: 2; font-size: 14px; line-height: 1.4; color: var(--ink-2); }
+
+/* Figures */
+.app { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 510px), 1fr)); gap: 24px 20px; align-items: start; }
+.steps { display: flex; flex-direction: column; gap: 24px; }
+.steps figure { display: grid; grid-template-columns: minmax(0, 744px) minmax(0, 1fr); gap: 10px 24px; align-items: start; }
+.steps figcaption { padding-top: 4px; }
+.steps .panel { min-width: 560px; }
+@media (max-width: 1040px) { .steps figure { grid-template-columns: minmax(0, 1fr); } .steps figcaption { padding-top: 0; } }
+.trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; align-items: start; }
+.stack { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+figure { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.tag { align-self: flex-start; font-size: 12px; line-height: 1; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 9px; border-radius: 6px; background: var(--tag-quiet); color: var(--tag-quiet-ink); }
+.tag.new { background: var(--tag); color: var(--tag-ink); }
+figcaption { font-size: 14px; line-height: 1.45; color: var(--ink-2); max-width: 64ch; }
+.desk { background: var(--desk); border-radius: 14px; padding: 12px; overflow-x: auto; }
+.desk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The panel */
+.panel { min-width: 460px; max-width: 720px; background: var(--glass); border-radius: 32px; box-shadow: 0 0 0 1.25px var(--glass-edge), 0 0 0 2.25px var(--hair); color: var(--ink); font-family: var(--sans); }
+.panel.narrow { min-width: 296px; }
+.panel svg { display: block; }
+.field { height: 68px; display: flex; align-items: center; padding: 0 20px; }
+.g { flex: none; width: 36px; height: 36px; display: grid; place-items: center; font-size: 25px; font-weight: 600; color: var(--ink-2); }
+.q { margin-left: 16px; font-size: 24px; line-height: 1; font-weight: 500; white-space: nowrap; display: flex; align-items: center; min-width: 0; }
+.q .rest, .q.hint { color: var(--ink-3); }
+.q.hint { font-weight: 400; }
+.caret { flex: none; width: 2px; height: 28px; background: var(--accent); margin-left: 1px; border-radius: 1px; }
+.q.hint .caret { margin: 0 2px 0 0; }
+.chip { flex: none; height: 36px; border-radius: 18px; background: var(--cap); box-shadow: inset 0 0 0 1px var(--pill-edge); display: flex; align-items: center; gap: 6px; padding: 0 14px 0 8px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.chip svg { width: 20px; height: 20px; }
+.chip + .q { margin-left: 12px; }
+.field .key { margin-left: auto; }
+.key { flex: none; height: 22px; min-width: 36px; box-sizing: border-box; padding: 0 8px; border-radius: 7px; background: var(--cap); color: var(--ink-2); font-size: 12px; font-weight: 500; display: inline-grid; place-items: center; }
+.list { padding: 8px; }
+.row { height: 56px; border-radius: 24px; display: flex; align-items: center; gap: 16px; padding: 0 12px; }
+.row.sel, .l40.sel { background: var(--pill); box-shadow: inset 0 0 0 1px var(--pill-edge); }
+.mark { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.mark.sym { background: var(--disc); color: var(--ink-2); }
+.mark.sym svg { width: 20px; height: 20px; }
+.mark.app svg { width: 36px; height: 36px; }
+.txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.t { font-size: 17px; line-height: 22px; font-weight: 500; white-space: nowrap; overflow: hidden; }
+.s { font-size: 13px; line-height: 17px; font-weight: 500; color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.kind { flex: none; font-size: 13px; font-weight: 500; color: var(--ink-3); padding-right: 8px; white-space: nowrap; }
+.strip { flex: none; display: flex; align-items: center; margin-left: -8px; }
+.a { flex: none; width: 32px; height: 32px; display: grid; place-items: center; }
+.a svg { width: 18px; height: 18px; }
+.a.on { width: auto; display: flex; align-items: center; gap: 7px; padding: 0 9px; margin: 0 4px; border-radius: 16px; background: var(--pane); box-shadow: inset 0 0 0 1px var(--pane-edge), 0 0 0 1px var(--pane-hair); }
+.a.on:first-child { margin-left: 0; }
+.a.on:last-child { margin-right: 0; }
+.a.on b { font-size: 14px; font-weight: 500; letter-spacing: 0.1px; white-space: nowrap; }
+.a.on .ent { width: 14px; height: 14px; margin-left: -1px; }
+.a.off { opacity: 0.4; }
+.up { transform: rotate(180deg); }
+.line { height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 12px; }
+.line .say { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.line .key { margin-left: auto; }
+.l40 { height: 40px; border-radius: 20px; display: flex; align-items: center; gap: 16px; padding: 0 12px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.l40 .gl { flex: none; width: 36px; display: grid; place-items: center; color: var(--ink-2); }
+.l40 .gl svg { width: 18px; height: 18px; }
+.l40 .ent { width: 14px; height: 14px; margin-left: auto; margin-right: 10px; }
+.l40.danger { margin-top: 8px; color: var(--danger); }
+.l40.danger .gl { color: var(--danger); }
+.foot { height: 36px; padding: 0 20px 8px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.foot .key + span { margin-right: 10px; }
+.foot span:last-child { margin-right: 0; }
+
+/* Drawn icons */
+.ln { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.fl { fill: currentColor; stroke: none; }
+.k-edge { fill: none; stroke: var(--app-edge); stroke-width: 1; }
+.k-sp-d { fill: var(--spotify-dark); }
+.k-sp { fill: var(--spotify); }
+.k-sp-ln { fill: none; stroke: var(--spotify-dark); stroke-linecap: round; }
+.k-nf-bg { fill: var(--netflix-bg); }
+.k-nf { fill: var(--netflix); }
+.k-red { fill: var(--c-red); }
+.k-yellow { fill: var(--c-yellow); }
+.k-green { fill: var(--c-green); }
+.k-blue { fill: var(--c-blue); }
+.k-white { fill: var(--c-white); }
+.k-calc-bg { fill: var(--calc-bg); }
+.k-calc { fill: none; stroke: var(--calc-ink); stroke-width: 2.2; stroke-linecap: round; }
+.k-yt { fill: var(--yt); }
+
+  /* The key counts and the decisions: plain tables and a numbered list, on the page's own tokens. */
+  .tbl { overflow-x: auto; }
+  .tbl table { border-collapse: collapse; width: 100%; min-width: 560px; font-variant-numeric: tabular-nums; }
+  .tbl th, .tbl td { text-align: left; vertical-align: top; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+  .tbl th { font-weight: 600; }
+  .decide { display: flex; flex-direction: column; gap: 14px; padding: 0; margin: 0; list-style: none; counter-reset: d; }
+  .decide li { counter-increment: d; padding-left: 34px; position: relative; max-width: 70ch; }
+  .decide li::before { content: counter(d); position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 11px; border: 1px solid var(--rule); display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+  .decide b { display: block; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-open" viewBox="0 0 18 18"><path class="ln" d="M7.5 4H5A1.5 1.5 0 0 0 3.5 5.5V13A1.5 1.5 0 0 0 5 14.5h7.5A1.5 1.5 0 0 0 14 13v-2.5M10.5 3.5h4v4M14.5 3.5l-6 6"/></symbol>
+    <symbol id="i-newwin" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="3.5" width="13" height="11" rx="1.8"/><path class="ln" d="M2.5 6.5h13M9 8.5v4M7 10.5h4"/></symbol>
+    <symbol id="i-info" viewBox="0 0 18 18"><circle class="ln" cx="9" cy="9" r="6.5"/><path class="ln" d="M9 8.4v4"/><circle class="fl" cx="9" cy="5.8" r="1"/></symbol>
+    <symbol id="i-more" viewBox="0 0 18 18"><path class="ln" d="M5 7l4 4 4-4"/></symbol>
+    <symbol id="i-search" viewBox="0 0 18 18"><circle class="ln" cx="8" cy="8" r="4.6"/><path class="ln" d="M11.5 11.5l3.5 3.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 18 18"><path class="fl" d="M6 3.9v10.2a.6.6 0 0 0 .9.5l8-5.1a.6.6 0 0 0 0-1L6.9 3.4a.6.6 0 0 0-.9.5z"/></symbol>
+    <symbol id="i-window" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="3.5" width="13" height="11" rx="1.8"/><path class="ln" d="M2.5 6.5h13"/></symbol>
+    <symbol id="i-enter" viewBox="0 0 14 14"><path class="ln" d="M11.5 3v4A1.5 1.5 0 0 1 10 8.5H3M5.5 6L3 8.5 5.5 11"/></symbol>
+    <symbol id="i-note" viewBox="0 0 18 18"><path class="fl" d="M7.5 3.2v7.3a2.6 2.6 0 1 0 1.6 2.4V6.2h3.4v-3z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 18 18"><path class="ln" d="M4.5 12.5h9l-1.2-1.9V8a3.3 3.3 0 0 0-6.6 0v2.6zM7.8 14.6a1.3 1.3 0 0 0 2.4 0"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 18 18"><circle class="ln" cx="9" cy="9" r="6.5"/><ellipse class="ln" cx="9" cy="9" rx="2.8" ry="6.5"/><path class="ln" d="M2.5 9h13"/></symbol>
+    <symbol id="i-link" viewBox="0 0 18 18"><path class="ln" d="M7.6 10.4a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8M10.4 7.6a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.8-.8"/></symbol>
+    <symbol id="i-battery" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="5.5" width="11.5" height="7" rx="1.6"/><path class="ln" d="M16 8v2"/><rect class="fl" x="4.5" y="7.5" width="5" height="3" rx="0.6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 18 18"><path class="ln" d="M3.5 5.5h11M7 5.5V4h4v1.5M5 5.5l.6 9h6.8l.6-9"/></symbol>
+    <symbol id="p-full" viewBox="0 0 18 18"><rect class="fl" x="2.5" y="4" width="13" height="10" rx="1.8"/></symbol>
+    <symbol id="p-left" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><path class="fl" d="M4.3 4H9v10H4.3a1.8 1.8 0 0 1-1.8-1.8V5.8A1.8 1.8 0 0 1 4.3 4z"/></symbol>
+    <symbol id="p-right" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><path class="fl" d="M9 4h4.7a1.8 1.8 0 0 1 1.8 1.8v6.4a1.8 1.8 0 0 1-1.8 1.8H9z"/></symbol>
+    <symbol id="p-l3" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="2.5" y="4" width="4.4" height="10" rx="1"/></symbol>
+    <symbol id="p-m3" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="6.8" y="4" width="4.4" height="10"/></symbol>
+    <symbol id="p-r3" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="11.1" y="4" width="4.4" height="10" rx="1"/></symbol>
+    <symbol id="p-l23" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="2.5" y="4" width="8.7" height="10" rx="1"/></symbol>
+    <symbol id="p-r23" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="6.8" y="4" width="8.7" height="10" rx="1"/></symbol>
+    <symbol id="p-tl" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="2.5" y="4" width="6.5" height="5" rx="1"/></symbol>
+    <symbol id="p-tr" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="9" y="4" width="6.5" height="5" rx="1"/></symbol>
+    <symbol id="p-bl" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="2.5" y="9" width="6.5" height="5" rx="1"/></symbol>
+    <symbol id="p-br" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="9" y="9" width="6.5" height="5" rx="1"/></symbol>
+    <symbol id="p-c" viewBox="0 0 18 18"><rect class="ln" x="2.5" y="4" width="13" height="10" rx="1.8"/><rect class="fl" x="5.8" y="6.5" width="6.4" height="5" rx="0.8"/></symbol>
+    <symbol id="app-spotify" viewBox="0 0 36 36"><circle class="k-sp-d" cx="18" cy="18" r="18"/><circle class="k-sp" cx="18" cy="18" r="14.5"/><path class="k-sp-ln" stroke-width="2.7" d="M10.3 14.3c5.2-1.6 11-1.1 15.6 1.5"/><path class="k-sp-ln" stroke-width="2.3" d="M11.3 19c4.3-1.2 8.9-.7 12.7 1.4"/><path class="k-sp-ln" stroke-width="1.9" d="M12.4 23.2c3.3-.9 6.6-.5 9.5 1.1"/><circle class="k-edge" cx="18" cy="18" r="17.5"/></symbol>
+    <symbol id="app-netflix" viewBox="0 0 36 36"><rect class="k-nf-bg" width="36" height="36" rx="10"/><path class="k-nf" d="M12 8.5h4.2v19H12zM19.8 8.5H24v19h-4.2z"/><path class="k-nf" d="M12 8.5h4.2L24 27.5h-4.2z"/><rect class="k-edge" x="0.5" y="0.5" width="35" height="35" rx="9.5"/></symbol>
+    <symbol id="app-chrome" viewBox="0 0 36 36"><path class="k-red" d="M18 18L4.14 10A16 16 0 0 1 31.86 10z"/><path class="k-yellow" d="M18 18L31.86 10A16 16 0 0 1 18 34z"/><path class="k-green" d="M18 18L18 34A16 16 0 0 1 4.14 10z"/><circle class="k-white" cx="18" cy="18" r="7.6"/><circle class="k-blue" cx="18" cy="18" r="6"/><circle class="k-edge" cx="18" cy="18" r="16"/></symbol>
+    <symbol id="app-calc" viewBox="0 0 36 36"><rect class="k-calc-bg" width="36" height="36" rx="10"/><path class="k-calc" d="M9.5 12.5h6M12.5 9.5v6M20.5 12.5h6M10.4 21.4l4.2 4.2M14.6 21.4l-4.2 4.2M20.5 21.8h6M20.5 25.6h6"/><rect class="k-edge" x="0.5" y="0.5" width="35" height="35" rx="9.5"/></symbol>
+    <symbol id="app-youtube" viewBox="0 0 36 36"><rect class="k-white" width="36" height="36" rx="10"/><rect class="k-yt" x="5" y="9.5" width="26" height="17" rx="5.5"/><path class="k-white" d="M15.2 13.8v8.4l7.2-4.2z"/><rect class="k-edge" x="0.5" y="0.5" width="35" height="35" rx="9.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="intro">
+  <h1>One structure for apps</h1>
+  <p class="lead">Type the app, Tab to what you want, Enter. If it takes words, type them and press Enter again.</p>
+  <p>Every app's row has the same places, in the same order. An app only shows the ones it has, so a row carries two to four icons and the arrow, where today it carries six.</p>
+  <ol class="order">
+    <li><span class="mk"><svg><use href="#i-open"/></svg></span><b>Open</b><span class="d">Every app. Enter opens it.</span></li>
+    <li><span class="mk"><svg><use href="#i-search"/></svg></span><b>Search</b><span class="d">An app that can be searched. Enter puts the app in the field; type what to look for.</span></li>
+    <li><span class="mk"><svg><use href="#i-play"/></svg></span><b>Play</b><span class="d">A music app that can play what you name. Enter puts the app in the field; type the song.</span></li>
+    <li><span class="mk"><svg><use href="#i-window"/></svg></span><b>Window</b><span class="d">Every app. Enter opens a short list: New window, then the places.</span></li>
+    <li><span class="mk"><svg><use href="#i-more"/></svg></span><b>More</b><span class="d">Every app. Enter opens App info, the app's pages in Settings, Uninstall.</span></li>
+  </ol>
+</div>
+
+<section>
+  <h2>The row, app by app</h2>
+
+  <div class="app">
+    <h3>Spotify <span>can be searched and plays music</span></h3>
+    <div class="pair">
+      <figure>
+        <span class="tag">Today</span>
+        <div class="desk" tabindex="0" role="img" aria-label="Today: Spotify's row with six icons and an arrow, Open armed. Under it a second row, Search · Spotify.">
+          <div class="panel"><div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Spotify</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-open"/></svg><b>Open</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-newwin"/></svg></span><span class="a"><svg><use href="#i-info"/></svg></span><span class="a"><svg><use href="#p-full"/></svg></span><span class="a"><svg><use href="#p-left"/></svg></span><span class="a"><svg><use href="#p-right"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            <div class="row"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Search · Spotify</span></span><span class="kind">Spotify</span></div>
+          </div></div>
+        </div>
+        <figcaption>Typed <code>spo</code>. Search is the eleventh line behind the arrow: <kbd>Tab</kbd> six times, <kbd>Enter</kbd>, <kbd>↓</kbd> ten times, <kbd>Enter</kbd>. The second row is Spotify's own shortcut; it opens Spotify's search page and takes no words here.</figcaption>
+      </figure>
+      <div class="stack">
+        <figure>
+          <span class="tag new">Proposed</span>
+          <div class="desk" tabindex="0" role="img" aria-label="Proposed: Spotify's row with Open armed, then Search, Play, Window and the arrow.">
+            <div class="panel"><div class="list">
+              <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Spotify</span></span>
+                <span class="strip"><span class="a on"><svg><use href="#i-open"/></svg><b>Open</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-search"/></svg></span><span class="a"><svg><use href="#i-play"/></svg></span><span class="a"><svg><use href="#i-window"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            </div></div>
+          </div>
+          <figcaption>Typed <code>spo</code>. <kbd>Enter</kbd> opens Spotify, as today. Search and Play are the second and third places.</figcaption>
+        </figure>
+        <figure>
+          <span class="tag new">Proposed</span>
+          <div class="desk" tabindex="0" role="img" aria-label="Proposed: Spotify's row after two Tabs, Play armed.">
+            <div class="panel"><div class="list">
+              <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Spotify</span></span>
+                <span class="strip"><span class="a"><svg><use href="#i-open"/></svg></span><span class="a"><svg><use href="#i-search"/></svg></span><span class="a on"><svg><use href="#i-play"/></svg><b>Play</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-window"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            </div></div>
+          </div>
+          <figcaption>Typed <code>spo</code>, pressed <kbd>Tab</kbd> twice. <kbd>Enter</kbd> puts Spotify in the field and waits for the song's name.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+
+  <div class="app">
+    <h3>Netflix <span>can be searched</span></h3>
+    <div class="pair">
+      <figure>
+        <span class="tag">Today</span>
+        <div class="desk" tabindex="0" role="img" aria-label="Today: Netflix's row with the same six icons and the arrow.">
+          <div class="panel"><div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-netflix"/></svg></span><span class="txt"><span class="t">Netflix</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-open"/></svg><b>Open</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-newwin"/></svg></span><span class="a"><svg><use href="#i-info"/></svg></span><span class="a"><svg><use href="#p-full"/></svg></span><span class="a"><svg><use href="#p-left"/></svg></span><span class="a"><svg><use href="#p-right"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+          </div></div>
+        </div>
+        <figcaption>Typed <code>net</code>. The same six icons as every app. Search waits behind the arrow, after ten window places.</figcaption>
+      </figure>
+      <figure>
+        <span class="tag new">Proposed</span>
+        <div class="desk" tabindex="0" role="img" aria-label="Proposed: Netflix's row after one Tab, Search armed, then Window and the arrow.">
+          <div class="panel"><div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-netflix"/></svg></span><span class="txt"><span class="t">Netflix</span></span>
+              <span class="strip"><span class="a"><svg><use href="#i-open"/></svg></span><span class="a on"><svg><use href="#i-search"/></svg><b>Search</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-window"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+          </div></div>
+        </div>
+        <figcaption>Typed <code>net</code>, pressed <kbd>Tab</kbd> once. Then <kbd>Enter</kbd>, the title, <kbd>Enter</kbd>. Netflix plays nothing by name, so it has no Play.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="app">
+    <h3>Chrome <span>shown without Search or Play; its window matters</span></h3>
+    <div class="pair">
+      <figure>
+        <span class="tag">Today</span>
+        <div class="desk" tabindex="0" role="img" aria-label="Today: Chrome's row after four Tabs, Left half armed.">
+          <div class="panel"><div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-chrome"/></svg></span><span class="txt"><span class="t">Chrome</span></span>
+              <span class="strip"><span class="a"><svg><use href="#i-open"/></svg></span><span class="a"><svg><use href="#i-newwin"/></svg></span><span class="a"><svg><use href="#i-info"/></svg></span><span class="a"><svg><use href="#p-full"/></svg></span><span class="a on"><svg><use href="#p-left"/></svg><b>Left half</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#p-right"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+          </div></div>
+        </div>
+        <figcaption>Typed <code>chr</code>, pressed <kbd>Tab</kbd> four times. <kbd>Enter</kbd> opens Chrome in the left half. Typing <code>chr left</code> arms the same icon.</figcaption>
+      </figure>
+      <figure>
+        <span class="tag new">Proposed</span>
+        <div class="desk" tabindex="0" role="img" aria-label="Proposed: Chrome's row for the typed words chr left. Left half stands armed where Window is.">
+          <div class="panel"><div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-chrome"/></svg></span><span class="txt"><span class="t">Chrome</span></span>
+              <span class="strip"><span class="a"><svg><use href="#i-open"/></svg></span><span class="a on"><svg><use href="#p-left"/></svg><b>Left half</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+          </div></div>
+        </div>
+        <figcaption>Typed <code>chr left</code>. The place stands where Window is, ready for <kbd>Enter</kbd>. Typed places work exactly as today.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="app">
+    <h3>Calculator <span>neither</span></h3>
+    <div class="pair">
+      <figure>
+        <span class="tag">Today</span>
+        <div class="desk" tabindex="0" role="img" aria-label="Today: Calculator's row with six icons and the arrow.">
+          <div class="panel"><div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-calc"/></svg></span><span class="txt"><span class="t">Calculator</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-open"/></svg><b>Open</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-newwin"/></svg></span><span class="a"><svg><use href="#i-info"/></svg></span><span class="a"><svg><use href="#p-full"/></svg></span><span class="a"><svg><use href="#p-left"/></svg></span><span class="a"><svg><use href="#p-right"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+          </div></div>
+        </div>
+        <figcaption>Typed <code>calc</code>. Six icons for an app most people only open.</figcaption>
+      </figure>
+      <figure>
+        <span class="tag new">Proposed</span>
+        <div class="desk" tabindex="0" role="img" aria-label="Proposed: Calculator's row with Open armed, then Window and the arrow.">
+          <div class="panel"><div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-calc"/></svg></span><span class="txt"><span class="t">Calculator</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-open"/></svg><b>Open</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-window"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+          </div></div>
+        </div>
+        <figcaption>Typed <code>calc</code>. Three things: open it, place its window, everything else.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Where today's icons went</h2>
+  <p class="note">Two short lists, each about one thing, where today there is one long one. Both open the way the arrow's list opens today: Enter on the icon, Down and Up to move, Left to close.</p>
+  <div class="trio">
+    <figure>
+      <span class="tag">Today</span>
+      <div class="desk" tabindex="0" role="img" aria-label="Today: the list behind Spotify's arrow. Ten window places, then Search, then Uninstall.">
+        <div class="panel narrow"><div class="list">
+          <div class="row"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Spotify</span></span><span class="strip"><span class="a"><svg class="up"><use href="#i-more"/></svg></span></span></div>
+          <div class="l40 sel"><span class="gl"><svg><use href="#p-l3"/></svg></span>Left third<svg class="ent"><use href="#i-enter"/></svg></div>
+          <div class="l40"><span class="gl"><svg><use href="#p-m3"/></svg></span>Middle third</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-r3"/></svg></span>Right third</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-l23"/></svg></span>Left two thirds</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-r23"/></svg></span>Right two thirds</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-tl"/></svg></span>Top left</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-tr"/></svg></span>Top right</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-bl"/></svg></span>Bottom left</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-br"/></svg></span>Bottom right</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-c"/></svg></span>Centre</div>
+          <div class="l40"><span class="gl"><svg><use href="#i-search"/></svg></span>Search</div>
+          <div class="l40 danger"><span class="gl"><svg><use href="#i-trash"/></svg></span>Uninstall</div>
+        </div></div>
+      </div>
+      <figcaption>Typed <code>spo</code>, <kbd>Tab</kbd> six times, <kbd>Enter</kbd>. One list for everything. Search is its eleventh line, and the app's pages in Settings are left out because the list would not fit the screen.</figcaption>
+    </figure>
+    <figure>
+      <span class="tag new">Proposed</span>
+      <div class="desk" tabindex="0" role="img" aria-label="Proposed: the list behind Window on Chrome's row. New window, Maximise, Left half, Right half, then the ten other places.">
+        <div class="panel narrow"><div class="list">
+          <div class="row"><span class="mark app"><svg><use href="#app-chrome"/></svg></span><span class="txt"><span class="t">Chrome</span></span><span class="kind">Window</span><span class="strip"><span class="a"><svg class="up"><use href="#i-more"/></svg></span></span></div>
+          <div class="l40 sel"><span class="gl"><svg><use href="#i-newwin"/></svg></span>New window<svg class="ent"><use href="#i-enter"/></svg></div>
+          <div class="l40"><span class="gl"><svg><use href="#p-full"/></svg></span>Maximise</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-left"/></svg></span>Left half</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-right"/></svg></span>Right half</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-l3"/></svg></span>Left third</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-m3"/></svg></span>Middle third</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-r3"/></svg></span>Right third</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-l23"/></svg></span>Left two thirds</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-r23"/></svg></span>Right two thirds</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-tl"/></svg></span>Top left</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-tr"/></svg></span>Top right</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-bl"/></svg></span>Bottom left</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-br"/></svg></span>Bottom right</div>
+          <div class="l40"><span class="gl"><svg><use href="#p-c"/></svg></span>Centre</div>
+        </div></div>
+      </div>
+      <figcaption>Typed <code>chr</code>, <kbd>Tab</kbd>, <kbd>Enter</kbd>. New window first, then the three places that were icons, then the ten that were already in a list. <kbd>Enter</kbd> again opens a new window.</figcaption>
+    </figure>
+    <figure>
+      <span class="tag new">Proposed</span>
+      <div class="desk" tabindex="0" role="img" aria-label="Proposed: the list behind Spotify's arrow. App info, Notifications, Language, Open by default, Battery use, then Uninstall.">
+        <div class="panel narrow"><div class="list">
+          <div class="row"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Spotify</span></span><span class="strip"><span class="a"><svg class="up"><use href="#i-more"/></svg></span></span></div>
+          <div class="l40"><span class="gl"><svg><use href="#i-info"/></svg></span>App info</div>
+          <div class="l40 sel"><span class="gl"><svg><use href="#i-bell"/></svg></span>Notifications<svg class="ent"><use href="#i-enter"/></svg></div>
+          <div class="l40"><span class="gl"><svg><use href="#i-globe"/></svg></span>Language</div>
+          <div class="l40"><span class="gl"><svg><use href="#i-link"/></svg></span>Open by default</div>
+          <div class="l40"><span class="gl"><svg><use href="#i-battery"/></svg></span>Battery use</div>
+          <div class="l40 danger"><span class="gl"><svg><use href="#i-trash"/></svg></span>Uninstall</div>
+        </div></div>
+      </div>
+      <figcaption>Typed <code>spo</code>, <kbd>Shift</kbd> <kbd>Tab</kbd>, <kbd>Enter</kbd>, <kbd>↓</kbd>. App info, the app's four pages in Settings, now listed, and Uninstall, last and in red. Typing <code>spo notifications</code> still works.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <h2>After Enter on Play</h2>
+  <div class="steps">
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Spotify is the chip in the field. The hint reads Song, artist or album. One line under the field: Search Spotify, with a tab key.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-spotify"/></svg>Spotify</span><span class="q hint"><span class="caret"></span>Song, artist or album</span><span class="key">esc</span></div>
+          <div class="list"><div class="line"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="say">Search Spotify</span><span class="key">tab</span></div></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>spo</code>, <kbd>Tab</kbd>, <kbd>Tab</kbd>, <kbd>Enter</kbd>. Spotify is in the field and the hint says what to type. <kbd>Tab</kbd> changes to Search. <kbd>Backspace</kbd> goes back to Spotify's row. <kbd>Enter</kbd> does nothing until something is typed.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Typed bohemian rhapsody. Row one: Play bohemian rhapsody, Looking it up, with Play armed. Row two: Search Google.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-spotify"/></svg>Spotify</span><span class="q">bohemian rhapsody<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Play “bohemian rhapsody”</span><span class="s">Looking it up</span></span>
+              <span class="strip"><span class="a"><svg><use href="#i-search"/></svg></span><span class="a on"><svg><use href="#i-play"/></svg><b>Play</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “spotify bohemian rhapsody”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">tab</span><span>Actions</span><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>bohemian rhapsody</code>. After a short pause the name goes to Spotify. <kbd>Enter</kbd> pressed now waits for the answer, then plays.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Spotify has answered. Row one: Bohemian Rhapsody, Queen, A Night At The Opera, with Play armed.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-spotify"/></svg>Spotify</span><span class="q">bohemian rhapsody<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Bohemian Rhapsody</span><span class="s">Queen · A Night At The Opera</span></span>
+              <span class="strip"><span class="a"><svg><use href="#i-search"/></svg></span><span class="a on"><svg><use href="#i-play"/></svg><b>Play</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “spotify bohemian rhapsody”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">tab</span><span>Actions</span><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Spotify has answered. The row names the song it found; <kbd>Enter</kbd> plays exactly that. <kbd>Shift</kbd> <kbd>Tab</kbd> arms Search for the same words.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Spotify found nothing. Play is dimmed and Search is armed.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-spotify"/></svg>Spotify</span><span class="q">bohemain rapsodi<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Play “bohemain rapsodi”</span><span class="s">Spotify found nothing by that name</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-search"/></svg><b>Search</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a off"><svg><use href="#i-play"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “spotify bohemain rapsodi”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">tab</span><span>Actions</span><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Typed a name Spotify does not know. Play is dimmed and <kbd>Enter</kbd> searches Spotify for the words. “Which song is this?” waits behind the arrow, as today.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <h2>After Enter on Search</h2>
+  <div class="steps">
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Spotify is the chip in the field. The hint reads Search Spotify. One line under the field: Play in Spotify, with a tab key.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-spotify"/></svg>Spotify</span><span class="q hint"><span class="caret"></span>Search Spotify</span><span class="key">esc</span></div>
+          <div class="list"><div class="line"><span class="mark sym"><svg><use href="#i-play"/></svg></span><span class="say">Play in Spotify</span><span class="key">tab</span></div></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>spo</code>, <kbd>Tab</kbd>, <kbd>Enter</kbd>. The same chip as for Play; only the hint differs. <kbd>Tab</kbd> changes to Play.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Typed daft punk. Row one: Search Spotify for daft punk, Search armed, Play beside it. Row two: Search Google.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-spotify"/></svg>Spotify</span><span class="q">daft punk<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Search Spotify for “daft punk”</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-search"/></svg><b>Search</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-play"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “spotify daft punk”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">tab</span><span>Actions</span><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>daft punk</code>. <kbd>Enter</kbd> opens Spotify on its results. Nothing leaves the device before that. <kbd>Tab</kbd> arms Play for the same words.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Netflix is the chip in the field. The hint reads Search Netflix. Nothing under the field.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-netflix"/></svg>Netflix</span><span class="q hint"><span class="caret"></span>Search Netflix</span><span class="key">esc</span></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>net</code>, <kbd>Tab</kbd>, <kbd>Enter</kbd>. Netflix has only Search, so there is nothing to change to and nothing under the field.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Typed severance. Row one: Search Netflix for severance, Search armed. Row two: Search Google.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-netflix"/></svg>Netflix</span><span class="q">severance<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-netflix"/></svg></span><span class="txt"><span class="t">Search Netflix for “severance”</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-search"/></svg><b>Search</b><svg class="ent"><use href="#i-enter"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “netflix severance”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>severance</code>. <kbd>Enter</kbd> opens Netflix on its results.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <h2>The same rows from the other ways in</h2>
+  <p class="note">The keywords and the typed sentence stay. Each now ends in the row shown above, so one thing has one look however it was reached.</p>
+  <div class="steps">
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Typed play bohemian rhapsody. The field shows Spotify as the chip and the same row as before: Bohemian Rhapsody, Queen, Play armed.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-spotify"/></svg>Spotify</span><span class="q">bohemian rhapsody<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-spotify"/></svg></span><span class="txt"><span class="t">Bohemian Rhapsody</span><span class="s">Queen · A Night At The Opera</span></span>
+              <span class="strip"><span class="a"><svg><use href="#i-search"/></svg></span><span class="a on"><svg><use href="#i-play"/></svg><b>Play</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “play bohemian rhapsody”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">tab</span><span>Actions</span><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>play bohemian rhapsody</code>. At the space, <code>play</code> becomes the chip of the music app you played in last. Today this row has a note for its mark and Spotify's icon inside the button.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Typed yt lofi. YouTube is the chip. Row one: Search YouTube for lofi, Search armed.">
+        <div class="panel">
+          <div class="field"><span class="chip"><svg><use href="#app-youtube"/></svg>YouTube</span><span class="q">lofi<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-youtube"/></svg></span><span class="txt"><span class="t">Search YouTube for “lofi”</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-search"/></svg><b>Search</b><svg class="ent"><use href="#i-enter"/></svg></span><span class="a"><svg><use href="#i-more"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “yt lofi”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">tab</span><span>Actions</span><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>yt lofi</code>. With the YouTube app installed, <code>yt</code> becomes YouTube's chip: the same as <code>you</code>, <kbd>Tab</kbd>, <kbd>Enter</kbd>. “On the web” waits behind the arrow.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="Typed netflix severance in one go, for the first time. Row one: Search Google, armed. Row two: Search Netflix for severance.">
+        <div class="panel">
+          <div class="field"><span class="g">G</span><span class="q">netflix severance<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “netflix severance”</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-search"/></svg><b>Search</b><svg class="ent"><use href="#i-enter"/></svg></span></span></div>
+            <div class="row"><span class="mark app"><svg><use href="#app-netflix"/></svg></span><span class="txt"><span class="t">Search Netflix for “severance”</span></span><span class="kind">Netflix</span></div>
+          </div>
+          <div class="foot"><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>Typed <code>netflix severance</code> in one go, before you have ever picked the Netflix row. The web leads, so <code>netflix stock price</code> goes where you expect. Netflix stands second: <kbd>↓</kbd>, <kbd>Enter</kbd>.</figcaption>
+    </figure>
+    <figure>
+      <div class="desk" tabindex="0" role="img" aria-label="The same text after the Netflix row has been picked once. Row one: Search Netflix for severance, armed. Row two: Search Google.">
+        <div class="panel">
+          <div class="field"><span class="g">G</span><span class="q">netflix severance<span class="caret"></span></span></div>
+          <div class="list">
+            <div class="row sel"><span class="mark app"><svg><use href="#app-netflix"/></svg></span><span class="txt"><span class="t">Search Netflix for “severance”</span></span>
+              <span class="strip"><span class="a on"><svg><use href="#i-search"/></svg><b>Search</b><svg class="ent"><use href="#i-enter"/></svg></span></span></div>
+            <div class="row"><span class="mark sym"><svg><use href="#i-search"/></svg></span><span class="txt"><span class="t">Search Google for “netflix severance”</span></span><span class="kind">Web</span></div>
+          </div>
+          <div class="foot"><span class="key">esc</span><span>Close</span></div>
+        </div>
+      </div>
+      <figcaption>The same text once you have picked the Netflix row. From then on Netflix leads for words after its name. Pick the web row twice running and the web leads again.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <h2>How many keys</h2>
+  <p>Keys pressed besides the app's first letters and the words themselves.</p>
+  <div class="tbl"><table>
+    <tr><th>To do this</th><th>Today</th><th>Proposed</th></tr>
+    <tr><td>Open an app</td><td>1</td><td>1</td></tr>
+    <tr><td>Search inside an app</td><td>19 by the row, or type the app's whole name first</td><td>3: Tab, Enter, the words, Enter</td></tr>
+    <tr><td>Play a named song</td><td>6 with <code>play</code>; not possible from the app's row</td><td>4 from the app's row: Tab, Tab, Enter, the song, Enter. <code>play</code> still works</td></tr>
+    <tr><td>Open an app in the left half</td><td>5 by the row; 4 typed (<code>chr le</code>)</td><td>5 to 7 by the row; 4 typed, unchanged</td></tr>
+    <tr><td>An app's notification settings</td><td>4 typed, if you know the word</td><td>4 by the row; 4 typed, unchanged</td></tr>
+  </table></div>
+  <p>The one thing that gets slower is placing a window by the row on an app that has Search or Play. Typed places (<code>chrome left</code>) stay as quick as today.</p>
+</section>
+
+<section>
+  <h2>What goes away</h2>
+  <p>Each of these is the same act with a second look today, or a line that the new order makes unnecessary.</p>
+  <ul>
+    <li>“Search” as the eleventh line behind the arrow: it is the second place on the row.</li>
+    <li>Spotify's own shortcut row “Search · Spotify” under the app, for apps that have Search on their row.</li>
+    <li>The note symbol and the small Spotify icon inside the action on the <code>play</code> row: the row carries the app's own icon instead, like every row that is about one app.</li>
+    <li>The “Resume” row under <code>play</code> with nothing typed. <code>play</code> and Enter still resumes; <code>pause</code>, <code>next</code>, <code>stop</code> stay.</li>
+    <li>Maximise, Left half, Right half, New window and App info as icons on the row: they are the first lines of Window and of More.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Five things to decide</h2>
+  <p>The designer and the product manager agreed on the order of the row and on everything drawn above. Where they differed, the first answer is the one recommended.</p>
+  <ol class="decide">
+    <li><b>The end of the row.</b> Recommended, and drawn above: one place called Window that opens New window and every placement, and the arrow for the rest. The other answer: New window stays an icon, the two halves and Maximise go behind the arrow with App info and Uninstall, and the ten finer places (thirds, quarters, centre) can only be typed. That is one list instead of two and one key less for a new window, and it takes ten places out of sight.</li>
+    <li><b>A sentence that starts with an app's name</b> (<code>netflix stock price</code>, <code>netflix severance</code>). Recommended: the web leads until you have picked the app's row once for that app; after that the app leads, and picking the web twice puts it back. The other answer: the web always leads and nothing is learned, so <code>spotify daft punk</code> and Enter never goes to Spotify again; it is Down, Enter, or the row.</li>
+    <li><b>Play only where it really plays.</b> Recommended: Spotify's row has Play once your key is in; without it the row has Search, which is all Spotify does without a key. Other music apps get Play once one of them has been tried on a device.</li>
+    <li><b>What <code>play</code> and <code>yt</code> become.</b> Recommended: short ways to the same place. At the space, <code>play</code> becomes the chip of the music app you played in last, and <code>yt</code> becomes YouTube's chip, with the same row as the Tab way. The other answer: they keep their own chips and rows, and there are two looks for one act.</li>
+    <li><b>The app's pages in Settings</b> (notifications, language, open by default, battery use). Recommended: all four are lines behind the arrow, since that list is short now, and their typed words stay. The other answer: only Notifications is listed and the other three words go.</li>
+  </ol>
+  <p>Not proposed, though the product manager raised them: turning <code>call</code>, <code>sms</code>, <code>wa</code> and <code>tg</code> off until you switch them on (each already exists only where an app answers it), and moving the editor for your own app commands into Labs.</p>
+</section>
+
+
+</div>

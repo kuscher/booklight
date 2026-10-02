@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Play it there: `play album discovery by daft punk on spotify`. One row, an action for each music app, named
+         for what that app is known to do with the request. The footer says "Sent to", never "Playing": nothing comes back. -->
+    <string name="play_in">Play in %1$s</string>
+    <string name="play_search_in">Search in %1$s</string>
+    <string name="play_no_app">No music app on this device</string>
+    <!-- The word before a player's name, as it is typed and as Booklight types it: "… on spotify". -->
+    <string name="play_on">on</string>
+    <string name="play_sent">Sent to %1$s</string>
+    <!-- Under the row's name: how the text was read. %1$s is the artist, as typed. -->
+    <string name="play_song">Song</string>
+    <string name="play_song_by">Song by %1$s</string>
+    <string name="play_album">Album</string>
+    <string name="play_album_by">Album by %1$s</string>
+    <string name="play_artist">Artist</string>
+    <string name="play_playlist">Playlist</string>
+    <string name="play_genre">Genre</string>
+    <!-- `play` with no text: the Play key. -->
+    <string name="play_resume">Resume</string>
+    <string name="play_resume_sub">Whatever played last</string>
+
+    <!-- The media keys by the typed word: `pause` can only pause, `play` only resume, `stop` only stop. The words also find the Media row. -->
+    <string name="action_pause">Pause</string>
+    <string name="action_stop">Stop</string>
+    <string name="dial_play_words">play,resume</string>
+    <string name="dial_pause_words">pause</string>
+    <string name="dial_stop_words">stop</string>
+
+    <!-- Spotify plays a link of its own, and with a key of the user's own the link for a name is found. The row of `play`,
+         while Spotify is asked, with what it found, and with why it found nothing. -->
+    <string name="play_looking">Looking it up</string>
+    <string name="play_found_album">Album · %1$s</string>
+    <string name="play_found_playlist">Playlist · %1$s</string>
+    <string name="play_none">Spotify found nothing by that name</string>
+    <string name="play_refused">Spotify did not accept the key</string>
+    <string name="play_too_many">Too many requests to Spotify for now</string>
+    <string name="play_offline">No connection</string>
+    <string name="play_no_answer">No answer this time</string>
+    <!-- Behind the row's arrow: the device's own model names the song a description or a misspelt name means; Enter on its answer puts it into the field. -->
+    <string name="play_which">Which song is this?</string>
+    <!-- In the footer, beside esc, while the model's answer stands over the text in the field: Escape goes back to the row it was asked from. -->
+    <string name="hint_back">Back</string>
+    <string name="play_use">Use this</string>
+    <string name="play_set_up">Add a Spotify key</string>
+
+    <!-- The Booklight window › Labs: the group for Spotify's key -->
+    <string name="set_songs">Spotify</string>
+    <string name="set_song_key">Your Spotify key</string>
+    <string name="set_song_key_text">With a key, “play …” shows what Spotify found, and Enter plays it. What you type after play, and your device’s country, go to Spotify when you pause typing, and only while Spotify is the app chosen on the row. The key stays on this device and goes only to Spotify.</string>
+    <string name="set_song_id_hint">Client ID</string>
+    <string name="set_song_secret_hint">Client secret</string>
+    <string name="set_song_key_in">A key is in</string>
+    <string name="set_song_get">Get a key</string>
+    <string name="set_song_get_text">developer.spotify.com: sign in, create an app, copy its Client ID and Client secret. Needs Spotify Premium</string>
+</resources>

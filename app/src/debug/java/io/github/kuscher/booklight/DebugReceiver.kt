@@ -35,6 +35,11 @@ import java.io.FileOutputStream
  *   copy TEXT (puts TEXT on the clipboard the way another app would: without Booklight's label, so its line is offered;
  *   `copy private TEXT` marks it private) | key tab and key down open the copy's line, key back is Backspace on the empty field
  *   pref flightkey KEY|none (the user's key for the flight service; never printed) | flight TEXT (a flight's row, looked up at once)
+ *   appsearch (a search inside an app: every line of the bundled table and every search an app declares, with the app, the source
+ *   and whether this device takes it; a star marks the one in use. Run it on a Googlebook before a release)
+ *   players (the music apps `play` offers, and the one asked last; `find play TEXT` shows the row and which is armed)
+ *   pref spotifykey ID SECRET|none (the user's key for Spotify; never printed) | song TEXT (what Spotify has for the text after `play`,
+ *   looked up at once: what was found and the address that would be sent)
  */
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -66,6 +71,11 @@ class DebugReceiver : BroadcastReceiver() {
                 out("seeded ${ids.size}")
             }
             "unhide" -> { app.prefs.update { it.copy(zeroHidden = emptyList()) }; out("ok") }
+            // The music apps `play` offers, in the row's order: each one's name, package and whether it is known to only search; the one asked last.
+            "players" -> app.scope.launch {
+                app.apps.ready.await()
+                out(io.github.kuscher.booklight.providers.Players.find(context, app.apps).joinToString(" | ") { "${it.name} ${it.pkg}${if (it.searches) " searches" else ""}" }.ifEmpty { "none" } + " last=${app.prefs.now.player}")
+            }
             "pref" -> {
                 val (k, v) = (arg.split(' ') + "").let { it[0] to it[1] }
                 // A name alone only prints: without a value it would store an empty one (`pref glass` once did).
@@ -90,8 +100,10 @@ class DebugReceiver : BroadcastReceiver() {
                     "nocards" -> app.prefs.update { it.copy(shortcutCard = false, suggestionsCard = false) }
                     // The user's key for the flight service: `pref flightkey KEY`, `pref flightkey none`. It is never printed.
                     "flightkey" -> app.prefs.setFlightKey(if (v == "none") "" else v)
+                    // The user's key for Spotify: `pref spotifykey ID SECRET`, `pref spotifykey none`. It is never printed.
+                    "spotifykey" -> arg.split(' ').let { w -> if (v == "none") app.prefs.setSpotifyKey("", "") else app.prefs.setSpotifyKey(v, w.getOrElse(2) { "" }) }
                 }
-                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim} shadow=${it.shadow} tips=${it.tips} copy=${it.copyRow} zero=${it.zero} hidden=${it.zeroHidden.size} flightkey=${if (app.prefs.flightKey.value.isEmpty()) "none" else "set"}" })
+                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} cards=${it.shortcutCard},${it.suggestionsCard} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim} shadow=${it.shadow} tips=${it.tips} copy=${it.copyRow} zero=${it.zero} hidden=${it.zeroHidden.size} flightkey=${if (app.prefs.flightKey.value.isEmpty()) "none" else "set"} spotifykey=${if (app.prefs.spotifyKey.value.isEmpty()) "none" else "set"}" })
             }
             "find" -> app.scope.launch {
                 val t0 = System.nanoTime()
@@ -103,6 +115,23 @@ class DebugReceiver : BroadcastReceiver() {
             "flight" -> app.scope.launch {
                 val row = app.flights.rows(arg).firstOrNull() ?: return@launch out("not a flight")
                 out(describe(app.flights.answer(row.id, pause = false) ?: row) + " left=${app.flights.left.value}")
+            }
+            // A search inside an app: every line of the bundled table and every search an app declares, each with the app, the
+            // source and whether this device takes it; a star marks the one each app uses. The whole list goes to the log a line
+            // each (`./bl logs`), and as much of it as one log line holds is the answer.
+            "appsearch" -> app.scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                app.apps.ready.await(); app.commands.ready.await()
+                val lines = app.commands.search.report()
+                lines.forEach { Log.i(BooklightApp.TAG, "appsearch $it") }
+                val all = lines.joinToString(" | ")
+                out(if (all.length <= 3500) all else all.take(3500) + " … (${lines.size} in all: ./bl logs)")
+            }
+            // What Spotify has for the text after `play`, looked up at once and without the panel: `song album discovery by daft punk`.
+            // With a key in, this asks Spotify. It prints what was found and the address that would be sent, never the key or its token.
+            "song" -> app.scope.launch {
+                val what = io.github.kuscher.booklight.core.Play.read(arg) ?: return@launch out("nothing to play")
+                val k = app.songs.find(what) ?: return@launch out("no key")
+                out(k.song?.let { "${it.kind} '${it.name}' by ${it.artists.joinToString(", ").ifEmpty { "-" }} album=${it.album.ifEmpty { "-" }} owner=${it.owner.ifEmpty { "-" }} starts=${it.starts.ifEmpty { "-" }} -> ${it.address}" } ?: "nothing: ${k.failure}")
             }
             "keys" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
@@ -122,11 +151,11 @@ class DebugReceiver : BroadcastReceiver() {
                     "up" -> m.up(false)
                     "right" -> if (!m.moveCell(1, 0) && !m.nudge(1) && m.opened == null) { if (m.onMore) m.open() else m.arm(1, wrap = false) }
                     "left" -> if (m.opened != null) m.close() else if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
-                    "tab" -> if (m.tip != null) m.tipTab() else if (m.zeroUp && m.current == null && m.chip == null && m.query.isBlank()) m.down(false) else if (m.copy != null || m.bare) m.tabCopy() else if (m.keyword != null) m.enterKeyword() else if (m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
+                    "tab" -> if (m.tip != null) m.tipTab() else if (m.zeroUp && m.current == null && m.chip == null && m.query.isBlank()) m.down(false) else if (m.copy != null || m.bare) m.tabCopy() else if (m.keyword != null) m.enterKeyword() else if (m.opened == null && !m.inAnswer && m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
                     "backtab" -> if (m.opened != null) m.step(-1) else m.arm(-1, wrap = true)
                     "more" -> { m.current?.let { m.armAt(it.actions.size) } }
                     "back" -> m.back()
-                    "esc" -> if (!m.cancelConfirm()) act.close()
+                    "esc" -> if (!m.cancelConfirm() && !m.leaveAnswer()) act.close()
                     "enter" -> if (m.tip != null) m.tipEnter() else m.enter { r, a -> act.run(r, a) }
                     "stay" -> m.enter { r, a -> act.run(r, a, keep = true) }
                 }

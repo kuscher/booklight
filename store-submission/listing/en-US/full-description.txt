@@ -36,4 +36,4 @@ Flight times are looked up only with an AirLabs key of your own; then the flight
 A mail, an event, a timer or a question for Gemini is handed to the app that opens; Booklight sends nothing itself.
 Booklight has no accessibility service and shows no permission prompts. Uninstalling an app is confirmed by Android; brightness works only after you switch it on in Settings.
 
-Booklight is a personal hobby project by Alexander Kuscher. It is not affiliated with or endorsed by Google.
+Booklight is a personal hobby project, not affiliated with or endorsed by any employer.

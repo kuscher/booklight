@@ -1,0 +1,30 @@
+# Where a search inside an app goes, for apps that have no Booklight file of their own (docs/EXTENSIONS.md,
+# "The bundled table"). Kept by hand; `./bl debug appsearch` says which lines the attached device takes.
+#
+# A line: the app's package, a tab, the address, with {argument} where the typed text goes. For an app that
+# one of Booklight's own links stands for, a tab and that link's keyword: the link then opens in the app.
+# An app may have several lines; the first that the installed app takes is used. A line is only ever shown
+# for an app that is installed, and only if the address leads to an activity of that app that is open to
+# other apps and asks for no permission. Nothing of the app is kept here but the form of its link.
+#
+# Above each line: whether it was seen landing on the app's results on a Googlebook, and when.
+
+# Seen working on a Googlebook, 2 October 2026.
+com.spotify.music	spotify:search:{argument}
+# Seen working on a Googlebook, 2 October 2026.
+com.spotify.music	https://open.spotify.com/search/{argument}
+# Seen working on a Googlebook, 2 October 2026 (a web app there: the page opens in the app's own window).
+com.google.android.youtube	https://www.youtube.com/results?search_query={argument}	yt
+# Seen working on a Googlebook, 2 October 2026 (a web app there: the page opens in the app's own window).
+com.google.android.apps.youtube.music	https://music.youtube.com/search?q={argument}
+# Seen working on a Googlebook, 2 October 2026, signed in. The text is a part of the path: after `?q=` the
+# app opens its search with an empty field.
+com.netflix.mediaclient	https://www.netflix.com/search/{argument}
+# Seen working on a Googlebook, 2 October 2026.
+com.android.vending	https://play.google.com/store/search?q={argument}&c=apps	store
+# Seen working on a Googlebook, 2 October 2026.
+com.android.vending	market://search?q={argument}&c=apps	store
+# Not tried on a Googlebook. The form is from Google's documentation of the Maps intents.
+com.google.android.apps.maps	geo:0,0?q={argument}	maps
+# Not tried on a Googlebook. The same address the `drive` link opens in the browser.
+com.google.android.apps.docs	https://drive.google.com/drive/search?q={argument}	drive

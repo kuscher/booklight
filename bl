@@ -12,7 +12,9 @@
 #                            keys TEXT (one character at a time, as a person types: use this to test typing),
 #                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget,
 #                            pref flightkey KEY|none (the flight service's key; it is never printed),
-#                            flight TEXT (a flight's row, looked up at once, without the panel)
+#                            flight TEXT (a flight's row, looked up at once, without the panel),
+#                            appsearch (which lines of the bundled table and which declared searches the
+#                            attached device takes: run it before a release)
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
 #   ./bl wshot [NAME] [OUT]  the same of the Booklight window
 #   ./bl window [SECTION]    open the Booklight window, at a section if one is named (start, commands, look…);

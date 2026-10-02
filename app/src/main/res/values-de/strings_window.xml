@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The Booklight window as a desktop window (docs/design/window-redesign.md): five sections. -->
+    <string name="nav_labs">Labs</string>
     <string name="nav_privacy">Datenschutz</string>
 
     <!-- Start -->
@@ -20,13 +21,13 @@
     <string name="win_new_snippet">Neuer Textbaustein</string>
     <string name="win_new_recipe">Neues Rezept</string>
     <string name="win_new_prompt">Neuer Prompt</string>
-    <string name="win_new_more">Neuer Textbaustein, neues Rezept oder neuer Prompt</string>
 
     <!-- Look, Results, Privacy: the names of their groups -->
     <string name="win_panel">Panel</string>
     <string name="win_search">Suche</string>
     <string name="win_show">In der Liste zeigen</string>
     <string name="win_may_use">Was Booklight nutzen darf</string>
+    <string name="win_labs_lead">Extras, die einen eigenen Schlüssel von einem anderen Dienst brauchen. Ohne Schlüssel wird dorthin nichts gesendet.</string>
     <string name="win_privacy_lead">Booklight verlangt bei der Installation nichts. Was es nutzen darf, gibst du selbst frei, in den Bildschirmen des Systems, und nimmst es dort wieder zurück.</string>
 
     <!-- Rows and controls -->
@@ -53,7 +54,6 @@
     <string name="win_why_name">Es braucht einen Namen.</string>
     <string name="win_why_name_space">Der Name eines Textbausteins ist ein Wort, ohne Leerzeichen.</string>
     <string name="win_why_name_taken">Dieser Name ist vergeben.</string>
-    <string name="win_why_address">Die Adresse beginnt mit https://</string>
     <string name="win_why_text">Es braucht seinen Text.</string>
     <string name="win_why_step">Mindestens ein Schritt.</string>
     <string name="win_kind_link">Link</string>

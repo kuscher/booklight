@@ -21,11 +21,13 @@ import android.view.Display
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.core.net.toUri
+import io.github.kuscher.booklight.core.AppPage
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.device.Clipboard
 import io.github.kuscher.booklight.core.MediaKey
 import io.github.kuscher.booklight.core.Box
 import io.github.kuscher.booklight.core.Place
+import io.github.kuscher.booklight.core.PlayMode
 import io.github.kuscher.booklight.core.Places
 import io.github.kuscher.booklight.data.SnippetEntry
 import io.github.kuscher.booklight.device.Audio
@@ -69,6 +71,7 @@ class Executor(private val context: Context) {
         when (effect) {
             is Effect.LaunchApp -> launch(effect, ctx)
             is Effect.AppInfo -> launcher.startAppDetailsActivity(ComponentName(effect.packageName, effect.className), user(effect.user), null, null)
+            is Effect.AppSettings -> start(page(effect))
             // Android asks "Do you want to uninstall this app?" itself. Needs REQUEST_DELETE_PACKAGES; without it nothing happens at all.
             is Effect.Uninstall -> start(Intent(Intent.ACTION_DELETE, Uri.fromParts("package", effect.packageName, null)).putExtra(Intent.EXTRA_USER, user(effect.user)))
             is Effect.OpenUrl -> start(Intent(Intent.ACTION_VIEW, effect.url.toUri()))
@@ -80,6 +83,8 @@ class Executor(private val context: Context) {
                 "commands" -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_PAGE, "commands"))
                 // Where the key for a flight's times is set: the window, at that row.
                 "flights" -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_PAGE, MainActivity.PAGE_FLIGHTS))
+                // And where the key for Spotify is set.
+                "songs" -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_PAGE, MainActivity.PAGE_SONGS))
                 // The system's Keyboard shortcuts window, where Customize adds an app shortcut.
                 "shortcuts" -> from?.requestShowKeyboardShortcuts() ?: return false
                 "done", "again" -> {}     // nothing to do here: the level was set as it was moved; a new password comes with the next list
@@ -90,6 +95,12 @@ class Executor(private val context: Context) {
 
             // The mail app's compose window, filled in. The user sends it there, or doesn't.
             is Effect.Compose -> start(Intent(Intent.ACTION_SENDTO, mailto(effect)))
+            // The dial screen or a new message, filled in, for whichever app answers. Never ACTION_CALL: that dials by itself and needs a permission.
+            is Effect.Phone -> {
+                if (!NUMBER.matches(effect.number)) return false
+                start(if (!effect.message) Intent(Intent.ACTION_DIAL, "tel:${effect.number}".toUri())
+                    else Intent(Intent.ACTION_SENDTO, "smsto:${effect.number}".toUri()).apply { if (effect.text.isNotBlank()) putExtra("sms_body", effect.text) })
+            }
             is Effect.AppendNote -> return app.notes.append(effect.text, effect.file)
             is Effect.AddTodo -> return app.notes.addTodo(effect.text)
             is Effect.TickTodo -> return app.notes.tick(effect.line, effect.text, effect.done).also { if (it) app.scopes.todo.ticked(effect.line, effect.done) }
@@ -117,6 +128,7 @@ class Executor(private val context: Context) {
             is Effect.SetAlarm -> start(Intent(AlarmClock.ACTION_SET_ALARM)
                 .putExtra(AlarmClock.EXTRA_HOUR, effect.hour).putExtra(AlarmClock.EXTRA_MINUTES, effect.minute).putExtra(AlarmClock.EXTRA_SKIP_UI, true)
                 .apply { if (effect.label.isNotBlank()) putExtra(AlarmClock.EXTRA_MESSAGE, effect.label) })
+            is Effect.ClockList -> start(Intent(if (effect.timers) AlarmClock.ACTION_SHOW_TIMERS else AlarmClock.ACTION_SHOW_ALARMS))
             is Effect.NewFile -> return Files.create(ctx, effect.name, effect.folder, effect.pick)
             // The Gemini app shows the text in its prompt; the user sends it there. Without that app: whatever takes text.
             is Effect.AskGemini -> {
@@ -130,9 +142,24 @@ class Executor(private val context: Context) {
                 MediaKey.PLAY_PAUSE -> KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
                 MediaKey.NEXT -> KeyEvent.KEYCODE_MEDIA_NEXT
                 MediaKey.PREVIOUS -> KeyEvent.KEYCODE_MEDIA_PREVIOUS
+                // Play resumes the player that played last; Pause and Stop can never start anything.
+                MediaKey.PLAY -> KeyEvent.KEYCODE_MEDIA_PLAY
+                MediaKey.PAUSE -> KeyEvent.KEYCODE_MEDIA_PAUSE
+                MediaKey.STOP -> KeyEvent.KEYCODE_MEDIA_STOP
             })
-            is Effect.PlayMusic -> start(Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
-                .putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*").putExtra(SearchManager.QUERY, effect.query))
+            is Effect.PlayMusic -> {
+                val player = effect.packageName
+                // A link of the player's own that plays exactly this, where one was found (Spotify asks who sends it); else the request.
+                val intent = if (player != null && effect.link.isNotEmpty()) Intent(Intent.ACTION_VIEW, effect.link.toUri()).putExtra(Intent.EXTRA_REFERRER, "android-app://${context.packageName}".toUri())
+                    else play(effect)
+                if (player == null) start(intent) else {
+                    // Aimed at one player: only at an activity of its own that any app may start.
+                    if (aim(intent, player) != null) return false
+                    start(intent)
+                    // The player that was asked last is the one armed next time.
+                    if (app.prefs.now.player != player) app.prefs.update { it.copy(player = player) }
+                }
+            }
             is Effect.SetBrightness -> return screen.set(effect.percent)
             is Effect.QrImage -> return QrImages.use(ctx, effect.text, effect.use)
 
@@ -148,6 +175,7 @@ class Executor(private val context: Context) {
                     "snippet" -> it.copy(snippets = it.snippets.filter { s -> s.key != effect.id })
                     "quicklink" -> it.copy(sites = it.sites.filter { s -> s.keyword != effect.id })
                     "recipe" -> it.copy(recipes = it.recipes.filter { r -> r.id != effect.id })
+                    "appcommand" -> it.copy(ownCommands = it.ownCommands.filter { c -> c.id != effect.id })
                     else -> it
                 }
             }
@@ -165,22 +193,110 @@ class Executor(private val context: Context) {
         return true
     }
 
+    /** Why something another app was asked for is not started. */
+    enum class Refusal {
+        /** The address is not one Android reads. */
+        UNREADABLE,
+        /** The app is not on this device. */
+        GONE,
+        /** It names an activity of another app. */
+        ANOTHER,
+        /** The app has no activity that takes it. */
+        NOTHING,
+        /** The activity is not open to other apps. */
+        CLOSED,
+        /** The activity asks for a permission. */
+        PERMISSION,
+        /** Android would not start it. */
+        FAILED,
+    }
+
     /**
-     * Something another app offers. Whatever the address says, it is started only if it leads to an
-     * activity of [Effect.Open.owner] itself, open to other apps, that asks for no permission; with
-     * no flags but Booklight's own, no data to grant, nothing to choose from.
+     * One of an app's own pages in Settings: the notification page takes the package as an extra, the
+     * others as the address. Where Settings has no such page nothing answers, and [run] says so.
+     */
+    private fun page(e: Effect.AppSettings): Intent {
+        val app = Uri.fromParts("package", e.packageName, null)
+        return when (e.page) {
+            AppPage.NOTIFICATIONS -> Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, e.packageName)
+            AppPage.LANGUAGE -> Intent(Settings.ACTION_APP_LOCALE_SETTINGS, app)
+            AppPage.DEFAULTS -> Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, app)
+            AppPage.BATTERY -> Intent(POWER_USAGE_DETAIL, app)
+        }
+    }
+
+    /**
+     * Something another app offers, or an app command of the user's own. Whatever the address says, it is
+     * started only if it leads to an activity of [Effect.Open.owner] itself, open to other apps, that asks
+     * for no permission; with no flags but Booklight's own, no data to grant, nothing to choose from. Only
+     * ever an activity: nothing is broadcast and no service is started.
      */
     private fun open(e: Effect.Open, ctx: Context): Boolean {
-        val intent = try { Intent.parseUri(e.intent, Intent.URI_INTENT_SCHEME) } catch (_: Exception) { return false }
+        ctx.startActivity(checked(e).first ?: return false)
+        return true
+    }
+
+    /** [open] for the Try button of an app command's editor: it starts it, or says why not. Null: it was started. */
+    fun tryOpen(e: Effect.Open, from: Activity): Refusal? {
+        val (intent, refusal) = checked(e)
+        if (intent == null) return refusal
+        return try { from.startActivity(intent); null } catch (x: Exception) {
+            Log.w(BooklightApp.TAG, "try failed (${x.javaClass.simpleName})")
+            Refusal.FAILED
+        }
+    }
+
+    /** The intent to start for [e], if it passes; else why it does not. */
+    private fun checked(e: Effect.Open): Pair<Intent?, Refusal?> {
+        val intent = try { Intent.parseUri(e.intent, Intent.URI_INTENT_SCHEME) } catch (_: Exception) { return null to Refusal.UNREADABLE }
         intent.selector = null
         intent.clipData = null
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        if (intent.component == null) intent.setPackage(e.owner) else if (intent.component?.packageName != e.owner) return false
-        val a = context.packageManager.resolveActivity(intent, 0)?.activityInfo ?: return false
-        if (a.packageName != e.owner || !a.exported || a.permission != null) return false
+        aim(intent, e.owner)?.let { return null to it }
+        return intent to null
+    }
+
+    /**
+     * Makes [intent] one for the activity of [owner] that answers it. Null when it may be started; else why
+     * not: nothing may be started unless that is an activity of [owner] itself, open to other apps, that
+     * asks for no permission.
+     */
+    private fun aim(intent: Intent, owner: String): Refusal? {
+        if (intent.component == null) intent.setPackage(owner) else if (intent.component?.packageName != owner) return Refusal.ANOTHER
+        val pm = context.packageManager
+        // Only the owner is asked. Where several of its activities take the request and the system has no favourite among
+        // them (it would show its chooser, which is not the owner's), it is the first of them the system lists.
+        val a = pm.resolveActivity(intent, 0)?.activityInfo?.takeIf { it.packageName == owner }
+            ?: pm.queryIntentActivities(intent, 0).firstOrNull { it.activityInfo?.packageName == owner }?.activityInfo
+            ?: return if (runCatching { pm.getApplicationInfo(owner, 0) }.isSuccess) Refusal.NOTHING else Refusal.GONE
+        if (!a.exported) return Refusal.CLOSED
+        if (a.permission != null) return Refusal.PERMISSION
         intent.setClassName(a.packageName, a.name)
-        ctx.startActivity(intent)
-        return true
+        return null
+    }
+
+    /**
+     * Android's "play from search" request: the mode as its focus, the mode's names as its extras,
+     * and always the query, which is all a player reads that does not know the modes.
+     */
+    private fun play(e: Effect.PlayMusic): Intent {
+        val intent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).putExtra(SearchManager.QUERY, e.query)
+        intent.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, when (e.mode) {
+            PlayMode.ANY -> "vnd.android.cursor.item/*"
+            PlayMode.SONG -> MediaStore.Audio.Media.ENTRY_CONTENT_TYPE
+            PlayMode.ALBUM -> MediaStore.Audio.Albums.ENTRY_CONTENT_TYPE
+            PlayMode.ARTIST -> MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE
+            // (The platform's own constants for a playlist are marked as outdated since Android 12; the request still has the mode.)
+            PlayMode.PLAYLIST -> "vnd.android.cursor.item/playlist"
+            PlayMode.GENRE -> MediaStore.Audio.Genres.ENTRY_CONTENT_TYPE
+        })
+        fun name(extra: String, value: String) { if (value.isNotEmpty()) intent.putExtra(extra, value) }
+        name(MediaStore.EXTRA_MEDIA_TITLE, e.title)
+        name(MediaStore.EXTRA_MEDIA_ARTIST, e.artist)
+        name(MediaStore.EXTRA_MEDIA_ALBUM, e.album)
+        name("android.intent.extra.playlist", e.playlist)
+        name(MediaStore.EXTRA_MEDIA_GENRE, e.genre)
+        return intent
     }
 
     /**
@@ -253,5 +369,13 @@ class Executor(private val context: Context) {
 
     companion object {
         const val GEMINI = "com.google.android.apps.bard"
+        /** A number as an address takes it: digits, with a + in front or without. Anything else is not put into one. */
+        private val NUMBER = Regex("\\+?[0-9]+")
+        /**
+         * An app's battery-use page. The SDK (37) has no public constant for this action, unlike the other
+         * three pages, so it is written out: Settings answers it from an activity open to every app that asks
+         * for no permission (docs/research/intents.md, "Tried on a Googlebook").
+         */
+        const val POWER_USAGE_DETAIL = "android.settings.VIEW_ADVANCED_POWER_USAGE_DETAIL"
     }
 }

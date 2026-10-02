@@ -160,20 +160,30 @@
     <string-array name="guide">
         <item>apps|open|open||chrome|Apps|Einen Namen tippen; die Symbole in der Zeile zeigen, was noch geht</item>
         <item>places|open|left||chrome links|Eine App, an einem Platz|links, rechtes Drittel, oben links, voll … für eine App, die noch nicht offen ist</item>
+        <item>pages|open|settings||chrome benachrichtigungen|Die Einstellungen einer App|benachrichtigungen, sprache, standard oder akku nach dem Namen einer App: ihre Seite in den Einstellungen</item>
         <item>commands|open|bolt||{command}|Was andere Apps anbieten|Die Kurzbefehle der Apps, als Zeilen</item>
+        <item>appsearch|open|search||{appsearch}|In einer App suchen|Der Name einer App, dann der Suchtext: Enter öffnet dort die Treffer. Auch „Suchen“ hinter dem Pfeil in der Zeile der App</item>
         <item>settings|open|settings|settings|s wlan|Einstellungen|s, dann Tab: jede Einstellungsseite</item>
         <item>keys|open|key|keys|k andocken|Tastenkürzel|k, dann Tab: was die Tasten des Systems tun</item>
         <item>links|open|search||{link}|Deine Links|Ein Stichwort, dann der Suchtext</item>
+        <item>own|open|open||{own}|Deine App-Befehle|Dein Stichwort lässt eine andere App etwas tun: einen Link öffnen, suchen, einen Text annehmen</item>
         <item>web|open|globe||wetter berlin|Das Web|Die letzte Zeile sucht nach dem, was du getippt hast</item>
+        <item>go|open|directions|go|route hamburg hbf|Route|Der Weg dorthin. Start und Ziel, und womit: route von berlin nach hamburg mit dem zug</item>
+        <item>meet|open|video|meet|meet |Meet|Ein neues Meeting; mit dem Code eines Meetings (abc-defg-hij) dieses</item>
+        <item>call|open|phone|call|anruf +49 30 23125 123|Anruf|Die Telefon-App mit der Nummer darin; den Anruf startest du dort</item>
         <item>note|write|note|note|notiz Milch kaufen|Notiz|Eine Zeile mit Datum in Notes.md</item>
         <item>notes|write|note|notes|notizen Milch|Notiz finden|Zeilen aus Notes.md, die neuesten zuerst</item>
         <item>todo|write|check|todo|todo Bank anrufen|Aufgaben|Eine Aufgabe für Todo.md; todo allein zeigt, was offen ist</item>
         <item>mail|write|mail|mail|mail anna@example.com Mittag? / Bis um 1|Mail|Das Fenster für eine neue Mail, ausgefüllt</item>
+        <item>sms|write|chat|sms|sms +49 30 23125 123 komme später|SMS|Die Nachrichten-App, ausgefüllt; nichts wird gesendet</item>
+        <item>wa|write|chat|wa|wa +49 30 23125 123 komme später|WhatsApp|Der Chat mit dieser Nummer, dein Text im Feld; nichts wird gesendet</item>
+        <item>tg|write|chat|tg|tg anna bin unterwegs|Telegram|Der Chat mit diesem Nutzernamen, oder einer Nummer, dein Text im Feld; nichts wird gesendet</item>
         <item>event|write|event|event|termin Fr 15 Uhr Zahnarzt|Termin|Der Editor des Kalenders, ausgefüllt</item>
         <item>remind|write|bell|remind|erinnere 17 Uhr Bank anrufen|Erinnerung|Ein Timer, ein Wecker oder ein Termin, je nachdem wann</item>
         <item>new|write|plus|new|neu doc Plan Q3|Neu|Datei, Ordner, Dokument, Tabelle oder Präsentation</item>
         <item>timer|time|timer|timer|timer 10m Tee|Timer|Die Uhr startet ihn; „Starten und anheften“ hält den Countdown oben</item>
         <item>alarm|time|bell|alarm|wecker 7:30 Sport|Wecker|Die Uhr stellt ihn</item>
+        <item>alarms|time|bell||alle wecker|Wecker und Timer|alle wecker und alle timer öffnen die zwei Listen der Uhr</item>
         <item>sums|answers|calc||12*3,5|Rechnen|Enter kopiert das Ergebnis</item>
         <item>color|answers|edit||#3478f6|Farben|Dieselbe Farbe in HEX, RGB, HSL und OKLCH, jede zum Kopieren</item>
         <item>password|answers|key||passwort 20|Passwörter|Jedes Mal ein neues</item>
@@ -190,8 +200,9 @@
         <item>pin|text|pin|pin|pin Gate B22, 14:05|Anheften|Eine Zeile in einem kleinen Fenster, das oben bleibt</item>
         <item>vol|controls|volume|vol|vol 30|Lautstärke|Oder die Pfeiltasten in ihrer Zeile</item>
         <item>brightness|controls|sun|brightness|helligkeit 60|Helligkeit|Oder die Pfeiltasten in ihrer Zeile</item>
-        <item>play|controls|music|play|play lofi|Abspielen|Fragt die Musik-App</item>
-        <item>window|booklight|booklight||booklight|Booklights Fenster|Einstellungen und deine Links, Bausteine, Rezepte und Prompts</item>
+        <item>play|controls|music|play|play lofi|Abspielen|Eine Musik-App spielt es ab oder zeigt ihre Treffer. Auch: play album …, play … auf spotify; play allein setzt fort</item>
+        <item>media|controls|pause||pause|Medientasten|pause, play, stopp, weiter, zurück: für das, was gerade läuft</item>
+        <item>window|booklight|booklight||booklight|Booklights Fenster|Einstellungen und deine Links, Bausteine, Rezepte, Prompts und App-Befehle</item>
     </string-array>
 
     <!-- Tipps -->
@@ -205,18 +216,22 @@
     <string-array name="tips">
         <item>help|list|?|Alles|listet alles auf, was Booklight kann, jedes mit einem Beispiel</item>
         <item>places|left|chrome links|Eine App, an einem Platz|öffnet Chrome links, wenn es noch nicht offen ist. Auch: oben links, voll</item>
+        <item>appsearch|search|{appsearch}|In einer App suchen|öffnet die App mit den Treffern. Der Name einer App, dann der Suchtext</item>
         <item>settings|settings|s wlan|Einstellungen|führt zu einer Einstellungsseite. s, Tab, dann ihr Name</item>
         <item>keys|key|k andocken|Tastenkürzel|zeigt die Tasten dafür. k, Tab, dann was du tun möchtest</item>
+        <item>pages|settings|chrome benachrichtigungen|Die Einstellungen einer App|öffnet ihre Seite in den Einstellungen. Auch: sprache, akku</item>
         <item>todo|check|todo Bank anrufen|Aufgaben|fügt Todo.md eine Aufgabe hinzu. todo allein zeigt, was offen ist</item>
         <item>prompts|spark|{prompt}|Prompts|wird auf diesem Gerät korrigiert oder an Gemini übergeben</item>
         <item>pin|pin|pin Gate B22, 14:05|Anheften|hält eine Zeile in einem kleinen Fenster über den anderen</item>
         <item>timer|timer|timer 10m Tee|Timer|startet einen Timer in der Uhr. „Starten und anheften“ zeigt den Countdown</item>
         <item>note|note|notiz Milch kaufen|Notiz|fügt Notes.md eine Zeile mit Datum hinzu</item>
+        <item>go|directions|route hamburg hbf|Route|zeigt den Weg dorthin. Auch: route von berlin nach hamburg mit dem zug</item>
         <item>clip|clip|clip |Zwischenablage|zeigt, was du kopiert hast und was sich damit tun lässt</item>
         <item>tr|spark|tr dänisch bis Samstag|Übersetzen|wird auf diesem Gerät ins Dänische übersetzt. Viele Sprachen gehen</item>
         <item>sums|calc|12*3,5|Rechnen|wird beim Tippen beantwortet. Enter kopiert</item>
         <item>emoji|smile|emoji party|Emoji|zeigt ein Raster zum Auswählen. Enter kopiert</item>
         <item>flight|plane|LH455|Eine Flugnummer|nennt die Airline; Enter öffnet die Seite des Flugs. Zeiten mit AirLabs-Schlüssel</item>
+        <item>play|music|play interpret daft punk|Abspielen|fragt deine Musik-App. Mit „auf“ und ihrem Namen wählst du eine</item>
     </string-array>
 
     <!-- Das Booklight-Fenster: seine Bereiche -->

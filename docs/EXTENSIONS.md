@@ -95,3 +95,47 @@ data) is planned as a separate, opt-in layer and is not part of this version.
 
 The debug build of Booklight declares a file for itself (`app/src/debug/res/xml/booklight_commands.xml`).
 `./bl debug find "your title"` prints the rows for a text without opening the panel.
+
+## 3. A search inside your app
+
+Type an app's name and what you are looking for (`spotify daft punk`), or choose Search behind the arrow on the
+app's own row and type then: Enter opens the app on its results. Where the text goes is, for one app, the first of
+these that the installed app takes:
+
+1. **Your Booklight file.** The first `scope` of your file that has an `open` of its own (a keyword that takes
+   text) is your app's search. Its row keeps your words: "Tools: merge".
+2. **The bundled table**, for well-known apps that have no file (below).
+3. **What your app declares for everyone:** an exported activity for `android.intent.action.SEARCH`, or for
+   `com.google.android.gms.actions.SEARCH_ACTION`. The text arrives as the string extra `query`.
+
+The same four rules apply as everywhere here: your package, exported, no permission, enabled. A search that fails
+them is not offered, and nothing is offered for an app that has none of the three. The row is named "Search
+*your app* for …" and carries your app's own icon; it stands under everything that matches the typed text by its
+name, so an app called "Spotify Desktop" is still the first row for `spotify d`. The assistant's capabilities in
+`shortcuts.xml` (`actions.intent.GET_THING`) are not read.
+
+### The bundled table
+
+`app/src/main/assets/appsearch.tsv`, kept by hand: a few well-known apps and the address their search takes.
+
+```
+# Seen working on a Googlebook, 2 October 2026.
+com.spotify.music	spotify:search:{argument}
+com.android.vending	https://play.google.com/store/search?q={argument}&c=apps	store
+```
+
+- A line is the app's package, a tab, and the address, with `{argument}` where the typed text goes. The text is
+  percent-encoded (a space is `%20`), so it stays one piece in a path as well as after a `?`.
+- A third field names the one of Booklight's own links (`yt`, `maps`, `store`, `drive`) that searches the same
+  place. That link then opens in the app where the app is installed and takes the address, and in the browser
+  where not. A link the user changed goes where it says.
+- An app may have several lines; the first that the installed app takes is used.
+- A line starting with `#` is a comment. The comment above a line says whether it was seen landing on the app's
+  results on a Googlebook.
+- Nothing of the app is bundled but the form of its link: its name and icon are the device's own, and a line for
+  an app that is not installed, or whose installed version does not take the address, shows nothing.
+
+Before a release, `./bl debug appsearch` on a Googlebook (a debug build) prints every line of the table and every
+search an app declares: the app, the source, and whether the device takes it; a star marks the one each app uses.
+"Resolves" only says that the app takes the address. Whether it lands on results or on the app's first screen
+takes a look.

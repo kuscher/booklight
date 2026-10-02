@@ -17,6 +17,8 @@ import io.github.kuscher.booklight.core.Clip
 import io.github.kuscher.booklight.core.Offer
 import io.github.kuscher.booklight.device.Clipboard
 import io.github.kuscher.booklight.providers.FlightsProvider
+import io.github.kuscher.booklight.providers.Songs
+import io.github.kuscher.booklight.providers.WebProvider
 import io.github.kuscher.booklight.scopes.Answering
 import io.github.kuscher.booklight.scopes.PromptScope
 import io.github.kuscher.booklight.scopes.TextFrom
@@ -30,6 +32,7 @@ import io.github.kuscher.booklight.core.Matcher
 import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
+import io.github.kuscher.booklight.core.SearchEngine
 import io.github.kuscher.booklight.data.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -280,7 +283,7 @@ class OverlayModel(
         if (zeroUp) {
             when {
                 selected > 0 -> move(-1)
-                selected == 0 && opened == null -> if (!again) { cancelConfirm(); selected = -1; armed = 0; cell = 0 }
+                selected == 0 && opened == null -> if (!again) { moved(); selected = -1; armed = 0; cell = 0 }
                 selected < 0 -> if (!again) restoreLast()
             }
             return
@@ -417,7 +420,7 @@ class OverlayModel(
         // The list of everything has been opened: its tip need not come.
         if (s.key == "help" && "help" !in settings.used) change { it.copy(used = it.used + "help") }
         // A prompt: ask the system what it has, and have its model loaded by the time the text is typed.
-        if (s is Answering) scope.launch { if (app.onDevice.check() == OnDevice.State.READY) app.onDevice.warm() }
+        if (s is Answering) scope.launch { if (app.onDevice.check() == OnDevice.State.READY && s.eager) app.onDevice.warm() }
     }
 
     /**
@@ -458,11 +461,12 @@ class OverlayModel(
     /**
      * Backspace on an empty argument, or a click on the chip: the chip turns back into text, the word that
      * was typed for it (or the scope's own first keyword). [withText]: what was typed after it comes along.
-     * Text another app handed over has no keyword: its chip just goes.
+     * Text another app handed over has no keyword: its chip just goes. An app's chip ("Search", on the app's
+     * row) has none either, but it has the app's name: that comes back, and with the text it searches the same.
      */
     fun leaveScope(withText: Boolean = false): Boolean {
         val s = chip ?: return false
-        val w = word ?: s.keywords.firstOrNull()
+        val w = word ?: s.keywords.firstOrNull() ?: s.name.lowercase().takeIf { s.key.startsWith(SearchEngine.IN_APP) }
         // Text another app handed over stays that app's when it comes back into the field: not kept, not sent for suggestions.
         val others = foreign && withText && query.isNotEmpty()
         chip = null; word = null; foreign = others
@@ -492,6 +496,8 @@ class OverlayModel(
         results = rows
         selected = rows.indexOfFirst { it.id == id }.coerceAtLeast(0)
         armed = rows.getOrNull(selected)?.armed ?: 0
+        // A row that stood waiting for a lookup when the model was asked: the lookup was given up then, so the list is made anew.
+        if (rows.any { r -> r.actions.any { needsAnswer(it.effect) } }) refresh()
         return true
     }
 
@@ -556,6 +562,9 @@ class OverlayModel(
             // Suggestions come from the network: after a pause in typing, never holding up the
             // list, and dropped if the text has moved on (this job is cancelled by then).
             if (demo || key != null || foreign || !settings.suggestions) return@launch
+            // What is meant for one app is not sent to the search engine either: an app's name and what to look for in it
+            // ("spotify daft punk"), or an address of an app's own.
+            if (local.any { it.id.startsWith(SearchEngine.IN_APP) || it.id == WebProvider.IN_APP }) return@launch
             delay(SUGGEST_PAUSE_MS)
             val more = app.suggest.fetch(text)
             if (more.isEmpty()) return@launch
@@ -585,13 +594,26 @@ class OverlayModel(
     private var looking: Job? = null
     private var whenLooked: Pair<String, (Result, Action) -> Unit>? = null
 
+    /**
+     * The pill or the arming has moved: an Enter that waits for an answer was for where they stood, and is given up.
+     * (Else it would run when the answer lands: Enter on "Play in Spotify", Tab to another player, and Spotify plays.)
+     */
+    private fun moved() { cancelConfirm(); whenLooked = null }
+
+    // What Spotify has for `play` is looked up the same way: the row waits, the answer lands in it, an Enter that came first runs then.
+    private fun waits(r: Result) = app.flights.waits(r) || app.songs.waits(r)
+    private fun needsAnswer(e: Effect) = e == FlightsProvider.WAIT || e == Songs.WAIT
+    private suspend fun answer(row: Result, pause: Boolean): Result? = if (row.provider == Songs.PROVIDER) app.songs.answer(row.id, pause) else app.flights.answer(row.id, pause)
+
     /** The list has landed: a flight's row that stands waiting for its answer is looked up, once, after a pause in typing. */
     private fun look() {
         // Text another app handed over is never sent unasked: not in its own chip (a chip without a keyword), not once it has
         // moved into the field. Under a text's own chip (what was copied, `clip`, handed-over text) a flight's row waits only
         // once the user has gone to it: then it is looked up again when the list is made anew.
         if (demo || (chip !is TextScope && (foreign || chip?.keywords?.isEmpty() == true))) return
-        results.firstOrNull { app.flights.waits(it) }?.let { lookUp(it, pause = true) }
+        // A flight's row wherever it stands. The row of `play` only as row one: under an app's own row ("play store") the
+        // text is that app's name, and is sent nowhere unless the user goes to the row.
+        (results.firstOrNull { app.flights.waits(it) } ?: results.firstOrNull()?.takeIf { app.songs.waits(it) })?.let { lookUp(it, pause = true) }
     }
 
     /**
@@ -607,7 +629,7 @@ class OverlayModel(
         // (Or a row that said "No connection" or "No answer this time" a while ago: going to it asks again.)
         val row = (app.flights.gone(on) ?: app.flights.retry(on))?.also { land(it) } ?: on
         // (Also a flight's row that waits and has not been asked for: one under text another app handed over.)
-        if (app.flights.waits(row) && looking?.isActive != true) lookUp(row, pause = false)
+        if (waits(row) && looking?.isActive != true) lookUp(row, pause = false)
     }
 
     private fun lookUp(row: Result, pause: Boolean) {
@@ -616,7 +638,7 @@ class OverlayModel(
             // The light of work only for an answer that is slow to come: a quick one must not flash.
             var lit = false
             val slow = launch { delay((if (pause) LOOK_PAUSE_MS else 0L) + LOOK_LIGHT_MS); lit = true; looked = true }
-            val got = try { app.flights.answer(row.id, pause) } finally { slow.cancel(); if (lit) looked = false }
+            val got = try { answer(row, pause) } finally { slow.cancel(); if (lit) looked = false }
             if (got == null) return@launch
             land(got)
             whenLooked?.let { (id, run) ->
@@ -624,12 +646,12 @@ class OverlayModel(
                 // The action that was asked for, if the answer made it possible, and nothing else: with no answer, the Enter that
                 // waited runs nothing. (The pill may be on the row, or on one of its other actions in the list under it.)
                 if (current?.id == got.id || current?.id?.startsWith("act:${got.id}:") == true)
-                    got.actions.firstOrNull { it.id == id && !it.off && it.effect != FlightsProvider.WAIT }?.let { run(got, it) }
+                    got.actions.firstOrNull { it.id == id && !it.off && !needsAnswer(it.effect) }?.let { run(got, it) }
             }
         }
     }
 
-    /** [row] takes the place of the row with its id, in the list and under a row that is open. The arming stays on its action if the row still offers it, else goes to the first. */
+    /** [row] takes the place of the row with its id, in the list and under a row that is open. The arming stays on its action if the row still offers it, else goes to the row's own default. */
     private fun land(row: Result) {
         if (opened != null) {
             closed = closed.map { if (it.id == row.id) row else it }
@@ -647,14 +669,24 @@ class OverlayModel(
         if (i == selected) {
             val was = results[i]
             val id = was.actions.getOrNull(armed)?.id
+            // (An action that is gone: the row's own default, which for `play` is the player it is aimed at. Never simply the
+            // first action: that may be another app's, and Enter would go there.)
             armed = if (armed == was.actions.size && row.actions.any { it.more }) row.actions.size
-                else row.actions.indexOfFirst { it.id == id && !it.more && !it.off }.takeIf { it >= 0 } ?: 0
+                else row.actions.indexOfFirst { it.id == id && !it.more && !it.off }.takeIf { it >= 0 } ?: row.armed.takeIf { it in stops(row) } ?: 0
         }
         results = results.toMutableList().also { it[i] = row }
     }
 
     /** The rows as they were when one of them was asked where it stands: Backspace on the empty field brings them back. */
-    private var asked: List<Result>? = null
+    private var asked by mutableStateOf<List<Result>?>(null)
+
+    /** An answer stands in place of the rows it was asked from: its row is an answer's, whatever its actions are (Tab goes along them). */
+    val inAnswer: Boolean get() = asked != null
+    /** And the field holds text, so Backspace is the text's: Escape is then the step back to those rows, with the text as it was. */
+    val escapeLeaves: Boolean get() = asked != null && query.isNotEmpty()
+
+    /** Escape on such an answer: back to the rows it was asked from. False where there is none to leave that way. */
+    fun leaveAnswer(): Boolean = escapeLeaves && back()
 
     /**
      * Enter on a row the model answers where it stands (under a thing's chip): the row takes the
@@ -738,7 +770,7 @@ class OverlayModel(
 
     fun select(index: Int, passing: Boolean = false) {
         if (index !in results.indices || index == selected) return
-        cancelConfirm()
+        moved()
         touched = true
         selected = index
         // Another row: its own default again. Back on a row whose actions are listed: its arrow, which now closes them.
@@ -772,7 +804,7 @@ class OverlayModel(
         val at = st.indexOf(armed).coerceAtLeast(0)
         val to = if (wrap) (at + by + n) % n else (at + by).coerceIn(0, n - 1)
         if (st[to] == armed) return false
-        cancelConfirm()
+        moved()
         touched = true
         armed = st[to]
         return true
@@ -780,7 +812,7 @@ class OverlayModel(
 
     fun armAt(index: Int) {
         val r = current ?: return
-        if (index in stops(r) && index != armed) { cancelConfirm(); touched = true; armed = index }
+        if (index in stops(r) && index != armed) { moved(); touched = true; armed = index }
     }
 
     private fun actionRows(r: Result): List<Result> = r.actions.filter { it.more }.map { a ->
@@ -797,7 +829,7 @@ class OverlayModel(
     fun open(): Boolean {
         val r = current ?: return false
         if (opened != null || r.actions.none { it.more } || resultsFor != (chip?.key to query)) return false
-        cancelConfirm()
+        moved()
         val rows = actionRows(r)
         // A typed place that was shown on the row goes back into the list: the pill lands on its row there.
         val typed = r.actions.getOrNull(r.armed)?.takeIf { it.more }?.let { a -> rows.indexOfFirst { it.actions[0].id == a.id } } ?: -1
@@ -811,7 +843,7 @@ class OverlayModel(
     /** Closes the opened row: the list is back as it was, the pill on the row, its arrow armed. */
     fun close(): Boolean {
         val id = opened ?: return false
-        cancelConfirm()
+        moved()
         val back = closed
         shut()
         selected = back.indexOfFirst { it.id == id }.coerceAtLeast(0)
@@ -832,7 +864,7 @@ class OverlayModel(
     fun step(by: Int) {
         val n = results.size - 1
         if (opened == null || n < 1) return
-        cancelConfirm()
+        moved()
         // From the row itself: down to its first action, up to its last. From an action: the next or the one before, wrapping.
         val at = if (selected == 0) (if (by > 0) -1 else n) else selected - 1
         selected = 1 + ((at + by) % n + n) % n
@@ -887,11 +919,12 @@ class OverlayModel(
         // nobody has read. Once words arrive the row reads "Copy", and Enter then waits for all of them.
         if (a.effect == PromptScope.ASK) { if (!thinking) ask(now = true); return }
         if ((r.body as? Body.Stream)?.busy == true) { whenAnswered = run; return }
-        // A flight's Copy, Pin or Add to calendar before its answer has come: it runs when the answer is in.
-        if (a.effect == FlightsProvider.WAIT) {
+        // A flight's Copy, Pin or Add to calendar before its answer has come: it runs when the answer is in. So does Play in
+        // Spotify before Spotify has said what it found (and where it found nothing, the search that takes its place).
+        if (needsAnswer(a.effect)) {
             // (Where no lookup is on its way, under a text's chip or after the list was made anew, it is started now.)
             whenLooked = a.id to run
-            if (looking?.isActive != true) results.firstOrNull { app.flights.waits(it) }?.let { lookUp(it, pause = false) }
+            if (looking?.isActive != true) results.firstOrNull { waits(it) }?.let { lookUp(it, pause = false) }
             if (looking?.isActive != true) whenLooked = null
             return
         }
@@ -939,7 +972,7 @@ class OverlayModel(
         val r = results.getOrNull(n)?.takeIf { it.body !is Body.Grid } ?: return
         val a = r.actions.firstOrNull()?.takeIf { !it.danger && !it.confirm } ?: return
         (a.effect as? Effect.EnterScope)?.let { into(it); return }
-        if (a.effect == PromptScope.ASK || a.effect is Effect.Ask || a.effect == FlightsProvider.WAIT || (r.body as? Body.Stream)?.busy == true) return     // an answer is Enter's
+        if (a.effect == PromptScope.ASK || a.effect is Effect.Ask || needsAnswer(a.effect) || (r.body as? Body.Stream)?.busy == true) return     // an answer is Enter's
         if (a.effect is Effect.Unsuggest) return        // and so is "Don't suggest"
         (a.effect as? Effect.Type)?.let { typeOut(it.text); return }
         run(r, a)
@@ -975,7 +1008,8 @@ class OverlayModel(
         hideTip()
         // Text another app handed over is never kept, in its own chip or once it has moved into a note or a code. Nor is
         // an example Booklight typed, unless the user made it their own by editing it.
-        if (query.isNotBlank() && !foreign && !shown && chip?.keywords?.isEmpty() != true) app.lastText = chip?.key to query
+        // (An app's chip has no keyword either, but what is typed under it is the user's own.)
+        if (query.isNotBlank() && !foreign && !shown && (chip?.keywords?.isEmpty() != true || chip?.key?.startsWith(SearchEngine.IN_APP) == true)) app.lastText = chip?.key to query
     }
 
     /** Something was run: the line of the list of everything it belongs to has been used, and is not suggested again. */

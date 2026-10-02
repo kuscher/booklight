@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The Booklight window as a desktop window (docs/design/window-redesign.md): five sections. -->
+    <string name="nav_labs">Labs</string>
     <string name="nav_privacy">Privacy</string>
 
     <!-- Start -->
@@ -20,13 +21,13 @@
     <string name="win_new_snippet">New snippet</string>
     <string name="win_new_recipe">New recipe</string>
     <string name="win_new_prompt">New prompt</string>
-    <string name="win_new_more">New snippet, recipe or prompt</string>
 
     <!-- Look, Results, Privacy: the names of their groups -->
     <string name="win_panel">Panel</string>
     <string name="win_search">Search</string>
     <string name="win_show">Show in the list</string>
     <string name="win_may_use">What Booklight may use</string>
+    <string name="win_labs_lead">Extras that need your own key from another service. Without a key, nothing is sent there.</string>
     <string name="win_privacy_lead">Booklight asks for nothing when it is installed. What it may use is yours to give, in the system’s own screens, and to take back there.</string>
 
     <!-- Rows and controls -->
@@ -53,7 +54,6 @@
     <string name="win_why_name">It needs a name.</string>
     <string name="win_why_name_space">A snippet\'s name is one word, without spaces.</string>
     <string name="win_why_name_taken">This name is taken.</string>
-    <string name="win_why_address">The address starts with https://</string>
     <string name="win_why_text">It needs its text.</string>
     <string name="win_why_step">Add at least one step.</string>
     <string name="win_kind_link">Link</string>

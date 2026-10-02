@@ -87,10 +87,10 @@ free. The same keys close the panel again. Booklight shows these steps the first
 ## The Booklight window
 
 The app's icon opens an ordinary desktop window with everything else, its navigation on the window's edge, in
-five sections: Start (what Booklight is, your key, tips, your usual, what you copied), Commands (everything it
+six sections: Start (what Booklight is, your key, tips, your usual, what you copied), Commands (everything it
 does, and yours: links, snippets, recipes, prompts; Enter on a row types the example into the panel), Look
 (theme, colours, glass, shadow, opening, with a live preview), Results (the search engine, suggestions, which
-kinds of rows show, other apps' commands, the flight service's key) and Privacy (the notes folder, brightness,
+kinds of rows show, other apps' commands), Labs (what needs a key of your own: Spotify, flight times) and Privacy (the notes folder, brightness,
 what Booklight keeps, about). "Booklight settings" in the panel opens it too.
 A search-pill widget and a Quick Settings tile open the panel without a keyboard.
 
@@ -109,5 +109,7 @@ Android Studio's JDK 21 and the Android SDK (platform 37.0).
 
 ## License
 
-MIT. A personal hobby project by Alexander Kuscher; not affiliated with or endorsed by any employer or
+MIT. A personal hobby project, published as Fika Labs; not affiliated with or endorsed by any employer or
 by Google.
+
+— Fika Labs

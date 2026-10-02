@@ -6,7 +6,9 @@ Written the way the app says it, for the Play data-safety answers and the privac
 Booklight keeps what it learns on the device and sends nothing anywhere, with one exception that is
 **off until the user turns it on**: search suggestions. With suggestions on, the text being typed is sent
 to the chosen search engine to get suggested searches. (M5, not released yet: a second one, which needs
-the user's own key before anything is sent: a flight number goes to AirLabs. See "Flight lookups".)
+the user's own key before anything is sent: a flight number goes to AirLabs. See "Flight lookups". Not
+released yet either: a third, which needs the user's own key as well: the text typed after `play` goes to
+Spotify. See "Spotify lookups".)
 
 ## What is stored on the device
 - `files/history.json`: for results the user picked, the result's id (for an app: its package and
@@ -50,7 +52,7 @@ the user's own key before anything is sent: a flight number goes to AirLabs. See
 - Booklight's developer receives nothing: there is no Booklight server.
 
 **Flight lookups (M5; only with a key of the user's own, none by default).**
-- Booklight ships no key. Until the user pastes their own AirLabs key into the Booklight window (Results ›
+- Booklight ships no key. Until the user pastes their own AirLabs key into the Booklight window (Labs ›
   Flights), a flight number is read on the device from a bundled table of airlines and nothing is sent.
 - With a key in: one HTTPS GET request to `https://airlabs.co/api/v9/flight?flight_iata=<number>&api_key=<the user's key>`
   (`flight_icao=` for a callsign), 400 ms after the last key, for a strong match only (the rule is
@@ -73,6 +75,46 @@ the user's own key before anything is sent: a flight number goes to AirLabs. See
 - For the form: the same data type as suggestions (App activity › In-app search history, to a third party the
   user chose, optional): the answers stay as they are. A third party's API key that the user supplies has no
   data type of its own in Play's form; whether Play wants one declared is not verified.
+
+**Spotify lookups (only with a key of the user's own, none by default).**
+- Booklight ships no key. Until the user puts their own Spotify Web API key (a client ID and its secret) into
+  the Booklight window › Labs, `play … on spotify` is an ordinary hand-over to the Spotify app
+  on the device (`MEDIA_PLAY_FROM_SEARCH` aimed at its package), which shows its search results, and Booklight
+  sends nothing.
+- With a key in, and only while Spotify is the player the row of `play` is aimed at by the user's choice (named
+  in the text, used last, or the only one; not where it is merely the first of several by name), and only while
+  that row is the first row or the one the user moved to (`play store` puts the Play Store's row first: nothing
+  is sent): 400 ms after the last key, never per letter or for one letter, and not for text another app handed over,
+  - a token, when none is held: one HTTPS POST to `https://accounts.spotify.com/api/token` with the body
+    `grant_type=client_credentials` and the header `Authorization: Basic <the user's client ID and secret>`
+    (the client credentials flow: a token for the key, not for a person; no user account is read). The token is
+    held in memory until a minute before it ends (an hour) and is asked for again once if Spotify refuses it early.
+  - one HTTPS GET to `https://api.spotify.com/v1/search?q=<text>&type=<kinds>&limit=<5 or 10>&market=<country>`
+    with the header `Authorization: Bearer <token>`. `<text>` is what was typed after `play`, without a kind
+    word (`album`, `artist`…) and without the player's name. After a kind word, "X by Y" is sent as
+    `track:"X" artist:"Y"` (`album:"X"` for an album); free text is sent as its words, and by those fields only
+    if the words found nothing. `<kinds>` is `track,artist` for free text, else `track`, `album`, `artist`
+    or `playlist`. `<country>` is the country of the device's first language (two letters; `US` where it
+    names none).
+  - when a search by fields finds nothing, the same search once more with the words as free text; for an album,
+    `https://api.spotify.com/v1/albums/<id>/tracks?limit=1&market=<country>` (its first song); for an artist,
+    a search for `artist:"<name>"` with `type=track` (a song of their own to start from); for free text that
+    got no answer, once more with `type=track` alone. Three requests at most for one lookup. The rules are
+    `Spotify.search` and `Spotify.lookup` in the core, with tests on Spotify's real replies.
+- Each request carries what is listed above, an `Accept: application/json` header and the user agent `Booklight`.
+  No cookies, no advertising ID, no device identifier, no location beyond that country code. It reveals the
+  device's IP address to Spotify, and Spotify can tie the lookups to the account the key belongs to.
+- What was found (a name, its artists, its album, its Spotify id) is kept in memory for five minutes and not
+  written to storage, with one exception the user makes: a recipe step made of a found song keeps that song's
+  `spotify:` link in `files/settings.json`.
+- Enter then hands the link (`spotify:track:<id>`, with `?context=…` for an album or an artist, or
+  `spotify:playlist:<id>:play`) to the Spotify app on the device with `ACTION_VIEW`, aimed at its package, with
+  Booklight's package name as the referrer (Spotify's guide for links asks for it). That is a hand-over on the
+  device, not a transmission by Booklight.
+- The key is `files/spotify.key` in the app's storage: not in the Android backup, not in device transfer,
+  never logged, never shown again once it is in.
+- For the form: the same data type as suggestions and flights (App activity › In-app search history, to a third
+  party the user chose, optional): the answers stay as they are.
 
 **Choosing a web row.** "Search Google for …", a keyword search, a suggestion or a typed address opens
 that address in the user's browser. That is the user sending it, in their browser, not Booklight in the

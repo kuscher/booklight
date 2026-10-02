@@ -1,5 +1,59 @@
 # Changelog
 
+## Unreleased
+
+**Commands for other apps** (`docs/research/next-five.md`; what the devices showed: `docs/research/intents.md`, "Tried on a Googlebook").
+
+- **Play it there.** `play bohemian rhapsody on spotify`: one row, an action for each music app, the one you used
+  last armed. Start with `album`, `artist`, `song`, `playlist` or `genre`; "X by Y" names the artist. The footer
+  says "Sent to", never "Playing".
+- **Spotify plays what you name, with a key of your own.** Spotify by itself only shows its search results for
+  such a request, so without a key its action reads "Search in Spotify". With your own Spotify key (the Booklight
+  window › Labs) the row shows what Spotify found (the song with its artist and album, an album, an artist, a
+  playlist) and Enter plays exactly that. Enter before the answer has come waits for it. Without a key nothing is
+  sent; with one, the text after `play` goes to Spotify and nowhere else.
+- **"Which song is this?"** behind the row's arrow asks the model on this device, for a song you can only
+  describe or cannot spell. Its answer is shown; "Use this" puts it into the field. It never changes what you
+  typed by itself.
+- **`pause` can only pause, `play` alone resumes, `stop` stops.** `play` is a recipe step.
+- **Search inside an app.** Type an app's name and what you are looking for: `spotify daft punk`,
+  `netflix severance`, `play store calculator`. Enter opens the app on its results. The row stands under
+  everything that matches the text by name. Also "Search", behind the arrow on the app's row: the app becomes
+  the chip.
+- **`yt`, `maps`, `store` and `drive` open in the app** where it is installed; the browser is the next action,
+  and the first where the app is missing.
+- Where a search goes: the app's own Booklight file, a small bundled table (`app/src/main/assets/appsearch.tsv`),
+  or a search the app declares. Shown only if the installed app takes it.
+- **An app's own settings.** After an app's name: `notifications`, `language`, `defaults`, `battery`
+  (`benachrichtigungen`, `sprache`, `standard`, `akku`) put that page of the app in Settings on its row, armed:
+  `spotify notifications`, Enter. Booklight opens the page; it switches nothing. Untyped, the four are not listed
+  under the row's arrow (its list would no longer fit a Googlebook 14's screen); App info leads to all of them.
+- **`alarms` and `timers`** open the Clock's two lists.
+- **`go`**: `go hamburg hbf` is directions from here; `go berlin to hamburg by train` both ends and how (`von
+  berlin nach hamburg mit dem zug`, `zu fuß`, `mit dem rad`, `mit dem auto`). In the Maps app where there is one,
+  else Google Maps in the browser.
+- **`meet`** starts a meeting; `meet abc-defg-hij` joins that one.
+- **`call`, `sms`, `wa`, `tg`**: a number (or a Telegram name) and your text open the phone app's dial screen, a
+  new message, or the chat with the text in its field. Booklight dials nothing and sends nothing. Each keyword is
+  there only where an app answers it. `go`, `wa` and `tg` typed alone stay under the apps that start that way.
+- **A link can open an app.** A link's address may have any scheme: `spotify:search:{argument}` searches Spotify,
+  a `spotify:playlist:…:play` link plays it. Not taken: `javascript:`, `file:`, `content:`, `intent:`, `data:`.
+  When no app answers, the row stays and the footer says so.
+- **An app's address, typed.** `spotify:track:…` in the field is a row "Open in Spotify". Words with a colon stay
+  words.
+- **App commands**, a fifth kind under Commands › Yours: choose an app and what to ask it (open a link, send
+  text, search, play from search, or an action of its own), with up to eight extras. `{argument}` is what you
+  type after the keyword. Paste an `am start …` line to fill the form; Try asks the app now and says what
+  happened. Booklight only starts an activity the app lets other apps open. A recipe step can be one.
+- **Labs**, a sixth section of the Booklight window, for what needs a key of your own from another service:
+  the Spotify key, and the flight service's key, which moved there from Results.
+- No new permission in any of it.
+
+- **A letter typed right after a keyword's space is no longer lost.** `fix teh text`, typed quickly, could arrive as
+  `eh text`: the keyboard's keys went through the input method, and the letter it was still holding was dropped when
+  the keyword became the chip. Typed keys now go to the field directly (`docs/research/device-findings.md`, "Typed
+  keys go through the input method"). The code was the same since 1.1.
+
 ## 2.3 (2 October 2026)
 
 **The copy** (M1 of `docs/design/milestones/plan-next.md`).

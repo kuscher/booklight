@@ -10,9 +10,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
@@ -21,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
@@ -43,6 +47,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +55,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.Icon as RowIcon
+import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.Fonts
 import io.github.kuscher.booklight.ui.Symbols
 import kotlin.math.abs
@@ -118,6 +125,8 @@ fun ActionStrip(
     lessLabel: String = "",
     /** How far the arrow is turned over, in degrees: the row's own value, so the arrow it keeps while its list is open is this one. */
     turn: () -> Float = { 0f },
+    /** Where an app's own icon comes from, for an action that is marked by one. */
+    icons: AppIcons? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -186,7 +195,10 @@ fun ActionStrip(
                 // The slot's icon. In the last slot the arrow and a typed action trade places on one centre.
                 val symbol = act?.symbol ?: "more"
                 AnimatedContent(symbol, transitionSpec = { fadeIn(motion.fade(80)) togetherWith fadeOut(motion.fade(80)) using SizeTransform(clip = false) { _, _ -> motion.arm() } }, label = "icon") { sym ->
+                    val app = remember(sym) { RowIcon.App.of(sym) }
                     if (sym.startsWith("t:")) Text(sym.substring(2), color = ink, style = LABEL.copy(fontSize = 12.sp, fontWeight = FontWeight(600), letterSpacing = 0.2.sp), maxLines = 1, softWrap = false)
+                    // Handing something to an app: the app's own icon, in its own colours, the size of a symbol.
+                    else if (app != null && icons != null) AppMark(app, icons)
                     else Icon(Symbols.of(sym), null, Modifier.size(18.dp).graphicsLayer { if (sym == "more") rotationZ = turn() }, tint = ink)
                 }
                 // Its name and the Enter mark: always laid out at full width, shown as far as the slot is armed.
@@ -239,6 +251,15 @@ fun ActionStrip(
             }
         }
     }
+}
+
+/** An app's icon as an action's mark. It is asked for at the size a row's picture is: one bitmap per app is kept. */
+@Composable
+private fun AppMark(icon: RowIcon.App, icons: AppIcons) {
+    val px = with(LocalDensity.current) { 48.dp.roundToPx() }
+    val bitmap by produceState(icons.cached(icon), icon) { if (value == null) value = icons.load(icon, px) }
+    // An app's picture fills its box where a symbol's ink leaves a margin: at 15 dp it is as large as the symbols beside it look.
+    Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) { bitmap?.let { Image(it, null, Modifier.size(15.dp)) } }
 }
 
 /** The pane and its one rim, from [x0] to [x1], the height of the strip. */

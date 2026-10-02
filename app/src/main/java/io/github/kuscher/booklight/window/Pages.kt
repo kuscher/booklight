@@ -122,8 +122,8 @@ private fun InColumn(/** False: not in the column either (the window is too low 
 
 /**
  * The second pane: what stands beside the page's column in a window of 1332 dp or more. Start: the live demo.
- * Look: the preview, in view while the settings scroll. Commands: the editor of the open link, snippet, recipe
- * or prompt, or a built-in command's example as the panel shows it. Results and Privacy: nothing.
+ * Look: the preview, in view while the settings scroll. Commands: the editor of the open link, snippet, recipe,
+ * prompt or app command, or a built-in command's example as the panel shows it. Results and Privacy: nothing.
  */
 @Composable
 fun SecondPane(part: Part, page: Page, app: BooklightApp, s: Settings, commands: CommandsState, onTyping: (Boolean) -> Unit) {
@@ -286,7 +286,7 @@ fun LookPage(page: Page, s: Settings, app: BooklightApp, arrive: Animatable<Floa
  * has a mark, so all text starts on one edge, and every control ends on one line at the rows' trailing end.
  */
 @Composable
-fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<Float, *>, from: Float, /** A text field of the page has the keys (the flight key's). */ onTyping: (Boolean) -> Unit) {
+fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<Float, *>, from: Float) {
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
     Rise(arrive, 1, from) {
         Group(stringResource(R.string.win_search), first = true) {
@@ -306,10 +306,7 @@ fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<F
             row("keys") { Toggle(page, "keys", stringResource(R.string.set_show_keys), stringResource(R.string.set_show_keys_text), s.showKeys, mark = "key", place = it) { v -> set { st -> st.copy(showKeys = v) } } }
         }
     }
-    // Flights: the key of the user's own that makes a flight's row answer with its times (`FlightsGroup.kt`). After the
-    // kinds of rows, which it is one of, and before what other apps put in the list.
-    Rise(arrive, 3, from) { FlightsGroup(page, app, onTyping) }
-    Rise(arrive, 4, from) {
+    Rise(arrive, 3, from) {
         val offers = app.commands.offers
         val icons = remember { app.icons ?: AppIcons(app).also { app.icons = it } }
         val show = stringResource(R.string.win_app_show)
@@ -336,6 +333,18 @@ private fun AppMark(icons: AppIcons, icon: RowIcon.App) {
     val bitmap by produceState(icons.cached(icon), icon) { if (value == null) value = icons.load(icon, px) }
     val there by animateFloatAsState(if (bitmap != null) 1f else 0f, LocalMotion.current.fade(80), label = "icon")
     Box(Modifier.size(MARK)) { bitmap?.let { Image(it, null, Modifier.fillMaxSize().graphicsLayer { alpha = there }) } }
+}
+
+/**
+ * Labs: what only works with a key of the user's own from another service (Alex: "a Labs section in settings which
+ * contains features needing random keys and such"). Each group is one such thing; each is off until its key is in.
+ */
+@Composable
+fun LabsPage(page: Page, app: BooklightApp, arrive: Animatable<Float, *>, from: Float, /** A text field of the page has the keys (a key's). */ onTyping: (Boolean) -> Unit) {
+    // Spotify: the key that makes `play … on spotify` find what was named and play it (`SongsGroup.kt`).
+    Rise(arrive, 1, from) { SongsGroup(page, app, onTyping) }
+    // Flights: the key that makes a flight's row answer with its times (`FlightsGroup.kt`).
+    Rise(arrive, 2, from) { FlightsGroup(page, app, onTyping) }
 }
 
 /**

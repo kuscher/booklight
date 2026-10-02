@@ -58,9 +58,15 @@ class SearchEngine(
         // The keyword may have been the first word of an app's name ("play store") or of something an app offers
         // ("new tab"): such a row comes first. A command needs two letters after the keyword.
         val now = clock()
-        val named = ask(providers.filter { it.id == APPS || it.id == COMMANDS }) { it.query(Query(whole)) }
-            .filter { (it.kind == Kind.APP && it.score >= Matcher.PREFIX) || (it.provider == COMMANDS && q.text.length >= 2 && Matcher.score(whole, it.title) >= Matcher.PREFIX) }
-            .sortedByDescending { rank(it, whole, now) }.take(2)
+        val asked = ask(providers.filter { it.id == APPS || it.id == COMMANDS }) { it.query(Query(whole)) }
+        // Or the keyword was typed as the first word of an app's name that is followed by something to look for there
+        // ("yt music daft punk" is YT Music and "daft punk"): the search inside that app comes first as well, after those.
+        // An app called just what the keyword is has no such row: the keyword was typed, and the scope is what was asked
+        // for. Nor has any app when the chip was entered from its row: then no word of a name was typed.
+        val word = q.keyword?.let(Matcher::fold)
+        val named = asked.filter { (it.kind == Kind.APP && it.score >= Matcher.PREFIX) || (it.provider == COMMANDS && q.text.length >= 2 && Matcher.score(whole, it.title) >= Matcher.PREFIX) }
+            .sortedByDescending { rank(it, whole, now) }.take(2) +
+            asked.filter { word != null && it.id.startsWith(IN_APP) && Matcher.fold(it.label.orEmpty()) != word }.sortedByDescending { it.score }.take(1)
         // Nothing of the scope's own matched (only its way out to another search is left): the text was probably
         // an ordinary one ("s bahn"), and the web search for all of it comes first.
         val own = rows.any { !it.id.startsWith(HANDOVER) }
@@ -99,7 +105,8 @@ class SearchEngine(
         val score = when {
             // A keyword the user has not chosen yet (another app's) is a hint like the start of one: an app must not be
             // able to put its row above the settings page of the same name by declaring "wifi".
-            s.keywords.any { it.equals(text, ignoreCase = true) } -> if (s.spaceEnters) 1.0 else 0.7
+            // (So is one too short to stand above the apps that start with it: "go".)
+            s.keywords.any { it.equals(text, ignoreCase = true) } -> if (s.spaceEnters && s.shy.none { it.equals(text, ignoreCase = true) }) 1.0 else 0.7
             // The start of a keyword is a hint, not a request: under any app or setting whose name starts that way ("st" is Storage before it is the store).
             t.length >= 2 && s.keywords.any { it.lowercase().startsWith(t) } -> 0.7
             t.length >= 2 && s.words.any { it.lowercase().startsWith(t) } -> 0.7
@@ -178,6 +185,11 @@ class SearchEngine(
         const val APPS = "apps"
         /** The id of the provider of what other apps offer: asked inside a scope too. */
         const val COMMANDS = "appcommands"
+        /**
+         * How the id of the row that searches inside an app starts ("Search Spotify for …"), and the key of that app's chip;
+         * the app's package follows. The row's label is the app's name.
+         */
+        const val IN_APP = "appsearch:"
         /** How the id of a scope's way out to another search starts ("Search the Settings app"). */
         const val HANDOVER = "handover:"
         /** A web row scoring less than this is a way out, kept for the end of the list. */

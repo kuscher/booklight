@@ -516,7 +516,7 @@ fun ResultRow(
                 state == 2 -> ActionStrip(trail.actions, slot.coerceAtMost(trail.actions.size), confirming, confirmLabel = stringResource(R.string.confirm_again),
                     onArm = { onArm(full(it)) }, onRun = { if (more && tenth == null && it == shown.size) onToggle() else onAction(full(it)) },
                     more = more, tenth = tenth, opened = opened,
-                    moreLabel = stringResource(R.string.action_more), lessLabel = stringResource(R.string.action_less), turn = { turn.value })
+                    moreLabel = stringResource(R.string.action_more), lessLabel = stringResource(R.string.action_less), turn = { turn.value }, icons = icons)
                 // Its list is open and the pill is on one of its actions: the row keeps only its arrow, turned over, in its place.
                 state == 1 -> Box(Modifier.size(32.dp).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onToggle), contentAlignment = Alignment.Center) {
                     Icon(Symbols.of("more"), null, Modifier.size(18.dp).graphicsLayer { rotationZ = turn.value }, tint = scheme.onSurface.copy(alpha = SECOND))

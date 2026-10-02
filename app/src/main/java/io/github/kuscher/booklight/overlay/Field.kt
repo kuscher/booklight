@@ -1,5 +1,8 @@
 package io.github.kuscher.booklight.overlay
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.SideEffect
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.AnimatedVisibility
@@ -70,12 +73,19 @@ import io.github.kuscher.booklight.ui.Symbols
  */
 @Composable
 fun Field(
-    model: OverlayModel, field: TextFieldValue, onChange: (TextFieldValue) -> Unit, focus: FocusRequester,
+    model: OverlayModel, field: TextFieldValue,
+    /** An edit: the text it made, and the text it was made on (what the editor held, which may be older than [field]). */
+    onChange: (now: TextFieldValue, on: TextFieldValue) -> Unit, focus: FocusRequester,
     /** How much of the mark at the field's start and of the cap at its end shows, 0 to 1: they come when the glass is all but open, so its edge never cuts them. */
     ends: () -> Float = { 1f },
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
+    // What the editor holds: the text it was last given here, or what its own last edit made of that. After every edit
+    // it is given [field] again (which the edit may not have changed), so this is composed again then, and knows.
+    val held = remember { arrayOf(field) }
+    var edits by remember { mutableIntStateOf(0) }
+    edits.let { SideEffect { held[0] = field } }
     Row(Modifier.fillMaxWidth().height(Metrics.field).padding(start = 20.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         AnimatedContent(
             model.chip,
@@ -121,7 +131,7 @@ fun Field(
             val label = stringResource(R.string.a11y_search_field)
             BasicTextField(
                 value = field,
-                onValueChange = onChange,
+                onValueChange = { v -> val on = held[0]; held[0] = v; onChange(v, on); edits++ },
                 modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = label },
                 singleLine = true,
                 textStyle = style,

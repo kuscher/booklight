@@ -39,13 +39,16 @@ object Suggest {
      * are never sent, and that has to hold while they are still being typed: "1500*" is not a sum
      * yet and "192.168.1.1" or "me@" is no address [Web.url] knows, but none of them may leave the
      * device. So only text that reads as words is sent: it has letters, no address marks, and no
-     * digit next to a sign of arithmetic.
+     * digit next to a sign of arithmetic. The same holds for an address with an app's own scheme.
      */
     fun worthAsking(text: String): Boolean {
         val t = text.trim()
         if (t.length !in 2..80 || t.none { it.isLetter() }) return false
         if (t.startsWith("=") || "://" in t || '@' in t) return false
         if (Calc.answer(t) != null || Web.url(t) != null) return false
+        // An address with an app's own scheme, complete or in the making ("spotify:search:daftpunk", "spotify:"): one word
+        // that starts as a scheme does. It is meant for that app, and no sentence starts so ("note: milk" has its space).
+        if (t.none { it.isWhitespace() } && Schemes.of(t).let { it != null && it.length >= 2 }) return false
         // An address or a sum in the making: "localhost:3000", "10.0.0.5:8080/admin", "12 * 3.", "sqrt(", "2 p", "10 mod".
         if (t.none { it.isWhitespace() } && ('.' in t || ':' in t || '/' in t) && t.any { it.isDigit() }) return false
         if (t.any { it in MATHS }) {

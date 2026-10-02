@@ -509,3 +509,22 @@ What else it showed:
   device that is not an emulator" then talks to the other one. Choose by model.
 - Not tried at all: the HP.
 
+## Typed keys go through the input method, and one can get lost (2 October 2026)
+
+- On a Googlebook every key of the hardware keyboard goes to the input method first; it hands a letter back as
+  text some 30 ms later. When Booklight changed the field's text itself in that time (a keyword and its space
+  became the chip, so the keyword was taken out of the field), the input method was started anew for the new text,
+  and a letter it was still holding was lost or landed after the next one. Seen with keys injected by
+  `adb shell input text 'fix teh text'` (10 to 60 ms apart): the field got `eh text`, or `eth text`, in most runs.
+  The code was the same since 1.1; a quick typist could meet it.
+- Since then keys that print, Space and Backspace are taken before the input method (`KeysFirst` in
+  `OverlayActivity`: `dispatchKeyEventPreIme`) and given to the field directly, where each is in the text before
+  the next is looked at. Ten of ten runs of the same injection were right, and so were other keywords, a sum, a
+  flight number, capitals, and Backspace giving a keyword back. Keys with Ctrl, Alt (so AltGr too) or the Action key still go to the input
+  method, and so does all typing when the input method's language is one it puts together itself (Chinese,
+  Japanese, Korean and the like).
+- An edit can still be made on a text the panel has already replaced (the key lands before the next composition):
+  `Panel` carries what was typed over to the text that is there now.
+- **Not tried by hand:** dead keys (´ then e), umlauts on a German layout, AltGr characters. Compose puts dead keys
+  together itself, so they should work; a person has to type them once.
+

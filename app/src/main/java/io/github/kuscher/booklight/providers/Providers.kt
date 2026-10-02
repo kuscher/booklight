@@ -2,6 +2,9 @@ package io.github.kuscher.booklight.providers
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.provider.AlarmClock
+import androidx.core.net.toUri
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.Ask
@@ -15,9 +18,11 @@ import io.github.kuscher.booklight.core.Matcher
 import io.github.kuscher.booklight.core.Provider
 import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
+import io.github.kuscher.booklight.core.Schemes
 import io.github.kuscher.booklight.core.SearchEngine
 import io.github.kuscher.booklight.core.Web
 import io.github.kuscher.booklight.data.Prefs
+import io.github.kuscher.booklight.data.Recipes
 
 /** A sum typed into the panel is answered in place; Enter copies the answer. */
 class CalcProvider(private val context: Context, private val prefs: Prefs) : Provider {
@@ -83,20 +88,26 @@ class SettingsProvider(private val context: Context, private val prefs: Prefs) :
         else pages.map { it to score(text, it) }.filter { it.second > 0 }.sortedByDescending { it.second }.map { row(it.first, 1.0) }
 }
 
-/** Booklight's own pages, findable like anything else. */
+/** Booklight's own pages, findable like anything else; and the Clock's lists of alarms and timers. */
 class CommandsProvider(private val context: Context) : Provider {
     override val id = "commands"
 
-    private class Command(val key: String, val title: Int, val subtitle: Int?, val words: Int, val effect: Effect)
+    /** [asks]: the request the command hands to another app; it is listed only where something answers that. */
+    private class Command(val key: String, val title: Int, val subtitle: Int?, val words: Int, val effect: Effect, val symbol: String = "booklight", val asks: String? = null)
 
-    private val all = listOf(
-        Command("settings", R.string.cmd_settings, null, R.string.cmd_settings_words, Effect.Internal("settings")),
-        Command("shortcut", R.string.cmd_shortcut, R.string.cmd_shortcut_sub, R.string.cmd_shortcut_words, Effect.Internal("shortcuts")),
-    )
+    private val all by lazy {
+        listOf(
+            Command("settings", R.string.cmd_settings, null, R.string.cmd_settings_words, Effect.Internal("settings")),
+            Command("shortcut", R.string.cmd_shortcut, R.string.cmd_shortcut_sub, R.string.cmd_shortcut_words, Effect.Internal("shortcuts")),
+            // The Clock's two lists. Its timers and alarms are set from the `timer` and `alarm` keywords; these show what is set.
+            Command("alarms", R.string.cmd_alarms, R.string.cmd_clock_sub, R.string.cmd_alarms_words, Effect.ClockList(timers = false), "bell", AlarmClock.ACTION_SHOW_ALARMS),
+            Command("timers", R.string.cmd_timers, R.string.cmd_clock_sub, R.string.cmd_timers_words, Effect.ClockList(timers = true), "timer", AlarmClock.ACTION_SHOW_TIMERS),
+        ).filter { it.asks == null || Intent(it.asks).resolveActivity(context.packageManager) != null }
+    }
 
     private fun row(c: Command, score: Double) = Result(
         id = "command:${c.key}", provider = id, kind = Kind.COMMAND, title = context.getString(c.title), subtitle = c.subtitle?.let(context::getString),
-        icon = Icon.Symbol("booklight"), score = score,
+        icon = Icon.Symbol(c.symbol), score = score,
         actions = listOf(Action("open", context.getString(R.string.action_open), c.effect)),
     )
 
@@ -114,10 +125,15 @@ class CommandsProvider(private val context: Context) : Provider {
  * one of these rows hands the text to the browser. (Suggestions while typing are a separate,
  * opt-in thing: `SuggestProvider`.)
  */
-class WebProvider(private val context: Context, private val prefs: Prefs) : Provider {
+class WebProvider(private val context: Context, private val prefs: Prefs, private val apps: AppsProvider) : Provider {
     override val id = "web"
     /** Under a local row that matches from the start of a word (0.8), over anything weaker. */
     private val GEMINI_FIRST = 0.79
+
+    companion object {
+        /** The id of the row for an address of an app's own ("spotify:track:…"): "Open in Spotify". */
+        const val IN_APP = "web:app"
+    }
 
     override suspend fun query(q: Query): List<Result> {
         val t = q.text
@@ -132,6 +148,7 @@ class WebProvider(private val context: Context, private val prefs: Prefs) : Prov
                 ),
             ))
         }
+        Schemes.typed(t)?.let { inApp(it) }?.let(out::add)
         Jumps.port(t)?.let { u ->
             out.add(Result(
                 id = "web:port", provider = id, kind = Kind.WEB, title = u.removePrefix("http://"), subtitle = context.getString(R.string.action_open_link),
@@ -146,6 +163,32 @@ class WebProvider(private val context: Context, private val prefs: Prefs) : Prov
         // Gemini: first for something that reads like a question (unless a local row matches well), else a quiet row after the search.
         if (prefs.now.showGemini && Ask.offered(t)) out.add(gemini(context, t, if (Ask.first(t)) GEMINI_FIRST else 0.09))
         return out
+    }
+
+    /**
+     * An address with an app's own scheme (`spotify:track:…`), typed or pasted: "Open in Spotify", with that
+     * app's icon, sent to that app alone. A row only if an installed app answers exactly this address: text
+     * that merely has a colon in it stays what it is. It is the app the system would open it with; where the
+     * system would ask (several answer and none is chosen), the first it lists.
+     */
+    private fun inApp(address: String): Result? {
+        val pm = context.packageManager
+        val view = Intent(Intent.ACTION_VIEW, address.toUri())
+        val all = pm.queryIntentActivities(view, PackageManager.MATCH_DEFAULT_ONLY).map { it.activityInfo }
+        val usual = pm.resolveActivity(view, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo
+        val a = all.firstOrNull { it.packageName == usual?.packageName && it.name == usual.name } ?: all.firstOrNull() ?: return null
+        // What holds for anything another app is asked (`Executor.open`): an activity of its own, open to other apps, asking for no permission.
+        if (!a.exported || a.permission != null || a.packageName == context.packageName) return null
+        val app = apps.installed(a.packageName)
+        return Result(
+            id = IN_APP, provider = id, kind = Kind.WEB, title = context.getString(R.string.web_open_in, app?.label ?: a.applicationInfo.loadLabel(pm)), subtitle = address,
+            icon = app?.let { Icon.App(it.pkg, it.cls, Recipes.me) } ?: Icon.Symbol("open"), score = SearchEngine.URL_SCORE + 0.05, learnable = false,
+            label = context.getString(R.string.win_kind_link),
+            actions = listOf(
+                Action("open", context.getString(R.string.action_open), Effect.Open(a.packageName, Intent(view).setPackage(a.packageName).toUri(Intent.URI_INTENT_SCHEME))),
+                Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(address)),
+            ),
+        )
     }
 
     /** "Search Google for …": the last row of every list, and of every scope for its keyword and text together. */

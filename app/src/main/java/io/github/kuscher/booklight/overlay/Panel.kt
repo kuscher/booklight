@@ -351,6 +351,9 @@ fun Panel(
 
     fun go(r: Result, a: Action, stay: Boolean) = onRun(r, a, stay)
 
+    /** The Escape that is down went back from an answer: its repeats do nothing more. */
+    val leftAnswer = remember { booleanArrayOf(false) }
+
     fun keys(e: KeyEvent): Boolean {
         if (e.type != KeyEventType.KeyDown) return false
         stir++   // any key is something happening: the reflection waits for quiet, and gives way
@@ -363,7 +366,9 @@ fun Panel(
         // A waiting confirmation is cancelled by any key but Enter; Esc then only cancels.
         if (!enter && model.cancelConfirm() && e.key == Key.Escape) return true
         val r = model.current
-        val entersScope = r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope
+        // (Not in a row's opened list: there Tab goes on to the next action, and Enter is what enters "Search". Nor on an
+        // answer that stands where it was asked: Tab and Right go along what can be done with it, as on a prompt's.)
+        val entersScope = model.opened == null && !model.inAnswer && r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope
         return when (e.key) {
             // On the copy's line Down opens it, as Tab does: the line is where row one will be.
             Key.DirectionDown -> { model.down(again); true }
@@ -412,7 +417,13 @@ fun Panel(
             }
             // One step back for one press: a held Backspace empties the text and stops there.
             Key.Backspace -> field.text.isEmpty() && (again || model.back())
-            Key.Escape -> { onClose(); true }
+            // On an answer that stands over text in the field, where Backspace is the text's, Escape is the step back to the
+            // rows it was asked from: one step for one press, so a held key does not go on to close the panel.
+            Key.Escape -> {
+                if (!again) leftAnswer[0] = model.leaveAnswer()
+                if (!leftAnswer[0]) onClose()
+                true
+            }
             else -> {
                 // Ctrl+1…9 runs that row's first action straight away (never one that removes something: those are never first).
                 val n = DIGITS.indexOf(e.key)
@@ -456,9 +467,20 @@ fun Panel(
                         .offset { IntOffset(0, -glassTop()) }
                         .graphicsLayer { alpha = shown() },
                 ) {
-                    Field(model, field, focus = focus, ends = ::ends, onChange = { v ->
-                        model.type(v.text)
-                        field = if (model.query == v.text) v else TextFieldValue(model.query, TextRange(model.query.length))
+                    Field(model, field, focus = focus, ends = ::ends, onChange = change@{ v, held ->
+                        // An edit is made on the text the editor holds ([held]), and that can be older than the text that
+                        // counts, the model's: a keyword that has just become the chip is taken out of the field, a scope
+                        // was entered, the last text came back, and the editor hears of it a frame later. A key can be
+                        // quicker ("fix " and a "t", after "fix" has become the chip). What was typed is what the edit
+                        // added to the old text; any other edit of a text that is no longer there is dropped.
+                        val text = model.query
+                        val now = when {
+                            held.text == text -> v
+                            v.text.length > held.text.length && v.text.startsWith(held.text) -> (text + v.text.drop(held.text.length)).let { TextFieldValue(it, TextRange(it.length)) }
+                            else -> return@change
+                        }
+                        model.type(now.text)
+                        field = if (model.query == now.text) now else TextFieldValue(model.query, TextRange(model.query.length))
                     })
 
                     val body = when {

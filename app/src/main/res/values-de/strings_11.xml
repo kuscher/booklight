@@ -173,7 +173,6 @@
     <string name="win_assistant_text">Booklight als digitalen Assistenten wählen, dann öffnet die Assistententaste das Panel. Gemini reagiert dann nicht mehr auf diese Taste.</string>
     <string name="win_forget_again">Zum Vergessen nochmal drücken</string>
     <string name="win_commands_title">Deine Befehle</string>
-    <string name="win_commands_text">Links, die du mit einem Stichwort erreichst, Textstücke, die du oft einfügst, Rezepte, die mehreres auf einmal tun, und Prompts für das Modell auf diesem Gerät.</string>
     <string name="win_links">Links</string>
     <string name="win_link_address">Adresse</string>
     <string name="win_link_help" formatted="false">{argument} (oder %s) ist, was du nach dem Stichwort tippst, {clipboard} das Kopierte, {date} das heutige Datum. Ohne das öffnet sich der Link einfach.</string>

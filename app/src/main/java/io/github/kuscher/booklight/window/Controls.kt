@@ -1,5 +1,7 @@
 package io.github.kuscher.booklight.window
 
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -194,18 +196,21 @@ private val CHOICE_PAD = 16.dp
 /**
  * Material's connected button group: toggle buttons 2 dp apart, the outer ends round, the inner corners 8 dp,
  * and the chosen one round all the way. On a row ([onCard]) the others are in the ground's colour; on the
- * ground itself they are in the rows' colour.
+ * ground itself they are in the rows' colour. [stops]: each button is a stop for the keys itself (in an
+ * editor, where Tab goes through everything); on a page it is not: its row is. A button that is a stop has
+ * the keys once it is pressed, by the pointer too: what it changes may take away the field that had them.
  */
 @Composable
-fun Connected(names: List<String>, chosen: Int, pad: Dp = CHOICE_PAD, onCard: Boolean = true, cell: Dp? = null, onPick: (Int) -> Unit) {
+fun Connected(names: List<String>, chosen: Int, pad: Dp = CHOICE_PAD, onCard: Boolean = true, cell: Dp? = null, stops: Boolean = false, onPick: (Int) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val colors = ToggleButtonDefaults.colors(containerColor = if (onCard) scheme.ground else scheme.card, contentColor = scheme.onSurfaceVariant, checkedContainerColor = scheme.secondaryContainer, checkedContentColor = scheme.onSecondaryContainer)
+    val focus = remember(names.size) { List(names.size) { FocusRequester() } }
     Row(horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
         names.forEachIndexed { i, name ->
             ToggleButton(
-                i == chosen, { onPick(i) },
+                i == chosen, { if (stops) runCatching { focus[i].requestFocus() }; onPick(i) },
                 // The row (or the stop) it stands in is what the keys work; the buttons are for the pointer.
-                (if (cell != null) Modifier.width(cell) else Modifier).height(CONTROL).focusProperties { canFocus = false }.semantics { role = Role.RadioButton },
+                (if (cell != null) Modifier.width(cell) else Modifier).height(CONTROL).focusRequester(focus[i]).focusProperties { canFocus = stops }.semantics { role = Role.RadioButton },
                 shapes = when (i) { 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes(); names.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes(); else -> ButtonGroupDefaults.connectedMiddleButtonShapes() },
                 colors = colors, contentPadding = PaddingValues(horizontal = if (cell != null) 0.dp else pad),
             ) { Text(name, maxLines = 1, softWrap = false) }
@@ -226,43 +231,59 @@ fun Pick(
     page: Page, key: String, title: String, about: String?, ids: List<String>, names: List<String>, chosen: String, mark: String? = null, place: Place? = null,
     onPick: (String) -> Unit,
 ) {
-    val scheme = MaterialTheme.colorScheme
     val at = ids.indexOf(chosen).coerceAtLeast(0)
     var open by remember { mutableStateOf(false) }
-    val widest = widths(names, MaterialTheme.typography.labelLarge).max()
-    // 16, the name, 8, the arrow (or the check) of 20, 16.
-    val width = widest + 60.dp
+    val width = menuWidth(names)
     val room = LocalColumn.current - INSET * 2 - (if (mark != null) MARK + 12.dp else 0.dp)
     // The button is narrow enough to stay at the row's trailing end down to the window's smallest width, on the line
     // the switches under it end on: the row's name keeps its one line beside it, and the line under the name wraps.
     val beside = room - 12.dp - width >= 120.dp
     val button: @Composable () -> Unit = {
         Box(Modifier.padding(top = if (beside) 0.dp else 8.dp, bottom = if (beside) 0.dp else 2.dp)) {
-            Button(
-                { page.selected = key; open = true }, Modifier.width(width).height(CONTROL).focusProperties { canFocus = false },
-                colors = ButtonDefaults.buttonColors(containerColor = scheme.ground, contentColor = scheme.onSurface), contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
-            ) {
-                Text(names[at], Modifier.weight(1f), maxLines = 1, softWrap = false)
-                val turn by animateFloatAsState(if (open) 180f else 0f, LocalMotion.current.pop(), label = "arrow")
-                Icon(Symbols.of("more"), null, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = scheme.onSurfaceVariant)
-            }
-            Menu(open, { open = false }, width = width) {
-                val first = remember { FocusRequester() }
-                // The keys are on the chosen name when it opens: Down and Up go on from there.
-                LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
-                names.forEachIndexed { i, name ->
-                    SelectableDropdownMenuItem(
-                        selected = i == at, onClick = { open = false; onPick(ids[i]) }, text = { Text(name, maxLines = 1) }, shapes = MenuDefaults.itemShape(i, names.size),
-                        modifier = if (i == at) Modifier.focusRequester(first) else Modifier,
-                        trailingContent = if (i == at) ({ Icon(Symbols.check, null, Modifier.size(20.dp)) }) else null,
-                        colors = MenuDefaults.selectableItemColors(containerColor = scheme.card, selectedContainerColor = scheme.secondaryContainer, selectedTextColor = scheme.onSecondaryContainer, selectedTrailingContentColor = scheme.onSecondaryContainer),
-                    )
-                }
-            }
+            MenuButton(names, at, open, { if (it) page.selected = key; open = it }) { onPick(ids[it]) }
         }
     }
     PageRow(page, key, title, about, mark = mark?.let { m -> { MarkIcon(m) } }, onStep = { d -> ids.getOrNull(at + d)?.let { onPick(it); true } ?: false }, onEnter = { open = true },
         below = if (beside) null else button, place = place, trailing = if (beside) ({ button() }) else null)
+}
+
+/** How wide the button of a menu of these names is: 16, the longest name, 8, the arrow (or the check) of 20, 16. */
+@Composable
+fun menuWidth(names: List<String>): Dp = widths(names, MaterialTheme.typography.labelLarge).max() + 60.dp
+
+/**
+ * The button of a choice of five or more: it shows the chosen name and opens a menu of all of them, exactly as
+ * wide as itself, with the keys on the chosen name. [stop]: it is a stop for the keys itself (in an editor,
+ * where Tab goes through everything), and has them once it is pressed; on a page it is not: its row is.
+ */
+@Composable
+fun MenuButton(names: List<String>, at: Int, open: Boolean, onOpen: (Boolean) -> Unit, stop: Boolean = false, onPick: (Int) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val width = menuWidth(names)
+    val focus = remember { FocusRequester() }
+    Box {
+        Button(
+            { if (stop) runCatching { focus.requestFocus() }; onOpen(true) }, Modifier.width(width).height(CONTROL).focusRequester(focus).focusProperties { canFocus = stop },
+            colors = ButtonDefaults.buttonColors(containerColor = scheme.ground, contentColor = scheme.onSurface), contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
+        ) {
+            Text(names[at], Modifier.weight(1f), maxLines = 1, softWrap = false)
+            val turn by animateFloatAsState(if (open) 180f else 0f, LocalMotion.current.pop(), label = "arrow")
+            Icon(Symbols.of("more"), null, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = scheme.onSurfaceVariant)
+        }
+        Menu(open, { onOpen(false) }, width = width) {
+            val first = remember { FocusRequester() }
+            // The keys are on the chosen name when it opens: Down and Up go on from there.
+            LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
+            names.forEachIndexed { i, name ->
+                SelectableDropdownMenuItem(
+                    selected = i == at, onClick = { onOpen(false); onPick(i) }, text = { Text(name, maxLines = 1) }, shapes = MenuDefaults.itemShape(i, names.size),
+                    modifier = if (i == at) Modifier.focusRequester(first) else Modifier,
+                    trailingContent = if (i == at) ({ Icon(Symbols.check, null, Modifier.size(20.dp)) }) else null,
+                    colors = MenuDefaults.selectableItemColors(containerColor = scheme.card, selectedContainerColor = scheme.secondaryContainer, selectedTextColor = scheme.onSecondaryContainer, selectedTrailingContentColor = scheme.onSecondaryContainer),
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -306,6 +327,8 @@ fun Field(
                     }
                 },
                 singleLine = true, textStyle = style, cursorBrush = SolidColor(scheme.primary),
+                // What goes in here is a key: the input method is told so, and does not learn it or correct it.
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             )
         }
     }
