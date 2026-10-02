@@ -129,9 +129,10 @@ private class RowSlots {
     fun sync(results: List<Result>, motion: Motion): List<Slot> {
         if (results === last) return all
         last = results
-        // A flight's full row is one row to the list whatever its number is just now ("LH45", then "LH455"): its words
-        // change in the frame of the key, it does not leave and arrive again in its own seat.
-        fun seat(r: Result) = if (r.provider == io.github.kuscher.booklight.providers.FlightsProvider.ID && r.body is Body.Slots) "flight:" else r.id
+        // A flight's row is one row to the list whatever its number is just now ("LH45", then "LH455"): its words change in
+        // the frame of the key, it does not leave and arrive again in its own seat. The ordinary row of a guess is that same
+        // row too: when the user goes to it, it grows where it stands into the tall one, once, the pill's lower edge with it.
+        fun seat(r: Result) = if (r.provider == io.github.kuscher.booklight.providers.FlightsProvider.ID) "flight:" else r.id
         val live = all.filter { !it.leaving }.associateBy { seat(it.result) }
         val fromNothing = live.isEmpty()
         val tops = Metrics.tops(results)
@@ -159,6 +160,11 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     val rows = slots.sync(model.results, motion)
     val tops = Metrics.tops(model.results)
     val picked = model.results.getOrNull(model.selected)
+
+    // A flight's row that counts minutes follows the clock while it is on screen: at each whole minute its headline's
+    // number changes and its plane takes its step. One wake a minute, and none while no such row is in the list.
+    val counting = model.results.any { (it.body as? Body.Flight)?.counts == true }
+    LaunchedEffect(counting) { while (counting) { delay(60_000 - System.currentTimeMillis() % 60_000 + 50); model.minute() } }
 
     // A row's other actions, opened under it: one value uncovers them (0 to 1), from the row's lower edge down, and
     // covers them again. They are laid out once and never move. The rows that were opened are kept while they close.
@@ -634,7 +640,8 @@ fun ResultRow(
     val ofKind = kindLabel(r.kind)
     val kind = r.label ?: if (r.provider == "gemini") "Gemini" else ofKind
     val body = r.body
-    val described = stringResource(R.string.a11y_selected, r.title, r.actions.getOrNull(armed)?.label ?: kind)
+    // (A flight's row is said with what it answers: who and where, then the headline and the badge.)
+    val described = stringResource(R.string.a11y_selected, if (body is Body.Flight) listOfNotNull(r.title, body.headline.ifEmpty { null }, body.badge).joinToString(", ") else r.title, r.actions.getOrNull(armed)?.label ?: kind)
     // The answer body as it last was: it goes on being drawn while it fades, when the row turns back into its name.
     val lastStream = remember { arrayOfNulls<Body.Stream>(1) }
     if (body is Body.Stream) lastStream[0] = body
@@ -646,7 +653,11 @@ fun ResultRow(
         // A row that grows under its answer keeps its mark and its strip where they were: on the line of the row's first
         // height. A row that is asked where it stands grows from an ordinary row into that: they travel there with its height.
         val line = minOf(tall, Metrics.tall)
-        val pinned = if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = ((line - 36.dp) / 2).coerceAtLeast(0.dp)) else Modifier
+        // A flight's row is taller than that line from its first frame: its mark and its strip stand on the same line, over the
+        // flight's own. Its ordinary row (a guess nobody has gone to) is that same row in the list: it keeps to that line too,
+        // so nothing jumps when the one becomes the other and the row grows or shrinks (`FlightSeat` holds them both).
+        val guess = body == null && r.provider == io.github.kuscher.booklight.providers.FlightsProvider.ID
+        val pinned = if (body is Body.Stream || body is Body.Flight || guess) Modifier.align(Alignment.Top).padding(top = ((line - 36.dp) / 2).coerceAtLeast(0.dp)) else Modifier
         if (body is Body.Task) TaskBox(body.done, dim)
         else if (body is Body.Code) QrPlate(body.text, Modifier.padding(start = 4.dp))
         // A swatch is a sample, not a mark: it doesn't swell with the selection.
@@ -654,6 +665,7 @@ fun ResultRow(
         else Box(pinned.graphicsLayer { scaleX = pop; scaleY = pop }) { RowPicture(r.icon, icons, dim) }
 
         when {
+            body is Body.Flight || guess -> FlightSeat(r.title, body as? Body.Flight, line, on, dim)
             body is Body.Slots -> SlotsBody(body, on)
             body is Body.Code -> Column(Modifier.weight(1f).padding(start = 20.dp, end = 12.dp)) {
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -721,7 +733,8 @@ fun ResultRow(
         if (body is Body.Keys) { KeyCaps(body.keys, dim); Spacer(Modifier.width(16.dp)) }
         // An answer's strip has a room of its own, as the key caps have: the text beside it is as wide before the answer as
         // after it, whichever action is armed, and is never laid out again. A strip wider than its room hangs over to the left.
-        Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = ((line - 32.dp) / 2).coerceAtLeast(0.dp)).height(32.dp).width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else if (streamed) Modifier.width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else Modifier, contentAlignment = Alignment.CenterEnd) {
+        // (A flight's strip takes only the room it needs: line one and the headline beside it are covered by a fade, not laid out again.)
+        Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = ((line - 32.dp) / 2).coerceAtLeast(0.dp)).height(32.dp).width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else if (body is Body.Flight || guess) Modifier.align(Alignment.Top).padding(top = ((line - 32.dp) / 2).coerceAtLeast(0.dp)).height(32.dp) else if (streamed) Modifier.width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else Modifier, contentAlignment = Alignment.CenterEnd) {
         val mode = when { selected && r.actions.isNotEmpty() -> 2; opened != null -> 1; else -> 0 }
         // The arrow turns over when the row's list opens: one turn, whichever of the two arrows is showing.
         val turn = animateFloatAsState(if (opened != null) 180f else 0f, motion.pop(), label = "turn")

@@ -193,8 +193,13 @@ object AirLabs {
             // A word not seen before: what the times say.
             else -> if (to.actual != null) FlightState.LANDED else if (from.actual != null) FlightState.IN_AIR else FlightState.PLANNED
         }
-        return Flight(number, m.text("airline_name").orEmpty(), from, to, state, flownAs = m.text("cs_flight_iata"))
+        return Flight(number, m.text("airline_name").orEmpty(), from, to, state, flownAs = m.text("cs_flight_iata"), aircraft = m.text("model")?.let(::aircraft))
     }
+
+    private val REMARK = Regex("\\s*\\([^)]*\\)")
+
+    /** The aircraft's type as a row says it: the service's "Boeing 747-8 pax" without what it adds to the type (a remark in brackets, and "pax" for one that carries passengers). */
+    private fun aircraft(model: String): String? = model.replace(REMARK, "").trim().removeSuffix(" pax").trim().takeIf { it.isNotEmpty() }
 
     /** One end, from the fields that start with [p] (`dep`, `arr`). Its clock's distance from UTC is read off a time that is given both ways. */
     private fun end(m: Map<*, *>, p: String): FlightEnd? {

@@ -17,6 +17,11 @@
 #                            held down|up [TIMES] [MS] (the key as a held key repeats it),
 #                            pref flightkey KEY|none (the flight service's key; it is never printed),
 #                            flight TEXT (a flight's row, looked up at once, without the panel),
+#                            flight show NAME (a sample flight's row in the open panel, in the phase its
+#                            name says: friday, soon, air, air-late, landed, landed-late, cancelled, diverted,
+#                            timetable, looking, offline… or a saved reply, LH455-in-the-air; `flight show`
+#                            lists them, `flight show off` ends it; the service is not asked),
+#                            flight pin NAME (the same flight in the pinned window),
 #                            appsearch (which lines of the bundled table and which declared searches the
 #                            attached device takes: run it before a release)
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
@@ -110,5 +115,5 @@ case "$cmd" in
   idle)
     A shell dumpsys power | grep -E "lastUserActivityTime=|mWakefulness=" | head -2
     A shell "dumpsys window | grep -E 'mCurrentFocus' | head -1" ;;
-  *) sed -n '3,23p' "$0" ;;
+  *) sed -n '3,28p' "$0" ;;
 esac

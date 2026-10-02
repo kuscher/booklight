@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="flight_leaves_at">Abflug %s</string>
+    <string name="flight_leaves_in">Abflug in %s</string>
+    <string name="flight_lands_in">Landung in %s</string>
+    <string name="flight_landed_ago">Vor %s gelandet</string>
+    <string name="flight_landed_now">Gerade gelandet</string>
+</resources>

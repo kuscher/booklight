@@ -55,6 +55,25 @@ private val OwnDark = darkColorScheme(
     background = Color(0xFF11131A), onBackground = Color(0xFFE3E6F2),
 )
 
+/**
+ * The colours of a flight's badge: green for on time and early, amber for late. The one place in the
+ * panel besides the selection that has a colour, and the one exception to "a delay is said, not
+ * painted" (Alex, 2 October 2026; docs/design/flights-row). Fixed, in both schemes: they are not the
+ * wallpaper's, and mean the same on every device. Never red: that stays the colour of what removes
+ * something.
+ *
+ * On glass a colour is always a fill with its own ink on it ([good] under [onGood], [late] under
+ * [onLate]): a green or amber word straight on the glass does not hold over the wrong window. On the
+ * pinned window's solid ground the word itself carries the colour ([goodWord], [lateWord]).
+ */
+class FlightColors(val good: Color, val onGood: Color, val late: Color, val onLate: Color, val goodWord: Color, val lateWord: Color) {
+    companion object {
+        private val light = FlightColors(good = Color(0xFFB6F2BE), onGood = Color(0xFF00210A), late = Color(0xFFFFDEA6), onLate = Color(0xFF261900), goodWord = Color(0xFF17662B), lateWord = Color(0xFF7A5200))
+        private val dark = FlightColors(good = Color(0xFF0A5226), onGood = Color(0xFFB6F2BE), late = Color(0xFF5C4300), onLate = Color(0xFFFFDEA6), goodWord = Color(0xFF8FDB9B), lateWord = Color(0xFFF1C267))
+        fun of(dark: Boolean): FlightColors = if (dark) this.dark else light
+    }
+}
+
 /** Whether Booklight is dark: the user's choice (`light`, `dark`), else the system's. */
 @Composable
 fun isDark(theme: String): Boolean = when (theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }

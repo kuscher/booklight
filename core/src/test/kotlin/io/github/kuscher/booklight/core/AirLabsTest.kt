@@ -49,6 +49,7 @@ class AirLabsTest {
         assertEquals(7, f.from.late)
         assertEquals("INTL", f.from.terminal)
         assertEquals("G13", f.from.gate)
+        assertEquals("Boeing 747-8", f.aircraft)
         assertEquals("FRA", f.to.code)
         assertEquals("Frankfurt/Main", f.to.city)
         assertEquals(time("2026-10-02T10:25"), f.to.planned)
@@ -131,7 +132,9 @@ class AirLabsTest {
         assertEquals("LH9152", f.number)
         assertEquals("Lufthansa", f.airline)
         assertEquals("UA945", f.flownAs)
-        assertEquals(Said(Saying.AIR_LATE, 13), FlightStatus.said(f, asked))
+        // Thirteen minutes behind its plan: on time, since late starts at fifteen (it was "13 min late" while late started at five).
+        assertEquals(13, f.to.late)
+        assertEquals(Said(Saying.AIR_ON_TIME), FlightStatus.said(f, asked))
         assertEquals(-300, f.to.offset)
     }
 
@@ -387,10 +390,11 @@ class AirLabsTest {
         assertEquals(Said(Saying.PLANNED), FlightStatus.said(planned, asked))
         val same = planned.copy(from = planned.from.copy(expected = planned.from.planned))
         assertEquals(Said(Saying.ON_TIME), FlightStatus.said(same, asked))
-        val four = planned.copy(from = planned.from.copy(expected = planned.from.planned!!.plusMinutes(4)))
-        assertEquals(Said(Saying.ON_TIME), FlightStatus.said(four, asked))
-        val five = planned.copy(from = planned.from.copy(expected = planned.from.planned!!.plusMinutes(5)))
-        assertEquals(Said(Saying.DELAYED, 5), FlightStatus.said(five, asked))
+        // Late starts fifteen minutes after the plan (five, until the row had a badge: docs/design/flights-row).
+        val fourteen = planned.copy(from = planned.from.copy(expected = planned.from.planned!!.plusMinutes(14)))
+        assertEquals(Said(Saying.ON_TIME), FlightStatus.said(fourteen, asked))
+        val fifteen = planned.copy(from = planned.from.copy(expected = planned.from.planned!!.plusMinutes(15)))
+        assertEquals(Said(Saying.DELAYED, 15), FlightStatus.said(fifteen, asked))
         // In the air with nothing known of the landing but its plan.
         val air = flight("flight-LH455-in-the-air")
         assertEquals(Said(Saying.IN_AIR), FlightStatus.said(air.copy(to = air.to.copy(expected = null)), asked))

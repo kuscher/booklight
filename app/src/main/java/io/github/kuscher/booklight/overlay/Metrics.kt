@@ -21,6 +21,11 @@ object Metrics {
     val row = 56.dp
     /** An answer or a preview: two or three lines. */
     val tall = 92.dp
+    /**
+     * A flight's row, in every state from its first frame: line one and the headline on the tall row's centre line, and
+     * under them the flight's line and its two ends (docs/design/flights-row/design.md).
+     */
+    val flight = 136.dp
     /** A row that holds a picture (a QR code). */
     val picture = 208.dp
     val cell = 48.dp
@@ -43,6 +48,7 @@ object Metrics {
         is Body.Grid -> cell * gridRows(b) + 16.dp
         is Body.Code -> picture
         is Body.Slots, is Body.Mono -> tall
+        is Body.Flight -> flight
         is Body.Stream -> if (b.tall) tall + streamLine * 2 else tall
         else -> if (r.kind == Kind.ACTION) action else if (r.answer != null) tall else row
     }
@@ -71,9 +77,14 @@ object Metrics {
         else -> 0.dp
     }
 
-    /** How many rows fit under the field on a screen this tall, so the panel never runs off it. */
+    /**
+     * How many rows fit under the field on a screen this tall, so the panel never runs off it. Counted as ordinary rows,
+     * with room kept for one of them to be the tallest a list can hold: a flight's, or an answer grown to four lines,
+     * both 80 dp more than a row. (Without it eight rows with a flight among them ran past the lower edge of a screen
+     * under 880 dp high; and a guess that becomes a flight's row when the user goes to it grows where it stands.)
+     */
     fun maxRows(screenHeightDp: Float): Int {
-        val room = screenHeightDp * (1 - TOP) - 56 - field.value - pad.value * 2 - footer.value
+        val room = screenHeightDp * (1 - TOP) - 56 - field.value - pad.value * 2 - footer.value - (flight - row).value
         return (room / row.value).toInt().coerceIn(3, 8)
     }
 }

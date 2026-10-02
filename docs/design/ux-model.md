@@ -279,17 +279,33 @@ The plan and its drawings: `milestones/plan.md` §4 and `milestones/04-design.md
 
 ## 16. What flights added to the model (M5, 2 October 2026)
 
-The plan is `milestones/plan-next.md` §4; the facts about the service are `research/flights.md` §10. As built,
-not yet seen on a device:
+The plan is `milestones/plan-next.md` §4; the facts about the service are `research/flights.md` §10. The row was
+redrawn for 3.0 (`design/flights-row/`, approved by the owner on 2 October 2026; how it looks is
+`design-system.md` §14). As built, the new row not yet seen on a device:
 
-- **A row that answers from elsewhere.** A flight's row stands in its full height, with its lines and its
+- **What the row answers** (3.0). One thing per phase, as its headline: when it leaves ("Leaves Fri 10:55 AM");
+  from three hours before, how long until it does ("Leaves in 42 min"); in the air, how long until it lands
+  ("Lands in 4 h 07 min"); for three hours after, how long ago it landed; "Cancelled"; "Diverted"; for a
+  timetable's flight past its time, "From the timetable". Beside it one badge says whether that is the plan: "On
+  time", "Delayed 27 min", "24 min early", after landing "27 min late", "Planned" when only the plan is known
+  (green, amber, neutral: the one place a row has a colour of its own). Late starts 15 minutes after the plan.
+  Under them the flight as a line from take-off to landing, the plane at the share of the flying time that has
+  passed, and under the line's two ends the airport, its time, and what matters there now (gate and terminal
+  before it leaves; the aircraft, and the arrival's terminal and belt, after). No plane where nobody knows where
+  it is. A field the service did not send is simply not said.
+- **It follows the clock, and asks nothing for that.** While a row whose headline counts minutes is on screen,
+  it is said again at each whole minute from the answer that is kept: the number changes and, in the air, the
+  plane takes its step, forwards only. One wake a minute; no request. A later answer that puts the plane further
+  back leaves it where it is until the clock has caught up.
+- **A row that answers from elsewhere.** A flight's row stands in its full height (136 dp), with its line and its
   actions, from its first frame, and the answer is written into it. The panel asks once, 400 ms after the last
   key; a new letter before that sends nothing. One request at a time; a request that was sent finishes and is
   kept (two minutes) even if the text moved on, so the lookup it cost is not lost.
 - **A guess is the last row.** Text that only looks like a flight number (`ps5`, `ms 365`, `q4 2026`) gets a
   plain row under the ways out to the web, and nothing is sent for it. It is the one kind of row that stands
   under "Search the web". Going to it (Down onto it, Tab on it, a click) makes it a flight's row and looks it
-  up at once. A pointer passing over it is not going to it.
+  up at once: it grows where it stands, once, from an ordinary row into the tall one. A pointer passing over it
+  is not going to it.
 - **Never above a local match.** A flight's row ranks under every app, sum, setting and link that matched, and
   over the web search.
 - **An action that waits.** Copy, Pin and Add to calendar stand in the row before the answer does. Enter on
@@ -314,11 +330,14 @@ not yet seen on a device:
   or the beginning of a day's word: `LH455 s`, `LH455 mo`, `LH455 tomor`) the number's own row stays, so the
   answer does not go away for a key and nothing is asked for a day nobody meant. A day beside a time is its
   weekday within six days of today, and its date beyond ("24 Dec").
-- **A timetable's flight goes by the clock.** It has no state of its own: once its time to leave has passed it
-  is not "Planned" any more, its labels say "Left" and "Landed" as its times pass, and its third line says
-  only "From the timetable".
+- **A timetable's flight goes by the clock.** It has no state of its own. While its time to leave is still to
+  come it is a plan: "Leaves …", the badge "Planned", the plane at rest at the start (it has not left: that much
+  is certain). Once that time has passed nobody knows what became of it: the headline says only "From the
+  timetable", there is no badge and no plane, and its two times stand as the timetable's.
 - **The pinned flight** follows one flight, the number on the day it leaves, never "the next" of its number.
-  It counts by itself, a minute at a time, and asks the service again while its window is on screen: every
+  It shows the flight's line small under its figure, and whether it runs to plan as one word in its colour. It
+  counts by itself, a minute at a time (the plane moves with the figure, by the clock), and asks the service
+  again while its window is on screen: every
   half hour from three hours before it leaves until it has landed, every three hours before that, and not at
   all for a timetable's plan more than ten hours off. One request each time. A flight that was to land more
   than three hours ago says "Landed" and asks nothing, whatever was last heard of it; when the service

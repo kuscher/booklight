@@ -779,6 +779,15 @@ class OverlayModel(
         }
     }
 
+    /**
+     * A minute has passed while a flight's row counts minutes ("Lands in 4 h 07 min"): it is said again for the
+     * clock as it stands, and its plane takes its step. From what is kept: nothing is asked of the service.
+     */
+    fun minute() {
+        if (demo) return
+        (if (opened != null) closed else results).mapNotNull { app.flights.told(it) }.forEach { land(it) }
+    }
+
     /** [row] takes the place of the row with its id, in the list and under a row that is open. The arming stays on its action if the row still offers it, else goes to the row's own default. */
     private fun land(row: Result) {
         if (opened != null) {

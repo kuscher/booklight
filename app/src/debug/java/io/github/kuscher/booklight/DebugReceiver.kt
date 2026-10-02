@@ -37,6 +37,9 @@ import java.io.FileOutputStream
  *   copy TEXT (puts TEXT on the clipboard the way another app would: without Booklight's label, so its line is offered;
  *   `copy private TEXT` marks it private) | key tab and key down open the copy's line, key back is Backspace on the empty field
  *   pref flightkey KEY|none (the user's key for the flight service; never printed) | flight TEXT (a flight's row, looked up at once)
+ *   flight show NAME (a sample flight's row in the open panel, in the phase its name says, looked at when the name says: friday, soon, air,
+ *   air-late, landed, cancelled, looking, offline… and the saved replies, LH455-in-the-air…; the service is not asked) | flight show (the names) |
+ *   flight show off (ends it) | flight pin NAME (the same flight in the pinned window); dump says a flight's row as phase, headline, badge, share, ends
  *   appsearch (a search inside an app: every line of the bundled table and every search an app declares, with the app, the source
  *   and whether this device takes it; a star marks the one in use. Run it on a Googlebook before a release)
  *   players (the music apps `play` offers, and the one asked last; `find play TEXT` shows the row and which is armed)
@@ -113,8 +116,34 @@ class DebugReceiver : BroadcastReceiver() {
                 val r = if (scoped != null) app.engine.search(Query(scoped.text, scoped.scope.key, scoped.word)) else app.engine.search(Query(arg))
                 out("${(System.nanoTime() - t0) / 1000} us | " + r.joinToString(" | ") { describe(it) })
             }
+            // `flight show NAME`: a sample flight's row in the open panel, in the phase its name says (`FlightSamples`: `friday`, `soon`, `air`, `air-late`,
+            // `landed`, `cancelled`, `looking`, `offline`…, and the saved replies by their names, `LH455-in-the-air`). Its number is typed for it, the row
+            // stands waiting and the sample lands in it as an answer does; for that row the clock is the sample's, and runs on from there. The service is
+            // not asked, with a key in or without. `flight show` alone lists the names; `flight show off` ends it (so does any other text typed).
+            // `flight pin NAME`: the same flight in the pinned window, without the panel.
+            "flight" -> if (arg == "show" || arg.startsWith("show ") || arg.startsWith("pin ")) {
+                val (what, name) = (arg.split(' ').filter { it.isNotEmpty() } + "").let { it[0] to it[1] }
+                if (name == "off") { app.flights.unstage(); return out("off") }
+                val sample = FlightSamples.of(context, name) ?: return out(FlightSamples.names(context))
+                fun stage() = app.flights.stage(sample.number, "sample $name", sample.flight, sample.failure, sample.now)
+                if (what == "pin") app.scope.launch {
+                    if (sample.flight == null) return@launch out("nothing to pin: $name has no flight")
+                    stage()
+                    val row = app.flights.rows(sample.number).firstOrNull()?.let { app.flights.answer(it.id, pause = false) }
+                    val pin = row?.actions?.firstOrNull { it.id == "pin" && !it.off }?.effect as? io.github.kuscher.booklight.core.Effect.Pin
+                    main.post { out(if (pin != null) "${app.executor.run(pin)} ${describe(row)}" else "nothing to pin: ${row?.let(::describe)}") }
+                } else main.post {
+                    val m = act?.model ?: return@post out("no panel")
+                    // The field is emptied first (a list still being made for what was in it would end the sample), then the sample's number is typed.
+                    while (m.leaveScope()) {}
+                    m.type("")
+                    stage() ?: return@post out("not a flight: ${sample.number}")
+                    m.type(sample.number)
+                    out("$name as ${sample.number}: the row waits, then the sample lands in it (`dump` says it; `flight show off` ends it)")
+                }
+            }
             // A flight's row without the panel, looked up at once: `flight LH455`, `flight lh455 fri`, `flight ps5`. With a key in, this asks the service.
-            "flight" -> app.scope.launch {
+            else app.scope.launch {
                 val row = app.flights.rows(arg).firstOrNull() ?: return@launch out("not a flight")
                 out(describe(app.flights.answer(row.id, pause = false) ?: row) + " left=${app.flights.left.value}")
             }
@@ -341,7 +370,7 @@ class DebugReceiver : BroadcastReceiver() {
     private fun describe(r: io.github.kuscher.booklight.core.Result): String {
         val body = when (val b = r.body) {
             null -> ""
-            is io.github.kuscher.booklight.core.Body.Slots -> " {" + listOfNotNull(b.caption).plus(b.slots.map { "${it.label}=${it.value}${if (it.state == io.github.kuscher.booklight.core.SlotState.GUESSED) "?" else ""}" }).plus(listOfNotNull(b.note, b.tail, b.source?.let { "from $it" }, "struck".takeIf { b.struck })).joinToString("; ") + "}"
+            is io.github.kuscher.booklight.core.Body.Slots -> " {" + listOfNotNull(b.caption).plus(b.slots.map { "${it.label}=${it.value}${if (it.state == io.github.kuscher.booklight.core.SlotState.GUESSED) "?" else ""}" }).plus(listOfNotNull(b.note)).joinToString("; ") + "}"
             is io.github.kuscher.booklight.core.Body.Level -> " {${b.percent}%${if (b.muted) " muted" else ""}${if (b.locked) " locked" else ""}${b.target?.let { " →$it" } ?: ""}}"
             is io.github.kuscher.booklight.core.Body.Grid -> " {${b.cells.size} cells: ${b.cells.take(6).joinToString("") { it.glyph }}…}"
             is io.github.kuscher.booklight.core.Body.Code -> " {qr}"
@@ -349,6 +378,19 @@ class DebugReceiver : BroadcastReceiver() {
             is io.github.kuscher.booklight.core.Body.Keys -> " {" + b.keys.joinToString(" + ") + "}"
             is io.github.kuscher.booklight.core.Body.Task -> if (b.done) " {done}" else " {open}"
             is io.github.kuscher.booklight.core.Body.Stream -> " {${b.caption}${if (b.answer) " =" else ":"} ${b.text}${if (b.busy) "…" else ""}${if (b.tall) " tall" else ""}${if (b.ask != null && !b.answer) " ?" else ""}}"
+            // A flight's row: its phase, line one, the headline, the badge and its tone, the plane's place (none: no plane), and what stands under each end
+            // of the line (a struck time has a ~ after it; the small words in brackets, and after a bar what is left of them where the ends would meet).
+            is io.github.kuscher.booklight.core.Body.Flight -> {
+                fun words(s: io.github.kuscher.booklight.core.Stop) = s.words?.let { "[$it${s.brief?.let { b -> " | $b" } ?: ""}]" }
+                fun time(s: io.github.kuscher.booklight.core.Stop) = s.time + if (s.struck) "~" else ""
+                " {" + listOfNotNull(
+                    "phase=" + (b.phase?.name?.lowercase() ?: if (b.headline.isEmpty()) "empty" else if (b.answer == 0L) "looking" else "no-answer"), b.caption, "headline=${b.headline}",
+                    "badge=" + (b.badge?.let { "$it (${b.tone.name.lowercase()})" } ?: "none"), "share=" + (b.share?.let { "%.2f".format(java.util.Locale.ROOT, it) } ?: "none"),
+                    "from=" + (b.from?.let { listOfNotNull(it.code, time(it), words(it)).joinToString(" ") } ?: "-"),
+                    "to=" + (b.to?.let { listOfNotNull(words(it), time(it), it.code).joinToString(" ") } ?: "-"),
+                    b.source?.let { "from $it" }, "counts".takeIf { b.counts },
+                ).joinToString("; ") + "}"
+            }
         }
         // (A line behind the arrow is marked +, one behind Window +w.)
         val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (!a.more) "" else if (a.behind == io.github.kuscher.booklight.core.Behind.WINDOW) "+w" else "+") + (if (a.off) "(off)" else "") }.joinToString(",")

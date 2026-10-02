@@ -7,10 +7,6 @@
     <string name="flight_kind">Flug</string>
     <string name="flight_who">%1$s · %2$s</string>
     <string name="flight_route">%1$s → %2$s</string>
-    <string name="flight_leaves">Ab</string>
-    <string name="flight_left">Ab</string>
-    <string name="flight_lands">An</string>
-    <string name="flight_landed_at">An</string>
     <string name="flight_looking">Wird nachgeschlagen</string>
 
     <string name="flight_planned">Geplant</string>

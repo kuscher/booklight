@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 3.0 · a flight's row with a line and a plane (docs/design/flights-row). The headline says the one thing needed in each phase; -->
+<!-- beside it one badge says whether the flight runs to plan (its words are in strings_24.xml: Planned, On time, Delayed, early, late). -->
+<resources>
+    <!-- More than three hours off. %s is the time, with the day where it is not today: "Leaves Fri 10:55 AM". -->
+    <string name="flight_leaves_at">Leaves %s</string>
+    <!-- Within three hours of leaving, and in the air. %s is a countdown: "42 min", "4 h 07 min". -->
+    <string name="flight_leaves_in">Leaves in %s</string>
+    <string name="flight_lands_in">Lands in %s</string>
+    <!-- For three hours after landing. %s is a length of time: "12 min", "1 h 15 min". -->
+    <string name="flight_landed_ago">Landed %s ago</string>
+    <string name="flight_landed_now">Landed just now</string>
+</resources>

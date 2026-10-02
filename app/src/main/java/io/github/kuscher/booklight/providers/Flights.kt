@@ -2,14 +2,15 @@ package io.github.kuscher.booklight.providers
 
 import android.content.Context
 import android.os.SystemClock
-import android.text.format.DateFormat
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.AirLabs
 import io.github.kuscher.booklight.core.Airlines
+import io.github.kuscher.booklight.core.Badge
 import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.DayForm
 import io.github.kuscher.booklight.core.Effect
+import io.github.kuscher.booklight.core.EndSays
 import io.github.kuscher.booklight.core.Failure
 import io.github.kuscher.booklight.core.Flight
 import io.github.kuscher.booklight.core.FlightEnd
@@ -17,6 +18,8 @@ import io.github.kuscher.booklight.core.FlightNumber
 import io.github.kuscher.booklight.core.FlightState
 import io.github.kuscher.booklight.core.FlightStatus
 import io.github.kuscher.booklight.core.Flights
+import io.github.kuscher.booklight.core.Heading
+import io.github.kuscher.booklight.core.Headline
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Provider
@@ -25,14 +28,16 @@ import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Saying
 import io.github.kuscher.booklight.core.Scope
 import io.github.kuscher.booklight.core.SearchEngine
-import io.github.kuscher.booklight.core.Slot
-import io.github.kuscher.booklight.core.SlotState
+import io.github.kuscher.booklight.core.Stop
+import io.github.kuscher.booklight.core.Tone
+import io.github.kuscher.booklight.core.Verdict
 import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.scopes.clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -42,9 +47,11 @@ import java.net.HttpURLConnection
 import java.net.NoRouteToHostException
 import java.net.URL
 import java.net.UnknownHostException
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 
@@ -60,17 +67,30 @@ import java.util.concurrent.ConcurrentHashMap
  * as little else; for one that is far more often something else (`ps5`) only when the user goes to
  * its row; never for each letter. An answer is kept for two minutes, in memory only.
  *
- * The row stands in its full height with its lines and its actions from its first frame, and the
- * answer is written into it. The panel asks ([waits], [answer], [gone]); this class says what the
- * row looks like before, with and without an answer.
+ * The row stands in its full height with its line and its actions from its first frame, and the
+ * answer is written into it: a headline with one badge, the flight as a line with the plane on it,
+ * and the two airports with their times under the line's ends (docs/design/flights-row). The panel
+ * asks ([waits], [answer], [gone]) and, while a row counts minutes, has it said again as the clock
+ * goes on ([told]); this class says what the row looks like before, with and without an answer.
  */
 class FlightsProvider(private val context: Context, private val prefs: Prefs, private val scope: CoroutineScope) : Provider {
     override val id = ID
 
     private val airlines: Airlines by lazy { context.assets.open("airlines.tsv").bufferedReader().useLines { Airlines(it) } }
 
-    /** What the service said for a number, or why it said nothing; [at] by the clock that never jumps, [wall] as the user's clock showed it. */
-    private class Kept(val flight: Flight?, val failure: Failure?, val key: Int, val at: Long = SystemClock.elapsedRealtime(), val wall: LocalDateTime = LocalDateTime.now())
+    /**
+     * What the service said for a number, or why it said nothing; [at] by the clock that never jumps, [wall] as the user's clock showed it.
+     * [sample]: a debug build's own flight, by its name: the service never said it, and for it the clock stands [ahead] of the real one, in milliseconds.
+     */
+    private class Kept(val flight: Flight?, val failure: Failure?, val key: Int, val sample: String? = null, val ahead: Long = 0,
+        val at: Long = SystemClock.elapsedRealtime(), val wall: LocalDateTime = LocalDateTime.now().plusNanos(ahead * 1_000_000)) {
+        /** The moment the row is said for. */
+        fun now(): Instant = Instant.now().plusMillis(ahead)
+    }
+
+    /** Debug builds: the answer one row gets in the service's place (`./bl debug flight show`). No flight and no failure: it stands waiting. */
+    private class Sample(val id: String, val name: String, val flight: Flight?, val failure: Failure?, val ahead: Long)
+    @Volatile private var sample: Sample? = null
 
     private val kept = ConcurrentHashMap<String, Kept>()
     private val asking = HashMap<String, Deferred<Kept>>()
@@ -86,6 +106,10 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
 
     /** What the pinned window shows, by the pin's own name for its flight (the number and the day it leaves): kept apart from the rows' answers, which go on to the next flight. */
     private val pins = ConcurrentHashMap<String, Flight>()
+    /** Where each flight's plane was last drawn on its line, by that same name: it only goes forward (`FlightStatus.forward`). */
+    private val places = ConcurrentHashMap<String, Double>()
+    /** Debug builds: how far a sample's clock stands ahead of the real one, by the pin's name for it. */
+    private val ahead = ConcurrentHashMap<String, Long>()
 
     init {
         scope.launch { prefs.flightKey.drop(1).collect { left.value = null } }
@@ -93,7 +117,7 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
 
     override suspend fun query(q: Query): List<Result> {
         val n = Flights.read(q.text, airlines, LocalDate.now())
-        if (n == null) { wanted = null; return emptyList() }
+        if (n == null) { wanted = null; unstage(); return emptyList() }
         return listOf(row(n))
     }
 
@@ -104,8 +128,8 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
         if (prefs.flightKey.value.isEmpty()) return emptyList()
         return listOf(Result(
             id = "flight:", provider = ID, kind = Kind.OTHER, title = text(R.string.flight_name), icon = Icon.Symbol("plane"), score = 1.0, learnable = false, actions = emptyList(),
-            // (No caption: it would say what the field's placeholder says, just above it. The two labels hold the height.)
-            body = Body.Slots(null, listOf(slot(R.string.flight_leaves, null), slot(R.string.flight_lands, null)), first = first(null, LocalDate.now())),
+            // (No words: they would say what the field's placeholder says, just above it. The line at rest and its two empty ends hold the height.)
+            body = Body.Flight(null, ""),
         ))
     }
 
@@ -141,10 +165,57 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
     suspend fun answer(id: String, pause: Boolean): Result? {
         val n = numbers[id] ?: return null
         if (pause) delay(PAUSE_MS)
+        // (Debug builds: a sample's answer in the service's place, after a moment, as an answer takes one. "Looking it up" stands for as long as it is looked at.)
+        sample?.takeIf { it.id == id }?.let { s ->
+            if (s.flight == null && s.failure == null) awaitCancellation()
+            delay(SAMPLE_MS)
+            kept[id] = Kept(s.flight, s.failure, 0, s.name, s.ahead)
+            return row(n)
+        }
         val key = prefs.flightKey.value.ifEmpty { return null }
         if (fresh(id) == null) request(id, n, key)
         return row(n)
     }
+
+    /**
+     * [r], a flight's row whose headline counts minutes, said again for the clock as it stands now: the
+     * minutes to go and the plane's place. From what is kept for it, however old that is: nothing is
+     * asked of the service. Null for any other row.
+     */
+    fun told(r: Result): Result? {
+        if (r.provider != ID || (r.body as? Body.Flight)?.counts != true) return null
+        val n = numbers[r.id] ?: return null
+        val k = kept[r.id]?.takeIf { it.flight != null } ?: return null
+        return full(n, r.id, score(n), k)
+    }
+
+    /**
+     * Debug builds (`./bl debug flight show NAME`): from now on the row of the number [text] is answered with
+     * [flight], or with [failure], or (neither) stands waiting; and for that row it is [now]. Nothing is asked of
+     * the service for it, with a key in or without. It ends when any other text is typed, with [unstage], and
+     * with the process. The row's id, or null if [text] does not read as a flight number.
+     */
+    fun stage(text: String, name: String, flight: Flight?, failure: Failure?, now: Instant?): String? {
+        val n = Flights.read(text, airlines, LocalDate.now(), sure = true) ?: return null
+        unstage()
+        // (A sample's plane comes in anew, wherever the last one of that name was drawn.)
+        places.clear()
+        // (Its clock is set on to the next whole minute's distance from the real one: its minutes then change when the real clock's do, which is when a row is said again.)
+        val ahead = now?.let { Math.floorDiv(Duration.between(Instant.now(), it).toMillis() + 59_999L, 60_000L) * 60_000L } ?: 0L
+        return "flight:${n.id}".also { sample = Sample(it, name, flight, failure, ahead) }
+    }
+
+    /** The sample is over: its row is asked for like any other again. (A pinned sample stays one: it is nobody's flight to ask about.) */
+    fun unstage() {
+        if (sample == null) return
+        sample = null
+        kept.values.removeIf { it.sample != null }
+        // (Where the sample's plane was drawn is nothing a real flight of that number is held to.)
+        places.clear()
+    }
+
+    /** The moment a pinned flight is counted for: now (in a debug build, a sample's own clock). */
+    fun clock(pin: String): Instant = Instant.now().plusMillis(ahead[pin] ?: 0)
 
     /**
      * One request for the row [id] at a time, in the process's own scope: whoever asks while it is on
@@ -183,6 +254,8 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
      */
     suspend fun again(key: String, was: Flight?): AirLabs.Again {
         val n = Flights.read(key, airlines, LocalDate.now(), sure = true) ?: return AirLabs.Again.Gone
+        // (Debug builds: a sample is nobody's flight to ask about.)
+        if (ahead.containsKey(key)) return AirLabs.Again.NotYet
         val with = prefs.flightKey.value.ifEmpty { return AirLabs.Again.Gone }
         return scope.async(Dispatchers.IO) {
             try {
@@ -205,7 +278,7 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
 
     /** What is kept for the row [id], while it is the key's own and young enough (`AirLabs.keep`: two minutes; ten seconds for no connection; an hour for a number nobody flies). */
     private fun fresh(id: String): Kept? = kept[id]?.takeIf {
-        it.key == prefs.flightKey.value.hashCode() && SystemClock.elapsedRealtime() - it.at < AirLabs.keep(it.failure).toMillis()
+        it.sample == null && it.key == prefs.flightKey.value.hashCode() && SystemClock.elapsedRealtime() - it.at < AirLabs.keep(it.failure).toMillis()
     }
 
     /** Asks the service (`AirLabs.lookup`: one request in the usual case, three at most) and keeps how many lookups it says are left. */
@@ -257,13 +330,18 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
         if (numbers.size > 64) numbers.keys.filter { it != id && it != wanted }.take(32).forEach { numbers.remove(it) }
         if (wanted != null && wanted != id) wanted = null
         val key = prefs.flightKey.value
-        val score = if (n.strong) SCORE else SearchEngine.GUESS
-        val k = if (key.isEmpty()) null else fresh(id)
+        val score = score(n)
+        // (Debug builds: a sample's row answers with a key in or without, from what was put there for it. Any other number ends the sample.)
+        val s = sample?.takeIf { it.id == id }
+        if (s == null) unstage()
+        val k = if (s != null) kept[id]?.takeIf { it.sample != null } else if (key.isEmpty()) null else fresh(id)
         // No key, or a row nobody has gone to (a weak match, a number in a text): an ordinary row that names the airline.
-        if (key.isEmpty() || (k == null && wanted != id && (!n.strong || unasked))) { looking.remove(id); return plain(n, id, score, times = key.isEmpty()) }
+        if ((key.isEmpty() && s == null) || (k == null && wanted != id && (!n.strong || unasked))) { looking.remove(id); return plain(n, id, score, times = key.isEmpty()) }
         if (k == null) looking.add(id) else looking.remove(id)
         return full(n, id, score, k)
     }
+
+    private fun score(n: FlightNumber) = if (n.strong) SCORE else SearchEngine.GUESS
 
     private fun open(n: FlightNumber) = Action("open", text(R.string.action_open), Effect.OpenUrl(Flights.page(n)))
     private fun search(n: FlightNumber, more: Boolean) = Action("search", text(if (more) R.string.action_search_web else R.string.action_search),
@@ -278,48 +356,51 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
             Action("times", text(R.string.action_get_times), KEY, symbol = "settings").takeIf { times }),
     )
 
-    /** The 92 dp row: waiting ([k] null), answered, or saying why not. Its three lines and its actions keep their places through all three. */
+    /** The 136 dp row: waiting ([k] null), answered, or saying why not. Its line, the places of its two ends and its actions stand through all three. */
     private fun full(n: FlightNumber, id: String, score: Double, k: Kept?): Result {
         val f = k?.flight
         val failed = k != null && f == null
-        val today = LocalDate.now()
-        val now = Instant.now()
+        val now = k?.now() ?: Instant.now()
+        val today = LocalDate.ofInstant(now, ZoneId.systemDefault())
         // A timetable's flight whose time to leave has passed: nobody knows what became of it, and nothing is made of it but a copy.
         val past = f != null && f.timetable && FlightStatus.departed(f, now)
         val who = text(R.string.flight_who, n.shown, f?.airline?.ifEmpty { null } ?: n.airline.name)
-        val caption = if (f == null) who else text(R.string.flight_who, who, text(R.string.flight_route, f.from.place, f.to.place))
-        val status: String
-        var rest: String? = null
-        when {
-            k == null -> status = text(R.string.flight_looking)
-            f == null -> status = text(when (k.failure) {
+        // (Where the service names no city, line one is who flies it: the airports' letters stand under the line anyway.)
+        val caption = if (f == null || (f.from.city.isEmpty() && f.to.city.isEmpty())) who else text(R.string.flight_who, who, text(R.string.flight_route, f.from.place, f.to.place))
+        val line = f?.let { line(n, it, today, now) }
+        val event = f?.let { event(it, now) }
+        val pin = f?.let { pinKey(n, it) }
+        if (f != null && pin != null) {
+            if (pins.size > 32) pins.keys.filter { it != pin }.take(16).forEach { pins.remove(it) }
+            pins[pin] = f
+            if (k.sample != null) ahead[pin] = k.ahead else ahead.remove(pin)
+        }
+        val body = when {
+            k == null -> Body.Flight(caption, text(R.string.flight_looking))
+            f == null -> Body.Flight(caption, text(when (k.failure) {
                 Failure.NOT_FOUND -> R.string.flight_none
                 Failure.NOT_THAT_DAY -> R.string.flight_no_day
                 Failure.REFUSED -> R.string.flight_refused
                 Failure.USED_UP -> R.string.flight_used_up
                 Failure.OFFLINE -> R.string.flight_offline
                 else -> R.string.flight_no_answer
-            })
+            }), answer = k.at)
             else -> {
-                val (main, extra) = said(f, now)
-                status = main
-                rest = listOfNotNull(extra, where(f).ifEmpty { null }).joinToString(" · ").ifEmpty { null }
+                val row = FlightStatus.row(f, now)
+                // (One plane for one flight: the number, the day it leaves and where it leaves from. A number with two legs on one day is two.)
+                val name = "${pin ?: id} ${f.from.code}"
+                // The plane only goes forward: where a later estimate puts it further back, it stays where it was drawn until the clock has caught up.
+                val share = FlightStatus.forward(places[name], row.share)
+                if (share != null) { if (places.size > 64) places.clear(); places[name] = share }
+                Body.Flight(
+                    caption, headline(row.headline, f, today), row.badge?.let(::badge), row.badge?.tone ?: Tone.PLAIN, share?.toFloat(),
+                    stop(row.from, today), stop(row.to, today), flight = name, answer = k.at, counts = row.counts,
+                    source = k.sample ?: text(R.string.flight_source, AirLabs.NAME, clock(context, k.wall)), phase = row.phase,
+                )
             }
         }
-        val line = f?.let { line(n, it, today, now) }
-        val event = f?.let { event(it, now) }
-        val pin = f?.let { pinKey(n, it) }
-        if (f != null && pin != null) { if (pins.size > 32) pins.keys.filter { it != pin }.take(16).forEach { pins.remove(it) }; pins[pin] = f }
         return Result(
-            id = id, provider = ID, kind = Kind.OTHER, title = caption, icon = Icon.Symbol("plane"), score = score, learnable = false, label = text(R.string.flight_kind),
-            body = Body.Slots(
-                caption,
-                listOf(slot(if (f != null && FlightStatus.departed(f, now)) R.string.flight_left else R.string.flight_leaves, f?.from?.let { at(it, today) }),
-                    slot(if (f != null && FlightStatus.arrived(f, now)) R.string.flight_landed_at else R.string.flight_lands, f?.to?.let { at(it, today) })),
-                note = status, tail = rest, first = first(n.day, today),
-                struck = f?.state == FlightState.CANCELLED || f?.state == FlightState.DIVERTED,
-                source = k?.takeIf { f != null }?.let { text(R.string.flight_source, AirLabs.NAME, clock(context, it.wall)) },
-            ),
+            id = id, provider = ID, kind = Kind.OTHER, title = caption, icon = Icon.Symbol("plane"), score = score, learnable = false, label = text(R.string.flight_kind), body = body,
             // All of them from the first frame. What needs the answer waits for it; where none came, it stands dimmed.
             actions = listOfNotNull(
                 open(n),
@@ -334,41 +415,59 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
         )
     }
 
+    /** A time in its airport's own clock, with the day when it is not the user's today: "10:55 AM", "Fri 10:55 AM". */
+    private fun time(t: LocalDateTime, today: LocalDate) = listOfNotNull(flightDay(context, t, today), clock(context, t)).joinToString(" ")
+
+    private fun capital(s: String) = s.replaceFirstChar { it.titlecase(context.resources.configuration.locales[0]) }
+
+    /** The headline: the one thing needed in the flight's phase. */
+    private fun headline(h: Headline, f: Flight, today: LocalDate): String = when (h.heading) {
+        Heading.LEAVES_AT -> f.from.time?.let { text(R.string.flight_leaves_at, time(it, today)) } ?: text(R.string.flight_planned)
+        Heading.LEAVES_IN -> text(R.string.flight_leaves_in, flightCount(context, h.minutes))
+        Heading.LANDS_IN -> text(R.string.flight_lands_in, flightCount(context, h.minutes))
+        Heading.IN_AIR -> text(R.string.flight_air)
+        Heading.LANDED_AGO -> text(R.string.flight_landed_ago, flightLength(context, h.minutes.toInt()))
+        Heading.LANDED_NOW -> text(R.string.flight_landed_now)
+        Heading.LANDED -> text(R.string.flight_landed)
+        Heading.CANCELLED -> text(R.string.flight_cancelled)
+        Heading.DIVERTED -> text(R.string.flight_diverted)
+        Heading.TIMETABLE -> capital(text(R.string.flight_timetable))
+    }
+
+    /** The badge's word: "On time", "Delayed 27 min", "24 min early"; after landing "27 min late"; "Planned" when only the plan is known. */
+    private fun badge(b: Badge): String = when (b.verdict) {
+        Verdict.PLANNED -> text(R.string.flight_planned)
+        Verdict.ON_TIME -> text(R.string.flight_on_time)
+        Verdict.DELAYED -> text(R.string.flight_delayed, flightLength(context, b.minutes))
+        Verdict.LATE -> text(R.string.flight_air_late, flightLength(context, b.minutes))
+        Verdict.EARLY -> text(R.string.flight_air_early, flightLength(context, b.minutes))
+    }
+
     /**
-     * The least width of the row's first slot, in dp, so that "Lands" stands at one x before the answer
-     * and after it. It follows only what is known before the answer: the clock, and a typed day more
-     * than six days off (said as a date). Never the answer: a slot that widened when a flight turned
-     * out to leave on another day moved "Lands" by 60 dp as the answer landed.
+     * What stands under one end of the line: the airport, its time, and in small words whatever of gate, terminal, belt
+     * and aircraft is to be said there, the gate first ("Gate Z58 · Terminal 1"). Where the two ends would meet, the
+     * aircraft is left out first and then the terminal: [Stop.brief] is what stays.
      */
-    private fun first(day: LocalDate?, today: LocalDate): Int =
-        (if (DateFormat.is24HourFormat(context)) FIRST else FIRST_12) + if (day != null && FlightStatus.dayForm(day.atStartOfDay(), today) == DayForm.DATE) FIRST_DATE else 0
-
-    private fun slot(label: Int, value: String?) = Slot(text(label), value.orEmpty(), if (value == null) SlotState.EMPTY else SlotState.TYPED)
-
-    /** A time at one end, in that airport's own time: "SFO 15:05", and with the day when it is not the user's today: "FRA Fri 10:55". */
-    private fun at(e: FlightEnd, today: LocalDate): String? {
-        val t = e.time ?: return null
-        return listOfNotNull(e.code, flightDay(context, t, today), clock(context, t)).joinToString(" ")
+    private fun stop(e: EndSays, today: LocalDate): Stop {
+        val gate = e.gate?.let { capital(text(R.string.flight_gate, it)) }
+        val belt = e.belt?.let { capital(text(R.string.flight_belt, it)) }
+        val words = listOfNotNull(gate, e.terminal?.let { text(R.string.flight_terminal, it) }, belt, e.aircraft)
+        return Stop(e.code, e.time?.let { time(it, today) }.orEmpty(), e.struck, words.joinToString(" · ").ifEmpty { null }, listOfNotNull(gate, belt).joinToString(" · ").ifEmpty { null })
     }
 
     /** The pin's name for the flight it follows: the number as it was typed and the day it leaves, which `Flights.read` reads back as that number on that day. */
     private fun pinKey(n: FlightNumber, f: Flight): String? =
         (f.from.planned ?: f.from.time)?.toLocalDate()?.let { (if (n.callsign) n.icao else n.iata) + " " + it }
 
-    /** "25 min", "1 h 15 min", "2 h". */
-    private fun length(minutes: Int): String = when {
-        minutes < 60 -> text(R.string.flight_min, minutes)
-        minutes % 60 == 0 -> text(R.string.flight_h, minutes / 60)
-        else -> text(R.string.flight_h_min, minutes / 60, minutes % 60)
-    }
+    private fun length(minutes: Int): String = flightLength(context, minutes)
 
-    /** The status in words, and what goes on after it in the lighter ink ("In the air", then "18 min late"). */
+    /** The status in words, for the line that is copied: its first words, and what goes on after them ("In the air", then "18 min late"). */
     private fun said(f: Flight, now: Instant): Pair<String, String?> {
         val s = FlightStatus.said(f, now)
         return when (s.saying) {
             Saying.PLANNED -> text(R.string.flight_planned) to text(R.string.flight_timetable).takeIf { f.timetable }
             // Its time to leave has passed: not "Planned" any more, and nothing else is known.
-            Saying.TIMETABLE -> text(R.string.flight_timetable).replaceFirstChar { it.titlecase(context.resources.configuration.locales[0]) } to null
+            Saying.TIMETABLE -> capital(text(R.string.flight_timetable)) to null
             Saying.ON_TIME -> text(R.string.flight_on_time) to null
             Saying.DELAYED -> text(R.string.flight_delayed, length(s.minutes)) to null
             Saying.IN_AIR -> text(R.string.flight_air) to null
@@ -386,13 +485,12 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
     /** "Terminal G, gate G4"; "Gate A2" where no terminal is known; nothing where nothing is. */
     private fun where(f: Flight): String {
         val w = FlightStatus.where(f)
-        return listOfNotNull(w.terminal?.let { text(R.string.flight_terminal, it) }, w.gate?.let { text(R.string.flight_gate, it) }, w.belt?.let { text(R.string.flight_belt, it) })
-            .joinToString(", ").replaceFirstChar { it.titlecase(context.resources.configuration.locales[0]) }
+        return capital(listOfNotNull(w.terminal?.let { text(R.string.flight_terminal, it) }, w.gate?.let { text(R.string.flight_gate, it) }, w.belt?.let { text(R.string.flight_belt, it) }).joinToString(", "))
     }
 
     /** One line to send to someone: "LH 455 San Francisco 15:05 → Frankfurt Fri 10:55, delayed 25 min, Terminal G, gate G4". */
     private fun line(n: FlightNumber, f: Flight, today: LocalDate, now: Instant): String {
-        fun time(e: FlightEnd) = e.time?.let { t -> listOfNotNull(flightDay(context, t, today), clock(context, t)).joinToString(" ") }.orEmpty()
+        fun time(e: FlightEnd) = e.time?.let { time(it, today) }.orEmpty()
         val (main, extra) = said(f, now)
         val status = listOfNotNull(main, extra).joinToString(", ").replaceFirstChar { it.lowercase(context.resources.configuration.locales[0]) }
         return listOf(text(R.string.flight_line, n.shown, f.from.place, time(f.from), f.to.place, time(f.to)).replace("  ", " ").trim(), status, where(f)).filter { it.isNotEmpty() }.joinToString(", ")
@@ -423,15 +521,8 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
         private const val SCORE = 0.3
         /** How long typing rests before the service is asked. */
         private const val PAUSE_MS = 400L
-        /**
-         * The least width of the row's first slot. Worked out from the widest string measured on a device:
-         * "LEAVES SFO Wed 2:47 PM" is 270 px at 1.5 px per dp (the label 65, the gap 14, the value 191), 180 dp.
-         * On a 24-hour clock the value loses " PM" and gains a digit, about 15 dp less: "LEAVES SFO Wed 14:47" is
-         * about 165 dp. A date in the weekday's place ("24 Dec" for "Wed") is about 23 dp more on either clock.
-         */
-        private const val FIRST = 176
-        private const val FIRST_12 = 196
-        private const val FIRST_DATE = 24
+        /** Debug builds: how long a sample's answer takes to come. */
+        private const val SAMPLE_MS = 300L
     }
 }
 
@@ -439,6 +530,25 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
 internal fun flightDay(context: Context, t: LocalDateTime, today: LocalDate): String? {
     val pattern = when (FlightStatus.dayForm(t, today)) { DayForm.NONE -> return null; DayForm.WEEKDAY -> "EEE"; DayForm.DATE -> "d MMM" }
     return t.format(DateTimeFormatter.ofPattern(pattern, context.resources.configuration.locales[0]))
+}
+
+/** A length of time as a flight's row says it: "25 min", "1 h 15 min", "2 h". */
+internal fun flightLength(context: Context, minutes: Int): String = when {
+    minutes < 60 -> context.getString(R.string.flight_min, minutes)
+    minutes % 60 == 0 -> context.getString(R.string.flight_h, minutes / 60)
+    else -> context.getString(R.string.flight_h_min, minutes / 60, minutes % 60)
+}
+
+/** A countdown, in the row's headline and in the pinned window: "42 min", and from an hour on "4 h 07 min", the minutes on two places, so the words stand still while it counts. */
+internal fun flightCount(context: Context, minutes: Long): String =
+    if (minutes < 60) context.getString(R.string.flight_min, minutes.toInt()) else context.getString(R.string.pin_flight_h_min, minutes / 60, minutes % 60)
+
+/** A badge's verdict as a word in a line (the pinned window's): "on time", "27 min late", "24 min early"; null where only the plan is known. */
+internal fun flightVerdict(context: Context, b: Badge): String? = when (b.verdict) {
+    Verdict.PLANNED -> null
+    Verdict.ON_TIME -> context.getString(R.string.flight_air_on_time)
+    Verdict.DELAYED, Verdict.LATE -> context.getString(R.string.flight_air_late, flightLength(context, b.minutes))
+    Verdict.EARLY -> context.getString(R.string.flight_air_early, flightLength(context, b.minutes))
 }
 
 /** `flight u2 8001`: after the keyword whatever reads as a flight number is one, and is looked up like any other. */

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 2.4 · M5, flights. A flight number is a row: "LH 455 · Lufthansa". With a key of the user's own for AirLabs it answers:
-         LH 455 · Lufthansa · San Francisco → Frankfurt / LEAVES SFO 15:05  LANDS FRA Fri 10:55 / Delayed 25 min · Terminal G, gate G4 -->
+         LH 455 · Lufthansa · San Francisco → Frankfurt / Leaves in 42 min (Delayed 25 min) / the flight as a line with the plane on it /
+         SFO 3:05 PM Gate G4 · Terminal G … Fri 10:55 AM FRA. The headline's words are in strings_31.xml (3.0). -->
     <string name="flight_keys">flight</string>
     <string name="flight_name">Flight</string>
     <string name="flight_hint">A flight number: LH455</string>
@@ -9,13 +10,10 @@
     <string name="flight_kind">Flight</string>
     <string name="flight_who">%1$s · %2$s</string>
     <string name="flight_route">%1$s → %2$s</string>
-    <string name="flight_leaves">Leaves</string>
-    <string name="flight_left">Left</string>
-    <string name="flight_lands">Lands</string>
-    <string name="flight_landed_at">Landed</string>
     <string name="flight_looking">Looking it up</string>
 
-    <!-- The status, in two or three words. A delay is said, never painted. %s is a length of time: "25 min", "1 h 15 min". -->
+    <!-- The status, in two or three words: the badge beside the row's headline (Planned, On time, Delayed, early, late), the pinned
+         window's coloured word, and the line that is copied. %s is a length of time: "25 min", "1 h 15 min". -->
     <string name="flight_planned">Planned</string>
     <string name="flight_timetable">from the timetable</string>
     <string name="flight_on_time">On time</string>
@@ -33,12 +31,13 @@
     <string name="flight_h">%d h</string>
     <string name="flight_h_min">%1$d h %2$d min</string>
 
-    <!-- Where to go: "Terminal G, gate G4" before it leaves, "Terminal 1, belt 12" after. -->
+    <!-- Where to go. Under the line's ends each stands for itself, the gate first: "Gate G4 · Terminal G", "Terminal 1 · Belt 12".
+         In the line that is copied: "Terminal G, gate G4". -->
     <string name="flight_terminal">Terminal %s</string>
     <string name="flight_gate">gate %s</string>
     <string name="flight_belt">belt %s</string>
 
-    <!-- When no answer comes. The row keeps its lines; these stand where the status would. -->
+    <!-- When no answer comes. The row keeps its height and its line; these are its headline. -->
     <string name="flight_none">Nothing found for this number</string>
     <string name="flight_no_day">It does not fly on that day</string>
     <string name="flight_no_answer">No answer this time</string>
@@ -57,7 +56,8 @@
     <!-- Who gave the answer and when, at the footer's left end: AirLabs · 13:58 -->
     <string name="flight_source">%1$s · %2$s</string>
 
-    <!-- The pinned flight: a small line, then the time to go in words (the timer beside it counts in minutes and seconds). -->
+    <!-- The pinned flight: a small line, then the time to go in words (the timer beside it counts in minutes and seconds), then the
+         flight's line. A countdown of an hour or more keeps two places for its minutes, in the row's headline too. -->
     <string name="pin_kind_flight">Pinned flight</string>
     <string name="pin_flight_gate">gate %s</string>
     <string name="pin_flight_lands">lands %s</string>

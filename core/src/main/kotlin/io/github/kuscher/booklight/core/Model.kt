@@ -248,16 +248,8 @@ data class Action(
 
 /** What a row shows besides, or instead of, its title. */
 sealed interface Body {
-    /**
-     * A preview of what was understood: labelled slots that fill as the argument is typed. Or an answer
-     * that is written into slots that stand from the first frame (a flight's two times): then [first]
-     * is the least width of the first slot, in dp, so the second starts in one place whatever the
-     * first holds; [tail] goes on after [note] a step lighter (the status, then where to go);
-     * [struck]: the values will not happen, and are struck through as a done task is; [source]: who
-     * gave the answer and when, which the footer says while the row is selected.
-     */
-    data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null,
-        val first: Int = 0, val tail: String? = null, val struck: Boolean = false, val source: String? = null) : Body
+    /** A preview of what was understood: labelled slots that fill as the argument is typed, and a line for the long part (a message). */
+    data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null) : Body
     /** A level from 0 to 100 (volume, brightness). [target]: a typed value, not yet set. [locked]: needs a grant first. */
     data class Level(val percent: Int, val target: Int? = null, val muted: Boolean = false, val locked: Boolean = false) : Body
     /** A grid of characters to pick from; the arrows move between cells. */
@@ -279,7 +271,38 @@ sealed interface Body {
      * line, and the row has grown, once, to hold four.
      */
     data class Stream(val text: String, val busy: Boolean, val caption: String, val answer: Boolean = false, val ask: String? = null, val tall: Boolean = false) : Body
+    /**
+     * A flight: who flies it and where ([caption]), a [headline] with one [badge] beside it, and under
+     * them the flight as a line from take-off to landing, the plane on it, and under its two ends the
+     * airport and its time. All of it stands from the row's first frame, at one height: before the
+     * answer the ends are empty ([from] and [to] null) and the line has no plane.
+     *
+     * [share]: how much of the flying time has passed, 0 to 1, which is where the plane stands; null:
+     * nobody knows where it is, and there is no plane. [flight] names the flight the answer is about
+     * and [answer] the answer it was read from (0: none has come): the plane of one flight only goes
+     * forward, another answer about it moves the plane once, and another flight's plane comes in
+     * anew. [counts]: the headline's minutes follow the clock, and the row is said again each minute
+     * while it is on screen. [source]: who gave the answer and when, which the footer says while the
+     * row is selected. [phase]: which phase the words are for; null while there is no flight to say
+     * it of.
+     */
+    data class Flight(
+        val caption: String?, val headline: String, val badge: String? = null, val tone: Tone = Tone.PLAIN, val share: Float? = null,
+        val from: Stop? = null, val to: Stop? = null, val flight: String? = null, val answer: Long = 0,
+        val counts: Boolean = false, val source: String? = null, val phase: FlightPhase? = null,
+    ) : Body
 }
+
+/** What a flight's badge says besides its word: good news (on time, early), a delay, or neither (only the plan is known). The one place a row has a colour of its own. */
+enum class Tone { PLAIN, GOOD, LATE }
+
+/**
+ * What stands under one end of a flight's line: the airport's letters, its time there (with the day
+ * where it is not today's; [struck]: it will not happen), and small words after it. [words]: all of
+ * them ("Gate Z58 · Terminal 1"); [brief]: what is left of them where the two ends would meet in
+ * the middle ("Gate Z58"), null for nothing.
+ */
+data class Stop(val code: String, val time: String, val struck: Boolean = false, val words: String? = null, val brief: String? = null)
 
 enum class SlotState { TYPED, GUESSED, EMPTY }
 data class Slot(val label: String, val value: String, val state: SlotState)

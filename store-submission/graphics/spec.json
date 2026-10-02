@@ -13,7 +13,11 @@
     },
     {
       "src": "scenes/actions.png",
-      "caption": "A row shows what it can do; Tab moves along"
+      "caption": "Search or play inside an app: Tab, Enter, type"
+    },
+    {
+      "src": "scenes/flight.png",
+      "caption": "A flight you can watch, with your own free key"
     },
     {
       "src": "scenes/mail.png",
@@ -28,12 +32,8 @@
       "caption": "Emoji, symbols, colours, QR codes"
     },
     {
-      "src": "scenes/volume.png",
-      "caption": "Volume and brightness with the arrow keys"
-    },
-    {
       "src": "scenes/keyword.png",
-      "caption": "A keyword searches one site"
+      "caption": "A keyword searches one site, in its app"
     },
     {
       "src": "scenes/dark.png",

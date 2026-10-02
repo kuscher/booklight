@@ -45,6 +45,11 @@ android {
             signingConfig = signingConfigs.findByName("release")
         }
     }
+    // A debug build carries the flight service's saved replies (the core's test data, which holds no key): `./bl debug flight show LH455-in-the-air`
+    // puts one into the panel as an answer.
+    sourceSets {
+        getByName("debug") { assets.srcDir("../core/src/test/resources/airlabs") }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

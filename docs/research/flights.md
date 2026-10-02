@@ -553,7 +553,8 @@ asks in up to three steps (`AirLabs.lookup`, tried against the service for LH455
 1. `flight`. If it is in the air, still to leave, or landed under three hours ago: that is the answer. One request.
 2. Landed more than three hours ago: `schedules`, and from it the one in the air, else the next to leave.
 3. Nothing there (the next one is more than about ten hours off): `routes`, and the next day it flies,
-   as a plan: "Planned · from the timetable", no gate.
+   as a plan: "Leaves Sat 2:40 PM" with the badge "Planned", no gate (in the line that is copied: "planned, from
+   the timetable").
 
 A day after the number (`LH455 sat`) is `flight` (for the names, and in case it is that day's) and then
 `routes`: two requests, and the answer is always the timetable's, even for tomorrow. A number `flight` does not
@@ -579,6 +580,26 @@ kept for an hour, since finding it out costs two requests; and the timetable's c
 What this cannot do: decision 12's "one that landed in the last three hours" before "the next to leave" is
 the service's own choice in step 1, not Booklight's; which of two flights of one number a day `flight`
 prefers at a given hour is **not verified** beyond the cases in the table.
+
+**What the row makes of a reply since 3.0** (`docs/design/flights-row/`; `eng.md` there has the nine saved replies
+field by field; the rules are `FlightStatus.row` in the core, with `FlightRowTest`):
+
+- **Read, new:** `model`, the aircraft's type ("Boeing 747-8 pax", said as "Boeing 747-8"). It came with the
+  position, in two of the three replies of a flight in the air, and never on the ground. Shown under the line's
+  start once the flight has left. Already read and now shown: `arr_gate`, under the line's far end while no belt
+  is named.
+- **Not used:** `percent`. It is 0 before leaving and 100 once landed, and in the air it is the share of the
+  *scheduled* duration that `eta` leaves (SQ26 said 14 after 27 of 475 minutes in the air). The plane's place is
+  worked out from the times instead: the minutes since `dep_actual` against the minutes from then to
+  `arr_actual`, else `arr_estimated`, else `arr_time`, each as a moment. For the saved replies: LH455 95 %
+  (the service: 95), LH9152 5 % (5), SQ26 6 % (14). It then moves by the clock without a request.
+- **Not used:** `delayed`, `dep_delayed`, `arr_delayed` (empty for on time, for early and for unknown alike, and
+  `delayed` disagrees with the times), `eta`, `duration`, position, altitude, speed.
+- **Late and early start 15 minutes from the plan** (5 until 3.0): the service reports every minute, and with a
+  colour on the badge "Delayed 6 min" would be alarm for nothing. Of the nine replies LH9152 (13 minutes behind)
+  and SQ26 (13 ahead) are now "On time".
+- **"On time" needs a time of the service's own.** Before leaving, the plan alone is "Planned" (LH454); in the
+  air and after landing it is no badge.
 
 ### 10.4 Terms, and why the key is the user's
 

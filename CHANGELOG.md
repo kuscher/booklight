@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+**A flight's row shows the flight** (`docs/design/flights-row/`; with your own AirLabs key, as before).
+
+- **A line with the plane on it.** The row is taller. Its large line says the one thing you came for: "Leaves Fri
+  10:55 AM", from three hours before "Leaves in 42 min", in the air "Lands in 4 h 07 min", then "Landed 12 min
+  ago". Under it the flight is a line from take-off to landing: the part that is flown is solid, the rest dotted,
+  and the plane stands where the flight is. Under the line's two ends are the airports with their times, each in
+  its own clock, and what matters there now: gate and terminal before it leaves; after, the arrival's terminal
+  (and belt, where the service names one) and the aircraft's type.
+- **One badge says whether it runs to plan**: "On time" and "24 min early" in green, "Delayed 27 min" and "27 min
+  late" in amber, "Planned" when only the plan is known. The colour is only in the badge. "Late" now starts 15
+  minutes after the plan, as airlines count it (it was 5). A cancelled flight is the word "Cancelled", both times
+  struck through, and no plane.
+- **The plane's place is worked out from time**: how much of the flying time has passed, not a place on a map.
+  While the panel is open it moves on with the clock, a step a minute, and the minutes count with it, without
+  asking the service again. When nobody knows where a flight is (it is cancelled, or only the timetable knows
+  it) there is no plane. What the service does not send (a gate, a belt, the aircraft) is simply not shown.
+- **The pinned flight** has the same line, small, under its countdown, and says "on time" or "27 min late" as a
+  word in colour.
+- Nothing more is sent than before: the same one lookup per flight. Without a key the row is the plain one it was.
+
 **One way to do things with an app** (`docs/design/app-structure/`): type the app, Tab to what you want, Enter;
 if it takes words, type them and press Enter again.
 

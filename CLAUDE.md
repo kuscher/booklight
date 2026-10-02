@@ -34,7 +34,7 @@ private projects and paths into their repos, and where keys are backed up. Those
 ## Layout
 - `core/` — pure Kotlin (no `android.*`), tested with JUnit on the Mac. `./bl test`.
   - `Model.kt` Query (text + the scope it is for), Result, Action, Effect (what an action does, as data),
-    Body (what a row shows: slots, a level, a grid, a code), Icon, Provider, Scope; `AppChip` (an app as the chip,
+    Body (what a row shows: slots, a level, a grid, a code, a flight), Icon, Provider, Scope; `AppChip` (an app as the chip,
     with `Act`: Search or Play) and `Door` (a keyword that is a short way into one).
   - `SearchEngine.kt` asks every provider, merges, ranks, learns; inside a scope asks only that scope (an app's
     chip for the action that is armed; a keyword's door is followed); places the typed sentence by who leads.
@@ -54,8 +54,11 @@ private projects and paths into their repos, and where keys are backed up. Those
     tasks as lines), `Prompts.kt`.
   - Flights (M5): `Flights.kt` (a flight number read off the line, strong or weak; the airline table),
     `AirLabs.kt` (the flight service's replies read, and which requests "the next flight" takes),
-    `FlightStatus.kt` (one flight as a small model, and what its row says). Their tests read real replies
+    `FlightStatus.kt` (one flight as a small model, and what its row says: `FlightStatus.row` gives the phase, the
+    headline, the one badge with the 15-minute rule, the plane's place by time and what stands under the line's two
+    ends; `FlightRowTest` says it per phase). Their tests read real replies
     kept in `core/src/test/resources/airlabs/`, without the `request` object the service repeats the key in.
+    The row's design: `docs/design/flights-row/` (`design.md` is the specification).
 - `app/` — Compose app, package `io.github.kuscher.booklight`.
   - `BooklightApp` the process: providers, scopes, engine, stores. **Register a new provider here.**
   - `Guide.kt` everything Booklight does, as one table in the string resources (`guide`): the list behind `?`,
@@ -83,7 +86,8 @@ private projects and paths into their repos, and where keys are backed up. Those
     which of its two lists, grid cell, confirmation, the answer of the model, tips, Booklight typing), `Panel` (keys,
     the unfold arrival, the tip card), `Field` (the scope chip; an app's chip has the app's icon), `Rows` (and an
     opened row's list), `Strip` (the action row and the option strip), `Bodies` (slots,
-    level, grid, QR, the answer being written), `Marks` (the drawn check), `CopyLine` (the line for a fresh copy), `ChipLine` (the line under an app's chip that offers its other action), `Footer`, `Metrics`, `Glass`
+    level, grid, QR, the answer being written), `FlightBody` (a flight's row: line one, the headline and its badge, the two
+    ends) and `FlightLine` (the flight as a line with the plane on it; the pinned window draws the same one, small), `Marks` (the drawn check), `CopyLine` (the line for a fresh copy), `ChipLine` (the line under an app's chip that offers its other action), `Footer`, `Metrics`, `Glass`
     (shader, edge light, the shadow's settings), `PanelOutline` (the blur's corners; `GlassFrame`, where the glass stands; keeps the shadow off the
     glass), `Motion`.
   - `window/` the Booklight window the icon opens, an ordinary desktop window in Material 3 Expressive
@@ -118,7 +122,16 @@ private projects and paths into their repos, and where keys are backed up. Those
   Also: `guide` (every example of the list of everything, run through the engine), `ai none|downloadable|downloading|real`
   (a prompt's rows on a device in that state), `pin KIND TEXT` and `unpin`, `pref tips again`, `pref key seen|no`,
   `pref shadow off|low|medium|high`, `pref flightkey KEY|none` (the flight service's key; never printed) and
-  `flight TEXT` (a flight's row, looked up at once, without the panel). `./bl open stay slow=4 shade=high key` (every spring four times as long; the shadow; as if a
+  `flight TEXT` (a flight's row, looked up at once, without the panel). `flight show NAME` puts a sample flight's row
+  into the open panel in the phase its name says, looked at when the name says (`friday`, `soon`, `soon-late`, `air`,
+  `air-late`, `air-early`, `landed`, `landed-late`, `landed-now`, `cancelled`, `diverted`, `timetable`,
+  `timetable-past`, `wide`, `looking`, `offline`, `not-found`, `used-up`, `refused`…, or a saved reply by its name,
+  `LH455-in-the-air`: `app/src/debug/…/FlightSamples.kt`); the row waits and the sample lands in it as an answer does,
+  the service is not asked, and the footer says "sample NAME". `flight show` lists the names, `flight show off` ends it
+  (so does any other text typed), `flight pin NAME` shows the same flight in the pinned window. `dump` says a flight's
+  row as `phase=`, line one, `headline=`, `badge=` with its tone, `share=` (the plane's place; `none`: no plane), and
+  `from=` / `to=` (a struck time has a `~`; the small words in brackets, after a bar what is left of them when the ends
+  would meet). `./bl open stay slow=4 shade=high key` (every spring four times as long; the shadow; as if a
   key had opened it). `./bl wshot NAME` = PNG of the Booklight window.
   The window (debug builds): `./bl window [start|commands|look|results|labs|privacy]` opens it (a release only lets
   Booklight open it); `./bl debug window` says its size in dp, its section, where the keys are and what is selected;
@@ -177,6 +190,9 @@ private projects and paths into their repos, and where keys are backed up. Those
   (`docs/design/app-structure/ux.md`, `ux-model.md` §18).
 - The mark is what the row is about: an app's icon where that is one app, a symbol in the disc for anything else.
   An action carries a symbol for what it does and never an app's icon.
+- One coloured surface, the selection. The one exception is the badge of a flight's row: green for on time and early,
+  amber for late (`FlightColors` in `ui/Theme.kt`; Alex, 2 October 2026). Always a small fill with its own ink on it,
+  never a coloured word or line on the glass, and never red: red is for what removes something.
 - Flat glass: visibly see-through, blurred, a thin tint, a crisp white outline. No bevels, glows or
   sculpted highlights (Alex: "not too 3D esp the highlights. I do like the white outline").
 - Motion everywhere, all from `Motion.kt`: highlights move, lists cascade in, names unroll, nothing pops.
@@ -205,6 +221,13 @@ private projects and paths into their repos, and where keys are backed up. Those
 ## Gotchas
 - Panel sizes live in `Metrics`; `Metrics.height(model)` must match what `Panel` draws, or the
   window clips the list.
+- A flight's row is said again each minute from the answer that is kept (`OverlayModel.minute`, `FlightsProvider.told`),
+  never through `FlightsProvider.row`: that one takes a kept answer only for two minutes and would then ask the
+  service again. The plane only goes forward (`FlightStatus.forward`; the provider remembers where each flight's was drawn).
+- Every row of the flights provider has one seat in the list (`RowSlots.sync`): the ordinary row of a guess grows
+  into the tall one where it stands, and keeps its mark and strip on the tall row's line while it does.
+- `Metrics.maxRows` keeps room for one row of the list to be 136 dp (a flight's, a grown answer): a taller kind of
+  row in an ordinary list needs that room made larger.
 - Hover selects only on pointer movement (rows appear under a resting pointer as the list grows).
 - A constant alone is not a sum (`e`, `pi`): otherwise typing "e" shows 2.718 instead of apps.
 - `LauncherApps.startMainActivity` is used for every launch so work-profile apps open too.

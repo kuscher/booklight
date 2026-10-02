@@ -4,7 +4,7 @@
 
 ## 1. Principles
 
-1. **One sheet of flat glass, one coloured thing.** Veil, white outline, black hairline; the selection pill is the only chromatic surface.
+1. **One sheet of flat glass, one coloured thing.** Veil, white outline, black hairline; the selection pill is the only chromatic surface. (One exception since 3.0, with the owner's word of 2 October 2026: the badge of a flight's row, green or amber, §14.)
 2. **A highlight is the opposite material of its ground:** colour on glass (the pill), glass on colour (the armed chip). One per level, and it travels; never drawn twice, never faded between two places.
 3. **Sizes are settled before anything moves.** Every slot reserves its final size; motion changes edges, offsets and alpha, never a text measurement.
 4. **Things open from where they are:** the panel from a seam, a chip from the typed keyword, a track from its number. Leading edge first.
@@ -17,7 +17,7 @@
 | Spacing | steps | 2 · 4 · 6 · 8 · 12 · 16 · 20 · 24 dp; the Booklight window adds 32 · 48 · 64 |
 | Grid | as 1.0 | panel 720; list pad 8; margin 20; marks centred at 38; text from 72 |
 | Radius | panel · row, pill · cell highlight · swatch · QR plate · key cap | 32 · 24 · 14 · 16 · 12 · 7 dp; chips and tracks are stadiums; the seam is min(32, w/2, h/2) |
-| Height | field · row · tall · open row · picture · grid · card · footer | 68 · 56 · 92 · 96 · 208 · **256** · 96 · 36 (+ 8) dp |
+| Height | field · row · tall · flight · open row · picture · grid · card · footer | 68 · 56 · 92 · 136 · 96 · 208 · **256** · 96 · 36 (+ 8) dp |
 | | action chip · scope chip · card option · key cap · cell | 28 · 36 · 32 · 22 · 48 dp |
 | Width | strip ≤ 340 · title ≥ 240 · label pitch 40 · track 200 · number slot 64 · state slot 120 · switch 44 × 24 · swatch 52 · plate 176 | |
 | Type | `field` | Sans Flex 24 sp / 500 / 0; placeholder 400, third ink |
@@ -38,8 +38,10 @@
 | | pressed | ink 0.08 over the pressed slot, 80 ms in, 120 out |
 | | destructive | `error` ink at rest; `errorContainer` with `onErrorContainer` when armed |
 | | QR plate | white in both themes, black modules |
+| | a flight's badge (§14): fixed, not the wallpaper's (`FlightColors` in `ui/Theme.kt`) | on time, early: `good` #B6F2BE with `onGood` #00210A L / #0A5226 with #B6F2BE D · late: `late` #FFDEA6 with `onLate` #261900 L / #5C4300 with #FFDEA6 D · the fill at 0.88 · "Planned": the scope chip's fill, full ink · in the pinned window, as a word on solid ground: #17662B · #7A5200 L / #8FDB9B · #F1C267 D |
+| | a flight's line (§14) | flown part and plane: ink 1.0 · dots still to go: ink 0.50 / 0.55 · the line at rest: ink 0.30 / 0.34 · an empty end's rule: ink 0.30 |
 | Outline | panel | white 1.25 dp at 0.80 / 0.44; black hairline 1 px outside at 0.20 / 0.28 |
-| | pill, pane, scope chip | white 1 px at 0.55 / 0.30; the pane adds an ink hairline outside, 1 px at 0.20 |
+| | pill, pane, scope chip, a flight's badge | white 1 px at 0.55 / 0.30; the pane adds an ink hairline outside, 1 px at 0.20 |
 | | hollow control · swatch ring · window focus ring | 1.5 dp ink 0.40 · 1 px ink 0.20 · 2 dp `onSurface` |
 
 **Changes from 1.0**
@@ -303,6 +305,9 @@ New specs: `open` = spring(0.9, 800); `drain` = tween(3000, linear); `roll` = 1.
 | 19 | Long text in the field | The scroll offset follows the caret | cut | Tied to typing, never animated |
 | 20 | Unfold, close | §4 | `open`, tweens | Content position on screen |
 | 21 | The list's pill moves (§15) | The front edge at once; the old edge holds on, then follows. Only from rest: a pill that is moving (a held key, the pointer) does not hold, and every edge keeps its speed. Never drawn more than 56 dp longer than its row. A row that only grows: the lower edge alone. Its own row moved by the list: both edges with it | `pillLead`; `pillTrail` · the old edge 5 frames of the screen (2 on a way of more than 98 dp, then on its firmer spring); `place`; `place` | Width, radius, colour, alpha: one flat shape. Each edge is rounded to a pixel by itself: one that holds on stands still, none steps back |
+| 22 | A flight's answer lands (§14) | Its words change where they stand (70 out, 110 in after 40); the empty ends' rules go with the old words. The plane fades in at the start (110) and travels to its place, the flown part growing behind it; the dots ahead step from "at rest" to "still to go" (110) | `fade`; `flies`: the glass's curve over 300 ms + 300 × the share of the line it crosses, 60 ms after the words began to change. Not `place`: it would carry the plane 3 dp past the end of a full line | The row's height, the line's two ends, the dots' places, the mark, the strip. One number places the plane, ends the flown part and uncovers the dots |
+| 23 | A minute passes on a flight's row (§14) | The headline rolls; in the air the plane takes its step (1 dp for a ten-hour flight, 10 for a one-hour one) | `roll`; `tick` · one wake a minute, none while no row counts minutes | Everything else. Nothing loops: between two steps the row is still |
+| 24 | Another flight, or none yet (the number is typed on) | The plane and the flown part fade where they stand (110), the dots go back to rest; it never flies back. Another answer about the same flight: the plane goes forward to its new place once, never back (it waits until the clock has caught up); the badge's colour fades (120) | `fade`; `flies` | The line |
 
 ## 7. Continuity rules
 
@@ -316,7 +321,7 @@ New specs: `open` = spring(0.9, 800); `drain` = tween(3000, linear); `roll` = 1.
 
 ## 8. Accessibility
 
-- **Armed is a shape, not a colour:** the Enter mark exists only inside the highlight. On: thumb position. Needs a grant: hollow. Destructive: last, apart, and worded. Failure: its glyph.
+- **Armed is a shape, not a colour:** the Enter mark exists only inside the highlight. On: thumb position. Needs a grant: hollow. Destructive: last, apart, and worded. Failure: its glyph. A flight's verdict is the badge's word ("Delayed 27 min"); its green or amber only repeats it, and a screen reader hears the headline and the word.
 - With the system's high-contrast text on, the pane's ink hairline becomes 1.5 dp at 1.0 and second ink becomes 1.0.
 - **Pointer targets:** chip slot width × 40 dp; cell 48 × 48; switch 56 × 40; track 200 × 32; nothing under 32 × 32.
 - **Contrast targets,** over a white page and a terminal, both themes: chip labels on the pill 4.5:1 (hence full ink); the armed label on its pane 7:1; `error` on the pill 4.5:1, else strong ink with a warning glyph; slot labels and guessed values 3:1 (they repeat the field).
@@ -486,41 +491,87 @@ count as the list changing.
 An answer's row keeps a room of 216 dp for its strip, as a row of key caps keeps one: the text beside it is as
 wide before the answer as after it and whichever action is armed, so it is laid out once.
 
-## 14. A flight’s row (M5, 2 October 2026)
+## 14. A flight’s row (M5; redrawn for 3.0, 2 October 2026)
 
-Drawn on screens 12 to 15 of `booklight-milestones.html`; built, not yet judged on a device. No new colour,
-type size or row height: it is the preview row (§3c) with four things added to it.
+Alex: "I love flights so I am willing to give it more height to fit in a bit more good looking into like a line on
+where the plane is for progress with a plane icon, delayed and on time badges." Designed in
+`docs/design/flights-row/` (`design.md` is the specification, with every measure; `flights.html` the page he
+approved: "Go ahead, approved"). Built to it in `overlay/FlightBody.kt` and `overlay/FlightLine.kt`; **not yet
+judged on a device**: every alpha and every time is a starting value, and `design.md` §13 lists what to look at
+first. The row of 2.3 (92 dp, two slots LEAVES and LANDS, a status line) is gone, and with it the first slot's
+least width.
 
-- **The row** is 92 dp from its first frame. Line one: the number, who flies it and where, small, second ink.
-  Line two: two slots, LEAVES and LANDS ("Left", "Landed" once they have; German „Ab“ and „An“ for both), each
-  the airport's three letters and the time in that airport's own time, with the day's short name before the
-  time when it is not the user's today. Line three: the status in full ink, then where to go a step lighter.
-- **A first slot with a least width**, so that "Lands" stands at one x before and after the answer: 176 dp on
-  a 24-hour clock, 196 dp on a 12-hour one, and 24 dp more when a day more than six days off was typed (it is
-  said as a date). The width follows only what is known before the answer, never the answer. (It was 136 dp
-  until the answer showed a departure on another day, which is every lookup with a day and every overnight
-  flight on the day it lands: "Lands" then moved 60 dp. The reviews of 2 October.) Worked out, not measured on
-  a 24-hour device: "LEAVES SFO Wed 2:47 PM" measures 180 dp on the Lenovo (label 65 px, gap 14 px, value
-  191 px at 1.5 px per dp); without " PM" and with a fourth digit "LEAVES SFO Wed 14:47" is about 165 dp, and
-  about 175 dp with the widest airport letters (WAW, MMX), which leaves it one dp; a date for the weekday
-  ("24 Dec") is about 23 dp more. One case still widens the slot as the answer lands: a
-  date nobody typed, the timetable's flight a week from today.
-- **Struck values**: the times of a flight that is cancelled or diverted are struck through and a step lighter, as a done
-  task's words are.
-- **A delay is said, not painted.** No red, no mark. Red stays the colour of what removes something.
-- **A day beside a time** is its short weekday within six days of today ("Fri 10:55") and its date beyond
-  ("24 Dec 14:40"), in the row, the copied line and the pin. To be looked at on a device, on both clocks.
+- **The row is 136 dp in every state, from its first frame.** Its upper part is what a row always is: the mark
+  (the plane in its disc), words, the strip, on the tall row's centre line (y = 46). Line one, small: the number,
+  who flies it and where. Under it the **headline** in the title type, the one thing needed: "Leaves Fri 10:55 AM",
+  from three hours before "Leaves in 42 min", in the air "Lands in 4 h 07 min", then for three hours "Landed
+  12 min ago" ("Landed just now" in the first minute), "Cancelled", "Diverted", "From the timetable", "Looking it
+  up", or the reason there is no answer. A countdown of an hour or more keeps two places for its minutes, in
+  tabular figures, so nothing shifts while it counts.
+- **One badge** stands 10 dp after the headline, its word on the headline's baseline: a stadium 22 dp high, 9 dp
+  inside each end, the word at 13 / 600, the pill's 1 px white rim. It says whether the flight runs to plan: "On
+  time", "Delayed 27 min", "24 min early", after landing "27 min late", and "Planned" when only the plan is known.
+  It never repeats the headline: beside "Cancelled", "Diverted" and "From the timetable" there is none. "On time"
+  is a claim, made only when the service sent a time of its own. **Late starts 15 minutes after the plan** (it was
+  5 while a delay was only words): with a colour on it, "Delayed 6 min" is alarm for nothing, and the exact time
+  stands under the line either way.
+- **Colour in the badge, nowhere else.** Green for on time and early, amber for late (the tokens of §2), neutral for
+  "Planned". This is the one exception to two rules, decided by the owner on 2 October 2026: "a delay is said, not
+  painted" (this section, until 3.0) and "the selection is the only coloured surface" (§1). It is kept small on
+  purpose. The colour is always a fill that brings its own ground, with its own ink on it: a green or amber word
+  or line straight on the glass does not hold (1.2 : 1 in light theme over a black window; the filled badge keeps
+  its word at 6.3 : 1 or better over a light window and a dark one, on bare glass and on the pill). The line, the
+  plane, the times and every word stay in the row's ink. The word carries the meaning; the colour repeats it.
+  **Never red**: a cancelled flight is the headline "Cancelled", both times struck and a line without a plane. Red
+  stays the colour of what removes something, and a red badge with a word in it is what an armed Delete looks like.
+- **The line** runs from the titles' edge to the strip's right end (x = 72 to 700, 628 dp) on y = 84, in a band of
+  its own under the strip, so it is as long selected or not, before the answer and after. The flown part: 3 dp,
+  solid, round ends, full ink. Still to go: 70 dots of 3 dp at a pitch of 9.06 dp, the first and the last exactly
+  on the two edges, at half ink. **The plane** is the app's own `plane` symbol turned a quarter to point along the
+  line (20 dp long), full ink, its tail at the share of the way that has passed; the flown part ends 4 dp before
+  its tail, and the dots come into view over 8 dp from 2 dp before its nose, so none is ever cut in half. Flown
+  and still to go differ three ways, none a hue: solid against dotted, full ink against half, the plane between.
+- **The plane's place is time**, worked out in the core (`FlightStatus.share`): the minutes since it left against
+  the minutes from then to its landing (the actual time, else the expected, else the plan). Never the service's
+  own percentage, never distance. At the start until the service says it has left; in the air never nearer an end
+  than 2 %; at the end, its nose on 700, once it has landed. **No plane where nobody knows where it is**: waiting,
+  no answer, cancelled, diverted, a timetable's flight past its time; the line is then its dots at rest, a step
+  lighter. A plane on the line is a claim.
+- **Under the line's two ends** (y = 100 to 122, one baseline each): at the start the airport's three letters at
+  second ink, 7 dp, its time in full ink, 12 dp, small words; at the far end the mirror, so each airport stands
+  under its end of the line. Each time is in its airport's own clock, with the day when it is not the user's
+  today: the short weekday within six days ("Fri 10:55 AM"), the date beyond. The small words are what matters at
+  that end now: before it leaves, gate and terminal at the start ("Gate Z58 · Terminal 1"); once it has left, the
+  aircraft's type at the start ("Boeing 747-8") and at the far end the terminal with the belt, or the gate while
+  no belt is named. **What the service did not name is simply not there**: no "Gate –", no held place; small
+  words are the last thing at their end and grow towards the middle of the row. If the two ends would come closer
+  than 24 dp, the aircraft is left out first, then the terminal. The times of a flight that will not happen are
+  struck through and a step lighter, as a done task's words are. Before the answer each end is a rule, 20 × 2 dp.
+- **A reason too long for the headline** (the German "Die AirLabs-Abfragen dieses Monats sind aufgebraucht") is set
+  in the small type, full ink, chosen once for that text.
+- **Motion** is rows 22 to 24 of §6. One arrival when the answer lands, then a step a minute, forwards only; with
+  animations off the plane is simply there. Nothing loops. The row has its height before the answer comes, so the
+  list does not jump; a guess the user goes to grows once from 56 to 136 where it stands, the pill's lower edge
+  with it, the mark and the strip travelling from y = 28 to 46, its name fading out (70) and the tall row's words
+  in (110 after 40) as the row's edge uncovers them.
 - **An action that is off** keeps its slot in the strip at 40 % ink and is passed over by the arming.
 - **The footer's left end** names the source of an answer in the small type at second ink.
 - **The light of work** (§12) runs only if the answer has not come 600 ms after the request went out.
-- **Without an answer** the row keeps its three lines and its strip: the slots show their rule, and the third
-  line says why in full ink.
 - **Without a key**, and for a guess nobody has gone to, it is an ordinary 56 dp row with the plane in the icon
-  column and "Flight" at its right end.
-- **Pinned**: the timer's window (280 × 118), a small line at second ink and a figure in the round face at 34 sp,
-  in words ("1 h 07 min", "42 min", "Landed"): beside the timer's "7:42", "1:07" would read as 67 seconds. The
-  figure rolls when the minute changes, as a changed answer does in the panel.
-- **In the window**: one group, "Flights", at the end of Results: a row that says what is sent and when and
+  column and "Flight" at its right end. No line, no badge, no faded copy of the tall row.
+- **Unselected** (a local match stands above it): the same row on the glass, no pill, "Flight" where the strip
+  was, line one and the small words at second ink.
+- **Pinned**: the timer's window (280 × 118). A small line at second ink (y = 15 to 35): the number, the verdict
+  as a word **in its colour** ("on time", "27 min late": the window's ground is solid, where a coloured word
+  holds), then the gate while it has not left, the time of landing after; if the three do not fit 240 dp the last
+  is left out. With only the plan known the line is as before (number, where to go, time). Under it the figure in
+  the round face at 34 sp, in words ("1 h 07 min", "42 min", "Landed"): beside the timer's "7:42", "1:07" would
+  read as 67 seconds. Under that the flight's line, small (y = 87 to 103): 240 dp, the flown part and the dots
+  2 dp, the dots at a pitch of 7 dp, the plane 16 dp long. No airport letters, no aircraft, no filled badge: a
+  glance takes the figure, the line and one coloured word. Between two answers (half an hour apart) the plane
+  moves by the clock with the figure; a new answer moves both once. Cancelled, or with nothing known yet, the
+  dots are at rest.
+- **In the window**: one group, "Flights", in Labs: a row that says what is sent and when and
   whether a key is in (Enter opens one field under it, as an editor opens under its row on the Yours page), and
   a row that leads to where a key is got. The key that is in is never shown.
 

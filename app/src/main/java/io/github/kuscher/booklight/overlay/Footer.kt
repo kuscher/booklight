@@ -55,7 +55,7 @@ fun Footer(model: OverlayModel) {
         Box(Modifier.weight(1f)) {
             val word = model.flash
             // (Under an answer that came from somewhere else: who gave it and when, said as quietly as a cell's name.)
-            AnimatedContent(word ?: grid?.cells?.getOrNull(model.cell)?.name?.let { " $it" } ?: (r?.body as? Body.Slots)?.source?.let { " $it" }, transitionSpec = {
+            AnimatedContent(word ?: grid?.cells?.getOrNull(model.cell)?.name?.let { " $it" } ?: (r?.body as? Body.Flight)?.source?.let { " $it" }, transitionSpec = {
                 // (No size animation of the box: it would uncover a long word letter by letter, cut through its letters.)
                 ((fadeIn(motion.fade(120)) + slideInHorizontally(motion.place()) { -slide }) togetherWith fadeOut(motion.fade(80))).using(null)
             }, contentAlignment = Alignment.CenterStart, label = "flash") { text ->

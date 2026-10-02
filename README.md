@@ -5,7 +5,7 @@
 A keyboard launcher for Googlebooks. Press a key, a small glass panel appears over your desktop, type a
 few letters, press Enter.
 
-![The Booklight panel over a desktop, listing apps for the letters "st"](docs/images/hero.png)
+![The Booklight panel over a desktop, listing apps for the letters "cal"](docs/images/hero.png)
 
 - **Apps first.** The start of a name, the start of any word in it, initials, or a few loose letters.
 - **It learns your shorthand.** What you pick for the text you typed comes first next time.

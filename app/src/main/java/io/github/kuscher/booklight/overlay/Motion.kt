@@ -79,6 +79,15 @@ class Motion(val on: Boolean, val slow: Float = 1f) {
     /** One digit of a countdown giving way to the next: it happens every second and must be still in between, so not a spring. */
     fun <T> tick(): FiniteAnimationSpec<T> = if (on) tween((160 * slow).toInt(), easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)) else snap()
 
+    /**
+     * A flight's plane going to its place on the line when the answer lands, the flown part growing behind it: 300 ms
+     * and 300 more for a way across the whole line ([way]: how much of the line it crosses, 0 to 1). On the glass's
+     * own curve, not on `place`: that one overshoots by about half a per cent, 3 dp on a full line, and a plane that
+     * passes the end of its line and comes back is wrong. [first]: it has just come in at the start, and sets off 60 ms
+     * after the words began to change. Once: after it the plane only takes a step a minute, on [tick].
+     */
+    fun <T> flies(way: Float, first: Boolean = false): FiniteAnimationSpec<T> = fade((300 + 300 * way.coerceIn(0f, 1f)).roundToInt(), if (first) 60 else 0, OPENS)
+
     /** A changed value rolling up into place, like a counter: half a line of travel. */
     fun roll(): ContentTransform =
         ContentTransform(
