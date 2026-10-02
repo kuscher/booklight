@@ -9,3 +9,6 @@ executables/
 *.keystore
 *.pass
 .claude/
+
+# Renders of the window mock-up for checking (tools/design-window/build_mock.py)
+tools/design-window/wrapper*.html
