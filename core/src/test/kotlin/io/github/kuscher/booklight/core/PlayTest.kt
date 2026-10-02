@@ -227,4 +227,28 @@ class PlayTest {
             "x".repeat(100_000), "x ".repeat(50_000), "in ".repeat(5_000), "by ".repeat(5_000), "on spotify ".repeat(2_000))
         for (s in odd) { Play.read(s); Play.read(s, players); Play.read("album $s on spotify", players); Play.read(s, listOf("", " ", "🎉", s)) }
     }
+
+    // ---- which music app `play` goes to
+
+    @Test fun playGoesToTheAppPlayedInLast() {
+        val both = listOf("music" to true, "spotify" to true)
+        assertEquals(1, Play.door(both, "spotify"))
+        assertEquals(0, Play.door(both, "music"))
+    }
+
+    @Test fun theFirstByNameTheFirstTime() {
+        assertEquals(0, Play.door(listOf("music" to true, "spotify" to true), null))
+        // And where the one played in last is gone.
+        assertEquals(0, Play.door(listOf("music" to true, "spotify" to true), "deezer"))
+        assertEquals(-1, Play.door(emptyList(), "spotify"))
+    }
+
+    @Test fun anAppThatOnlySearchesGivesWayToOneThatPlays() {
+        // Spotify without a key only shows its results: another player that plays what is named is the one.
+        assertEquals(0, Play.door(listOf("music" to true, "spotify" to false), "spotify"))
+        assertEquals(1, Play.door(listOf("a" to false, "b" to true), null))
+        // Where none plays, the one asked last, else the first: its chip then searches.
+        assertEquals(1, Play.door(listOf("a" to false, "spotify" to false), "spotify"))
+        assertEquals(0, Play.door(listOf("spotify" to false), null))
+    }
 }

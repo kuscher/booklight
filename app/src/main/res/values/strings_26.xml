@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Play it there: `play album discovery by daft punk on spotify`. One row, an action for each music app, named
-         for what that app is known to do with the request. The footer says "Sent to", never "Playing": nothing comes back. -->
+    <!-- Play on a music app's row, and `play album discovery by daft punk on spotify`, which is a short way to it. The line
+         under the empty field of an app's chip offers Play in these words. The footer says "Sent to", never "Playing": nothing comes back. -->
     <string name="play_in">Play in %1$s</string>
-    <string name="play_search_in">Search in %1$s</string>
     <string name="play_no_app">No music app on this device</string>
     <!-- The word before a player's name, as it is typed and as Booklight types it: "… on spotify". -->
     <string name="play_on">on</string>
@@ -16,9 +15,6 @@
     <string name="play_artist">Artist</string>
     <string name="play_playlist">Playlist</string>
     <string name="play_genre">Genre</string>
-    <!-- `play` with no text: the Play key. -->
-    <string name="play_resume">Resume</string>
-    <string name="play_resume_sub">Whatever played last</string>
 
     <!-- The media keys by the typed word: `pause` can only pause, `play` only resume, `stop` only stop. The words also find the Media row. -->
     <string name="action_pause">Pause</string>
@@ -27,8 +23,8 @@
     <string name="dial_pause_words">pause</string>
     <string name="dial_stop_words">stop</string>
 
-    <!-- Spotify plays a link of its own, and with a key of the user's own the link for a name is found. The row of `play`,
-         while Spotify is asked, with what it found, and with why it found nothing. -->
+    <!-- Spotify plays a link of its own, and with a key of the user's own the link for a name is found. The row under
+         Spotify's chip with Play armed, while Spotify is asked, with what it found, and with why it found nothing. -->
     <string name="play_looking">Looking it up</string>
     <string name="play_found_album">Album · %1$s</string>
     <string name="play_found_playlist">Playlist · %1$s</string>
@@ -47,7 +43,7 @@
     <!-- The Booklight window › Labs: the group for Spotify's key -->
     <string name="set_songs">Spotify</string>
     <string name="set_song_key">Your Spotify key</string>
-    <string name="set_song_key_text">With a key, “play …” shows what Spotify found, and Enter plays it. What you type after play, and your device’s country, go to Spotify when you pause typing, and only while Spotify is the app chosen on the row. The key stays on this device and goes only to Spotify.</string>
+    <string name="set_song_key_text">With a key, Spotify’s row has Play: the row shows what Spotify found for the name you type, and Enter plays it. What you type with Spotify in the field and Play armed, and your device’s country, go to Spotify when you pause typing; nothing goes while Search is armed. The key stays on this device and goes only to Spotify.</string>
     <string name="set_song_id_hint">Client ID</string>
     <string name="set_song_secret_hint">Client secret</string>
     <string name="set_song_key_in">A key is in</string>

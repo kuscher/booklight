@@ -2,32 +2,50 @@
 
 ## Unreleased
 
-**Commands for other apps** (`docs/research/next-five.md`; what the devices showed: `docs/research/intents.md`, "Tried on a Googlebook").
+**One way to do things with an app** (`docs/design/app-structure/`): type the app, Tab to what you want, Enter;
+if it takes words, type them and press Enter again.
 
-- **Play it there.** `play bohemian rhapsody on spotify`: one row, an action for each music app, the one you used
-  last armed. Start with `album`, `artist`, `song`, `playlist` or `genre`; "X by Y" names the artist. The footer
-  says "Sent to", never "Playing".
-- **Spotify plays what you name, with a key of your own.** Spotify by itself only shows its search results for
-  such a request, so without a key its action reads "Search in Spotify". With your own Spotify key (the Booklight
-  window › Labs) the row shows what Spotify found (the song with its artist and album, an album, an artist, a
-  playlist) and Enter plays exactly that. Enter before the answer has come waits for it. Without a key nothing is
-  sent; with one, the text after `play` goes to Spotify and nowhere else.
-- **"Which song is this?"** behind the row's arrow asks the model on this device, for a song you can only
-  describe or cannot spell. Its answer is shown; "Use this" puts it into the field. It never changes what you
-  typed by itself.
-- **`pause` can only pause, `play` alone resumes, `stop` stops.** `play` is a recipe step.
-- **Search inside an app.** Type an app's name and what you are looking for: `spotify daft punk`,
-  `netflix severance`, `play store calculator`. Enter opens the app on its results. The row stands under
-  everything that matches the text by name. Also "Search", behind the arrow on the app's row: the app becomes
-  the chip.
-- **`yt`, `maps`, `store` and `drive` open in the app** where it is installed; the browser is the next action,
-  and the first where the app is missing.
+- **An app's row is Open, Search, Play, Window and the arrow**, in that order for every app. An app shows only
+  what it has: a calculator has Open, Window and the arrow; Netflix has Search second; Spotify, with your key
+  in, has Play third. Two to four icons and the arrow, where there were six.
+- **Tab only moves; Enter does.** Tab goes along the row and enters nothing. (It still types into a row that
+  offers nothing else, such as "Search YouTube", and makes an exact keyword the chip.)
+- **Search inside an app.** `spo`, Tab, Enter: Spotify is in the field, with its own icon. Type what you are
+  looking for; Enter opens the app on its results. Nothing leaves the device before that Enter.
+- **Play in a music app.** `spo`, Tab, Tab, Enter, then the song. The row shows what Spotify found (the song with
+  its artists and album) and Enter plays exactly that; Enter before the answer has come waits for it. Tab changes
+  between Search and Play for the same words. An app has Play only if it really plays what you name: Spotify by
+  itself only shows its search results, so its row has Play once your own Spotify key is in (the Booklight
+  window › Labs), and Search without it. The footer says "Sent to", never "Playing".
+- **Backspace on the empty field** goes back to where you pressed Enter: your letters as you typed them, the
+  app's row selected, the action you left still armed.
+- **Window** opens a list under the row: New window, Maximise, Left half, Right half, then the ten other
+  places. **The arrow** opens App info, the app's Notifications, Language, Open by default and Battery use in
+  Settings, and Uninstall. Typed words work as before: `chrome left`, `files right third`,
+  `spotify notifications` (`benachrichtigungen`, `sprache`, `standard`, `akku`), `chrome uninstall`. Booklight
+  opens a page of Settings; it switches nothing.
+- **`play bohemian rhapsody`** is a short way to the same place: at the space, `play` becomes the music app you
+  played in last, with Play armed. Start with `album`, `artist`, `song`, `playlist` or `genre`; "X by Y" names
+  the artist; `… on spotify` at the end chooses the app. With two music apps the other one stands under it.
+- **`yt`, `maps`, `store` and `drive`** become their app, with Search armed, where the app is installed; "On the
+  web" waits behind the row's arrow. Where the app is missing they open in the browser, as before.
+- **The app's name and the words in one go** (`netflix severance`) is a web search first, with "Search Netflix
+  for …" directly under it. Pick that row once and Netflix comes first for words after its name; pick the web's
+  row twice running and the web comes first again. With suggestions on, such a text is sent for suggestions
+  only while the web comes first.
+- **"Which song is this?"** behind the row's arrow, under a music app that plays, asks the model on this device
+  for a song you can only describe or cannot spell. Its answer is shown; "Use this" puts it into the field. It
+  never changes what you typed by itself.
+- **`play` alone resumes** (Enter on the Media row); `pause` can only pause, `stop` stops. `play` is a recipe step.
+- **No longer icons on the row:** New window, Maximise, Left half and Right half are the first lines behind
+  Window, and App info is the first behind the arrow. Typed (`chr new`, `chr left`, `chr info`) they are as
+  quick as before. An app's own shortcut that is only called "Search" is no longer a row of its own where the
+  app has Search on its row.
 - Where a search goes: the app's own Booklight file, a small bundled table (`app/src/main/assets/appsearch.tsv`),
   or a search the app declares. Shown only if the installed app takes it.
-- **An app's own settings.** After an app's name: `notifications`, `language`, `defaults`, `battery`
-  (`benachrichtigungen`, `sprache`, `standard`, `akku`) put that page of the app in Settings on its row, armed:
-  `spotify notifications`, Enter. Booklight opens the page; it switches nothing. Untyped, the four are not listed
-  under the row's arrow (its list would no longer fit a Googlebook 14's screen); App info leads to all of them.
+
+**Commands for other apps** (`docs/research/next-five.md`; what the devices showed: `docs/research/intents.md`, "Tried on a Googlebook").
+
 - **`alarms` and `timers`** open the Clock's two lists.
 - **`go`**: `go hamburg hbf` is directions from here; `go berlin to hamburg by train` both ends and how (`von
   berlin nach hamburg mit dem zug`, `zu fuß`, `mit dem rad`, `mit dem auto`). In the Maps app where there is one,
@@ -53,6 +71,12 @@
   `eh text`: the keyboard's keys went through the input method, and the letter it was still holding was dropped when
   the keyword became the chip. Typed keys now go to the field directly (`docs/research/device-findings.md`, "Typed
   keys go through the input method"). The code was the same since 1.1.
+
+- **The highlight moves like rubber.** Going from one row to the next, its front edge goes first; the old edge
+  holds on for a moment and then follows, so the highlight stretches over both rows and gathers itself on the new
+  one. It is at rest sooner than before. Hold an arrow key and it runs down the list in one piece instead of
+  falling behind and getting long; over many rows it is never more than a row longer than its own. The square in
+  the emoji and letters grids moves the same way (`docs/design/rubber-highlight.md`).
 
 ## 2.3 (2 October 2026)
 

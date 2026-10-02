@@ -17,6 +17,10 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import kotlin.math.exp
+import kotlin.math.roundToInt
 
 /**
  * Booklight's motion, in one place. Things that move through space (the selection, the panel's
@@ -38,8 +42,22 @@ class Motion(val on: Boolean, val slow: Float = 1f) {
     fun <T> place(): FiniteAnimationSpec<T> = s(0.86f, 520f)
     /** The edge of the selection that leads the way: fast. */
     fun <T> lead(): FiniteAnimationSpec<T> = s(0.82f, 1100f)
-    /** The edge that follows: slower, so the pill stretches towards where it is going, then gathers itself. */
+    /** The edge that follows: slower, so a highlight stretches towards where it is going, then gathers itself. */
     fun <T> trail(): FiniteAnimationSpec<T> = s(0.9f, 420f)
+    /**
+     * The list's pill and the grid's square, like rubber (docs/design/rubber-highlight.md): the edge that leads goes at
+     * once, on this. The old edge holds on for [pillHold] frames, so the highlight lies over both rows, and then gathers
+     * on [pillTrail]: faster than [trail], so the whole move is shorter than it was.
+     */
+    fun <T> pillLead(): FiniteAnimationSpec<T> = s(0.85f, 1400f)
+    /** The old edge, once it lets go. On a long way ([PILL_NEAR]) it is as firm as the edge that leads: it arrives with it, and does not slow down and set off again at the landing. */
+    fun <T> pillTrail(far: Boolean): FiniteAnimationSpec<T> = if (far) s(0.9f, 1400f) else s(0.86f, 900f)
+    /**
+     * How long the old edge holds on, in frames of a screen that draws [refresh] a second: five at 120 (42 ms), two on
+     * a long way. Frames and not a time: a wait of 40 ms would end four, five or six frames after the other edge set
+     * off, and the stretch would differ from one press to the next. A highlight that is already moving does not hold.
+     */
+    fun pillHold(far: Boolean, refresh: Float): Int = if (on) (((if (far) 0.017f else 0.040f) * refresh).roundToInt() * slow).roundToInt() else 0
     /** Small expressive pops: an icon, a chip, a chevron turning over. */
     fun <T> pop(): FiniteAnimationSpec<T> = s(0.62f, 700f)
     /** The arming gliding along a row's actions: the highlight, and how much of each name shows, ride this one spring. */
@@ -92,6 +110,19 @@ class Motion(val on: Boolean, val slow: Float = 1f) {
 
         /** The glass's way from its seam to its width. */
         val OPENS = CubicBezierEasing(0.55f, 0f, 0.1f, 1f)
+
+        /** The edge that leads has more than this to go: a long way. The next row never is, whether it is 56, 92 or 40 dp. */
+        val PILL_NEAR = 98.dp
+        /** A highlight is drawn at most this much longer than its row, however far it goes: one row more, never a bar down the list. */
+        val STRETCH_MOST = 56.dp
+        /** Up to here a stretch is drawn as it is (a step of one row peaks at 34 dp); beyond, it eases into [STRETCH_MOST]. */
+        val STRETCH_KNEE = 40.dp
+        /** How much of a stretch of [extra] is drawn. */
+        fun stretch(extra: Dp): Dp {
+            if (extra <= STRETCH_KNEE) return extra
+            val room = STRETCH_MOST - STRETCH_KNEE
+            return STRETCH_KNEE + room * (1f - exp(-((extra - STRETCH_KNEE) / room)))
+        }
 
         // The reflection: one white light that runs once round the panel's outline, a while after it has opened.
         /** How long after the opening it comes, and how long everything must have stood still. */

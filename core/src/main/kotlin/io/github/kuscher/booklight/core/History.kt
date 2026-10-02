@@ -23,13 +23,16 @@ class History(data: Data = Data()) {
         val items: Map<String, Entry> = emptyMap(),
         /** Typed text → result id → picks. */
         val latches: Map<String, Map<String, Entry>> = emptyMap(),
+        /** An app's package → who leads for words typed after its name ([Lead]); an app that is not here has the web first. */
+        val leads: Map<String, Int> = emptyMap(),
     )
 
     private val items = HashMap(data.items)
     private val latches = HashMap<String, HashMap<String, Entry>>().apply { for ((k, v) in data.latches) put(k, HashMap(v)) }
+    private val leads = HashMap(data.leads)
 
     @Synchronized
-    fun data(): Data = Data(HashMap(items), latches.mapValues { HashMap(it.value) })
+    fun data(): Data = Data(HashMap(items), latches.mapValues { HashMap(it.value) }, HashMap(leads))
 
     /** What was run and when, without what was typed for it: for the three under the empty field ([Zero]). */
     @Synchronized
@@ -69,8 +72,19 @@ class History(data: Data = Data()) {
         latches.values.removeAll { it.isEmpty() }
     }
 
+    /** Whether the app with the package [app] leads for words typed after its name ("netflix severance"); else the web does. */
     @Synchronized
-    fun clear() { items.clear(); latches.clear() }
+    fun leads(app: String): Boolean = Lead.app(leads[app] ?: 0)
+
+    /** Words were typed after [app]'s name and a row was picked: the app's own ([inApp]), or the web's with the app's row beside it. */
+    @Synchronized
+    fun led(app: String, inApp: Boolean) {
+        val now = if (inApp) Lead.pickedApp() else Lead.pickedWeb(leads[app] ?: 0)
+        if (now == 0) leads.remove(app) else leads[app] = now
+    }
+
+    @Synchronized
+    fun clear() { items.clear(); latches.clear(); leads.clear() }
 
     private fun bump(e: Entry?, now: Long) = Entry((e?.let { decayed(it, now) } ?: 0.0) + 1.0, now)
 

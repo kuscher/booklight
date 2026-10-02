@@ -158,11 +158,11 @@
     <string name="guide_group_controls">Regler</string>
     <string name="guide_group_booklight">Booklight</string>
     <string-array name="guide">
-        <item>apps|open|open||chrome|Apps|Einen Namen tippen; die Symbole in der Zeile zeigen, was noch geht</item>
-        <item>places|open|left||chrome links|Eine App, an einem Platz|links, rechtes Drittel, oben links, voll … für eine App, die noch nicht offen ist</item>
-        <item>pages|open|settings||chrome benachrichtigungen|Die Einstellungen einer App|benachrichtigungen, sprache, standard oder akku nach dem Namen einer App: ihre Seite in den Einstellungen</item>
+        <item>apps|open|open||chrome|Apps|Einen Namen tippen, Enter öffnet die App. Tab geht durch das, was ihre Zeile noch bietet: Suchen, Abspielen, Fenster, und der Pfeil für den Rest</item>
+        <item>places|open|left||chrome links|Eine App, an einem Platz|links, rechtes Drittel, oben links, voll … nach dem Namen einer App, die noch nicht offen ist. Oder in ihrer Zeile: Tab bis Fenster, Enter, auswählen</item>
+        <item>pages|open|settings||chrome benachrichtigungen|Die Einstellungen einer App|benachrichtigungen, sprache, standard oder akku nach dem Namen einer App: ihre Seite in den Einstellungen. Auch hinter dem Pfeil in ihrer Zeile</item>
         <item>commands|open|bolt||{command}|Was andere Apps anbieten|Die Kurzbefehle der Apps, als Zeilen</item>
-        <item>appsearch|open|search||{appsearch}|In einer App suchen|Der Name einer App, dann der Suchtext: Enter öffnet dort die Treffer. Auch „Suchen“ hinter dem Pfeil in der Zeile der App</item>
+        <item>appsearch|open|search||{appsearch}|In einer App suchen|Die App tippen, Tab bis Suchen, Enter, dann der Suchtext: Enter öffnet die App mit den Treffern</item>
         <item>settings|open|settings|settings|s wlan|Einstellungen|s, dann Tab: jede Einstellungsseite</item>
         <item>keys|open|key|keys|k andocken|Tastenkürzel|k, dann Tab: was die Tasten des Systems tun</item>
         <item>links|open|search||{link}|Deine Links|Ein Stichwort, dann der Suchtext</item>
@@ -200,7 +200,7 @@
         <item>pin|text|pin|pin|pin Gate B22, 14:05|Anheften|Eine Zeile in einem kleinen Fenster, das oben bleibt</item>
         <item>vol|controls|volume|vol|vol 30|Lautstärke|Oder die Pfeiltasten in ihrer Zeile</item>
         <item>brightness|controls|sun|brightness|helligkeit 60|Helligkeit|Oder die Pfeiltasten in ihrer Zeile</item>
-        <item>play|controls|music|play|play lofi|Abspielen|Eine Musik-App spielt es ab oder zeigt ihre Treffer. Auch: play album …, play … auf spotify; play allein setzt fort</item>
+        <item>play|controls|music|play|play lofi|Abspielen|In der Musik-App, in der du zuletzt abgespielt hast. Auch: play album …, play … auf spotify. Oder in der Zeile einer Musik-App: Tab bis Abspielen, Enter, dann der Name</item>
         <item>media|controls|pause||pause|Medientasten|pause, play, stopp, weiter, zurück: für das, was gerade läuft</item>
         <item>window|booklight|booklight||booklight|Booklights Fenster|Einstellungen und deine Links, Bausteine, Rezepte, Prompts und App-Befehle</item>
     </string-array>
@@ -216,7 +216,7 @@
     <string-array name="tips">
         <item>help|list|?|Alles|listet alles auf, was Booklight kann, jedes mit einem Beispiel</item>
         <item>places|left|chrome links|Eine App, an einem Platz|öffnet Chrome links, wenn es noch nicht offen ist. Auch: oben links, voll</item>
-        <item>appsearch|search|{appsearch}|In einer App suchen|öffnet die App mit den Treffern. Der Name einer App, dann der Suchtext</item>
+        <item>appsearch|search|{appsearch}|In einer App suchen|dann Tab, Enter und der Suchtext: sie öffnet sich mit den Treffern</item>
         <item>settings|settings|s wlan|Einstellungen|führt zu einer Einstellungsseite. s, Tab, dann ihr Name</item>
         <item>keys|key|k andocken|Tastenkürzel|zeigt die Tasten dafür. k, Tab, dann was du tun möchtest</item>
         <item>pages|settings|chrome benachrichtigungen|Die Einstellungen einer App|öffnet ihre Seite in den Einstellungen. Auch: sprache, akku</item>

@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Body
-import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.ui.Fonts
 import io.github.kuscher.booklight.ui.Symbols
 
@@ -90,7 +89,7 @@ fun Footer(model: OverlayModel) {
             grid != null -> "↑↓←→" to stringResource(R.string.hint_move)
             r?.body is Body.Level -> if ((r.body as Body.Level).locked) "" to "" else "← →" to stringResource(R.string.hint_adjust)
             r?.nudge != null -> "← →" to stringResource(R.string.hint_skip)
-            !model.inAnswer && r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope -> "tab" to stringResource(R.string.hint_fill)
+            model.tabEnters -> "tab" to stringResource(R.string.hint_fill)
             (r?.actions?.size ?: 0) > 1 -> "tab" to stringResource(R.string.hint_actions)
             model.chip != null && model.query.isEmpty() -> "⌫" to stringResource(R.string.hint_leave)
             else -> "" to ""

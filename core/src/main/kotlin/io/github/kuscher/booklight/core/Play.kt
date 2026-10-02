@@ -123,6 +123,18 @@ object Play {
         return name.takeIf { it.isNotEmpty() && it.length <= 120 && it.any(Char::isLetterOrDigit) }
     }
 
+    /**
+     * Which music app `play` goes to when the text names none: the one played in last ([last], its
+     * package) while it still plays what is named; else the first that does, in the order given (by
+     * name); else the one played in last; else the first. [players]: each one's package, and whether
+     * it plays (one that only shows its search results does not). -1 where there is none.
+     */
+    fun door(players: List<Pair<String, Boolean>>, last: String?): Int {
+        val was = players.indexOfFirst { it.first == last }
+        if (was >= 0 && players[was].second) return was
+        return players.indexOfFirst { it.second }.takeIf { it >= 0 } ?: if (was >= 0) was else if (players.isEmpty()) -1 else 0
+    }
+
     private val LABEL = Regex("^(title|song|artist|titel|lied|interpret)\\s*:\\s*", RegexOption.IGNORE_CASE)
     private val MARKS = charArrayOf('"', '\'', '“', '”', '„', '‘', '’', '«', '»', '*', '_', '.', ' ')
     private val SPACES = Regex("\\s+")

@@ -39,6 +39,8 @@ object Symbols {
     private val more = mapOf(
         "open" to "M14 3h7v7h-2V6.41l-8.3 8.3-1.4-1.42L17.58 5H14zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
         "window" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4v10h16V8zm7 2h2v2h2v2h-2v2h-2v-2H9v-2h2z",
+        // A window with its title bar and nothing in it: where the app's window goes (the stop that opens the places).
+        "frame" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4v10h16V8z",
         "info" to "M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z",
         "left" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 2v12h8V6z",
         "right" to "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v12h8V6z",
@@ -50,7 +52,7 @@ object Symbols {
         "save" to "M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z",
         "again" to "M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z",
         "link" to "M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.900H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.900h4a3.1 3.1 0 0 1 0 6.200h-4V17h4a5 5 0 0 0 0-10z",
-        "play" to "M8 5v14l11-7z",
+        "play" to "M8 5.2v13.6a.8.8 0 0 0 1.2.67l10.67-6.8a.8.8 0 0 0 0-1.33L9.2 4.53a.8.8 0 0 0-1.2.67z",
         "pause" to "M6 5h4v14H6zm8 0h4v14h-4z",
         "stop" to "M6 6h12v12H6z",
         "next" to "M6 18l8.5-6L6 6zM16 6h2v12h-2z",

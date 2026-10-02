@@ -7,8 +7,8 @@ Booklight keeps what it learns on the device and sends nothing anywhere, with on
 **off until the user turns it on**: search suggestions. With suggestions on, the text being typed is sent
 to the chosen search engine to get suggested searches. (M5, not released yet: a second one, which needs
 the user's own key before anything is sent: a flight number goes to AirLabs. See "Flight lookups". Not
-released yet either: a third, which needs the user's own key as well: the text typed after `play` goes to
-Spotify. See "Spotify lookups".)
+released yet either: a third, which needs the user's own key as well: the name of a song typed for Play in
+Spotify goes to Spotify. See "Spotify lookups".)
 
 ## What is stored on the device
 - `files/history.json`: for results the user picked, the result's id (for an app: its package and
@@ -33,8 +33,11 @@ Spotify. See "Spotify lookups".)
   makes one HTTPS GET request with the typed text as a query parameter to the chosen engine's suggestion
   address. Never sent, also while still being typed: sums (anything with a digit next to a sign of
   arithmetic, or starting with =), web and email addresses (anything with `://`, `@`, or digits with dots,
-  colons or slashes), text without letters, and keyword searches (`yt lofi`). The rule is
-  `Suggest.worthAsking` in the core, with tests.
+  colons or slashes), text without letters, keyword searches (`yt lofi`) and anything typed with an app in
+  the field as the chip. The rule is `Suggest.worthAsking` in the core, with tests. An app's name followed by
+  other words, typed in one go without a chip (`netflix severance`), is sent like any other text until the
+  user has picked that app's own search row for such a text; from then on that app leads for words after its
+  name and such a text is not sent (`History.leads`, with tests; the web's row picked twice running undoes it).
 
   | Engine | Address |
   | --- | --- |
@@ -78,19 +81,22 @@ Spotify. See "Spotify lookups".)
 
 **Spotify lookups (only with a key of the user's own, none by default).**
 - Booklight ships no key. Until the user puts their own Spotify Web API key (a client ID and its secret) into
-  the Booklight window › Labs, `play … on spotify` is an ordinary hand-over to the Spotify app
-  on the device (`MEDIA_PLAY_FROM_SEARCH` aimed at its package), which shows its search results, and Booklight
-  sends nothing.
-- With a key in, and only while Spotify is the player the row of `play` is aimed at by the user's choice (named
-  in the text, used last, or the only one; not where it is merely the first of several by name), and only while
-  that row is the first row or the one the user moved to (`play store` puts the Play Store's row first: nothing
-  is sent): 400 ms after the last key, never per letter or for one letter, and not for text another app handed over,
+  the Booklight window › Labs, Spotify's row has Search and no Play: Enter is an ordinary hand-over to the
+  Spotify app on the device (a link of Spotify's own, aimed at its package), which shows its search results,
+  and Booklight sends nothing.
+- With a key in, Spotify's row has Play. Only while Spotify is the chip in the field with Play armed (never
+  with Search armed), by the user's choice (Enter on Play on Spotify's own row; or `play` with Spotify named in
+  the text, played in last, or the only music app that plays), and only while its row is the first row:
+  400 ms after the last key, never per letter, and not for text another app handed over. Only on the user's
+  Enter on Play: where `play` made Spotify the chip merely as the first of several by name, for one letter,
+  and where another row stands first (`play store` puts the Play Store's row first). Where Spotify's row
+  stands under another music app's after `play`: when the user moves to it. Then:
   - a token, when none is held: one HTTPS POST to `https://accounts.spotify.com/api/token` with the body
     `grant_type=client_credentials` and the header `Authorization: Basic <the user's client ID and secret>`
     (the client credentials flow: a token for the key, not for a person; no user account is read). The token is
     held in memory until a minute before it ends (an hour) and is asked for again once if Spotify refuses it early.
   - one HTTPS GET to `https://api.spotify.com/v1/search?q=<text>&type=<kinds>&limit=<5 or 10>&market=<country>`
-    with the header `Authorization: Bearer <token>`. `<text>` is what was typed after `play`, without a kind
+    with the header `Authorization: Bearer <token>`. `<text>` is what was typed for Play, without a kind
     word (`album`, `artist`…) and without the player's name. After a kind word, "X by Y" is sent as
     `track:"X" artist:"Y"` (`album:"X"` for an album); free text is sent as its words, and by those fields only
     if the words found nothing. `<kinds>` is `track,artist` for free text, else `track`, `album`, `artist`

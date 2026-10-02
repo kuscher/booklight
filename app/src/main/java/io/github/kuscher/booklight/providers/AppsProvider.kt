@@ -9,6 +9,8 @@ import android.os.UserHandle
 import android.os.UserManager
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.AppRow
+import io.github.kuscher.booklight.core.Behind
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Kind
@@ -91,24 +93,26 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
         }
     }
 
-    /** The places an app's window can be asked to open in, as the id of the action, its place, its name and its typed words; in the order they are offered. */
-    private class Spot(val id: String, val place: Place, val label: Int, val words: Int, val more: Boolean)
+    /**
+     * The places an app's window can be asked to open in, as the id of the action, its place, its name and its typed
+     * words. All of them are lines behind Window, in the order `AppRow` lists them; typed, one stands in Window's slot at once.
+     */
+    private class Spot(val id: String, val place: Place, val label: Int, val words: Int)
 
     private val spots = listOf(
-        Spot("full", Place.FULL, R.string.place_full, R.string.verb_full, false),
-        Spot("left", Place.LEFT, R.string.action_left_half, R.string.verb_left, false),
-        Spot("right", Place.RIGHT, R.string.action_right_half, R.string.verb_right, false),
-        // The rest wait behind the row's arrow; typed, they are there at once.
-        Spot("p3l", Place.LEFT_THIRD, R.string.place_p3l, R.string.verb_p3l, true),
-        Spot("p3m", Place.MIDDLE_THIRD, R.string.place_p3m, R.string.verb_p3m, true),
-        Spot("p3r", Place.RIGHT_THIRD, R.string.place_p3r, R.string.verb_p3r, true),
-        Spot("p23l", Place.LEFT_TWO_THIRDS, R.string.place_p23l, R.string.verb_p23l, true),
-        Spot("p23r", Place.RIGHT_TWO_THIRDS, R.string.place_p23r, R.string.verb_p23r, true),
-        Spot("ptl", Place.TOP_LEFT, R.string.place_ptl, R.string.verb_ptl, true),
-        Spot("ptr", Place.TOP_RIGHT, R.string.place_ptr, R.string.verb_ptr, true),
-        Spot("pbl", Place.BOTTOM_LEFT, R.string.place_pbl, R.string.verb_pbl, true),
-        Spot("pbr", Place.BOTTOM_RIGHT, R.string.place_pbr, R.string.verb_pbr, true),
-        Spot("pc", Place.CENTER, R.string.place_pc, R.string.verb_pc, true),
+        Spot("full", Place.FULL, R.string.place_full, R.string.verb_full),
+        Spot("left", Place.LEFT, R.string.action_left_half, R.string.verb_left),
+        Spot("right", Place.RIGHT, R.string.action_right_half, R.string.verb_right),
+        Spot("p3l", Place.LEFT_THIRD, R.string.place_p3l, R.string.verb_p3l),
+        Spot("p3m", Place.MIDDLE_THIRD, R.string.place_p3m, R.string.verb_p3m),
+        Spot("p3r", Place.RIGHT_THIRD, R.string.place_p3r, R.string.verb_p3r),
+        Spot("p23l", Place.LEFT_TWO_THIRDS, R.string.place_p23l, R.string.verb_p23l),
+        Spot("p23r", Place.RIGHT_TWO_THIRDS, R.string.place_p23r, R.string.verb_p23r),
+        Spot("ptl", Place.TOP_LEFT, R.string.place_ptl, R.string.verb_ptl),
+        Spot("ptr", Place.TOP_RIGHT, R.string.place_ptr, R.string.verb_ptr),
+        Spot("pbl", Place.BOTTOM_LEFT, R.string.place_pbl, R.string.verb_pbl),
+        Spot("pbr", Place.BOTTOM_RIGHT, R.string.place_pbr, R.string.verb_pbr),
+        Spot("pc", Place.CENTER, R.string.place_pc, R.string.verb_pc),
     )
 
     /** The words that arm an action when typed with an app's name ("chrome uninstall", "chrome top left"); English ones work in every language. */
@@ -151,8 +155,9 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
             }
             if (best <= 0 && dangling != null) Matcher.score(dangling, apps[i].label).let { if (it >= Matcher.WORD_PREFIX) best = it * VERB }
             if (best <= 0) continue
-            val row = result(apps[i], best, display, page = verb?.takeIf { it in AppPages.ids })
-            // The verb arms its action on the app's own row. An app without that action (it came with the device: no Uninstall) has no such reading.
+            val row = result(apps[i], best, display)
+            // The verb arms its action on the app's own row: a place stands in Window's slot, a page or Uninstall in the arrow's.
+            // An app without that action (it came with the device: no Uninstall) has no such reading.
             val armed = verb?.let { v -> row.actions.indexOfFirst { it.id == v } }
             if (armed == null) out += row else if (armed >= 0) out += row.copy(armed = armed) else if (plain[i] > 0) out += result(apps[i], plain[i], display)
         }
@@ -180,24 +185,24 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     /** Every app's id (the debug hook `seed` picks five). */
     fun ids(): Set<String> = index.mapTo(HashSet()) { result(it, 1.0, 0).id }
 
-    private fun result(a: App, score: Double, display: Int, /** A page of the app in Settings that was asked for by its word (AppPages). */ page: String? = null) = Result(
+    private fun result(a: App, score: Double, display: Int) = Result(
         id = "app:${a.pkg}/${a.cls}" + if (a.user != 0L) "#${a.user}" else "",
         provider = id, kind = Kind.APP, title = a.label,
         subtitle = if (display > 0) context.getString(R.string.place_on_display, display) else null,
         icon = Icon.App(a.pkg, a.cls, a.user), score = score,
-        // A fixed order, never rearranged by use. Six are icons on the row: Open, New window, App info, and the three
-        // places people use (maximised, the left half, the right half); the other places wait behind its arrow.
-        // What removes the app is last and never armed unless asked for by name.
-        actions = listOfNotNull(
-            Action("open", context.getString(R.string.action_open), Effect.LaunchApp(a.pkg, a.cls, a.user, display = display)),
-            Action("window", context.getString(R.string.action_new_window), Effect.LaunchApp(a.pkg, a.cls, a.user, newWindow = true, display = display)).takeIf { a.user == me },
-            Action("info", context.getString(R.string.action_app_info), Effect.AppInfo(a.pkg, a.cls, a.user)),
-        ) + spots.map { Action(it.id, context.getString(it.label), Effect.LaunchApp(a.pkg, a.cls, a.user, place = it.place, display = display), more = it.more) } +
-            // Its own pages in Settings (AppPages), for the user Booklight runs as: Settings shows that user's apps. Only the one
-            // that was typed ("spotify notifications"): four more lines under every app's row would take its list past the
-            // screen's lower edge on a Googlebook 14, and App info, one icon away, leads to all of them.
-            (if (a.user == me && page != null) AppPages.actions(context, a.pkg).filter { it.id == page } else emptyList()) +
-            listOfNotNull(AppSearches.action(context, a.pkg, a.user)) +     // "Search", behind the arrow, for an app that can be searched (AppSearch.kt)
-            listOfNotNull(Action("uninstall", context.getString(R.string.action_uninstall), Effect.Uninstall(a.pkg, a.user), symbol = "trash", danger = true, more = true).takeIf { !a.system }),
+        // One structure for every app, never rearranged by use (core `AppRow`, which orders these and says where each
+        // stands): Open · Search · Play · Window · the arrow. An app has Search if it can be searched and Play if it plays
+        // what is named, and shows neither if it does not. Window opens New window and the places; the arrow App info, the
+        // app's pages in Settings and, last and never armed unless asked for by name, what removes the app.
+        actions = AppRow.arrange(listOfNotNull(
+            Action(AppRow.OPEN, context.getString(R.string.action_open), Effect.LaunchApp(a.pkg, a.cls, a.user, display = display)),
+            Action(AppRow.WINDOW, context.getString(R.string.action_window), Effect.OpenList(Behind.WINDOW), keepOpen = true, symbol = "frame"),
+            Action(AppRow.NEW_WINDOW, context.getString(R.string.action_new_window), Effect.LaunchApp(a.pkg, a.cls, a.user, newWindow = true, display = display)).takeIf { a.user == me },
+            Action(AppRow.INFO, context.getString(R.string.action_app_info), Effect.AppInfo(a.pkg, a.cls, a.user)),
+            Action(AppRow.UNINSTALL, context.getString(R.string.action_uninstall), Effect.Uninstall(a.pkg, a.user), symbol = "trash", danger = true).takeIf { !a.system },
+        ) + spots.map { Action(it.id, context.getString(it.label), Effect.LaunchApp(a.pkg, a.cls, a.user, place = it.place, display = display)) } +
+            // Its own pages in Settings (AppPages), for the user Booklight runs as: Settings shows that user's apps.
+            (if (a.user == me) AppPages.actions(context, a.pkg) else emptyList()) +
+            AppChips.actions(context, a.pkg, a.user)),     // Search and Play, each for an app that has it (AppChips.kt)
     )
 }

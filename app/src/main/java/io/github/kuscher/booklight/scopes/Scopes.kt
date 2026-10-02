@@ -6,6 +6,7 @@ import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.ai.OnDevice
 import io.github.kuscher.booklight.data.PromptEntry
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.Door
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Kind
@@ -130,7 +131,13 @@ class Scopes(
     }
 }
 
-/** A link that takes text: `yt lofi` searches YouTube for "lofi". `{clipboard}` and `{date}` are filled in too. */
+/**
+ * A link that takes text: `yt lofi` searches YouTube for "lofi". `{clipboard}` and `{date}` are filled in too.
+ *
+ * One of Booklight's own links whose app is installed and can be searched (`yt`, `store`, `maps`, `drive`) is a
+ * short way into that app's chip, with Search armed ([door]): the same chip and row as Search on the app's own
+ * row, with the browser behind the row's arrow. Else the link is as it says, in the browser.
+ */
 class SiteScope(private val context: Context, private val site: Site) : Scope {
     override val key = "site:${site.keyword}"
     override val keywords = listOf(site.keyword)
@@ -139,20 +146,18 @@ class SiteScope(private val context: Context, private val site: Site) : Scope {
     override val hint: String = context.getString(R.string.scope_site_hint, site.name)
     override val title: String = hint
 
+    override fun door(text: String): Door? = (context.applicationContext as BooklightApp).commands.chips.site(site)
+
     override suspend fun rows(arg: String): List<Result> {
         val text = arg.trim()
         if (text.isEmpty()) return emptyList()
         val url = Templates.fill(site.url, text, if ("{clipboard}" in site.url) clipboardText(context).orEmpty() else "", LocalDate.now())
-        // One of Booklight's own links whose app is installed and can be searched (`store`, `yt`): Enter lands in the app,
-        // with the app's icon on the row to say so, and the browser is the next action. Else the browser, as the link says.
-        val app = (context.applicationContext as BooklightApp).commands.search.link(site, text)
         val search = Result(
             id = "web:site:${site.keyword}", provider = key, kind = Kind.WEB,
             title = context.getString(R.string.web_search_title, site.name, text),
-            icon = app?.first ?: Icon.Symbol("search"), score = 1.0, learnable = false,
-            actions = listOfNotNull(
-                app?.let { Action("search", context.getString(R.string.action_search), it.second, symbol = "open") },
-                Action(if (app == null) "search" else "web", context.getString(if (app == null) R.string.action_search else R.string.action_search_web), Effect.OpenUrl(url), symbol = if (app == null) "open" else "globe"),
+            icon = Icon.Symbol("search"), score = 1.0, learnable = false,
+            actions = listOf(
+                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(url), symbol = "search"),
                 Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(url)),
             ),
         )
@@ -173,7 +178,8 @@ class OwnCommandScope(private val context: Context, private val command: OwnComm
     override val key = "own:${command.id}"
     override val keywords = listOf(command.keyword)
     override val name = command.name
-    override val symbol = "open"
+    /** The mark is what the row is about: the app it asks, with that app's own icon; the open symbol where the app is gone. */
+    override val symbol: String get() = installed(command.app)?.let { Icon.App(it.pkg, it.cls, io.github.kuscher.booklight.data.Recipes.me).symbol } ?: "open"
     override val hint: String = command.name
     /** The app it asks, as other apps' keywords say theirs. */
     override val about: String? get() = installed(command.app)?.label

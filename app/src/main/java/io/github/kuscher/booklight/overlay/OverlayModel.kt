@@ -24,7 +24,12 @@ import io.github.kuscher.booklight.scopes.PromptScope
 import io.github.kuscher.booklight.scopes.TextFrom
 import io.github.kuscher.booklight.scopes.TextScope
 import kotlinx.coroutines.flow.drop
+import io.github.kuscher.booklight.core.Act
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.AppChip
+import io.github.kuscher.booklight.core.Behind
+import io.github.kuscher.booklight.core.Chips
+import io.github.kuscher.booklight.core.Origin
 import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Kind
@@ -32,7 +37,7 @@ import io.github.kuscher.booklight.core.Matcher
 import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
-import io.github.kuscher.booklight.core.SearchEngine
+import io.github.kuscher.booklight.core.Stops
 import io.github.kuscher.booklight.data.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +61,8 @@ class OverlayModel(
 ) {
     /** The scope the text is an argument for: the chip in the field. Null = ordinary search. */
     var chip by mutableStateOf<Scope?>(null); private set
+    /** Under an app's chip: which of the app's two actions the text is for, Search or Play. Null under any other chip, and with none. */
+    var act by mutableStateOf<Act?>(null); private set
     var query by mutableStateOf(""); private set
     var results by mutableStateOf<List<Result>>(emptyList()); private set
     var selected by mutableIntStateOf(0); private set
@@ -73,6 +80,8 @@ class OverlayModel(
     var settings by mutableStateOf(app.prefs.now); private set
     /** The row whose other actions are listed under it, by its id; null = none. While it is, [results] is that row and its actions. */
     var opened by mutableStateOf<String?>(null); private set
+    /** Which of that row's two lists is open: the one behind its arrow, or the one behind Window. Never both, and never one inside the other. */
+    var list by mutableStateOf<Behind?>(null); private set
     /** The list as it was before a row was opened: closing brings it back. */
     private var closed: List<Result> = emptyList()
     /** The device's own model has been asked and has not said a word yet: the panel's edge light runs while it works. */
@@ -101,7 +110,7 @@ class OverlayModel(
     /** Tab on a keyword: it becomes the chip. Only for the list on screen. */
     fun enterKeyword(): Boolean {
         val s = keyword ?: return false
-        if (resultsFor != (null to query)) return false
+        if (!onScreen) return false
         enterScope(s, "", query.trim())
         if (!demo && !s.spaceEnters) change { st -> if (s.key in st.usedScopes) st else st.copy(usedScopes = st.usedScopes + s.key) }
         return true
@@ -109,6 +118,12 @@ class OverlayModel(
 
     /** The word that was typed to make the chip ("meeting" for the event scope); null if its row was used. */
     private var word: String? = null
+    /** The keyword's own scope, where the chip is an app's that a keyword is a short way into (`play`, `yt`); null for a chip entered as itself. */
+    private var via: Scope? = null
+    /** Where Enter was pressed to make an app the chip: Backspace on the empty field is one step back to exactly there. */
+    private var origin: Origin? = null
+    /** That step back is on its way: the list for the text as it was typed is being made, and the row and the action are put back when it lands. */
+    private var restoring: Origin? = null
     /** A keyword the user turned back into plain text: it stays plain text until the field has been emptied. */
     private var held: String? = null
     /** The chip's text came from another app (through that app's chip): it is never kept after the panel closes. */
@@ -116,8 +131,12 @@ class OverlayModel(
     private var job: Job? = null
     private var confirmJob: Job? = null
     private var confirmAt = 0L
-    /** The chip and text [results] was made for: for a moment after a keystroke it is still the old list. */
-    private var resultsFor: Pair<String?, String> = null to ""
+    /** What a list was made for: the chip, the text, and under an app's chip the action that was armed. */
+    private data class For(val key: String?, val text: String, val act: Act? = null)
+    /** What [results] was made for: for a moment after a keystroke it is still the old list. */
+    private var resultsFor = For(null, "")
+    /** The rows on screen are the rows for what the field holds now. A key that runs or opens something acts only then. */
+    private val onScreen: Boolean get() = resultsFor == For(chip?.key, query, act)
     private var whenReady: ((Result, Action) -> Unit)? = null
     /** When Booklight last filled the field itself (entered a scope from its row, typed an example). */
     private var filledAt = 0L
@@ -232,6 +251,8 @@ class OverlayModel(
     private val unsuggested = HashSet<String>()
     /** A word for the footer; set by the activity. */
     var onSay: (String) -> Unit = {}
+    /** A sentence for a screen reader, where what changed cannot be seen from what it reads (which action is armed); set by the activity. */
+    var onTell: (String) -> Unit = {}
     /** How many usual rows there are for this opening, or null while that is not known: the panel waits for it. */
     val zeroSeats: Int? get() = usual?.rows?.size
 
@@ -253,7 +274,7 @@ class OverlayModel(
         val u = usual ?: return false
         results = usualRows(); selected = -1; armed = 0; cell = 0
         zeroUp = true; zeroStood = true
-        resultsFor = null to query; whenReady = null
+        resultsFor = For(null, query); whenReady = null
         // The holders of the first two seats are kept as shown. Not while one of them is only away (its app is being
         // updated, a list is still read): unless it has been away for a while, and then its seat is given up after all.
         val now = System.currentTimeMillis()
@@ -297,10 +318,10 @@ class OverlayModel(
         change { if (id in it.zeroHidden) it else it.copy(zeroHidden = it.zeroHidden + id, zeroHeld = it.zeroHeld - id) }
         if (zeroUp) {
             cancelConfirm()
-            opened = null; closed = emptyList()      // an opened list goes with its row, in the same change
+            opened = null; list = null; closed = emptyList()      // an opened list goes with its row, in the same change
             results = usualRows(); selected = -1; armed = 0; cell = 0
             zeroUp = results.isNotEmpty()
-            resultsFor = null to query
+            resultsFor = For(null, query)
         }
         onSay(app.getString(R.string.done_unsuggested))
     }
@@ -399,19 +420,50 @@ class OverlayModel(
             // A keyword and a space at the start of the field: the keyword becomes the chip. Not if the user
             // has just turned that very keyword back into text: then it is a word ("new york weather").
             app.engine.scopeFor(text)?.takeIf { !it.word.equals(held, ignoreCase = true) }?.let { enterScope(it.scope, it.text, it.word); return }
-        }
+        } else follow(text)
         query = text
         search()
     }
 
-    /** Makes [s] the chip; [text] is what is already typed for it, [word] the keyword that was typed, if one was. */
-    fun enterScope(s: Scope, text: String = "", word: String? = null) {
+    /**
+     * Makes [s] the chip; [text] is what is already typed for it, [word] the keyword that was typed, if one was.
+     * A keyword that is a short way into an app's chip (`play`, `yt`) makes that app the chip. [act]: for an
+     * app's chip, which of its two actions is armed there; with none asked for, the one the keyword stands
+     * for, else the app's first.
+     */
+    fun enterScope(s: Scope, text: String = "", word: String? = null, act: Act? = null) {
         touched = false
-        chip = s
-        this.word = word
+        aim(s, text, word, act)
         query = text
         search()
-        entered(s)
+        chip?.let(::entered)
+    }
+
+    /** [s] becomes the chip, or the app's chip it is a short way into, with the action armed that was asked for if the app has it. */
+    private fun aim(s: Scope, text: String, word: String?, asked: Act?) {
+        // The chip that is there, again (an answer put into the field, its other action entered): how it was entered stays as it was.
+        val same = chip != null && chip?.key == s.key && word == null
+        val door = if (same) null else s.door(text)
+        val to = door?.chip ?: s
+        if (!same) {
+            via = s.takeIf { door != null }
+            this.word = word ?: via?.keywords?.firstOrNull()
+            origin = null
+        }
+        chip = to
+        act = (to as? AppChip)?.let { Chips.enter(it.acts, asked ?: door?.act ?: act.takeIf { same }) }
+    }
+
+    /**
+     * Under an app's chip that a keyword led to, the chip follows what the text says: `play … on youtube
+     * music` is YouTube Music's chip, and without those words it is the app played in last again. The
+     * text stays as it was typed, and the action that is armed stays armed where the app has it.
+     */
+    private fun follow(text: String) {
+        val to = via?.door(text) ?: return
+        if (to.chip.key == chip?.key) return
+        chip = to.chip
+        act = Chips.enter(to.chip.acts, act ?: to.act)
     }
 
     /** [s] has just become the chip, by whichever way (typed, its row, Tab, Booklight typing an example). */
@@ -419,8 +471,40 @@ class OverlayModel(
         if (demo) return
         // The list of everything has been opened: its tip need not come.
         if (s.key == "help" && "help" !in settings.used) change { it.copy(used = it.used + "help") }
-        // A prompt: ask the system what it has, and have its model loaded by the time the text is typed.
-        if (s is Answering) scope.launch { if (app.onDevice.check() == OnDevice.State.READY && s.eager) app.onDevice.warm() }
+        // A prompt: ask the system what it has, and have its model loaded by the time the text is typed. (An app's chip has
+        // a question for the model only behind Play's arrow.)
+        if (s is Answering && (s !is AppChip || Act.PLAY in s.acts)) scope.launch { if (app.onDevice.check() == OnDevice.State.READY && s.eager) app.onDevice.warm() }
+        // An app's chip shows only the app: a screen reader is told which action is armed, and what to type.
+        if (s is AppChip) act?.let { onTell(app.getString(R.string.a11y_chip, s.name, label(it), wanted(s, it))) }
+    }
+
+    private fun label(a: Act) = app.getString(if (a == Act.SEARCH) R.string.action_search else R.string.action_play)
+    /** What to type for [a] under [c], for a screen reader. */
+    private fun wanted(c: AppChip, a: Act) = if (a == Act.SEARCH) app.getString(R.string.a11y_type_search) else c.hint(a)
+
+    /** The field's placeholder under a chip: what the scope takes; under an app's chip, what to type for the action that is armed. */
+    val hint: String? get() = (chip as? AppChip)?.let { c -> act?.let(c::hint) } ?: chip?.hint
+
+    /** The chip was made by a typed keyword: it comes from where the keyword stood. */
+    val chipTyped: Boolean get() = word != null
+
+    /** For `./bl debug dump`: the keyword the chip was entered by, where a keyword is a short way into an app's chip. */
+    val chipVia: String? get() = via?.key
+
+    /**
+     * The line under the empty field of an app's chip: the app's other action, which Tab changes to.
+     * Null for an app that has only one, and once something is typed.
+     */
+    val otherAct: Act? get() = (chip as? AppChip)?.takeIf { query.isBlank() && results.isEmpty() }?.let { Chips.other(it.acts, act) }
+
+    /** Tab on the empty field under an app's chip: its other action is armed, and the placeholder says what to type for it. Nothing is sent by this. */
+    fun swap(): Boolean {
+        val c = chip as? AppChip ?: return false
+        val to = otherAct ?: return false
+        act = to
+        resultsFor = For(c.key, query, to)
+        if (!demo) onTell(app.getString(R.string.a11y_act, label(to), wanted(c, to)))
+        return true
     }
 
     /**
@@ -434,7 +518,7 @@ class OverlayModel(
         typist?.cancel()
         job?.cancel(); answering?.cancel(); answering = null; thinking = false; whenAnswered = null; whenReady = null
         cancelConfirm()
-        chip = null; word = null; held = null; foreign = false; touched = false
+        chip = null; word = null; via = null; origin = null; act = null; held = null; foreign = false; touched = false
         query = ""
         shown = true
         filledAt = SystemClock.uptimeMillis()
@@ -447,8 +531,8 @@ class OverlayModel(
                 val s = if (chip == null && help == null) app.engine.scopeFor(next) else null
                 when {
                     help != null -> { chip = help; word = HELP; query = next.drop(1).trimStart(); entered(help) }
-                    s != null -> { chip = s.scope; word = s.word; query = s.text; entered(s.scope) }
-                    else -> query = next
+                    s != null -> { aim(s.scope, s.text, s.word, null); query = s.text; chip?.let(::entered) }
+                    else -> { if (chip != null) follow(next); query = next }
                 }
                 if (step > 0) delay(step)
             }
@@ -461,15 +545,18 @@ class OverlayModel(
     /**
      * Backspace on an empty argument, or a click on the chip: the chip turns back into text, the word that
      * was typed for it (or the scope's own first keyword). [withText]: what was typed after it comes along.
-     * Text another app handed over has no keyword: its chip just goes. An app's chip ("Search", on the app's
-     * row) has none either, but it has the app's name: that comes back, and with the text it searches the same.
+     * Text another app handed over has no keyword: its chip just goes. An app's chip has none either. Entered
+     * from a row (Search or Play on the app's row), Backspace goes back to exactly where Enter was pressed
+     * ([restore]). Else, and on a click with its text, it has the app's name: that comes back, and with the
+     * text it is the typed sentence ("spotify daft punk").
      */
     fun leaveScope(withText: Boolean = false): Boolean {
         val s = chip ?: return false
-        val w = word ?: s.keywords.firstOrNull() ?: s.name.lowercase().takeIf { s.key.startsWith(SearchEngine.IN_APP) }
+        origin?.takeIf { !withText || query.isEmpty() }?.let { return restore(it) }
+        val w = word ?: s.keywords.firstOrNull() ?: s.name.lowercase().takeIf { s is AppChip }
         // Text another app handed over stays that app's when it comes back into the field: not kept, not sent for suggestions.
         val others = foreign && withText && query.isNotEmpty()
-        chip = null; word = null; foreign = others
+        chip = null; word = null; via = null; origin = null; act = null; foreign = others
         if (s is TextScope && w == null) app.scopes.forget()
         held = w
         query = when {
@@ -481,6 +568,22 @@ class OverlayModel(
         search()
         // Back out of the copy's own chip, with nothing typed: the line it was opened from is there again, if the copy is still fresh.
         if (w == null && query.isEmpty() && s is TextScope && s.from == TextFrom.COPY) offerCopy(back = true)
+        return true
+    }
+
+    /**
+     * One step back out of an app's chip that was entered from a row: the letters as they were typed
+     * ("spo", not the app's whole name), that row selected, and the action that was left still armed.
+     * A wrong Enter costs one key, and the app's other action is one Tab away. The row and the action
+     * are put back when the list for those letters lands (core `Origin`).
+     */
+    private fun restore(o: Origin): Boolean {
+        // (The action that is left: the one armed under the chip now, which Tab may have changed since Enter.)
+        val left = act?.id ?: o.action
+        chip = null; word = null; via = null; origin = null; act = null; foreign = false
+        query = o.text
+        restoring = o.copy(action = left)
+        search()
         return true
     }
 
@@ -512,6 +615,11 @@ class OverlayModel(
         if (!keep) shut()
         val text = query
         val key = chip?.key
+        val by = word
+        val armedAct = act
+        // A step back out of an app's chip is for this list only: any other list that is made forgets it.
+        val back = restoring
+        restoring = null
         if (key == null && text.isBlank()) {
             // The empty field again: the usual rows, if they stood in this opening; else nothing. After something ran with
             // Shift held ([keep]) the highlight stays on its row.
@@ -520,7 +628,9 @@ class OverlayModel(
             results = if (zeroStood) usualRows() else emptyList()
             zeroUp = results.isNotEmpty()
             selected = if (zeroUp) results.indexOfFirst { it.id == was } else 0
-            armed = current?.armed ?: 0; cell = 0; resultsFor = null to text; whenReady = null
+            armed = current?.armed ?: 0; cell = 0; resultsFor = For(null, text); whenReady = null
+            // Back out of an app's chip that was entered from one of the usual rows: that row again, the action that was left armed.
+            back?.takeIf { zeroUp }?.place(results, ::stops)?.let { (row, action) -> selected = row; armed = action }
             return
         }
         job = scope.launch(Dispatchers.Default) {
@@ -528,24 +638,24 @@ class OverlayModel(
             // A thing that had one of the usual seats in this opening keeps "Don't suggest" in every list of it: a row that
             // stays when a letter is typed then changes nothing.
             val seated = usual?.rows?.takeIf { zeroStood }.orEmpty().mapTo(HashSet()) { it.id }
-            val local = app.engine.search(Query(text, key, word), limit).let { rows ->
+            val local = app.engine.search(Query(text, key, by, armedAct), limit).let { rows ->
                 if (seated.isEmpty()) rows else rows.map { if (it.id in seated && it.id !in unsuggested) Zero.offer(it, app.getString(R.string.action_unsuggest)) else it }
             }
             val took = (System.nanoTime() - t0) / 1000
             withContext(Dispatchers.Main.immediate) {
                 val was = current?.id
-                lastSearchMicros = took; resultsFor = key to text
+                lastSearchMicros = took; resultsFor = For(key, text, armedAct)
                 // A row that is open stays open over a refresh (something ran with Shift held), if it is still there.
                 val parent = if (keep) local.firstOrNull { it.id == opened } else null
                 if (parent != null) {
                     zeroUp = false
                     closed = local
-                    results = listOf(parent) + actionRows(parent)
+                    results = listOf(parent) + actionRows(parent, list ?: Behind.ARROW)
                     selected = selected.coerceIn(0, results.lastIndex)
                     look()
                     return@withContext
                 }
-                opened = null; closed = emptyList()
+                opened = null; list = null; closed = emptyList()
                 zeroUp = false
                 results = local
                 val same = if (keep) local.indexOfFirst { it.id == was } else -1
@@ -554,6 +664,8 @@ class OverlayModel(
                     if (armed !in stops(local[same])) armed = local[same].armed
                     cell = cell.coerceIn(0, (((local[same].body as? Body.Grid)?.cells?.size ?: 1) - 1).coerceAtLeast(0))
                 } else { selected = 0; armed = local.firstOrNull()?.armed ?: 0; cell = 0 }
+                // Back out of an app's chip: the row Enter was pressed on, and the action that was left, still armed.
+                back?.takeIf { key == null && it.text == text }?.place(local, ::stops)?.let { (row, action) -> selected = row.coerceAtLeast(0); armed = action; touched = true }
                 ask()
                 look()
                 // An Enter that came before these rows did: now it runs, by the same rules as any Enter (a scope's row enters it, a delete waits).
@@ -562,9 +674,10 @@ class OverlayModel(
             // Suggestions come from the network: after a pause in typing, never holding up the
             // list, and dropped if the text has moved on (this job is cancelled by then).
             if (demo || key != null || foreign || !settings.suggestions) return@launch
-            // What is meant for one app is not sent to the search engine either: an app's name and what to look for in it
-            // ("spotify daft punk"), or an address of an app's own.
-            if (local.any { it.id.startsWith(SearchEngine.IN_APP) || it.id == WebProvider.IN_APP }) return@launch
+            // What is meant for one app is not sent to the search engine either: an address of an app's own, or an app's name
+            // and what to look for in it ("spotify daft punk") once that app leads for words after its name. While the web
+            // leads, such a text is an ordinary web search, and its suggestions come as for any other.
+            if (local.any { app.engine.leads(it) || it.id == WebProvider.IN_APP }) return@launch
             delay(SUGGEST_PAUSE_MS)
             val more = app.suggest.fetch(text)
             if (more.isEmpty()) return@launch
@@ -592,6 +705,8 @@ class OverlayModel(
 
     /** A flight's row is being looked up; and an Enter on one of its actions that needs the answer (the action's id), which runs when it is in. */
     private var looking: Job? = null
+    /** The id of the row that lookup is for. */
+    private var lookingFor: String? = null
     private var whenLooked: Pair<String, (Result, Action) -> Unit>? = null
 
     /**
@@ -600,8 +715,12 @@ class OverlayModel(
      */
     private fun moved() { cancelConfirm(); whenLooked = null }
 
-    // What Spotify has for `play` is looked up the same way: the row waits, the answer lands in it, an Enter that came first runs then.
+    // What Spotify has for Play is looked up the same way: the row waits, the answer lands in it, an Enter that came first runs then.
     private fun waits(r: Result) = app.flights.waits(r) || app.songs.waits(r)
+    /** [r] waits and may be looked up without an Enter (after a pause in typing, or when the user goes to it). */
+    private fun asks(r: Result) = app.flights.waits(r) || app.songs.asks(r)
+    /** A lookup for [r] is on its way. */
+    private fun lookedUp(r: Result) = looking?.isActive == true && lookingFor == r.id
     private fun needsAnswer(e: Effect) = e == FlightsProvider.WAIT || e == Songs.WAIT
     private suspend fun answer(row: Result, pause: Boolean): Result? = if (row.provider == Songs.PROVIDER) app.songs.answer(row.id, pause) else app.flights.answer(row.id, pause)
 
@@ -610,10 +729,12 @@ class OverlayModel(
         // Text another app handed over is never sent unasked: not in its own chip (a chip without a keyword), not once it has
         // moved into the field. Under a text's own chip (what was copied, `clip`, handed-over text) a flight's row waits only
         // once the user has gone to it: then it is looked up again when the list is made anew.
-        if (demo || (chip !is TextScope && (foreign || chip?.keywords?.isEmpty() == true))) return
-        // A flight's row wherever it stands. The row of `play` only as row one: under an app's own row ("play store") the
-        // text is that app's name, and is sent nowhere unless the user goes to the row.
-        (results.firstOrNull { app.flights.waits(it) } ?: results.firstOrNull()?.takeIf { app.songs.waits(it) })?.let { lookUp(it, pause = true) }
+        // (An app's chip has no keyword either, but what is typed under it is the user's own.)
+        if (demo || (chip !is TextScope && (foreign || (chip?.keywords?.isEmpty() == true && chip !is AppChip)))) return
+        // A flight's row wherever it stands. The row that plays only as row one, and only where it may be asked unasked: under
+        // an app's own row ("play store") the text is that app's name, and is sent nowhere unless the user asks for it. The
+        // row is there only while Play is armed on an app's chip: under Search nothing is looked up.
+        (results.firstOrNull { app.flights.waits(it) } ?: results.firstOrNull()?.takeIf { app.songs.asks(it) })?.let { lookUp(it, pause = true) }
     }
 
     /**
@@ -624,16 +745,18 @@ class OverlayModel(
     private fun went() {
         // Only for the list on screen: for a moment after a keystroke the rows are still the previous text's, and a key that
         // lands in that moment must not look up what is no longer in the field. (The list that comes is looked at by [look].)
-        if (demo || resultsFor != (chip?.key to query)) return
+        if (demo || !onScreen) return
         val on = current ?: return
         // (Or a row that said "No connection" or "No answer this time" a while ago: going to it asks again.)
         val row = (app.flights.gone(on) ?: app.flights.retry(on))?.also { land(it) } ?: on
-        // (Also a flight's row that waits and has not been asked for: one under text another app handed over.)
-        if (waits(row) && looking?.isActive != true) lookUp(row, pause = false)
+        // (Also a flight's row that waits and has not been asked for: one under text another app handed over. And the row of
+        // another music app under `play`: what Spotify has is looked up when the user goes to it.)
+        if (asks(row) && !lookedUp(row)) lookUp(row, pause = false)
     }
 
     private fun lookUp(row: Result, pause: Boolean) {
         looking?.cancel()
+        lookingFor = row.id
         looking = scope.launch {
             // The light of work only for an answer that is slow to come: a quick one must not flash.
             var lit = false
@@ -641,12 +764,17 @@ class OverlayModel(
             val got = try { answer(row, pause) } finally { slow.cancel(); if (lit) looked = false }
             if (got == null) return@launch
             land(got)
+            // What Spotify found is said once to a screen reader: the song, who it is by, and what Enter does with it.
+            if (got.provider == Songs.PROVIDER && current?.id == got.id) got.actions.firstOrNull { it.id == Act.PLAY.id && !it.off && !needsAnswer(it.effect) }
+                ?.let { onTell(app.getString(R.string.a11y_found, got.title, got.subtitle.orEmpty(), it.label)) }
             whenLooked?.let { (id, run) ->
                 whenLooked = null
                 // The action that was asked for, if the answer made it possible, and nothing else: with no answer, the Enter that
                 // waited runs nothing. (The pill may be on the row, or on one of its other actions in the list under it.)
+                // Play where Spotify found nothing by that name: the search for the same words, which is armed in Play's place.
                 if (current?.id == got.id || current?.id?.startsWith("act:${got.id}:") == true)
-                    got.actions.firstOrNull { it.id == id && !it.off && !needsAnswer(it.effect) }?.let { run(got, it) }
+                    (got.actions.firstOrNull { it.id == id && !it.off && !needsAnswer(it.effect) }
+                        ?: got.actions.getOrNull(got.armed)?.takeIf { got.provider == Songs.PROVIDER && id == Act.PLAY.id && it.id == Act.SEARCH.id })?.let { run(got, it) }
             }
         }
     }
@@ -658,9 +786,9 @@ class OverlayModel(
             if (opened == row.id) {
                 // Its list is open: the pill stays on the action it is on, if the row still has it; else it is back on the row, on its arrow.
                 val on = current?.id
-                results = listOf(row) + actionRows(row)
+                results = listOf(row) + actionRows(row, list ?: Behind.ARROW)
                 selected = results.indexOfFirst { it.id == on }.coerceAtLeast(0)
-                if (selected == 0) armed = row.actions.size
+                if (selected == 0) armed = stop(row, list)
                 return
             }
         }
@@ -671,7 +799,7 @@ class OverlayModel(
             val id = was.actions.getOrNull(armed)?.id
             // (An action that is gone: the row's own default, which for `play` is the player it is aimed at. Never simply the
             // first action: that may be another app's, and Enter would go there.)
-            armed = if (armed == was.actions.size && row.actions.any { it.more }) row.actions.size
+            armed = if (armed == was.actions.size && row.actions.any { it.more && it.behind == Behind.ARROW }) row.actions.size
                 else row.actions.indexOfFirst { it.id == id && !it.more && !it.off }.takeIf { it >= 0 } ?: row.armed.takeIf { it in stops(row) } ?: 0
         }
         results = results.toMutableList().also { it[i] = row }
@@ -773,41 +901,72 @@ class OverlayModel(
         moved()
         touched = true
         selected = index
-        // Another row: its own default again. Back on a row whose actions are listed: its arrow, which now closes them.
-        armed = if (opened != null && index == 0) results[0].actions.size else results[index].armed
+        // Another row: its own default again. Back on a row whose actions are listed: the stop they were opened from, which now closes them.
+        armed = if (opened != null && index == 0) stop(results[0], list) else results[index].armed
         cell = 0
         if (!passing) went()
     }
 
     /**
-     * What the arming can rest on, on [r], in the order it is drawn: the actions shown as icons, then
-     * one more stop if the row keeps others behind its arrow. That stop is the arrow itself (More:
-     * the number of actions, an index no action has), unless a typed verb named one of the others
-     * ("chrome top left"): then it is that action, and the arrow's place shows it.
+     * What the arming can rest on, on [r], in the order it is drawn (core `Stops`): the actions shown as
+     * icons, then one more stop if the row keeps others behind its arrow. That stop is the arrow itself
+     * (More: the number of actions, an index no action has). A typed verb that named a line of one of the
+     * row's lists stands in that list's stop: a place in Window's ("chrome top left"), a page or Uninstall
+     * in the arrow's ("chrome uninstall").
      */
-    fun stops(r: Result): List<Int> {
-        val shown = r.actions.indices.filter { !r.actions[it].more && !r.actions[it].off }
-        if (r.actions.none { it.more }) return shown
-        val typed = r.armed.takeIf { r.actions.getOrNull(it)?.more == true && opened != r.id }
-        return shown + (typed ?: r.actions.size)
+    fun stops(r: Result): List<Int> = Stops.of(r, open = opened == r.id)
+
+    /** The arming is on a stop that opens one of the row's two lists: its arrow, or Window. Null on any other stop. */
+    val onList: Behind? get() = current?.takeIf { it.kind != Kind.ACTION }?.let { Stops.list(it, armed) }
+
+    /** Where the arming rests on [r] for the list [behind]: the arrow (the number of its actions), or its Window stop. */
+    private fun stop(r: Result?, behind: Behind?): Int = r?.let { Stops.at(it, behind) } ?: 0
+
+    /**
+     * Tab (and Right at the end of the text) on the selected row types into it: only where the row
+     * offers nothing else, as a keyword's own row does ("Search YouTube"). On an app's row Tab only
+     * moves, past Search and Play like past any other stop: Enter is what enters them.
+     */
+    val tabEnters: Boolean get() {
+        val r = current ?: return false
+        return opened == null && !inAnswer && r.actions.getOrNull(armed)?.effect is Effect.EnterScope && stops(r).size < 2
     }
 
-    /** The arming is on the row's arrow. */
-    val onMore: Boolean get() = current?.let { armed == it.actions.size && it.actions.any { a -> a.more } } ?: false
-
-    /** Tab and the arrows along the selected row's stops. False when there is nowhere to go. Moving the arming never opens anything. */
-    fun arm(by: Int, wrap: Boolean): Boolean {
-        went()     // Tab on a row the pointer brought the pill to is going to it
-        val st = stops(current ?: return false)
+    /** Tab and the arrows along the selected row's stops. False when there is nowhere to go. Moving the arming never opens anything, and never enters anything. */
+    fun arm(by: Int, wrap: Boolean, /** The key is held and repeats. */ again: Boolean = false): Boolean {
+        // Tab on a row the pointer brought the pill to is going to it. (Not on the row under an app's chip: what is looked
+        // up for that row goes by which of its actions is armed, below.)
+        if ((chip as? AppChip)?.key != current?.id) went()
+        val r = current ?: return false
+        val st = stops(r)
         val n = st.size
         if (n < 2) return false
         val at = st.indexOf(armed).coerceAtLeast(0)
         val to = if (wrap) (at + by + n) % n else (at + by).coerceIn(0, n - 1)
         if (st[to] == armed) return false
+        // Under an app's chip, going from Search to Play or back changes what the row is: its words, and under Play the
+        // lookup. A press of its own does that: a held key stops before it, so it neither flickers nor sends two lookups.
+        val next = actAt(r, st[to])
+        if (next != null && again) return true
         moved()
         touched = true
         armed = st[to]
+        if (next != null) {
+            act = next
+            if (!demo) (chip as? AppChip)?.let { onTell(app.getString(R.string.a11y_act, label(next), wanted(it, next))) }
+            refresh()     // going to Play starts the lookup, after its pause; going to Search sends nothing, and takes a lookup that is waiting back
+        } else if (!demo) onTell(app.getString(R.string.a11y_stop, r.actions.getOrNull(st[to])?.label ?: app.getString(if (opened == r.id) R.string.action_less else R.string.action_more), to + 1, n))
         return true
+    }
+
+    /**
+     * Under an app's chip, on the chip's own row: the one of the app's two actions that arming the
+     * action at [index] changes to. Null where the arming changes nothing but itself.
+     */
+    private fun actAt(r: Result, index: Int): Act? {
+        val c = chip as? AppChip ?: return null
+        if (r.id != c.key || opened != null) return null
+        return Act.of(r.actions.getOrNull(index)?.id)?.takeIf { it != act && it in c.acts && !r.actions[index].off }
     }
 
     fun armAt(index: Int) {
@@ -815,7 +974,10 @@ class OverlayModel(
         if (index in stops(r) && index != armed) { moved(); touched = true; armed = index }
     }
 
-    private fun actionRows(r: Result): List<Result> = r.actions.filter { it.more }.map { a ->
+    /** For `./bl debug key more` and `key window`: the arming goes to the stop of one of the row's lists, if the row has it. */
+    fun armList(behind: Behind) { current?.let { armAt(stop(it, behind)) } }
+
+    private fun actionRows(r: Result, behind: Behind): List<Result> = r.actions.filter { it.more && it.behind == behind }.map { a ->
         Result(
             id = "act:${r.id}:${a.id}", provider = r.provider, kind = Kind.ACTION, title = a.label, icon = io.github.kuscher.booklight.core.Icon.Symbol(a.symbol),
             score = 1.0, actions = listOf(a.copy(more = false)), learnable = false,
@@ -823,38 +985,45 @@ class OverlayModel(
     }
 
     /**
-     * Opens the selected row: its other actions become rows of their own under it, and while they
-     * are there the list is that row and those rows. Only for the list on screen.
+     * Opens one of the selected row's two lists: the lines kept behind that stop become rows of their
+     * own under it, and while they are there the list is that row and those rows. Only for the list
+     * on screen. The row's other list, if it was open, closes in the same change: never two.
      */
-    fun open(): Boolean {
+    fun open(behind: Behind = onList ?: Behind.ARROW): Boolean {
+        opened?.let { id ->
+            if (list == behind) return false
+            shut()
+            selected = results.indexOfFirst { it.id == id }.coerceAtLeast(0)
+        }
         val r = current ?: return false
-        if (opened != null || r.actions.none { it.more } || resultsFor != (chip?.key to query)) return false
+        if (r.actions.none { it.more && it.behind == behind } || !onScreen) return false
         moved()
-        val rows = actionRows(r)
-        // A typed place that was shown on the row goes back into the list: the pill lands on its row there.
-        val typed = r.actions.getOrNull(r.armed)?.takeIf { it.more }?.let { a -> rows.indexOfFirst { it.actions[0].id == a.id } } ?: -1
+        val rows = actionRows(r, behind)
+        // A typed line that was shown on the row goes back into its list: the pill lands on its row there.
+        val typed = r.actions.getOrNull(r.armed)?.takeIf { it.more && it.behind == behind }?.let { a -> rows.indexOfFirst { it.actions[0].id == a.id } } ?: -1
         closed = results
-        opened = r.id
+        opened = r.id; list = behind
         results = listOf(r) + rows
         selected = 1 + typed.coerceAtLeast(0); armed = 0; cell = 0
         return true
     }
 
-    /** Closes the opened row: the list is back as it was, the pill on the row, its arrow armed. */
+    /** Closes the opened row: the list is back as it was, the pill on the row, the stop armed that had opened it. */
     fun close(): Boolean {
         val id = opened ?: return false
+        val behind = list
         moved()
         val back = closed
         shut()
         selected = back.indexOfFirst { it.id == id }.coerceAtLeast(0)
-        armed = back.getOrNull(selected)?.actions?.size ?: 0
+        armed = stop(back.getOrNull(selected), behind)
         return true
     }
 
     /** The opened row is no longer open, whatever happens to the list next. */
     private fun shut() {
         if (opened == null) return
-        opened = null
+        opened = null; list = null
         results = closed
         closed = emptyList()
         selected = selected.coerceIn(0, (results.size - 1).coerceAtLeast(0))
@@ -906,9 +1075,9 @@ class OverlayModel(
         // The field was just filled in for the user (a scope entered from its row, an example typed): the Enter that
         // did it must not also run what it brought. Only a new press, a moment later, runs.
         if (SystemClock.uptimeMillis() - filledAt < CONFIRM_GAP_MS) return
-        if (resultsFor != (chip?.key to query)) { whenReady = run; return }
-        // On the row's arrow: Enter opens its other actions, or closes them again.
-        if (onMore) { if (opened == null) open() else close(); return }
+        if (!onScreen) { whenReady = run; return }
+        // On Window or on the row's arrow: Enter opens that stop's lines as a list, or closes them again.
+        onList?.let { if (opened != null && list == it) close() else open(it); return }
         val (r, a) = chosen() ?: return
         // "Don't suggest" is the panel's own: nothing runs, and the thing is not counted as run.
         (a.effect as? Effect.Unsuggest)?.let { unsuggest(it.id); return }
@@ -923,8 +1092,10 @@ class OverlayModel(
         // Spotify before Spotify has said what it found (and where it found nothing, the search that takes its place).
         if (needsAnswer(a.effect)) {
             // (Where no lookup is on its way, under a text's chip or after the list was made anew, it is started now.)
+            // (The row the pill is on, if it is the one that waits: under `play` another music app's row may wait too.)
             whenLooked = a.id to run
-            if (looking?.isActive != true) results.firstOrNull { waits(it) }?.let { lookUp(it, pause = false) }
+            val row = r.takeIf { waits(it) } ?: results.firstOrNull { waits(it) }
+            if (row != null && !lookedUp(row)) lookUp(row, pause = false)
             if (looking?.isActive != true) whenLooked = null
             return
         }
@@ -945,11 +1116,16 @@ class OverlayModel(
         run(r, a)
     }
 
-    private fun into(e: Effect.EnterScope) {
+    private fun into(e: Effect.EnterScope, /** The row and the action that were run, where they are not the selected row's (Ctrl + digit). */ ran: Pair<Result, Action>? = chosen()) {
         val from = chip
+        // Where Enter is pressed: the letters as typed, the row, the action. An app's chip goes back to exactly there.
+        val at = if (from == null) ran?.let { (r, a) -> Origin(query, if (r.kind == Kind.ACTION) opened ?: r.id else r.id, a.id, zeroUp) } else null
         filledAt = SystemClock.uptimeMillis()
         app.engine.scope(e.key)?.let {
-            enterScope(it, e.text); if (from != null && from.keywords.isEmpty()) foreign = true
+            enterScope(it, e.text, act = e.act)
+            if (at != null && chip is AppChip) origin = at
+            // (Text another app handed over stays that app's in the scope it moves into. An app's chip has no keyword either, but its text is the user's own.)
+            if (from != null && from.keywords.isEmpty() && from !is AppChip) foreign = true
             // Another app's keyword, entered from its row: from now on its keyword and a Space enters it, like Booklight's own.
             if (!demo && !it.spaceEnters) change { s -> if (e.key in s.usedScopes) s else s.copy(usedScopes = s.usedScopes + e.key) }
         }
@@ -960,7 +1136,7 @@ class OverlayModel(
      * current text are still on their way, nothing happens (an arrow key must never run a row nobody has seen).
      */
     fun fill(): Boolean {
-        if (resultsFor != (chip?.key to query)) return false
+        if (!onScreen) return false
         val e = chosen()?.second?.effect as? Effect.EnterScope ?: return false
         into(e)
         return true
@@ -968,10 +1144,10 @@ class OverlayModel(
 
     /** Ctrl + a digit: that row's first action, straight away. Never one that removes something, and only for rows on screen. */
     fun runRow(n: Int, run: (Result, Action) -> Unit) {
-        if (resultsFor != (chip?.key to query)) return
+        if (!onScreen) return
         val r = results.getOrNull(n)?.takeIf { it.body !is Body.Grid } ?: return
         val a = r.actions.firstOrNull()?.takeIf { !it.danger && !it.confirm } ?: return
-        (a.effect as? Effect.EnterScope)?.let { into(it); return }
+        (a.effect as? Effect.EnterScope)?.let { into(it, r to a); return }
         if (a.effect == PromptScope.ASK || a.effect is Effect.Ask || needsAnswer(a.effect) || (r.body as? Body.Stream)?.busy == true) return     // an answer is Enter's
         if (a.effect is Effect.Unsuggest) return        // and so is "Don't suggest"
         (a.effect as? Effect.Type)?.let { typeOut(it.text); return }
@@ -996,10 +1172,11 @@ class OverlayModel(
     /** Up on an empty field: the last text that was not run, chip included. */
     fun restoreLast(): Boolean {
         if (query.isNotEmpty() || chip != null) return false
-        val (key, text) = app.lastText ?: return false
+        val last = app.lastText ?: return false
         app.lastText = null
-        val s = key?.let { app.engine.scope(it) }
-        if (s != null) enterScope(s, text) else { query = text; search() }
+        val s = last.key?.let { app.engine.scope(it) }
+        // (An app's chip comes back as it was left: the action that was armed, and the keyword it was entered by.)
+        if (s != null) { enterScope(s, last.text, last.word, last.act); via = last.via?.let { app.engine.scope(it) } } else { query = last.text; search() }
         return true
     }
 
@@ -1009,7 +1186,7 @@ class OverlayModel(
         // Text another app handed over is never kept, in its own chip or once it has moved into a note or a code. Nor is
         // an example Booklight typed, unless the user made it their own by editing it.
         // (An app's chip has no keyword either, but what is typed under it is the user's own.)
-        if (query.isNotBlank() && !foreign && !shown && (chip?.keywords?.isEmpty() != true || chip?.key?.startsWith(SearchEngine.IN_APP) == true)) app.lastText = chip?.key to query
+        if (query.isNotBlank() && !foreign && !shown && (chip?.keywords?.isEmpty() != true || chip is AppChip)) app.lastText = BooklightApp.Last(chip?.key, query, act, word, via?.key)
     }
 
     /** Something was run: the line of the list of everything it belongs to has been used, and is not suggested again. */
@@ -1019,12 +1196,17 @@ class OverlayModel(
         if (id !in settings.used) change { it.copy(used = it.used + id) }
     }
 
-    /** Remember the pick, so the same text finds it first next time. */
-    fun learn(r: Result) {
+    /** Remember the pick, so the same text finds it first next time. [a]: the action that was run. */
+    fun learn(r: Result, a: Action) {
         app.lastText = null
+        // (Under a chip nothing is learned: the way by an app's row always goes to the app, and teaches nothing about the typed sentence.)
         if (chip != null) return
+        // A line of one of a row's lists (Left half, behind Window) is a use of the row it belongs to: the app was opened.
+        val row = if (r.kind == Kind.ACTION) closed.firstOrNull { it.id == opened } ?: r else r
         // (From the usual rows, or after a typed space, nothing was typed for it: it counts as run, and no text is tied to it.)
-        app.engine.picked(Query(if (query.isBlank()) "" else query), r)
+        app.engine.picked(Query(if (query.isBlank()) "" else query), row)
+        // Words after an app's name: which of the two searches was run says who leads next time, the app or the web (core `Lead`).
+        if (a.id == Act.SEARCH.id) app.engine.led(r, if (opened != null) closed else results)
         app.historyStore.changed()
     }
 

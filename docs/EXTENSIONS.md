@@ -98,21 +98,26 @@ The debug build of Booklight declares a file for itself (`app/src/debug/res/xml/
 
 ## 3. A search inside your app
 
-Type an app's name and what you are looking for (`spotify daft punk`), or choose Search behind the arrow on the
-app's own row and type then: Enter opens the app on its results. Where the text goes is, for one app, the first of
-these that the installed app takes:
+An app that can be searched has Search as the second action on its own row: type the app, Tab, Enter, and the app
+is the chip in the field, with its own icon; type what you are looking for, and Enter opens the app on its results.
+The app's name and the words typed in one go (`spotify daft punk`) give the same row in the ordinary list. Where
+the text goes is, for one app, the first of these that the installed app takes:
 
 1. **Your Booklight file.** The first `scope` of your file that has an `open` of its own (a keyword that takes
-   text) is your app's search. Its row keeps your words: "Tools: merge".
+   text) is your app's search. Its action and its row keep your words: "Tools: merge". Further keywords of your
+   file stay your app's own keywords.
 2. **The bundled table**, for well-known apps that have no file (below).
 3. **What your app declares for everyone:** an exported activity for `android.intent.action.SEARCH`, or for
    `com.google.android.gms.actions.SEARCH_ACTION`. The text arrives as the string extra `query`.
 
 The same four rules apply as everywhere here: your package, exported, no permission, enabled. A search that fails
 them is not offered, and nothing is offered for an app that has none of the three. The row is named "Search
-*your app* for …" and carries your app's own icon; it stands under everything that matches the typed text by its
-name, so an app called "Spotify Desktop" is still the first row for `spotify d`. The assistant's capabilities in
-`shortcuts.xml` (`actions.intent.GET_THING`) are not read.
+*your app* for …" and carries your app's own icon. Typed in one go, it stands under everything that matches the
+typed text by its name (an app called "Spotify Desktop" is still the first row for `spotify d`), and directly
+under the web's row until the user has picked it once for your app: from then on your app leads for words after
+its name. A manifest shortcut of yours that is only called "Search" is not listed as a row of its own where your
+app has Search on its row: it would be the same act twice. The assistant's capabilities in `shortcuts.xml`
+(`actions.intent.GET_THING`) are not read.
 
 ### The bundled table
 
@@ -127,8 +132,9 @@ com.android.vending	https://play.google.com/store/search?q={argument}&c=apps	sto
 - A line is the app's package, a tab, and the address, with `{argument}` where the typed text goes. The text is
   percent-encoded (a space is `%20`), so it stays one piece in a path as well as after a `?`.
 - A third field names the one of Booklight's own links (`yt`, `maps`, `store`, `drive`) that searches the same
-  place. That link then opens in the app where the app is installed and takes the address, and in the browser
-  where not. A link the user changed goes where it says.
+  place. Where the app is installed and takes the address, that keyword makes the app the chip, with Search
+  armed and the browser behind the row's arrow ("On the web"); where not, the link opens in the browser. A link
+  the user changed goes where it says.
 - An app may have several lines; the first that the installed app takes is used.
 - A line starting with `#` is a comment. The comment above a line says whether it was seen landing on the app's
   results on a Googlebook.

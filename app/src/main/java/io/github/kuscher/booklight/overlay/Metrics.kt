@@ -28,6 +28,8 @@ object Metrics {
     val pad = 8.dp
     val footer = 36.dp
     val radius = 32.dp
+    /** The least room a row's title has beside the widest strip: a title that names an app and does not fit in it says less ([Result.brief]). */
+    val title = 340.dp
     /** Where the panel's top edge sits, as a share of the screen's height: the field stays put while the list grows down. */
     const val TOP = 0.2f
 
@@ -64,6 +66,8 @@ object Metrics {
         m.results.isNotEmpty() -> pad + listHeight(m.results) + pad + footer
         m.card != null || m.tip != null -> card + pad
         m.copy != null -> pad + row + pad
+        // Under the empty field of an app's chip: the line that offers the app's other action.
+        m.otherAct != null -> pad + row + pad
         else -> 0.dp
     }
 

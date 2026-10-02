@@ -1,8 +1,12 @@
 package io.github.kuscher.booklight.overlay
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.VectorizedFiniteAnimationSpec
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -49,19 +53,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -71,6 +80,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -78,8 +88,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.Behind
 import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Icon as RowIcon
@@ -90,6 +102,8 @@ import io.github.kuscher.booklight.ui.Fonts
 import io.github.kuscher.booklight.ui.Symbols
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 // Results: rows that rise in, move to their new place and fade out, under one gliding selection
 
@@ -176,7 +190,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     Box(Modifier.padding(horizontal = Metrics.pad).padding(top = Metrics.pad).fillMaxWidth().height(tall)) {
         val danger = picked?.kind == Kind.ACTION && picked.actions.firstOrNull()?.danger == true
         // A grid has its own highlight, the square on its cells: one highlight per level.
-        Pill(tops.getOrElse(model.selected) { 0.dp }, picked?.let(Metrics::rowHeight) ?: Metrics.row, visible = picked != null && picked.body !is Body.Grid, danger = danger)
+        Pill(tops.getOrElse(model.selected) { 0.dp }, picked?.let(Metrics::rowHeight) ?: Metrics.row, visible = picked != null && picked.body !is Body.Grid, danger = danger, row = picked?.id)
         for (slot in rows) key(slot.uid) {
             val selected = !slot.leaving && slot.index == model.selected
             val r = slot.result
@@ -195,7 +209,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                 ResultRow(
                     r, icons, selected,
                     armed = if (selected) model.armed else r.armed, confirming = selected && model.confirming, cell = if (selected) model.cell else -1,
-                    stops = model.stops(r), opened = open == r.id,
+                    stops = model.stops(r), opened = model.list.takeIf { open == r.id },
                     // (A pointer passing over a row is not the user going to it: nothing is looked up for that.)
                     onHover = { if (!slot.leaving) model.select(slot.index, passing = true) }, calm = model.zeroUp && model.current == null,
                     onClick = { if (!slot.leaving) { model.select(slot.index); if (open != r.id) model.armAt(r.armed); model.enter(onRun) } },
@@ -208,13 +222,13 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                         val a = r.actions.getOrNull(i)
                         if (!slot.leaving && a != null && !a.off) {
                             model.select(slot.index)
-                            if (a.more) { if (model.opened != r.id) model.open(); if (model.selectId("act:${r.id}:${a.id}")) model.enter(onRun) }
+                            if (a.more) { if (model.opened != r.id || model.list != a.behind) model.open(a.behind); if (model.selectId("act:${r.id}:${a.id}")) model.enter(onRun) }
                             else { model.armAt(i); model.enter(onRun) }
                         }
                     },
                     onCell = { if (selected) model.cellAt(it) else if (!slot.leaving) model.select(slot.index) },
                     onPick = { if (!slot.leaving) { model.select(slot.index); model.cellAt(it); model.armAt(0); model.enter(onRun) } },
-                    onToggle = { if (!slot.leaving) { model.select(slot.index); if (open == r.id) model.close() else model.open() } },
+                    onToggle = { if (!slot.leaving) { model.select(slot.index); if (open == r.id) model.close() else model.open(Behind.ARROW) } },
                     onGrow = { model.grow(r.id) },
                 )
                 if (mine != null) ActionBlock(
@@ -262,39 +276,238 @@ private fun SlotRow(top: Dp, leaving: Boolean, delayMs: Int, onGone: () -> Unit,
 }
 
 /**
- * The selection: one pill for the whole list. When it moves, the edge that leads travels on a
- * quicker spring than the edge that follows, so it stretches towards the row it is going to and
- * then gathers itself there. On an action that removes something it takes the error container's
- * colour, as the pane does one level down.
+ * One edge of a highlight, in dp. It goes to its place on a spring; given another place or another spring on its way,
+ * it goes on from where it is with the speed it has. Nothing is cancelled for that, so nothing starts again from a standstill.
+ */
+private class Edge(at: Float) {
+    var at by mutableFloatStateOf(at)
+        private set
+    /** Where it is going. */
+    var to = at
+        private set
+    /** How fast it is, in dp a second. */
+    private var speed = 0f
+    // The spring it rides, and where, how fast and when it set off on it. The spring is asked for the time since then:
+    // it counts in whole milliseconds, so stepping it from frame to frame would lose a third of one in every frame.
+    private var spring: VectorizedFiniteAnimationSpec<AnimationVector1D>? = null
+    private var from = AnimationVector1D(at)
+    private var goal = AnimationVector1D(at)
+    private var push = AnimationVector1D(0f)
+    private var since = 0L
+    private var lasts = 0L
+    val running get() = spring != null
+
+    /** [clock] is the last frame's time: the next frame is one frame on. 0 when no frame is running: the next frame is then its first, and shows it where it stands. */
+    fun go(to: Float, spec: FiniteAnimationSpec<Float>, clock: Long, start: Float = at) = ride(to, spec.vectorize(Float.VectorConverter), clock, start)
+
+    /** Put elsewhere: it goes on from there to the same place, on the spring it was riding (on [spec] if it stood still). */
+    fun shift(start: Float, spec: FiniteAnimationSpec<Float>, clock: Long) = ride(to, spring ?: spec.vectorize(Float.VectorConverter), clock, start)
+
+    private fun ride(to: Float, on: VectorizedFiniteAnimationSpec<AnimationVector1D>, clock: Long, start: Float) {
+        this.to = to; at = start
+        from = AnimationVector1D(start); goal = AnimationVector1D(to); push = AnimationVector1D(speed)
+        spring = on; since = clock; lasts = on.getDurationNanos(from, goal, push)
+    }
+
+    fun cut(to: Float) { at = to; this.to = to; speed = 0f; spring = null }
+
+    fun frame(now: Long, scale: Float) {
+        val s = spring ?: return
+        if (since == 0L) since = now
+        val t = ((now - since) / scale.toDouble()).toLong()     // (the system's animation scale, as every animation of Compose's takes it)
+        if (t < lasts) { at = s.getValueFromNanos(t, from, goal, push).value; speed = s.getVelocityFromNanos(t, from, goal, push).value }
+        if (t >= lasts || (abs(to - at) <= 0.01f && abs(speed) <= 0.5f)) cut(to)
+    }
+}
+
+/**
+ * A highlight along one line, from one edge to the other: the list's pill from its top to its bottom, the grid's
+ * square once across and once down. It travels like rubber (docs/design/rubber-highlight.md): the edge that leads
+ * sets off at once; the old edge holds on for a few frames, so the highlight lies over both rows, then lets go and
+ * gathers. Only from rest: one that is already moving (a held key, the pointer) does not hold, and every edge keeps
+ * the speed it has. However far it goes it is drawn at most [Motion.STRETCH_MOST] longer than its row.
+ *
+ * Its edges are not animations of their own: [frame] moves all of them, once in every frame of the screen, and [go]
+ * only says where to. So a new place cancels nothing, and the hold is a count of frames.
+ */
+class Band(first: Dp, size: Dp) {
+    private val start = Edge(first.value)
+    private val end = Edge((first + size).value)
+    /** What the stretch is measured against: the longer of the row it left and the one it is going to. It changes on `place`, as a row's own height does. */
+    private val body = Edge(size.value)
+    /** Towards [end]: down, or to the right. The limit draws the old edge nearer; the edge that leads is where it is. */
+    private var forward = true
+    /** The place and the length it was last sent to. */
+    private var asked = first.value
+    private var length = size.value
+    // The old edge holding on: which, how many frames more, and where it goes on what when it lets go.
+    private var held: Edge? = null
+    private var wait = -1
+    private var heldTo = 0f
+    private var heldOn: FiniteAnimationSpec<Float>? = null
+    /** The last frame's time, and whether frames are running: what sets off between two frames is one frame on in the next. */
+    var clock = 0L
+        private set
+    private var awake = false
+    private var began = 0L
+    /** It was on its way in the last frame (the debug trace). */
+    var stepped = false
+        private set
+
+    /** Neither edge is moving and none is holding on: only then does the next move hold. */
+    val resting get() = !start.running && !end.running && wait < 0
+    val moving get() = !resting || body.running
+    /** The milliseconds since it left its place. */
+    val ms get() = ((clock - began) / 1_000_000.0).roundToInt()
+
+    /** How far the limit draws the old edge from where it is: nothing up to [Motion.STRETCH_KNEE] of stretch. */
+    private val pull: Float get() {
+        val extra = end.at - start.at - body.at
+        return if (extra > Motion.STRETCH_KNEE.value) extra - Motion.stretch(extra.dp).value else 0f
+    }
+    /** It is at [first], or on its way there. */
+    fun goesTo(first: Dp) = asked == first.value
+
+    /** Where its two edges are drawn. */
+    val first get() = (if (forward) start.at + pull else start.at).dp
+    val last get() = (if (forward) end.at else end.at - pull).dp
+
+    /**
+     * It goes to [first], [size] long. [glued]: it is its own row or cell that moved, and it goes with it as one piece,
+     * on `place`. [calm]: nothing of the highlight was moving; a square, which has two bands, says so for both.
+     */
+    fun go(first: Dp, size: Dp, motion: Motion, refresh: Float, glued: Boolean = false, calm: Boolean = resting) {
+        val top = first.value
+        val length = size.value
+        if (top == asked && length == this.length) return
+        if (!motion.on) { cut(first, size); return }
+        val now = if (awake) clock else 0L
+        // Every edge goes on from where it is drawn, with the speed it has. If the limit was drawing one nearer, the
+        // limit starts again from this length, so that nothing jumps when the direction turns round.
+        val s = this.first.value
+        val e = last.value
+        val pulled = pull > 0f
+        val holding = wait >= 0
+        held = null; wait = -1
+        if (calm) began = now
+        val most = maxOf(this.length, length)
+        if (calm) body.cut(maxOf(most, e - s))
+        if (!calm || body.at != most) body.go(most, motion.place(), now, if (pulled) e - s - Motion.STRETCH_KNEE.value else body.at)
+        asked = top; this.length = length
+        // Only its length changed (an answer needing more lines, Enter on a model's row): no rubber. The lower edge goes
+        // with the row's own growth, on the same spring, and an upper edge that is still on its way is left to arrive.
+        if (top == start.to && !holding) {
+            if (pulled) start.shift(s, motion.place(), now)
+            end.go(top + length, motion.place(), now, e)
+            return
+        }
+        if (glued) { start.go(top, motion.place(), now, s); end.go(top + length, motion.place(), now, e); return }
+        forward = top + length / 2 > (start.to + end.to) / 2
+        val lead = if (forward) end else start
+        val old = if (forward) start else end
+        val leadTo = if (forward) top + length else top
+        val oldTo = if (forward) top else top + length
+        val far = abs(leadTo - (if (forward) e else s)) > Motion.PILL_NEAR.value
+        lead.go(leadTo, motion.pillLead(), now, if (forward) e else s)
+        // (An edge that had not let go yet when the direction turned stays where it is: it is the one that leads now.)
+        val frames = if (calm) motion.pillHold(far, refresh) else 0
+        if (frames == 0) { old.go(oldTo, motion.pillTrail(far), now, if (forward) s else e); return }
+        // It lets go in the frame that is `frames` after the one the other edge sets off in.
+        held = old; heldTo = oldTo; heldOn = motion.pillTrail(far); wait = if (awake) frames - 1 else frames
+    }
+
+    /** One frame of the screen; false once everything stands still. To be called while it is [moving], in every frame. */
+    fun frame(now: Long, scale: Float): Boolean {
+        stepped = !resting
+        if (began == 0L) began = now
+        if (wait > 0) wait-- else if (wait == 0) { wait = -1; held?.go(heldTo, heldOn!!, now); held = null }
+        start.frame(now, scale); end.frame(now, scale); body.frame(now, scale)
+        clock = now; awake = moving
+        return awake
+    }
+
+    /** It is there, without a way. */
+    fun cut(first: Dp, size: Dp) {
+        start.cut(first.value); end.cut((first + size).value); body.cut(size.value)
+        asked = first.value; length = size.value; held = null; wait = -1; awake = false
+    }
+
+    /** It stays where it is (it is fading away): wherever it is sent next, it sets off from rest. */
+    fun stop() {
+        val s = first.value
+        val e = last.value
+        start.cut(s); end.cut(e); body.cut(e - s)
+        asked = Float.NaN; length = e - s; held = null; wait = -1; awake = false
+    }
+}
+
+/**
+ * Debug builds, `./bl debug pill N`: the next N frames in which the list's pill is on its way, a line each in the log
+ * (`./bl logs`): the milliseconds since it left its place, its two edges as they are drawn, and the row it is going
+ * to, in pixels from the list's top.
+ */
+object PillTrace {
+    var left = 0
+        private set
+    private var last = 0L
+    fun start(frames: Int) { left = frames; last = System.nanoTime() }     // (a frame's time is on that clock: what was before this is not written)
+    fun frame(band: Band, upper: Int, lower: Int, top: Int, bottom: Int) {
+        if (!band.stepped || band.clock <= last) return
+        last = band.clock; left--
+        Log.i(BooklightApp.TAG, "pill t=${band.ms} up=$upper lo=$lower to=$top..$bottom")
+    }
+}
+
+/**
+ * The selection: one pill for the whole list. It travels like rubber ([Band]): its front edge goes to the new row at
+ * once, the old edge holds on for a moment and then follows, so the pill stretches over both rows and gathers itself
+ * on the new one. On an action that removes something it takes the error container's colour, as the pane does one
+ * level down. [row] is the selected row, so that the pill knows when it is its own row that moved.
  */
 @Composable
-fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false) {
-    val scheme = MaterialTheme.colorScheme
+fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false, row: String? = null) {
     val motion = LocalMotion.current
-    val upper = remember { Animatable(top, Dp.VectorConverter) }
-    val lower = remember { Animatable(top + height, Dp.VectorConverter) }
+    val band = remember { Band(top, height) }
     val shown by animateFloatAsState(if (visible) 1f else 0f, motion.fade(120), label = "pill")
-    LaunchedEffect(top, height, visible) {
+    val refresh = LocalView.current.display?.refreshRate ?: 60f
+    val was = remember { arrayOfNulls<String>(1) }
+    // This effect only says where the pill goes and counts the frames. The way itself is the band's: a new row ends
+    // the effect and starts it again, and the pill goes on from where it is with the speed it has.
+    LaunchedEffect(top, height, visible, row) {
+        val own = row != null && row == was[0]
+        was[0] = row
         // Going: it fades where it stands. Coming from nothing: it is where it belongs, it does not fly in from where it
         // last was (or from the top of a page that had no selection yet).
-        if (!visible) return@LaunchedEffect
-        if (shown == 0f) { upper.snapTo(top); lower.snapTo(top + height); return@LaunchedEffect }
-        // Its row only grew (an answer needing more lines): the lower edge goes with the row's own growth, on the same spring.
-        // (Only if the upper edge really stands there: one that was on its way when the list changed again must be brought
-        // home too, or the pill would stay short of its row's top.)
-        if (top == upper.value) { lower.animateTo(top + height, motion.place()); return@LaunchedEffect }
-        val down = top + height / 2 > (upper.targetValue + lower.targetValue) / 2
-        launch { upper.animateTo(top, if (down) motion.trail() else motion.lead()) }
-        launch { lower.animateTo(top + height, if (down) motion.lead() else motion.trail()) }
+        if (!visible) { band.stop(); return@LaunchedEffect }
+        if (shown == 0f) { band.cut(top, height); return@LaunchedEffect }
+        // Its own row was moved by a list that changed (rows arriving above it): the pill goes with its row, as one piece.
+        band.go(top, height, motion, refresh, glued = own)
+        val scale = coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f
+        while (band.moving) withFrameNanos { band.frame(it, scale) }
     }
+    // Drawn from its two edges, each rounded to a pixel by itself, and as tall as what lies between them: an edge that
+    // is holding on stands still, and one that settles never steps back a pixel (as the sum of a rounded top and a
+    // rounded height did).
+    Slab(
+        Modifier.fillMaxWidth().layout { measurable, constraints ->
+            val upper = band.first.roundToPx()
+            val lower = maxOf(band.last.roundToPx(), upper + 12.dp.roundToPx())
+            if (PillTrace.left > 0) PillTrace.frame(band, upper, lower, top.roundToPx(), (top + height).roundToPx())
+            val box = measurable.measure(constraints.copy(minHeight = lower - upper, maxHeight = lower - upper))
+            layout(box.width, box.height) { box.place(0, upper) }
+        },
+        { shown }, danger,
+    )
+}
+
+/** What the pill is made of. The only coloured surface: that is what says "selected". Flat, with the panel's white outline. */
+@Composable
+private fun Slab(modifier: Modifier, shown: () -> Float, danger: Boolean) {
     val shape = RoundedCornerShape(24.dp)   // the panel's 32 less the 8 it is inset by: concentric
     val dark = LocalDark.current
-    // The only coloured surface: that is what says "selected". Flat, with the panel's white outline.
-    val fill by animateColorAsState(selectionFill(scheme, dark, LocalGlass.current, danger), motion.fade(120), label = "fill")
+    val fill by animateColorAsState(selectionFill(MaterialTheme.colorScheme, dark, LocalGlass.current, danger), LocalMotion.current.fade(120), label = "fill")
     Box(
-        Modifier.offset { IntOffset(0, upper.value.roundToPx()) }
-            .fillMaxWidth().height((lower.value - upper.value).coerceAtLeast(12.dp))
-            .graphicsLayer { alpha = shown }
+        modifier.graphicsLayer { alpha = shown() }
             .clip(shape)
             .background(fill)
             .border(with(LocalDensity.current) { 1f.toDp() }, Color.White.copy(alpha = if (dark) 0.30f else 0.55f), shape),
@@ -389,7 +602,8 @@ private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List
             // One item for a screen reader, whatever it can do offered as its actions.
             .semantics(mergeDescendants = true) {
                 this.selected = selected; role = Role.Button; contentDescription = label
-                if (actions.size > 1) customActions = actions.drop(1).mapIndexed { i, a -> CustomAccessibilityAction(a.label) { act(i + 1); true } }
+                // (Window is a stop, not something to run: its lines are offered by their own names, "Left half".)
+                if (actions.size > 1) customActions = actions.withIndex().drop(1).filter { it.value.effect !is Effect.OpenList }.map { (i, a) -> CustomAccessibilityAction(a.label) { act(i); true } }
             }
             .padding(horizontal = if (bare) 0.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -399,8 +613,8 @@ private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List
 @Composable
 fun ResultRow(
     r: Result, icons: AppIcons, selected: Boolean, armed: Int, confirming: Boolean, cell: Int,
-    /** What the arming can rest on (indices into the row's actions; the number of actions is its arrow), and whether its other actions are listed under it. */
-    stops: List<Int> = r.actions.indices.toList(), opened: Boolean = false,
+    /** What the arming can rest on (indices into the row's actions; the number of actions is its arrow), and which of its two lists is open under it, if one is. */
+    stops: List<Int> = r.actions.indices.toList(), opened: Behind? = null,
     onHover: () -> Unit, onClick: () -> Unit, onArm: (Int) -> Unit, onAction: (Int) -> Unit, onCell: (Int) -> Unit, onPick: (Int) -> Unit, onToggle: () -> Unit = {},
     /** Nothing is selected yet (the usual rows at rest): the pointer brings the highlight only once it has really moved on the row, not by a tremble. */
     calm: Boolean = false,
@@ -465,8 +679,9 @@ fun ResultRow(
                             // beside it never makes the title swap letters for an ellipsis.
                             if (body is Body.Keys) Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500), lineHeight = 21.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
                             else Box(Modifier.fillMaxWidth().fadeEnd()) {
+                                val style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500))
                                 if (body is Body.Task) TaskTitle(r.title, body.done, on)
-                                else Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                                else Text(fitting(r, style), color = on, style = style, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
                             }
                             r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = if (Metrics.rowHeight(r) > Metrics.row) 2 else 1, overflow = TextOverflow.Ellipsis) }
                         }
@@ -486,22 +701,33 @@ fun ResultRow(
         }
 
         // What the row can do arrives on the selected row; the others say what kind of thing they are.
-        // The icons are the actions that are not kept behind the arrow; the last slot is the arrow, or the one of
-        // the others that a typed verb named.
+        // The icons are the actions that are not kept in a list; the last slot is the arrow, or the one of its lines
+        // that a typed verb named. Window is an icon like the others, and a typed place stands in its slot.
         val shown = r.actions.filter { !it.more }
-        val more = r.actions.any { it.more }
+        val more = r.actions.any { it.more && it.behind == Behind.ARROW }
         val tenth = stops.lastOrNull()?.takeIf { more }?.let { r.actions.getOrNull(it) }
-        val slot = when { more && (armed == r.actions.size || r.actions.getOrNull(armed)?.more == true) -> shown.size; else -> shown.indexOf(r.actions.getOrNull(armed)).coerceAtLeast(0) }
-        fun full(k: Int) = if (k < shown.size) r.actions.indexOf(shown[k]) else stops.lastOrNull() ?: 0
+        val window = shown.indexOfFirst { it.effect is Effect.OpenList }
+        val place = stops.firstOrNull { r.actions.getOrNull(it)?.let { a -> a.more && a.behind == Behind.WINDOW } == true }?.takeIf { window >= 0 }
+        val slot = r.actions.getOrNull(armed).let { a ->
+            when {
+                more && (armed == r.actions.size || (a?.more == true && a.behind == Behind.ARROW)) -> shown.size
+                a?.more == true && window >= 0 -> window
+                else -> shown.indexOf(a).coerceAtLeast(0)
+            }
+        }
+        fun full(k: Int) = if (k >= shown.size) stops.lastOrNull() ?: 0 else if (k == window && place != null) place else r.actions.indexOf(shown[k])
         // A key combination: the caps keep one place in every row, selected or not. The strip's room is kept free
         // after them, and the kind label and the strip trade places inside it.
         if (body is Body.Keys) { KeyCaps(body.keys, dim); Spacer(Modifier.width(16.dp)) }
         // An answer's strip has a room of its own, as the key caps have: the text beside it is as wide before the answer as
         // after it, whichever action is armed, and is never laid out again. A strip wider than its room hangs over to the left.
         Box(if (body is Body.Keys) Modifier.width(KEYS_ROOM) else if (body is Body.Stream) Modifier.align(Alignment.Top).padding(top = ((line - 32.dp) / 2).coerceAtLeast(0.dp)).height(32.dp).width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else if (streamed) Modifier.width(STREAM_ROOM).wrapContentWidth(Alignment.End, unbounded = true) else Modifier, contentAlignment = Alignment.CenterEnd) {
-        val mode = when { selected && r.actions.isNotEmpty() -> 2; opened -> 1; else -> 0 }
+        val mode = when { selected && r.actions.isNotEmpty() -> 2; opened != null -> 1; else -> 0 }
         // The arrow turns over when the row's list opens: one turn, whichever of the two arrows is showing.
-        val turn = animateFloatAsState(if (opened) 180f else 0f, motion.pop(), label = "turn")
+        val turn = animateFloatAsState(if (opened != null) 180f else 0f, motion.pop(), label = "turn")
+        // (The strip's own arrow turns only for its own list: while Window's is open it stays as it is.)
+        val arrow = animateFloatAsState(if (opened == Behind.ARROW) 180f else 0f, motion.pop(), label = "arrow")
+        val less = stringResource(R.string.action_less)
         AnimatedContent(Trail(mode, if (mode == 2) shown else emptyList()), transitionSpec = {
             // The strip slides in when the row is selected. When only what the row can do changed (an answer landed: Ask became
             // Copy, Pin…), the old strip fades and the new one comes in its place. The room changes at once: no size animation
@@ -513,13 +739,21 @@ fun ResultRow(
             val state = trail.mode
             when {
                 // (While this is on its way out the row may already have lost its actions: an empty range must not be coerced into.)
-                state == 2 -> ActionStrip(trail.actions, slot.coerceAtMost(trail.actions.size), confirming, confirmLabel = stringResource(R.string.confirm_again),
-                    onArm = { onArm(full(it)) }, onRun = { if (more && tenth == null && it == shown.size) onToggle() else onAction(full(it)) },
-                    more = more, tenth = tenth, opened = opened,
-                    moreLabel = stringResource(R.string.action_more), lessLabel = stringResource(R.string.action_less), turn = { turn.value }, icons = icons)
-                // Its list is open and the pill is on one of its actions: the row keeps only its arrow, turned over, in its place.
-                state == 1 -> Box(Modifier.size(32.dp).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onToggle), contentAlignment = Alignment.Center) {
-                    Icon(Symbols.of("more"), null, Modifier.size(18.dp).graphicsLayer { rotationZ = turn.value }, tint = scheme.onSurface.copy(alpha = SECOND))
+                // Window's slot holds the place a typed verb named ("chrome left"), and reads Less while its own list is open.
+                // (Only the stop itself gives its slot up: a strip that is on its way out may hold other actions at that place.)
+                state == 2 -> ActionStrip(trail.actions.mapIndexed { k, a -> if (k != window || a.effect !is Effect.OpenList) a else place?.let { r.actions.getOrNull(it) } ?: if (opened == Behind.WINDOW) a.copy(label = less) else a },
+                    slot.coerceAtMost(trail.actions.size), confirming, confirmLabel = stringResource(R.string.confirm_again),
+                    // (A click on the arrow while Window's list is open goes the way Enter does: that list closes and the arrow's opens.)
+                    onArm = { onArm(full(it)) }, onRun = { if (more && tenth == null && it == shown.size && opened != Behind.WINDOW) onToggle() else onAction(full(it)) },
+                    more = more, tenth = tenth, opened = opened == Behind.ARROW,
+                    moreLabel = stringResource(R.string.action_more), lessLabel = less, turn = { arrow.value }, icons = icons)
+                // One of its lists is open and the pill is on one of its lines: the row keeps only an arrow, turned over, in
+                // its place; before it, for Window's list, the word that says which list this is.
+                state == 1 -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (opened == Behind.WINDOW) Text(stringResource(R.string.action_window), color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1, modifier = Modifier.padding(end = 8.dp))
+                    Box(Modifier.size(32.dp).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onToggle), contentAlignment = Alignment.Center) {
+                        Icon(Symbols.of("more"), null, Modifier.size(18.dp).graphicsLayer { rotationZ = turn.value }, tint = scheme.onSurface.copy(alpha = SECOND))
+                    }
                 }
                 body is Body.Level -> Spacer(Modifier.width(0.dp))
                 r.kind == Kind.SCOPE -> Keycap("tab")
@@ -528,6 +762,20 @@ fun ResultRow(
         }
         }
     }
+}
+
+/**
+ * [r]'s title, or its shorter form ([Result.brief]) where the whole one is wider than the least room a
+ * title has beside the row's actions: "Search for “dune”" for an app with a long name, whose icon the row
+ * has anyway. Measured against that room and not against the row as it stands, so the words do not change
+ * while the strip unrolls beside them.
+ */
+@Composable
+private fun fitting(r: Result, style: TextStyle): String {
+    val brief = r.brief ?: return r.title
+    val measurer = rememberTextMeasurer()
+    val room = with(LocalDensity.current) { Metrics.title.roundToPx() }
+    return remember(r.title, brief, style, room) { if (measurer.measure(r.title, style, maxLines = 1, softWrap = false).size.width <= room) r.title else brief }
 }
 
 /** What stands at a row's right end: its kind (0), the arrow of its open list (1), or the strip of what it can do (2), which is another strip when those are other actions. */

@@ -9,6 +9,8 @@ data class Query(
     val scope: String? = null,
     /** The word that was typed to enter [scope]: a scope may have several keywords. Null = entered from its row. */
     val keyword: String? = null,
+    /** Under an app's chip: which of the app's two actions the text is for. Null = the first the app has. */
+    val act: Act? = null,
 ) {
     val text: String = raw.trim()
     val isEmpty: Boolean get() = text.isEmpty()
@@ -70,6 +72,25 @@ enum class MediaKey { PLAY_PAUSE, NEXT, PREVIOUS, PLAY, PAUSE, STOP }
 
 /** What to do with a picture Booklight made (a QR code). */
 enum class ImageUse { COPY, SAVE, SHARE }
+
+/**
+ * What an app's chip can be armed with: the two actions of an app's row that take words, in the
+ * row's order. [id] is the id of that action wherever it stands.
+ */
+enum class Act(val id: String) {
+    SEARCH("search"), PLAY("play");
+
+    companion object {
+        /** The action with this id; null for any other action. */
+        fun of(id: String?): Act? = entries.firstOrNull { it.id == id }
+    }
+}
+
+/**
+ * Which stop of its row an action waits behind, where it is not an icon on the row ([Action.more]):
+ * the arrow, or Window (where an app's window goes). Two lists at most, and never a list inside a list.
+ */
+enum class Behind { ARROW, WINDOW }
 
 /** One of an app's own pages in the system's Settings. */
 enum class AppPage { NOTIFICATIONS, LANGUAGE, DEFAULTS, BATTERY }
@@ -175,8 +196,16 @@ sealed interface Effect {
     data class Ask(val prompt: String, val name: String) : Effect
     /** "Don't suggest": the thing with this id is no longer one of the rows under the empty field. The panel does it itself. */
     data class Unsuggest(val id: String) : Effect
-    /** Turns a scope's row into the chip in the field; [text] becomes its argument. */
-    data class EnterScope(val key: String, val text: String = "") : Effect
+    /**
+     * Turns a scope's row into the chip in the field; [text] becomes its argument. [act]: for an
+     * app's chip, which of the app's actions is armed there (Search or Play on the app's row).
+     */
+    data class EnterScope(val key: String, val text: String = "", val act: Act? = null) : Effect
+    /**
+     * A stop of a row that opens the lines kept behind it as a list under the row (Window, on an
+     * app's row). The panel does this itself; the arrow at a row's end needs no action of its own.
+     */
+    data class OpenList(val behind: Behind) : Effect
     /** Booklight types [text] into the field, a letter at a time (an example from a tip or from the list of everything). The panel does this itself. */
     data class Type(val text: String) : Effect
     /** Opens the place where the user allows something, once: `brightness`, `notes`. */
@@ -211,6 +240,8 @@ data class Action(
     val done: String? = null,
     /** Kept behind the row's arrow: a row shows nine actions as icons and opens the rest as a list under it. */
     val more: Boolean = false,
+    /** With [more]: which of the row's two lists it is a line of. */
+    val behind: Behind = Behind.ARROW,
     /** It cannot be run now (it needs an answer that did not come): it keeps its place, dimmed, and the arming passes over it. */
     val off: Boolean = false,
 )
@@ -278,6 +309,8 @@ data class Result(
     val nudge: Nudge? = null,
     /** What the row says at its right end in place of its kind's name: the app a command belongs to, "Key". */
     val label: String? = null,
+    /** The title for where the whole one does not fit beside the row's actions: "Search for “dune”", when the app's name is a long one. */
+    val brief: String? = null,
 )
 
 /**
@@ -329,5 +362,35 @@ interface Scope {
      * space it enters the scope like any other.
      */
     val shy: List<String> get() = emptyList()
+    /**
+     * A keyword that is a short way into an app's chip: `play` is the music app last played in (or
+     * the one [text] names), `yt` is YouTube where it is installed. The chip in the field is then
+     * that app's, and its rows are that chip's. Null: the scope is its own chip.
+     */
+    fun door(text: String): Door? = null
     suspend fun rows(arg: String): List<Result>
 }
+
+/**
+ * An app as the chip in the field: what is typed goes to this app, for the one of its [acts] that
+ * is armed. One chip for an app, whichever is armed: the chip shows the app's own [icon] and its
+ * name, and the placeholder says what to type.
+ */
+interface AppChip : Scope {
+    val icon: Icon.App
+    /** What the app has of the two, in the row's order. Empty: the app has no chip (any more). */
+    val acts: List<Act>
+    /** The field's placeholder while [act] is armed: "Search Spotify", "Song, artist or album". */
+    fun hint(act: Act): String
+    /** [act] in a few words, for the line under the empty field that offers the action that is not armed: "Play in Spotify". */
+    fun offer(act: Act): String
+    /**
+     * The rows for [arg] with [act] armed. [word]: the keyword the chip was entered by (`play`, `yt`);
+     * null when it was entered from the app's own row.
+     */
+    suspend fun rows(arg: String, act: Act, word: String?): List<Result>
+    override suspend fun rows(arg: String): List<Result> = acts.firstOrNull()?.let { rows(arg, it, null) } ?: emptyList()
+}
+
+/** Where a keyword leads that is a short way into an app's chip: the chip, and the action armed there. */
+class Door(val chip: AppChip, val act: Act)

@@ -19,7 +19,7 @@ import java.io.FileOutputStream
  * Test hooks for driving Booklight from adb (`./bl debug …`). Debug builds only. The receiver requires
  * the DUMP permission, which only the shell (adb) holds, so other apps can't use it.
  *   keys TEXT (typed one character at a time, as a person does: every list in between is made) |
- *   ping | dump | type TEXT | key up|down|left|right|tab|backtab|esc|enter|stay|back | close | shot [NAME]
+ *   ping | dump | type TEXT | key up|down|left|right|tab|backtab|esc|enter|stay|back|more|window | close | shot [NAME]
  *   find TEXT (ranked results without the panel; "KEY: TEXT" searches inside a scope) | apps | forget
  *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted|solid | pref opening off|fast|medium|slow
  *   ai none|downloadable|downloading|ready|real (what the rows of a prompt show on a device in that state; `real` asks the device again)
@@ -29,6 +29,8 @@ import java.io.FileOutputStream
  *   window (the Booklight window: its size, its section, where the keys are) | window close | window hover KEY | window unhover KEY | window press KEY | window release KEY |
  *   window trace N (the layout of the next N frames, to the log) | window helper | window helper close |
  *   window film N EVERY (N pictures of the window, one every EVERY frames, in cache/film.png) | wshot [NAME]
+ *   pill N (the next N frames in which the list's pill travels, to the log: ms since it set off, its edges as drawn, its row) |
+ *   held down|up [TIMES] [MS] (the key as a held key repeats it: 8 times, one every 50 ms, unless said otherwise)
  *   pref zero on|off ("Show your usual") | zero (the usual rows as they would stand now; needs no panel) | seed (after forget:
  *   five apps as if run 8, 5, 3, 2 and 1 times) | unhide (empties the "Don't suggest" list)
  *   in TEXT (types under the chip that is there, which `type` would leave first)
@@ -149,11 +151,14 @@ class DebugReceiver : BroadcastReceiver() {
                 when (arg) {
                     "down" -> m.down(false)
                     "up" -> m.up(false)
-                    "right" -> if (!m.moveCell(1, 0) && !m.nudge(1) && m.opened == null) { if (m.onMore) m.open() else m.arm(1, wrap = false) }
+                    // As the keys do (`Panel.keys`): Tab and Right only move on a row that offers more than one thing; Right again on Window or on the arrow opens its list.
+                    "right" -> if (!m.moveCell(1, 0) && !m.nudge(1)) { if (m.tabEnters) m.fill() else if (m.opened == null) { if (m.onList != null) m.open() else m.arm(1, wrap = false) } }
                     "left" -> if (m.opened != null) m.close() else if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
-                    "tab" -> if (m.tip != null) m.tipTab() else if (m.zeroUp && m.current == null && m.chip == null && m.query.isBlank()) m.down(false) else if (m.copy != null || m.bare) m.tabCopy() else if (m.keyword != null) m.enterKeyword() else if (m.opened == null && !m.inAnswer && m.chosen()?.second?.effect is io.github.kuscher.booklight.core.Effect.EnterScope) m.enter { r, a -> act.run(r, a) } else if (m.opened != null) m.step(1) else m.arm(1, wrap = true)
-                    "backtab" -> if (m.opened != null) m.step(-1) else m.arm(-1, wrap = true)
-                    "more" -> { m.current?.let { m.armAt(it.actions.size) } }
+                    "tab" -> if (m.tip != null) m.tipTab() else if (m.zeroUp && m.current == null && m.chip == null && m.query.isBlank()) m.down(false) else if (m.copy != null || m.bare) m.tabCopy() else if (m.keyword != null) m.enterKeyword() else if (m.tabEnters) m.fill() else if (m.opened != null) m.step(1) else if (m.otherAct != null) m.swap() else m.arm(1, wrap = true)
+                    "backtab" -> if (m.opened != null) m.step(-1) else if (m.otherAct != null) m.swap() else m.arm(-1, wrap = true)
+                    // Straight to one of the row's two list stops: `key more` the arrow, `key window` Window. Enter (or `key right`) then opens it.
+                    "more" -> m.armList(io.github.kuscher.booklight.core.Behind.ARROW)
+                    "window" -> m.armList(io.github.kuscher.booklight.core.Behind.WINDOW)
                     "back" -> m.back()
                     "esc" -> if (!m.cancelConfirm() && !m.leaveAnswer()) act.close()
                     "enter" -> if (m.tip != null) m.tipEnter() else m.enter { r, a -> act.run(r, a) }
@@ -225,12 +230,30 @@ class DebugReceiver : BroadcastReceiver() {
                 }
                 out(sb.toString())
             }
+            // `pill N`: the next N frames in which the list's pill is on its way, one log line each (`pill t=8 up=0 lo=87 to=84..168`:
+            // ms since it left its place, its upper and lower edge as drawn, its row's top and bottom, in px from the list's top). `pill 0` ends it.
+            "pill" -> main.post {
+                val n = (arg.toIntOrNull() ?: 60).coerceIn(0, 600)
+                io.github.kuscher.booklight.overlay.PillTrace.start(n)
+                out("tracing $n frames")
+            }
+            // `held down 8 50`: Down as a held key repeats it, eight times in all, one every 50 ms (Android's own repeat):
+            // the pill is sent on while it is on its way, which `key down` after `key down` is too slow for.
+            "held" -> main.post {
+                val m = act?.model ?: return@post out("no panel")
+                val words = arg.split(' ')
+                val times = (words.getOrNull(1)?.toIntOrNull() ?: 8).coerceIn(1, 40)
+                val every = (words.getOrNull(2)?.toLongOrNull() ?: 50L).coerceIn(8L, 1000L)
+                repeat(times) { i -> main.postDelayed({ if (words[0] == "up") m.up(i > 0) else m.down(i > 0) }, every * i) }
+                out("ok")
+            }
             "close" -> main.post { act?.close(); out("ok") }
             "dump" -> main.post {
                 val m = act?.model ?: return@post out("no panel")
                 val d = act.window.decorView
                 val loc = IntArray(2).also { d.getLocationOnScreen(it) }
-                out("chip=${m.chip?.key} query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${if (m.onMore) "more" else m.chosen()?.second?.id}${if (m.confirming) "?" else ""} opened=${m.opened} cell=${m.cell} flash=${m.flash} " +
+                // (Under an app's chip: the action that is armed there after a colon, the keyword it was entered by after "via", and the line that offers its other action.)
+                out("chip=${m.chip?.key}${m.act?.let { ":" + it.id } ?: ""}${m.chipVia?.let { " via=$it" } ?: ""}${m.otherAct?.let { " line=" + it.id } ?: ""} hint='${m.hint.orEmpty()}' query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${when (m.onList) { io.github.kuscher.booklight.core.Behind.ARROW -> "more"; io.github.kuscher.booklight.core.Behind.WINDOW -> "window"; null -> m.chosen()?.second?.id }}${if (m.confirming) "?" else ""} opened=${m.opened}${m.list?.let { ":" + it.name.lowercase() } ?: ""} cell=${m.cell} flash=${m.flash} " +
                     "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} card=${m.card} zero=${if (m.zeroUp) m.results.count { it.kind != io.github.kuscher.booklight.core.Kind.ACTION } else 0} copy=${m.copy?.let { "${it.age}:${it.things.joinToString("+")}${if (it.looking) "…" else ""}" }} tip=${m.tip?.id}${if (m.tipArmed != 0) ":" + m.tipArmed else ""}${if (m.tipOff) " off" else ""} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
             }
@@ -327,7 +350,8 @@ class DebugReceiver : BroadcastReceiver() {
             is io.github.kuscher.booklight.core.Body.Task -> if (b.done) " {done}" else " {open}"
             is io.github.kuscher.booklight.core.Body.Stream -> " {${b.caption}${if (b.answer) " =" else ":"} ${b.text}${if (b.busy) "…" else ""}${if (b.tall) " tall" else ""}${if (b.ask != null && !b.answer) " ?" else ""}}"
         }
-        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (a.more) "+" else "") + (if (a.off) "(off)" else "") }.joinToString(",")
+        // (A line behind the arrow is marked +, one behind Window +w.)
+        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (!a.more) "" else if (a.behind == io.github.kuscher.booklight.core.Behind.WINDOW) "+w" else "+") + (if (a.off) "(off)" else "") }.joinToString(",")
         return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.label ?: r.kind}]$body <$acts>"
     }
 }

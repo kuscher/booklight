@@ -225,7 +225,7 @@ fun Stage(
                                 Modifier.height(36.dp).clip(CircleShape).background(scheme.onSurface.copy(alpha = if (dark) 0.14f else 0.10f)).padding(start = 8.dp, end = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Symbols.of(chip.symbol), null, Modifier.size(20.dp), tint = scheme.onSurface)
+                                io.github.kuscher.booklight.overlay.ChipMark(chip, icons)
                                 Text(chip.name, color = scheme.onSurface, style = TextStyle(fontFamily = Fonts.text, fontSize = 15.sp, fontWeight = FontWeight(600)), maxLines = 1, modifier = Modifier.padding(start = 6.dp))
                             }
                             val style = TextStyle(fontFamily = Fonts.text, fontSize = 24.sp, fontWeight = FontWeight(500))

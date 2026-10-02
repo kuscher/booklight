@@ -5,7 +5,9 @@ library of Google's, which reports how it is used to Google (see "Answers on thi
 
 **On your device.** Booklight remembers what you pick for the text you type, so your usual choice comes
 first, and it keeps your settings, your links, snippets and recipes, and the emoji you picked lately.
-These are files in the app's own storage. The Booklight window › What Booklight keeps › Forget
+These are files in the app's own storage. With what it learns it also keeps, for an app whose own search
+row you picked after typing its name and some words (`netflix severance`), that this app comes before the web
+for such a text. The Booklight window › What Booklight keeps › Forget
 everything clears what it has learned. If you turn on Show your usual, the empty panel shows the two things you
 run most from Booklight and the one you ran last. This uses the same record; the only new things kept are the
 switch, which two things had the first two rows last time, and the list of things you asked not to be suggested.
@@ -19,9 +21,12 @@ their own packages. It starts one only when you press Enter on its row, and thos
 
 **Search suggestions are off until you turn them on.** If you turn them on, the text you type is sent
 over HTTPS to the search engine you chose (Google by default; DuckDuckGo, Bing, Brave Search or Ecosia
-if you change it) to get suggested searches. Sums, web addresses, an app's own address, an app's
-name followed by what to look for in it (`spotify daft punk`), and anything typed after a keyword
-(a note, a mail, a search of one site) are not sent. No cookies or identifiers are added; like any
+if you change it) to get suggested searches. Sums, web addresses, an app's own address, and anything
+typed after a keyword or with an app in the field (a note, a mail, a search of one site or of one app, a song
+to play) are not sent. An app's name followed by other words, typed in one go (`netflix severance`), is a
+web search like any other and is sent, until you have picked that app's own row for such a text: from then
+on the app comes first for words after its name, and they are not sent (picking the web's row twice running
+makes it a web search again). No cookies or identifiers are added; like any
 internet request it shows the search engine your IP address. Turn suggestions off again in the
 Booklight window › Web search.
 
@@ -42,21 +47,24 @@ in memory for two minutes (that a number is not known, for an hour) and written 
 part of your backup and goes to AirLabs only. Take it out in the same place and nothing is sent again.
 Booklight ships no key and its developer sees neither yours nor your lookups.
 
-**Spotify: nothing is sent unless you put in a key of your own.** `play … on spotify` hands your text to
-the Spotify app on your device, which shows its search results; Booklight itself sends nothing. If you put
+**Spotify: nothing is sent unless you put in a key of your own.** Without a key, Spotify's row has Search:
+Enter hands your text to the Spotify app on your device, which shows its search results; Booklight itself
+sends nothing. If you put
 a key of your own for Spotify's Web API (a client ID and its secret, from developer.spotify.com) into the
-Booklight window › Labs, Booklight looks the name up so that Spotify can play it. For that,
-the text you typed after `play` (without the app's name) and the country your device is set to are sent
+Booklight window › Labs, Spotify's row also has Play, and Booklight looks the name up so that Spotify can play it. For that,
+the text you type while Spotify stands in the field and Play is armed (without the app's name) and the country your device is set to are sent
 over HTTPS to api.spotify.com, with a token Booklight gets by sending your key to accounts.spotify.com, and
 nothing else is: no cookies, no identifiers; like any internet request it shows Spotify your IP address, and
 Spotify can tie the lookups to the account the key belongs to. The token is the key's, not yours as a
 listener: nothing of your Spotify account (your playlists, what you listen to) is read. When: each
-time you pause typing after `play` for about half a second, the text as it stands then (so a slow hand
-sends the start of a name before the whole of it), while Spotify is the app the row is aimed at because you chose
-it (you named it, you used it last, or it is the only music app; where it merely comes first of several,
-nothing is sent); never while you are typing without a pause, never for a single letter, and never for text another app handed
-over. Nor while another row stands above the row of `play` (`play store` finds the Play Store first),
-unless you move to that row. An album takes a second request (for its first song), and so does an artist (for a song of their
+time you pause typing there for about half a second, the text as it stands then (so a slow hand
+sends the start of a name before the whole of it), while Play is armed and Spotify is in the field because you chose
+it (you pressed Enter on Play on Spotify's own row; or you typed `play` and named Spotify, or played in it last, or it is
+the only music app that plays). Nothing is sent while Search is armed, while you are typing without a pause, or for text
+another app handed over. Where `play` puts Spotify in the field merely because it comes first of several, for a single
+letter, and while another row stands above Spotify's (`play store` finds the Play Store first), nothing is sent
+until you press Enter on Play. Where Spotify's row stands under another music app's after `play`, it is asked when
+you move to that row. An album takes a second request (for its first song), and so does an artist (for a song of their
 own). What Spotify found is kept in memory for five minutes, and the token until it runs
 out (an hour); neither is written anywhere. If you make a recipe step of a song that was found, the song's
 link is kept with the recipe. The key is a file in the app's own storage; it is not part of your backup and
@@ -75,9 +83,9 @@ and the system's service does not keep them. That library, like all of ML Kit, *
 to Google**: the device model and Android version, Booklight's name and version, an identifier made for
 this installation, which feature ran, how long it took, how large the input and the answer were, and
 error codes. Not the text. It sends this in the background when the network allows. Booklight cannot
-switch that off in this version; if you never use a prompt, the model is never asked. (The row of `play`
-has one such question behind its arrow, "Which song is this?": the model is given what you typed after
-`play` when you press Enter on it, and only then.) Where the device has
+switch that off in this version; if you never use a prompt, the model is never asked. (The row that plays
+in a music app has one such question behind its arrow, "Which song is this?": the model is given the name you typed
+there when you press Enter on it, and only then.) Where the device has
 no such model, a prompt opens the Gemini app with your text in its prompt instead, and you send it there
 or you don't.
 

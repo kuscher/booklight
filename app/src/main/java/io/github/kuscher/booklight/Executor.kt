@@ -182,7 +182,7 @@ class Executor(private val context: Context) {
             is Effect.Edit -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_EDIT, effect.kind).putExtra(MainActivity.EXTRA_ID, effect.id))
             // A recipe: each step in turn; it stops at the first that can't be done.
             is Effect.Steps -> return effect.steps.all { perform(it, from) }
-            is Effect.EnterScope, is Effect.Type, is Effect.Ask, is Effect.Unsuggest -> return false     // the panel does these itself
+            is Effect.EnterScope, is Effect.OpenList, is Effect.Type, is Effect.Ask, is Effect.Unsuggest -> return false     // the panel does these itself
             // 2.0, each in its own task:
             is Effect.Open -> return open(effect, ctx)
             // The app the text came from asked for text back (its selection menu): this is the answer to that.

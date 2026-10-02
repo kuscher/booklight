@@ -44,8 +44,9 @@ import org.xmlpull.v1.XmlPullParser
  * A command is kept only if it leads to an activity of the app that declared it, open to other
  * apps and asking for no permission; the same is checked again when it is run (`Executor`).
  *
- * A search inside an app ("spotify daft punk") is read here too and held by [search]: an app's own
- * keyword first, then a bundled table, then what the app declares for everyone (`AppSearch.kt`).
+ * Where a search inside an app goes is read here too and held by [search]: an app's own keyword
+ * first, then a bundled table, then what the app declares for everyone (`AppSearch.kt`). And with it
+ * which apps play music: an app that can be searched or plays has a chip of its own ([chips]).
  */
 class AppCommands(private val context: Context, private val prefs: Prefs, private val scope: CoroutineScope, private val apps: AppsProvider) : Provider {
     override val id = SearchEngine.COMMANDS
@@ -73,6 +74,8 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
     val ready = kotlinx.coroutines.CompletableDeferred<Unit>()
     /** Where a search inside an app goes, for every app that has one. Read with the commands: an app's own file comes first. */
     val search = AppSearches(context, prefs, this)
+    /** An app as the chip in the field, for Search and Play on its row; made anew with every read of the app list. */
+    val chips = AppChips(context, prefs, search, apps)
 
     init { apps.onReload = ::reload; reload() }
 
@@ -101,9 +104,14 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
             // After the files: a keyword of the app's own that takes text is its search, before the table and before what it declares.
             val searches = runCatching { search.read(listed, keys) }.onFailure { Log.w(BooklightApp.TAG, "searches not read: ${it.javaClass.simpleName}") }.getOrNull()
             ensureActive()
-            commands = cmds.distinctBy { it.owner + "/" + it.id }
+            // An app's own shortcut that is only called Search adds nothing where Search stands on the app's row: it is the
+            // same act with another look, and it takes no words.
+            val searching = setOf(Matcher.fold(context.getString(R.string.action_search)), "search")
+            commands = cmds.distinctBy { it.owner + "/" + it.id }.filterNot { Matcher.fold(it.title) in searching && searches?.byPackage?.containsKey(it.owner) == true }
             keywords = keys
             searches?.let(search::use)
+            // Which apps play music is asked now too, so that typing asks the package manager nothing.
+            runCatching { chips.read(searches?.found.orEmpty()) }.onFailure { Log.w(BooklightApp.TAG, "music apps not read: ${it.javaClass.simpleName}") }
             // An app that is only searched is in the window's list too, so it can be turned off there like the others.
             val searched = context.getString(R.string.action_search)
             offers = (commands.map { Triple(it.owner, it.app to it.cls, it.title) } + keys.map { Triple(it.owner, it.app to it.cls, it.name) } +
@@ -298,8 +306,8 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
             if (score <= 0 && named && c.owner == lead && byName < 3) { score = BY_NAME; byName++ }
             if (score > 0) out += row(c, score)
         }
-        // "spotify daft punk": the search inside the app that is named, under everything that matched.
-        out += search.rows(text)
+        // "spotify daft punk": the search inside the app that is named, as the row its chip shows.
+        out += chips.sentence(text)
         return out
     }
 
@@ -313,7 +321,9 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
 
     fun scopes(taken: Set<String>): List<Scope> {
         val s = prefs.now
-        if (!s.appCommands) return emptyList()
+        // With the switch for what other apps offer off, an app's chip is still there for what does not depend on it: Play
+        // on a music app's row, and `play`. (Search is gone from the chip then: `AppSearches.allowed`.)
+        if (!s.appCommands) return chips.scopes()
         val used = HashSet(taken)
         return keywords.filter { it.owner !in s.mutedApps }.mapNotNull { k ->
             // A keyword Booklight or the user has, or another app took first, is not this app's to take.
@@ -321,7 +331,7 @@ class AppCommands(private val context: Context, private val prefs: Prefs, privat
             if (free.isEmpty()) return@mapNotNull null
             used += free.map { it.lowercase() }
             Ext(k, free, "ext:${k.owner}/${k.id}" in s.usedScopes)
-        } + search.scopes()
+        } + chips.scopes()
     }
 
     private inner class Ext(private val k: Keyword, override val keywords: List<String>, override val spaceEnters: Boolean) : Scope {

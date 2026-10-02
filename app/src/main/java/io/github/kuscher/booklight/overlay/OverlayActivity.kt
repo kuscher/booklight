@@ -91,6 +91,7 @@ class OverlayActivity : ComponentActivity() {
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screen.height() / resources.displayMetrics.density))
         model.typeStep = motion::typeStep
         model.onSay = { say(it) }
+        model.onTell = { window.decorView.announceForAccessibility(it) }
         stay = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_STAY, false)
         solid = settings.glass == "solid"
         Look.use(GlassLevel.of(settings.glass))
@@ -340,7 +341,7 @@ class OverlayActivity : ComponentActivity() {
         ran = a.effect !is Effect.Grant
         // What counts as a run: opening it, or doing its thing. Not looking at its details, changing it or removing it:
         // "chrome uninstall", Enter, Cancel must not make Chrome the thing that was run last.
-        if (!a.danger && a.id !in NOT_A_RUN) model.learn(r) else app.lastText = null
+        if (!a.danger && a.id !in NOT_A_RUN) model.learn(r, a) else app.lastText = null
         model.used(r, a)
         // An emoji that was picked comes first next time.
         if (r.body is Body.Grid && r.provider == "emoji") (a.effect as? Effect.CopyText)?.let { c -> model.change { it.copy(emojiRecent = (listOf(c.text) + (it.emojiRecent - c.text)).take(14)) } }

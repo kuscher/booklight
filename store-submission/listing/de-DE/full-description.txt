@@ -1,37 +1,39 @@
 Booklight ist ein Tastatur-Launcher für Googlebooks. Drück dein Tastenkürzel, und ein kleines Glasfenster erscheint über deinem Desktop. Tipp ein paar Buchstaben und drück Enter.
 
 WAS ES FINDET
-- Apps. Tipp den Anfang eines Namens, den Anfang eines Wortes darin oder die Anfangsbuchstaben. Ein paar lose Buchstaben reichen.
+- Apps. Tipp den Anfang eines Namens, den Anfang eines Wortes darin oder die Anfangsbuchstaben.
 - Einstellungsseiten, nach Namen oder nach Zweck: „dunkel“, „koppeln“, „drucker“.
 - Rechnungen. 150 + 20%, 12 * 3.5, sqrt(2). Enter kopiert das Ergebnis.
 - Das Web. Eine getippte Adresse öffnet sich im Browser, und nach allem, was du tippst, lässt sich suchen. Ein Kürzel und ein Leerzeichen durchsuchen eine Website: yt lofi.
 
 WAS ES TUT
-- Eine Zeile zeigt alles, was sie kann, als Reihe von Symbolen. Tab geht sie durch: in neuem Fenster öffnen, in der linken oder rechten Hälfte, App-Info, deinstallieren. „chrome deinstallieren“ wählt gleich Deinstallieren.
-- In einer Zeile notieren: mail anna@example.com Mittag? / Bis um 1 öffnet das Verfassen-Fenster deiner Mail-App, ausgefüllt. notiz, termin, erinnere, timer, wecker und neu datei funktionieren genauso.
+- In deinen Apps: Eine Zeile zeigt als Symbole, was sie kann: Öffnen, Suchen, Abspielen, Fenster. App tippen, Tab zu Suchen oder Abspielen, Enter, dann die Wörter. „chrome links“ setzt gleich das Fenster.
+- In einer Zeile notieren: mail anna@example.com Mittag? / Bis um 1 öffnet das Verfassen-Fenster deiner Mail-App, ausgefüllt. notiz, termin, timer und wecker funktionieren genauso.
 - Kleine Regler: vol und helligkeit ändern sich mit den Pfeiltasten, pause und weiter erreichen deine Musik.
 - Zum Kopieren: Emoji, Zeichen, æ ø å é ñ, Farbwerte, QR-Codes, Passwörter.
 - Eine Frage oder ein längerer Text öffnet sich in der Gemini-App, schon eingetippt. Abschicken tust du dort.
-- Gerade Kopiertes: Tab öffnet den Link, trägt das Datum als Termin ein oder übersetzt. Flüge: LH455 zeigt mit deinem AirLabs-Schlüssel Zeiten, Status und Gate.
+- Gerade Kopiertes: Tab öffnet den Link, trägt das Datum als Termin ein oder übersetzt.
+- Flüge: Mit eigenem AirLabs-Schlüssel zeigt LH455 eine Linie mit dem Flugzeug, Zeiten, Gate und ob er pünktlich ist.
+- Musik: Mit eigenem Spotify-Schlüssel ein Lied, Album oder einen Interpreten nach Namen abspielen.
 - Deine eigenen Befehle: Links mit Platzhaltern, Textbausteine und Rezepte, die mehreres auf einmal tun.
 
 ES LERNT DEINE KÜRZEL
 Was du zu deinem Text auswählst, steht beim nächsten Mal zuerst.
 
 FÜR DIE TASTATUR GEMACHT
-Pfeil auf und ab gehen durch die Zeilen. Enter führt die gewählte Zeile aus. Tab geht durch, was eine Zeile kann. Strg mit einer Ziffer führt diese Zeile aus. Esc, ein Klick daneben oder noch einmal dein Tastenkürzel schließt das Fenster.
+Pfeil auf und ab gehen durch die Zeilen. Enter führt die gewählte Zeile aus. Tab geht durch, was eine Zeile kann. Esc, ein Klick daneben oder noch einmal dein Tastenkürzel schließt das Fenster.
 
 DEIN TASTENKÜRZEL
 Booklight öffnet sich, wenn sein Tastenkürzel gedrückt wird. Wähle unter „Tastenkürzel“ erst „App-Verknüpfungen“, dann „Tastenkürzel hinzufügen“, dann Booklight, und drück deine Tasten. Das App-Symbol öffnet ein Fenster, das dir zeigt, wo, und alle Einstellungen enthält.
 
 WIE ES AUSSIEHT
-Ein Fenster oben in der Mitte des Bildschirms, in den Farben deines Hintergrundbilds oder in eigenen, hell oder dunkel. Es entfaltet sich beim Öffnen, die Auswahl gleitet von Zeile zu Zeile, und nichts springt ins Bild. Du bestimmst, wie durchsichtig es ist und wie schnell es sich öffnet.
+Ein Fenster oben in der Mitte des Bildschirms, in den Farben deines Hintergrundbilds oder in eigenen, hell oder dunkel. Es entfaltet sich beim Öffnen, die Auswahl gleitet von Zeile zu Zeile, und nichts springt ins Bild.
 
 DATENSCHUTZ
 Kein Konto und keine Werbung, und der Entwickler von Booklight erhält nichts. Was Booklight lernt, bleibt auf deinem Gerät und lässt sich löschen.
 Prompts beantwortet das systemeigene Modell auf dem Gerät, über eine Bibliothek von Google. Dein Text und die Antwort bleiben auf dem Gerät. Die Bibliothek meldet Google, wie sie genutzt wird: Gerätemodell und Android-Version, die Version der App, eine Kennung für diese Installation, Laufzeiten und Fehlercodes. Nicht den Text.
 Suchvorschläge sind aus, bis du sie einschaltest. Dann wird dein getippter Text an die gewählte Suchmaschine gesendet (Google, DuckDuckGo, Bing, Brave Search oder Ecosia), um Suchen vorzuschlagen. Rechnungen, Webadressen und alles nach einem Kürzel werden nicht gesendet.
-Flugzeiten werden nur mit deinem eigenen AirLabs-Schlüssel abgefragt; dann gehen Flugnummer und Schlüssel an airlabs.co.
+Flugzeiten werden nur mit deinem eigenen AirLabs-Schlüssel abgefragt; dann gehen Flugnummer und Schlüssel an airlabs.co. Ein Lied wird nur mit deinem eigenen Spotify-Schlüssel gesucht; dann geht sein Name an Spotify.
 Eine Mail, ein Termin, ein Timer oder eine Frage an Gemini wird der App übergeben, die sich öffnet; Booklight sendet selbst nichts.
 Booklight hat keinen Bedienungshilfen-Dienst und zeigt keine Berechtigungsabfragen. Das Deinstallieren einer App bestätigt Android; die Helligkeit funktioniert erst, nachdem du sie in den Einstellungen eingeschaltet hast.
 

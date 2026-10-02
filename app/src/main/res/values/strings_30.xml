@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One structure for apps (docs/design/app-structure): an app's row is Open · Search · Play · Window · the arrow, and -->
+<!-- Enter on Search or Play makes the app the chip in the field. -->
+<resources>
+    <!-- The stop that opens where the app's window goes: New window, then the places. -->
+    <string name="action_window">Window</string>
+    <!-- Behind the arrow of the row under an app's chip, where a keyword of a link led to it (yt): the same search in the browser. -->
+    <string name="action_on_web">On the web</string>
+    <!-- "Search Spotify for …" where that does not fit beside the row's actions: the app's name gives way, not the words. -->
+    <string name="app_search_brief">Search for “%1$s”</string>
+
+    <!-- For a screen reader. An app's chip shows only the app: the app, the action that is armed, what to type. -->
+    <string name="a11y_chip">%1$s. %2$s. %3$s</string>
+    <!-- Tab changed the action under an app's chip: the action, what to type. -->
+    <string name="a11y_act">%1$s. %2$s</string>
+    <string name="a11y_type_search">Type what to look for</string>
+    <!-- Tab moved along a row: the action, its place, how many there are. -->
+    <string name="a11y_stop">%1$s, %2$d of %3$d</string>
+    <!-- What Spotify found for the typed name: the song, who it is by, what Enter does. -->
+    <string name="a11y_found">%1$s, %2$s. %3$s</string>
+</resources>

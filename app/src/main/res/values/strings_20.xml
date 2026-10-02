@@ -167,11 +167,11 @@
     <string name="guide_group_booklight">Booklight</string>
     <!-- id|group|symbol|scope|example|name|line. The example is typed as it stands: it must work. -->
     <string-array name="guide">
-        <item>apps|open|open||chrome|Apps|Type a name; the icons on its row are what else it can do</item>
-        <item>places|open|left||chrome left|An app, in a place|left, right third, top left, full… for an app that is not open yet</item>
-        <item>pages|open|settings||chrome notifications|An app’s own settings|notifications, language, defaults or battery after an app’s name: that page of it in Settings</item>
+        <item>apps|open|open||chrome|Apps|Type a name, Enter opens it. Tab goes along what else its row offers: Search, Play, Window, and the arrow for the rest</item>
+        <item>places|open|left||chrome left|An app, in a place|left, right third, top left, full… after the name of an app that is not open yet. Or on its row: Tab to Window, Enter, and choose</item>
+        <item>pages|open|settings||chrome notifications|An app’s own settings|notifications, language, defaults or battery after an app’s name: that page of it in Settings. Also behind the arrow on its row</item>
         <item>commands|open|bolt||{command}|What other apps offer|Their own shortcuts and commands, as rows</item>
-        <item>appsearch|open|search||{appsearch}|Search inside an app|An app’s name, then what to look for: Enter lands on its results. Also Search, behind the arrow on the app’s row</item>
+        <item>appsearch|open|search||{appsearch}|Search inside an app|Type the app, Tab to Search, Enter, then what to look for: Enter opens the app on its results</item>
         <item>settings|open|settings|settings|s wifi|Settings|s, then Tab: every settings page</item>
         <item>keys|open|key|keys|k snap|Keyboard shortcuts|k, then Tab: what the system’s keys do</item>
         <item>links|open|search||{link}|Your links|A keyword, then what to search for</item>
@@ -209,7 +209,7 @@
         <item>pin|text|pin|pin|pin gate B22, 14:05|Pin|A line in a small window that stays on top</item>
         <item>vol|controls|volume|vol|vol 30|Volume|Or the arrow keys on its row</item>
         <item>brightness|controls|sun|brightness|brightness 60|Brightness|Or the arrow keys on its row</item>
-        <item>play|controls|music|play|play lofi|Play|A music app plays it or shows its results. Also: play album …, play … on spotify; play alone resumes</item>
+        <item>play|controls|music|play|play lofi|Play|In the music app you played in last. Also: play album …, play … on spotify. Or on a music app’s row: Tab to Play, Enter, then the name</item>
         <item>media|controls|pause||pause|Media keys|pause, play, stop, next, previous: for whatever is playing</item>
         <item>window|booklight|booklight||booklight|Booklight’s window|Settings, and your links, snippets, recipes, prompts and app commands</item>
     </string-array>
@@ -226,7 +226,7 @@
     <string-array name="tips">
         <item>help|list|?|Everything|lists all that Booklight does, each with an example to try</item>
         <item>places|left|chrome left|An app, in a place|opens Chrome in the left half if it is not open yet. Also: top left, full</item>
-        <item>appsearch|search|{appsearch}|Search inside an app|opens the app on its results. An app’s name, then what to look for</item>
+        <item>appsearch|search|{appsearch}|Search inside an app|then Tab, Enter and what to look for: it opens on its results</item>
         <item>settings|settings|s wifi|Settings|goes to a settings page. s, Tab, then its name</item>
         <item>keys|key|k snap|Keyboard shortcuts|shows the keys for it. k, Tab, then what you want to do</item>
         <item>pages|settings|chrome notifications|An app’s own settings|opens its page in Settings. Also: language, defaults, battery</item>

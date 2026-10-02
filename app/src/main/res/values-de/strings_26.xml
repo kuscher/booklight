@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dort abspielen: `play album discovery von daft punk auf spotify`. Eine Zeile, eine Aktion je Musik-App, benannt
-         nach dem, was die App mit der Anfrage bekanntlich tut. Die Fußzeile sagt „Gesendet“, nie „Läuft“: es kommt nichts zurück. -->
+    <!-- „Abspielen“ in der Zeile einer Musik-App, und `play album discovery von daft punk auf spotify` als kurzer Weg dorthin.
+         Die Zeile unter dem leeren Feld bietet „Abspielen“ mit diesen Worten an. Die Fußzeile sagt „Gesendet“, nie „Läuft“: es kommt nichts zurück. -->
     <string name="play_in">In %1$s abspielen</string>
-    <string name="play_search_in">In %1$s suchen</string>
     <string name="play_no_app">Keine Musik-App auf diesem Gerät</string>
     <!-- The word before a player's name, as it is typed and as Booklight types it: "… on spotify". -->
     <string name="play_on">auf</string>
@@ -16,14 +15,11 @@
     <string name="play_artist">Interpret</string>
     <string name="play_playlist">Playlist</string>
     <string name="play_genre">Genre</string>
-    <!-- `play` ohne Text: die Wiedergabetaste. -->
-    <string name="play_resume">Fortsetzen</string>
-    <string name="play_resume_sub">Was zuletzt lief</string>
 
     <!-- Die Medientasten nach dem getippten Wort: `pause` kann nur anhalten, `play` nur fortsetzen, `stopp` nur stoppen. Die Wörter finden auch die Zeile Medien. -->
     <string name="action_pause">Pause</string>
     <string name="action_stop">Stopp</string>
-    <string name="dial_play_words">play,abspielen,wiedergabe,fortsetzen,resume</string>
+    <string name="dial_play_words">play,spiele,abspielen,wiedergabe,fortsetzen,resume</string>
     <string name="dial_pause_words">pause,pausieren,anhalten</string>
     <string name="dial_stop_words">stopp,stop,stoppen</string>
 
@@ -47,7 +43,7 @@
     <!-- Booklight-Fenster › Labs: die Gruppe für den Spotify-Schlüssel -->
     <string name="set_songs">Spotify</string>
     <string name="set_song_key">Dein Spotify-Schlüssel</string>
-    <string name="set_song_key_text">Mit Schlüssel zeigt „play …“, was Spotify gefunden hat, und Enter spielt es ab. Was du nach play tippst, und das Land deines Geräts, gehen an Spotify, sobald du kurz nicht tippst, und nur, solange Spotify in der Zeile gewählt ist. Der Schlüssel bleibt auf diesem Gerät und geht nur an Spotify.</string>
+    <string name="set_song_key_text">Mit Schlüssel hat die Zeile von Spotify „Abspielen“: Sie zeigt, was Spotify zu dem getippten Namen gefunden hat, und Enter spielt es ab. Was du tippst, während Spotify im Feld steht und „Abspielen“ gewählt ist, und das Land deines Geräts, gehen an Spotify, sobald du kurz nicht tippst; unter „Suchen“ geht nichts dorthin. Der Schlüssel bleibt auf diesem Gerät und geht nur an Spotify.</string>
     <string name="set_song_id_hint">Client-ID</string>
     <string name="set_song_secret_hint">Client-Secret</string>
     <string name="set_song_key_in">Ein Schlüssel ist eingetragen</string>

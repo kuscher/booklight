@@ -295,13 +295,14 @@ New specs: `open` = spring(0.9, 800); `drain` = tween(3000, linear); `roll` = 1.
 | 11 | A switch flips | Thumb x; track fill cross-fades 120; state text rolls | `pop` | Track, state slot. Enter closes 400 ms later |
 | 12 | Media: previous, next | The pane glides to the side slot, holds 140 ms, returns | `lead`, `trail` | Glyphs |
 | 13 | The grid arrives | Rows fade (80); height springs; the pill's four edges and radius go to the first cell; cells rise 8 dp, fade 110 | `place` · (column + row) × 8 ms, at most 120 | Field, footer |
-| 14 | The grid highlight moves | The two edges on the axis of travel; a move to the next line's start is rigid | `lead`, `trail`; `place` | Cells. The name fades 80 in, 40 out, left-aligned |
+| 14 | The grid highlight moves | The two edges on the axis of travel, as the list's pill does (21); a move to the next line's start is rigid | `pillLead`, `pillTrail` · the old edge 5 frames; `place` | Cells. The name fades 80 in, 40 out, left-aligned |
 | 15 | Confirmation arms | Pane's left edge to its measured width; fill to `errorContainer` (120); label out 60, in 110, clipped by the pane; siblings dim (80); the line shortens | `lead`; `drain` · label 40, line 120 | The right edge and the mark |
 | 16 | Cancels, completes | Cancel: edge back, fill back 120, line fades 60. Complete: the row's height goes to 0 and it fades (80); rows below and the window follow; the pill takes the next row | `trail`; `place` | Other rows keep their keys |
 | 17 | Feedback word | Check scales from 0.6; the word slides 8 dp from the left, fades 120; out 80 | `pop`; `place` | The footer's right side |
 | 18 | First-run card's options | One highlight: upper and lower edges | `lead`, `trail` | Both labels, marks, widths and the weight. No slot has a background or a size that depends on being chosen, so the 1.0 defect cannot recur |
 | 19 | Long text in the field | The scroll offset follows the caret | cut | Tied to typing, never animated |
 | 20 | Unfold, close | §4 | `open`, tweens | Content position on screen |
+| 21 | The list's pill moves (§15) | The front edge at once; the old edge holds on, then follows. Only from rest: a pill that is moving (a held key, the pointer) does not hold, and every edge keeps its speed. Never drawn more than 56 dp longer than its row. A row that only grows: the lower edge alone. Its own row moved by the list: both edges with it | `pillLead`; `pillTrail` · the old edge 5 frames of the screen (2 on a way of more than 98 dp, then on its firmer spring); `place`; `place` | Width, radius, colour, alpha: one flat shape. Each edge is rounded to a pixel by itself: one that holds on stands still, none steps back |
 
 ## 7. Continuity rules
 
@@ -354,7 +355,8 @@ The specs for 2.0's components and motion are the three reviews in `reviews-2.0/
 55); this section says where the built app differs from them and from the sections above. `Motion.kt` is the
 source for every spring: `place` 0.86/520, `lead` 0.82/1100, `trail` 0.9/420, `pop` 0.62/700, `arm` 0.78/560,
 `open` 0.72/1000 (not the 0.9/800 of §6), `tick` 160 ms, `type` 480 ms for a whole example at 16 to 40 ms a
-letter. A debug build stretches all of them: `./bl open stay slow=4`.
+letter; since §15 `pillLead` 0.85/1400 and `pillTrail` 0.86/900 (0.9/1400 on a long way) for the list's pill and
+the grid's square. A debug build stretches all of them: `./bl open stay slow=4`.
 
 - **The app row** (replaces §3a "three chips and more"): nine icons at a 32 dp pitch and a tenth stop, the arrow.
   Enter on the arrow, or Right again, opens the rest as a list under the row: 40 dp lines, uncovered by one edge
@@ -521,4 +523,61 @@ type size or row height: it is the preview row (§3c) with four things added to 
 - **In the window**: one group, "Flights", at the end of Results: a row that says what is sent and when and
   whether a key is in (Enter opens one field under it, as an editor opens under its row on the Yours page), and
   a row that leads to where a key is got. The key that is in is never shown.
+
+## 15. The rubber highlight (2 October 2026)
+
+Alex: "make it so the animation when the highlight switches between rows feels a little more rubber like". Proposed,
+reviewed and tried on a page (`rubber-highlight.md`, its A); built as decided there and measured on a device (its first paragraph). Row 21 of §6 is the list's pill; the grid's square (row 14) travels the same way. `Motion.kt` holds the numbers.
+
+- **What changed.** The pill's two edges set off together on `lead` and `trail`: the old edge left at once and was
+  the slow part of the move for a quarter of a second. Now the front edge goes at once on `pillLead` (0.85/1400);
+  the old edge stands still for five frames of the screen (42 ms at 120 Hz) and then gathers on `pillTrail`
+  (0.86/900). One row: 34 dp of stretch where there were 18, and at rest after 197 ms where it took 255.
+- **A long way** (the front edge has more than 98 dp to go): the old edge holds two frames and follows on 0.9/1400,
+  so the pill arrives in one move. It is drawn at most 56 dp longer than its row, the taller of the one it left and
+  the one it goes to: as it is up to 40 dp of stretch, easing into 56 beyond.
+- **Moving, it keeps its speed.** A pill that is on its way (a held key, the pointer over the rows, a reversal) does
+  not hold, and every edge goes on from where it is drawn with the speed it has. Before, every new row started
+  both edges again from a standstill. The edges are no longer animations that a new row cancels: one loop moves
+  them once a frame, and the hold is a count of frames (`Band` in `overlay/Rows.kt`).
+- **Whole pixels.** Top and bottom are each rounded by themselves and the height is what lies between them.
+  Before, the bottom was a rounded top plus a rounded height, and stepped back and forth while it settled.
+- **No rubber where it does not travel.** A row that grows under the pill takes its lower edge on `place`, as
+  before; a row that a changed list moves takes the pill with it, both edges on `place`.
+- **Unchanged:** the pane on a row's actions (`arm`), the card's options and the Booklight window's rail and ring
+  (`lead`, `trail`), the speed setting (it is the opening's), animations off (it cuts), colours and alpha.
+- **To measure** (debug builds): `./bl debug pill N` writes the pill's next N frames to the log. (The motion as it
+  was before could be opened with `pill=old` while the two were compared; it was taken out before 3.0.)
+
+## 16. An app's row, its two lists and its chip (2 October 2026)
+
+Drawn in `app-structure/rows.html`; the interaction is `ux-model.md` §18. Built, not yet judged on a device. No
+new colour, type size, row height or spring: every part is one the panel had.
+
+- **The strip on an app's row** (replaces §11 "nine icons and a tenth stop"): two to four icons and the arrow, in
+  one order: Open, Search (the magnifier), Play (the triangle), Window (a window with its title bar and nothing in
+  it), the arrow. At its widest (German, Play armed) about 265 dp, so the title keeps 340 dp or more.
+- **Two stops open a list**: Window and the arrow. The list is §11's (40 dp lines, uncovered by one edge on
+  `place`, the list's pill as the highlight). While Window's list is open and the pill is on one of its lines the
+  row shows the word "Window" in the kind's place before the turned arrow; with the pill back on the row, Window's
+  slot reads "Less". Window's list is 14 lines (56 + 14 × 40 = 616 dp), the arrow's 7 at most with Uninstall's
+  8 dp gap (344 dp): both fit under the field on the 14-inch screen.
+- **A typed line stands in its list's stop**: a place in Window's slot (the icon and the name change where they
+  stand, as in the arrow's slot), a page or Uninstall in the arrow's.
+- **An app's chip** (§3b): the same 36 dp stadium, with the app's own icon at 20 dp in place of a symbol, in the
+  column the row's icon stood in (centred at x = 38). Its name has 160 dp and fades over its last 16 dp only when
+  it is cut; the icon stays. One chip for an app: it does not change when Tab goes from Search to Play; the
+  placeholder does, on the placeholder's own fade.
+- **The line under the empty field of an app's chip**: the copy's line (§13) with other words. A 36 dp disc with
+  the symbol of the action that is not armed, its words at 14 sp, weight 600, full ink ("Play in Spotify",
+  "Search Spotify"), a `tab` cap under the field's `esc`. The panel is 68 + 8 + 56 + 8 = 140 dp. It comes 120 ms
+  after the height starts (`fade` 140), goes in 70 ms with the first letter, and its symbol and words change
+  where they stand when Tab changes the action. An app with one action has none: the field stands alone.
+- **The row under the chip** keeps its seat and its strip when Tab changes its action: only its words change,
+  in the frame the new row lands. Play that found nothing keeps its slot at 40 % ink (§14).
+- **A title that names an app and is too long** says less: "Search for “dune”" in place of "Search … for “dune”",
+  when the whole line is wider than 340 dp, the least room a title has beside the strip. It is measured against
+  that room and not against the row as it stands, so it does not change while the strip unrolls.
+- **Marks**: the web's row and a link's row have the magnifier for their Search action (an action carries a
+  symbol for what it does); the play row has the app's icon as its mark and no icon inside its action.
 

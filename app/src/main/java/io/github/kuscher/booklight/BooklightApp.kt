@@ -55,8 +55,13 @@ class BooklightApp : Application() {
     lateinit var flights: FlightsProvider private set
     /** What Spotify has by a name, for `play`. With a key of the user's own it asks Spotify: network code like [flights]'. */
     lateinit var songs: io.github.kuscher.booklight.providers.Songs private set
-    /** What was typed when the panel last closed without running anything (the chip's key, the text): Up brings it back. */
-    var lastText: Pair<String?, String>? = null
+    /**
+     * What was typed when the panel last closed without running anything: the chip's [key] and the [text]; for an
+     * app's chip also the action that was armed ([act]), the keyword it was entered by ([word]) and that keyword's
+     * own scope ([via]). Up brings it back.
+     */
+    class Last(val key: String?, val text: String, val act: io.github.kuscher.booklight.core.Act? = null, val word: String? = null, val via: String? = null)
+    var lastText: Last? = null
     /** An example the Booklight window asks the panel to type when it next opens (a row of its Commands page). Booklight's own, in its own process: no other app can put text here. */
     @Volatile var example: String? = null
     /** App icons, made when the panel first needs them and kept after. */

@@ -8,11 +8,10 @@ import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Verb
 
 /**
- * An app's own pages in the system's Settings, as actions on the app's row: its notifications, its
- * language, what it opens by default, its battery use. A word typed after the app's name ("spotify
- * notifications") puts that one page on the row, behind its arrow, and arms it, as "chrome uninstall"
- * arms Uninstall. Untyped they are not listed: the row's list is long enough. Booklight opens the page
- * and switches nothing: no plain app can.
+ * An app's own pages in the system's Settings, as lines behind the arrow of the app's row, after App
+ * info: its notifications, its language, what it opens by default, its battery use. A word typed
+ * after the app's name ("spotify notifications") puts that page in the arrow's slot and arms it, as
+ * "chrome uninstall" arms Uninstall. Booklight opens the page and switches nothing: no plain app can.
  */
 internal object AppPages {
     private class Entry(val id: String, val page: AppPage, val label: Int, val words: Int, val symbol: String)
@@ -34,12 +33,12 @@ internal object AppPages {
     fun verbs(context: Context): List<Verb> = all.map { Verb(it.id, context.getString(it.words).split(',').filter(String::isNotBlank), atStart = false) }
 
     /**
-     * The four pages of the app [pkg], in the order they are listed under its row. None for the Settings
+     * The four pages of the app [pkg], in the order they are listed behind its row's arrow. None for the Settings
      * app itself: "settings battery" means the system's Battery page, and with these the Settings app,
      * Battery use armed, would stand above that page.
      */
     fun actions(context: Context, pkg: String): List<Action> = if (pkg == SETTINGS) emptyList() else
-        all.map { Action(it.id, context.getString(it.label), Effect.AppSettings(it.page, pkg), symbol = it.symbol, more = true) }
+        all.map { Action(it.id, context.getString(it.label), Effect.AppSettings(it.page, pkg), symbol = it.symbol) }
 
     private const val SETTINGS = "com.android.settings"
 }

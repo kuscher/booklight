@@ -6,12 +6,14 @@ for Netflix. Can you review the logic and information architecture ... and have 
 which simplifies some of these things around the app more."
 
 A product manager and a UX designer each wrote a paper; the page puts their joint proposal in front of him with
-drawn rows, the key counts and five decisions. **Nothing of it is built.**
+drawn rows, the key counts and five decisions. It is built (`BUILD.md`: what was built, where it differs from
+`ux.md`, what to check on a device), and has not been run on a device yet.
 
 - `rows.html`: the page he was shown (https://claude.ai/artifact/A69qVEK8jVnms5SCKpefgs).
 - `ux.md`: the interaction (the model, the row, what follows Enter on Search and Play, the other ways in, one rule
   for marks, the edge cases, and what has to change in the code's rules).
 - `pm.md`: the jobs, the diagnosis, the principle, the cuts.
+- `BUILD.md`: the build.
 
 In one sentence: type the app, Tab to what you want, Enter; if it takes words, type them and press Enter again.
 An app's row is Open · Search · Play · Window · More, and an app only shows what it has.

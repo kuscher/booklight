@@ -195,10 +195,11 @@ class WebProvider(private val context: Context, private val prefs: Prefs, privat
     fun search(text: String): Result {
         val engine = prefs.now.engine()
         return Result(
-            id = "web:search", provider = id, kind = Kind.WEB, title = context.getString(R.string.web_search_title, engine.name, text),
+            id = SearchEngine.WEB_SEARCH, provider = id, kind = Kind.WEB, title = context.getString(R.string.web_search_title, engine.name, text),
             icon = Icon.Symbol("search"), score = 0.1, learnable = false,
             actions = listOf(
-                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(engine.search(text)), symbol = "open"),
+                // (An action carries a symbol for what it does: searching is the magnifier, on the web as inside an app.)
+                Action("search", context.getString(R.string.action_search), Effect.OpenUrl(engine.search(text)), symbol = "search"),
                 Action("link", context.getString(R.string.action_copy_link), Effect.CopyText(engine.search(text))),
             ),
         )

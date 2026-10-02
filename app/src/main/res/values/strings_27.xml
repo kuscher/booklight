@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- A search inside an app: "spotify daft punk", or Search behind the arrow of the app's own row.
+    <!-- A search inside an app: Search on the app's own row, or "spotify daft punk" in one go.
          The row is named like the web search's; %1$s is the app's name as the device has it. -->
     <string name="app_search_title">Search %1$s for “%2$s”</string>
-    <!-- What the example in the list of everything looks for, after the name of an app of the device: "spotify jazz". -->
-    <string name="guide_search_text">jazz</string>
 </resources>

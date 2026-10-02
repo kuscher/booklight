@@ -15,6 +15,10 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * Inside a scope (the chip in the field) only that scope is asked, its rows keep their own order,
  * and the way out to the web for the keyword and the text together keeps the last place.
+ *
+ * Words typed after an app's name ("netflix severance") are a web search first, with the search
+ * inside that app directly under the web's row; once the user has picked the app's row for that app
+ * it leads, over the ways out ([Lead]).
  */
 class SearchEngine(
     private val providers: List<Provider>,
@@ -43,35 +47,55 @@ class SearchEngine(
         val letter = ranked.filter { isLetterRow(it, q.text) }.take(1)
         // A guess (text that only looks like a flight number) is the very last row, under the ways out: it is far more
         // often wrong than right, and there it costs one row and nothing else.
-        val out = letter + ranked.filter(::isFallback).take(MAX_FALLBACKS) + ranked.filter(::isGuess).take(1)
-        return ranked.filterNot { isFallback(it) || isGuess(it) || it in letter }.take(limit - out.size) + out
+        // A search inside an app whose name starts the text: over the ways out where that app leads, else directly under
+        // the web's row, which then is what Enter runs when nothing local matches.
+        val ways = ranked.filter(::isFallback).take(MAX_FALLBACKS)
+        val under = if (ways.isEmpty()) emptyList() else ranked.filter { it.id.startsWith(IN_APP) && !leads(it) }
+        val out = letter + ways.take(1) + under.take(MAX_UNDER) + ways.drop(1) + ranked.filter(::isGuess).take(1)
+        return (ranked.filterNot { isFallback(it) || isGuess(it) || it in letter || it in under }.take((limit - out.size).coerceAtLeast(0)) + out).take(limit)
     }
 
     private suspend fun inScope(q: Query, limit: Int): List<Result> {
-        val s = scope(q.scope ?: return emptyList()) ?: return emptyList()
-        val rows = withTimeoutOrNull(budgetMs) { runCatching { s.rows(q.text) }.getOrElse { emptyList() } } ?: emptyList()
+        val asked = scope(q.scope ?: return emptyList()) ?: return emptyList()
+        // A keyword that is a short way into an app's chip (`play`, `yt`): that app's chip answers, with the door's action armed.
+        val door = asked.door(q.text)
+        val s: Scope = door?.chip ?: asked
+        val rows = withTimeoutOrNull(budgetMs) { runCatching { rows(s, q, door) }.getOrElse { emptyList() } } ?: emptyList()
         // An ordinary word that happened to be a keyword ("new york weather") is one row away.
-        if (q.isEmpty || s.keywords.isEmpty() || !s.web) return rows.take(limit)
-        // What was actually typed: the word the user used for the scope, then the text.
-        val whole = "${q.keyword ?: s.keywords.first()} ${q.text}"
+        if (q.isEmpty || !s.web) return rows.take(limit)
+        // What was actually typed: the word the user used for the scope, then the text. An app's chip that was entered
+        // from the app's row has the app's name for that: "spotify daft punk".
+        val first = q.keyword ?: asked.keywords.firstOrNull() ?: (s as? AppChip)?.name?.lowercase() ?: return rows.take(limit)
+        val whole = "$first ${q.text}"
         val out = fallback(whole).take(1)
+        // No word of a name was typed where an app's chip was entered from the app's row: its rows, and the way out.
+        if (q.keyword == null && asked.keywords.isEmpty()) return rows.take(limit - out.size) + out
         // The keyword may have been the first word of an app's name ("play store") or of something an app offers
         // ("new tab"): such a row comes first. A command needs two letters after the keyword.
         val now = clock()
-        val asked = ask(providers.filter { it.id == APPS || it.id == COMMANDS }) { it.query(Query(whole)) }
+        val found = ask(providers.filter { it.id == APPS || it.id == COMMANDS }) { it.query(Query(whole)) }
         // Or the keyword was typed as the first word of an app's name that is followed by something to look for there
         // ("yt music daft punk" is YT Music and "daft punk"): the search inside that app comes first as well, after those.
         // An app called just what the keyword is has no such row: the keyword was typed, and the scope is what was asked
         // for. Nor has any app when the chip was entered from its row: then no word of a name was typed.
         val word = q.keyword?.let(Matcher::fold)
-        val named = asked.filter { (it.kind == Kind.APP && it.score >= Matcher.PREFIX) || (it.provider == COMMANDS && q.text.length >= 2 && Matcher.score(whole, it.title) >= Matcher.PREFIX) }
-            .sortedByDescending { rank(it, whole, now) }.take(2) +
-            asked.filter { word != null && it.id.startsWith(IN_APP) && Matcher.fold(it.label.orEmpty()) != word }.sortedByDescending { it.score }.take(1)
+        // (That search leads only where its app leads for words after its name; else it stands under the scope's own rows.)
+        val inApp = found.filter { word != null && it.id.startsWith(IN_APP) && it.id != s.key && Matcher.fold(it.label.orEmpty()) != word }.sortedByDescending { it.score }.take(1)
+        val named = found.filter { (it.kind == Kind.APP && it.score >= Matcher.PREFIX) || (it.provider == COMMANDS && !it.id.startsWith(IN_APP) && q.text.length >= 2 && Matcher.score(whole, it.title) >= Matcher.PREFIX) }
+            .sortedByDescending { rank(it, whole, now) }.take(2) + inApp.filter(::leads)
+        val after = inApp.filterNot(::leads)
         // Nothing of the scope's own matched (only its way out to another search is left): the text was probably
         // an ordinary one ("s bahn"), and the web search for all of it comes first.
         val own = rows.any { !it.id.startsWith(HANDOVER) }
-        val list = if (own || named.isNotEmpty()) (named + rows).take(limit - out.size) + out else out + rows.take(limit - out.size)
+        val list = if (own || named.isNotEmpty()) (named + rows + after).take(limit - out.size) + out else out + (rows + after).take(limit - out.size)
         return list.distinctBy { it.id }
+    }
+
+    /** The rows of [s] for [q]: an app's chip is asked for the action that is armed on it (the one asked for, the door's, its first). */
+    private suspend fun rows(s: Scope, q: Query, door: Door?): List<Result> {
+        if (s !is AppChip) return s.rows(q.text)
+        val act = Chips.enter(s.acts, q.act ?: door?.act) ?: return emptyList()
+        return s.rows(q.text, act, q.keyword)
     }
 
     fun scope(key: String): Scope? = scopes().firstOrNull { it.key == key }
@@ -114,7 +138,7 @@ class SearchEngine(
         }
         if (score <= 0) null else Result(
             id = "scope:${s.key}", provider = "scopes", kind = Kind.SCOPE, title = s.title, subtitle = s.about,
-            icon = Icon.Symbol(s.symbol), score = score,
+            icon = Icon.App.of(s.symbol) ?: Icon.Symbol(s.symbol), score = score,     // (a scope that is about one app carries that app's icon)
             actions = listOf(Action("enter", enterLabel(s), Effect.EnterScope(s.key), keepOpen = true, symbol = "edit")),
         )
     }
@@ -175,12 +199,27 @@ class SearchEngine(
         if (r.learnable) history.record(q.text, r.id, clock())
     }
 
+    /** Whether [r] is the search inside an app whose name starts the text, and that app leads for words after its name ([Lead]). */
+    fun leads(r: Result): Boolean = r.id.startsWith(IN_APP) && history.leads(r.id.removePrefix(IN_APP))
+
+    /**
+     * Call when the user runs the search of a row with [among], the list it stood in, and no chip in
+     * the field. The search inside an app, typed as a sentence: that app leads from now on. The web's
+     * row while such rows stood in the list: one pick towards the web for each of those apps.
+     */
+    fun led(r: Result, among: List<Result>) {
+        if (r.id.startsWith(IN_APP)) history.led(r.id.removePrefix(IN_APP), inApp = true)
+        else if (r.id == WEB_SEARCH) for (a in among) if (a.id.startsWith(IN_APP)) history.led(a.id.removePrefix(IN_APP), inApp = false)
+    }
+
     companion object {
         const val DEFAULT_LIMIT = 8
         /** A web result scoring this or more is an address the user typed, ranked like a match. */
         const val URL_SCORE = 0.9
         const val MAX_SUGGESTIONS = 3
         const val MAX_FALLBACKS = 2
+        /** How many searches inside an app stand under the web's row: a name of two words has two readings ("youtube music …"). */
+        const val MAX_UNDER = 2
         /** The id of the provider of apps: asked inside a scope too. */
         const val APPS = "apps"
         /** The id of the provider of what other apps offer: asked inside a scope too. */
@@ -190,6 +229,8 @@ class SearchEngine(
          * the app's package follows. The row's label is the app's name.
          */
         const val IN_APP = "appsearch:"
+        /** The id of the web's row: "Search Google for …". */
+        const val WEB_SEARCH = "web:search"
         /** How the id of a scope's way out to another search starts ("Search the Settings app"). */
         const val HANDOVER = "handover:"
         /** A web row scoring less than this is a way out, kept for the end of the list. */

@@ -11,6 +11,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -44,10 +45,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -55,6 +58,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -77,6 +81,7 @@ import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.SlotState
 import io.github.kuscher.booklight.ui.Fonts
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 val SMALL = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(500), letterSpacing = 0.1.sp)
 private val HINT = TextStyle(fontFamily = Fonts.text, fontSize = 12.sp, fontWeight = FontWeight(600), letterSpacing = 0.5.sp)
@@ -256,8 +261,9 @@ fun LevelNumber(b: Body.Level, ink: Color, modifier: Modifier = Modifier, end: B
 
 /**
  * A grid of characters to pick from. One square highlight for the whole grid; all four arrows
- * move it, and it stretches towards where it is going (the edge that leads moves on the quicker
- * spring). On arrival the cells come in as a short diagonal wave.
+ * move it, and it travels as the list's pill does, like rubber ([Band]): the edge that leads goes
+ * first, the old edge holds on for a moment and then follows. On arrival the cells come in as a
+ * short diagonal wave.
  */
 @Composable
 fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, onPick: (Int) -> Unit) {
@@ -273,20 +279,19 @@ fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, 
     val shown = b.cells.take(cols * 5)
     val col = cell % cols
     val line = cell / cols
-    // The highlight's four edges, in cells.
-    val x0 = remember { Animatable(col.toFloat()) }
-    val x1 = remember { Animatable(col + 1f) }
-    val y0 = remember { Animatable(line.toFloat()) }
-    val y1 = remember { Animatable(line + 1f) }
+    // The highlight's edges, across and down, in dp from the grid's corner.
+    val across = remember { Band(pitchDp * col, pitchDp) }
+    val down = remember { Band(Metrics.cell * line, Metrics.cell) }
+    val refresh = LocalView.current.display?.refreshRate ?: 60f
     LaunchedEffect(cell) {
-        val dx = col - x0.targetValue
-        val dy = line - y0.targetValue
-        // Along one axis the leading edge goes first; a jump to another line's start moves as one piece.
-        val rigid = dx != 0f && dy != 0f
-        launch { x0.animateTo(col.toFloat(), if (rigid) motion.place() else if (dx > 0) motion.trail() else motion.lead()) }
-        launch { x1.animateTo(col + 1f, if (rigid) motion.place() else if (dx > 0) motion.lead() else motion.trail()) }
-        launch { y0.animateTo(line.toFloat(), if (rigid) motion.place() else if (dy > 0) motion.trail() else motion.lead()) }
-        launch { y1.animateTo(line + 1f, if (rigid) motion.place() else if (dy > 0) motion.lead() else motion.trail()) }
+        // Along one axis the leading edge goes first; a jump to another line's start moves as one piece. A square that
+        // is moving on either axis does not hold: a held arrow runs along fourteen cells.
+        val rigid = !across.goesTo(pitchDp * col) && !down.goesTo(Metrics.cell * line)
+        val calm = across.resting && down.resting
+        across.go(pitchDp * col, pitchDp, motion, refresh, rigid, calm)
+        down.go(Metrics.cell * line, Metrics.cell, motion, refresh, rigid, calm)
+        val scale = coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f
+        while (across.moving || down.moving) withFrameNanos { across.frame(it, scale); down.frame(it, scale) }
     }
     val wave = remember { Animatable(if (motion.on) 0f else 1f) }
     LaunchedEffect(Unit) { wave.animateTo(1f, motion.fade(240)) }
@@ -307,12 +312,15 @@ fun GridBody(b: Body.Grid, cell: Int, selected: Boolean, onCell: (Int) -> Unit, 
                 .drawBehind {
                     if (!selected || count == 0) return@drawBehind
                     val inset = 2.dp.toPx()
-                    val across = (pitch - side) / 2 + inset     // the square stays 44 dp, centred in its column
-                    val o = Offset(x0.value * pitch + across, y0.value * side + inset)
-                    val s = Size((x1.value - x0.value) * pitch - 2 * across, (y1.value - y0.value) * side - 2 * inset)
+                    val gap = (pitch - side) / 2 + inset     // the square stays 44 dp, centred in its column
+                    // Each of its four edges is rounded to a pixel by itself, as the pill's two are: one that holds on stands still.
+                    val box = Rect(
+                        (across.first.toPx() + gap).roundToInt().toFloat(), (down.first.toPx() + inset).roundToInt().toFloat(),
+                        (across.last.toPx() - gap).roundToInt().toFloat(), (down.last.toPx() - inset).roundToInt().toFloat(),
+                    )
                     val r = CornerRadius(14.dp.toPx())
-                    drawRoundRect(fill, o, s, r)
-                    drawRoundRect(rim, o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
+                    drawRoundRect(fill, box.topLeft, box.size, r)
+                    drawRoundRect(rim, box.topLeft + Offset(0.5f, 0.5f), Size(box.width - 1f, box.height - 1f), r, style = Stroke(1f))
                 }
                 .pointerInput(count, cols) { detectTapGestures { o -> at(o)?.let { pick(it) } } }
                 .pointerInput(count, cols) {

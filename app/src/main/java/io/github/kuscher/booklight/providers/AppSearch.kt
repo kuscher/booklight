@@ -3,26 +3,18 @@ package io.github.kuscher.booklight.providers
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
-import android.os.UserManager
-import io.github.kuscher.booklight.BooklightApp
-import io.github.kuscher.booklight.R
-import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.AppSearch
 import io.github.kuscher.booklight.core.AppSearch.Source
 import io.github.kuscher.booklight.core.Effect
-import io.github.kuscher.booklight.core.Icon
-import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Matcher
-import io.github.kuscher.booklight.core.Result
-import io.github.kuscher.booklight.core.Scope
-import io.github.kuscher.booklight.core.SearchEngine
 import io.github.kuscher.booklight.core.Site
 import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.data.Settings
 
 /**
- * A search inside an app: "spotify daft punk", or Search behind the arrow of the app's own row,
- * lands on the results inside that app.
+ * A search inside an app: Search on the app's own row, or "spotify daft punk" typed in one go, lands
+ * on the results inside that app. This class knows where each app's search goes; the chip and the
+ * row are `AppChips`'.
  *
  * Where an app's search goes is read when the app list is read ([read], called by [AppCommands]), so
  * typing asks the package manager nothing. For one app it is the first of: a keyword of the app's own
@@ -50,17 +42,19 @@ class AppSearches(private val context: Context, private val prefs: Prefs, privat
 
     /**
      * What one read of the app list found, in one piece: the apps that can be searched by package,
-     * by the folded name of each of their icons (with that icon's own name), each app's chip, and the
-     * apps that were looked at.
+     * by the folded name of each of their icons (with that icon's own name), and the apps that were
+     * looked at.
      */
     class Index internal constructor(internal val byPackage: Map<String, Found> = emptyMap(), internal val byName: Map<String, List<Pair<Found, String>>> = emptyMap(),
-        internal val chips: List<In> = emptyList(), internal val installed: List<Listed> = emptyList()) {
+        internal val installed: List<Listed> = emptyList()) {
         val found: Collection<Found> get() = byPackage.values
     }
 
+    /** One way to read a typed sentence: [found]'s app, the name it was typed by ([app]), what to look for there ([text]), and how the row scores. */
+    class Named(val found: Found, val app: String, val text: String, val score: Double)
+
     @Volatile private var index = Index()
     private val table: List<AppSearch.Line> by lazy { context.assets.open(TABLE).bufferedReader().useLines { AppSearch.table(it) } }
-    private val me = context.getSystemService(UserManager::class.java).getSerialNumberForUser(android.os.Process.myUserHandle())
 
     // ---- read with the app list
 
@@ -80,7 +74,7 @@ class AppSearches(private val context: Context, private val prefs: Prefs, privat
             names.getOrPut(Matcher.fold(a.label)) { ArrayList() }.let { if (it.none { n -> n.first === f }) it.add(f to a.label) }
         }
         val all = found.values.filterNotNull()
-        return Index(all.associateBy { it.pkg }, names, all.map { In(it) }, apps)
+        return Index(all.associateBy { it.pkg }, names, apps)
     }
 
     fun use(read: Index) { index = read }
@@ -114,92 +108,47 @@ class AppSearches(private val context: Context, private val prefs: Prefs, privat
             .map { it.activityInfo.packageName to Way(action = action, cls = it.activityInfo.name) }
     }.groupBy({ it.first }, { it.second }).mapValues { it.value.take(MAX_DECLARED) }
 
-    // ---- as rows
+    // ---- for the rows
 
-    private fun allowed(f: Found, s: Settings = prefs.now) = s.appCommands && f.pkg !in s.mutedApps
+    /** The switch for what other apps offer turns an app's search off too, for all apps or for one. */
+    internal fun allowed(f: Found, s: Settings = prefs.now) = s.appCommands && f.pkg !in s.mutedApps
 
-    /** The row that searches [f]'s app for [text]: named like the web's row, with the app's own icon. A file's keyword keeps the file's words. [app]: the name it was typed by. */
-    private fun row(f: Found, text: String, score: Double, app: String = f.app) = Result(
-        id = SearchEngine.IN_APP + f.pkg, provider = SearchEngine.COMMANDS, kind = Kind.COMMAND,
-        title = if (f.name != null) "${f.name}: $text" else context.getString(R.string.app_search_title, app, text),
-        icon = Icon.App(f.pkg, f.cls, me), score = score, label = app,
-        // It is the text itself, like a web search: nothing to learn, and nothing for the rows under the empty field.
-        learnable = false,
-        actions = listOf(Action("search", context.getString(if (f.name != null) R.string.action_open else R.string.action_search), open(f, text), symbol = "open")),
-    )
-
-    private fun open(f: Found, text: String) = Effect.Open(f.pkg, commands.fill(f.pkg, f.template, text))
+    /** What Enter runs to search [f]'s app for [text]. `Executor` checks it again when it is run. */
+    internal fun open(f: Found, text: String) = Effect.Open(f.pkg, commands.fill(f.pkg, f.template, text))
 
     /**
-     * "spotify daft punk": for each app whose whole name starts the text, the search inside it for
-     * the rest, the longest name first. Scored under every local match, so with "spotify d" or
-     * "google m" an app or a command whose name is the whole text still leads; only the ways out to
-     * the web come after it.
+     * "spotify daft punk": each app whose whole name starts the text, with the rest as what to look
+     * for there, the longest name first. Scored under every local match, so with "spotify d" or
+     * "google m" an app or a command whose name is the whole text still leads.
      */
-    fun rows(text: String): List<Result> {
+    fun named(text: String): List<Named> {
         val names = index.byName
         if (names.isEmpty()) return emptyList()
         val s = prefs.now
-        val out = ArrayList<Result>(2)
-        for (r in AppSearch.readings(text)) for ((f, app) in names[r.name].orEmpty()) if (allowed(f, s)) out += row(f, r.text, TYPED + r.name.length * LONGER, app)
+        val out = ArrayList<Named>(2)
+        for (r in AppSearch.readings(text)) for ((f, app) in names[r.name].orEmpty()) if (allowed(f, s)) out += Named(f, app, r.text, TYPED + r.name.length * LONGER)
         return out
     }
 
     /**
-     * "Search" on an app's own row, behind its arrow: it makes the app the chip in the field, and what
-     * is typed then is searched for there. Null for an app that cannot be searched, or that is another
-     * profile's (a link cannot be sent there from here).
+     * The app that searches where [site] does, if [site] is one of Booklight's own links as it came
+     * (`yt`, `maps`, `store`, `drive`) and that app is installed and can be searched. Null when it is
+     * not, or the link is no longer as it came: then the link opens in the browser, as it says.
      */
-    fun action(pkg: String, user: Long): Action? {
-        if (user != me) return null
-        val f = index.byPackage[pkg]?.takeIf { allowed(it) } ?: return null
-        return Action("search", f.name ?: context.getString(R.string.action_search), Effect.EnterScope(SearchEngine.IN_APP + pkg), keepOpen = true, symbol = "search", more = true)
-    }
-
-    /** One chip for each app that can be searched: entered from the app's row. (Asked for on every keystroke: nothing is made here.) */
-    fun scopes(): List<Scope> {
-        val s = prefs.now
-        val chips = index.chips
-        return if (!s.appCommands) emptyList() else if (s.mutedApps.isEmpty()) chips else chips.filter { it.f.pkg !in s.mutedApps }
-    }
-
-    /**
-     * The chip of an app's search: the app's name; what is typed is looked for there. It has no
-     * keyword: an app's name stays a name ("google m" is Google Maps), and typing the name and the
-     * text needs no chip.
-     */
-    inner class In internal constructor(internal val f: Found) : Scope {
-        override val key = SearchEngine.IN_APP + f.pkg
-        override val keywords = emptyList<String>()
-        override val name = f.app
-        override val symbol = "search"
-        override val hint: String get() = f.hint ?: context.getString(R.string.scope_site_hint, f.app)
-        override val listed = false
-        override suspend fun rows(arg: String): List<Result> = arg.trim().let { if (it.isEmpty()) emptyList() else listOf(row(f, it, 1.0)) }
-    }
-
-    // ---- Booklight's own links
-
-    /**
-     * Where one of Booklight's own links (`yt`, `maps`, `store`, `drive`) goes when its app is
-     * installed and can be searched: the app's icon and the search for [text] inside it. Null when
-     * it is not, or the link is no longer as it came: then the link opens in the browser, as it says.
-     */
-    fun link(site: Site, text: String): Pair<Icon, Effect>? {
+    fun owner(site: Site): Found? {
         val apps = index.byPackage
         if (apps.isEmpty()) return null
         val pkg = AppSearch.owner(site, table) ?: return null
-        val f = apps[pkg]?.takeIf { it.source != Source.FILE && allowed(it) } ?: return null
-        return Icon.App(f.pkg, f.cls, me) to open(f, text)
+        return apps[pkg]?.takeIf { it.source != Source.FILE && allowed(it) }
     }
 
     // ---- for the list of everything, and for the debug hook
 
     /**
-     * An app's search as it would be typed ("spotify jazz"), for the list of everything and the tips:
-     * the first app of the table that is here, else one that declares a search. [free]: whether the
-     * name can be typed without its first word becoming a keyword's chip. Null when no app here can
-     * be searched.
+     * An app that can be searched, as its name would be typed ("spotify"), for the list of everything
+     * and the tips: the first app of the table that is here, else one that declares a search. [free]:
+     * whether the name can be typed without its first word becoming a keyword's chip. Null when no app
+     * here can be searched.
      */
     fun example(free: (String) -> Boolean): String? {
         val s = prefs.now
@@ -207,8 +156,7 @@ class AppSearches(private val context: Context, private val prefs: Prefs, privat
         if (all.isEmpty()) return null
         val inOrder = table.mapNotNull { line -> all.firstOrNull { it.pkg == line.pkg && it.source == Source.TABLE } }.distinct() +
             all.filter { it.source == Source.DECLARED }.sortedBy { it.app.lowercase() }
-        val text = context.getString(R.string.guide_search_text)
-        return inOrder.map { it.app.lowercase() }.firstOrNull { name -> free(name) && AppSearch.readings("$name $text").any { it.name == Matcher.fold(name) } }?.let { "$it $text" }
+        return inOrder.map { it.app.lowercase() }.firstOrNull(free)
     }
 
     /**
@@ -242,8 +190,5 @@ class AppSearches(private val context: Context, private val prefs: Prefs, privat
         private const val TYPED = 0.02
         /** A longer name counts a little more: "youtube music daft punk" is YouTube Music before it is YouTube. */
         private const val LONGER = 0.0001
-
-        /** The hook for an app's own row (`AppsProvider`): its Search action, if the app can be searched. */
-        fun action(context: Context, pkg: String, user: Long): Action? = (context.applicationContext as BooklightApp).commands.search.action(pkg, user)
     }
 }

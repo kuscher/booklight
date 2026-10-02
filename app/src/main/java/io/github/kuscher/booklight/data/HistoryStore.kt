@@ -21,7 +21,7 @@ import java.io.File
  */
 class HistoryStore(context: Context, private val scope: CoroutineScope) {
     @Serializable private data class E(val c: Double, val t: Long)
-    @Serializable private data class Saved(val v: Int = 1, val items: Map<String, E> = emptyMap(), val latches: Map<String, Map<String, E>> = emptyMap())
+    @Serializable private data class Saved(val v: Int = 1, val items: Map<String, E> = emptyMap(), val latches: Map<String, Map<String, E>> = emptyMap(), val leads: Map<String, Int> = emptyMap())
 
     private val file = File(context.filesDir, "history.json")
     private val json = Json { ignoreUnknownKeys = true }
@@ -36,6 +36,7 @@ class HistoryStore(context: Context, private val scope: CoroutineScope) {
             History(History.Data(
                 s.items.mapValues { History.Entry(it.value.c, it.value.t) },
                 s.latches.mapValues { m -> m.value.mapValues { History.Entry(it.value.c, it.value.t) } },
+                s.leads,
             ))
         }
     } catch (e: Exception) {
@@ -49,7 +50,7 @@ class HistoryStore(context: Context, private val scope: CoroutineScope) {
         pending = scope.launch(Dispatchers.IO) {
             delay(500)
             val d = history.data()
-            val s = Saved(1, d.items.mapValues { E(it.value.count, it.value.last) }, d.latches.mapValues { m -> m.value.mapValues { E(it.value.count, it.value.last) } })
+            val s = Saved(1, d.items.mapValues { E(it.value.count, it.value.last) }, d.latches.mapValues { m -> m.value.mapValues { E(it.value.count, it.value.last) } }, d.leads)
             // One write at a time, and a full disk loses this save, not the app.
             writing.withLock {
                 runCatching {

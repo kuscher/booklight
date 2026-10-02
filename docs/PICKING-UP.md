@@ -2,6 +2,39 @@
 
 *Living status. Newest first.*
 
+## 2026-10-02 (afternoon): the road to 3.0, on branch `next-five` (local, nothing pushed, nothing released)
+
+Alex: "I agree with the decisions for one structure for apps and your call. Go ahead and have this built. When this
+is built and the rubber band commit those changes. Show me the airplane proposal so we can do that. When done with
+that too (after my review, approval and your building) we can release 3.0 after I say so."
+
+- **On the branch, built and seen on the Lenovo Googlebook** (debug builds; real keys where typing matters):
+  - *Commands for other apps*: `play` with the music app named and Spotify finding and playing what is named with
+    the user's own key; a search inside an app; an app's pages in Settings; `alarms`, `timers`; `go`, `meet`, `call`,
+    `sms`, `wa`, `tg`; a link with any scheme, a typed app address, app commands made in the window. What the device
+    showed: `docs/research/intents.md`, "Tried on a Googlebook".
+  - *One structure for apps* (`docs/design/app-structure/`; `BUILD.md` there says what was built and where it
+    differs from the paper): an app's row is Open · Search · Play · Window · More; Tab moves, Enter does; the app
+    becomes the chip; `play` and `yt` lead to the same chip and row; a sentence that starts with an app's name goes
+    to the web until that app's row has been picked once. With real keys: `spo`, Tab, Tab, Enter, a song, Enter
+    played it; `net`, Tab, Enter, a title, Enter opened Netflix on its results.
+  - *The rubber highlight* (`docs/design/rubber-highlight.md`): variant A, measured frame by frame.
+  - *Labs*, a sixth section of the window, with the keys for Spotify and for flights.
+  - *Typing*: typed keys go to the field before the input method; no letter is lost or doubled when the panel sets
+    the field's text itself (`docs/research/device-findings.md`, the last section).
+  - The new mark (Beam) and the wording "Fika Labs".
+  - Reviews of the five features (code, UX, visual) and their fixes: the code review found no way past the rule for
+    starting another app's activity.
+- **Designed, waiting for Alex**: a richer flight row with a line, a plane and one badge (`docs/design/flights-row/`,
+  five decisions on its page). Built only after his review.
+- **Not done yet, before 3.0**: the flight row; a design look at the new app row in German and in the dark theme;
+  the emoji grid's square with the new motion has not been looked at on a device; `PillBefore` and `squareBefore`
+  (the old motion, kept for filming) come out; captures and store pictures still show the old rows; the feature
+  graphic still shows the old mark (made by the Play session's tool); the HP Googlebook has run none of this;
+  release notes, version 3.0, the tag: only on his word.
+- **For whoever pushes**: main gets commits made from final trees, as for 2.3; this branch's own history stays on
+  the Mac (the private notes say why).
+
 ## 2026-10-02 (morning): 2.3 is released
 
 Alex: "Go ahead and get release 2.3 out with all things included and go ahead building the next five with intents."

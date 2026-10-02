@@ -52,8 +52,8 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
     }
 
     /**
-     * A search inside an app of this device, as it would be typed ("spotify jazz"): an app whose name does not begin
-     * with a keyword, so that typing it makes no chip. Null when no app here can be searched.
+     * An app of this device that can be searched, as its name is typed ("spotify"): one whose name does not begin with
+     * a keyword, so that typing it makes no chip. Null when no app here can be searched.
      */
     fun appSearch(): String? = commands.search.example { name -> (context.applicationContext as BooklightApp).engine.scopeFor("$name x") == null }
 
@@ -85,7 +85,8 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
             }
             key.startsWith("site:") -> "links"
             key.startsWith("prompt:") -> "prompts"
-            key.startsWith(SearchEngine.IN_APP) -> "appsearch"
+            // Under an app's chip: Play is the `play` line's, Search the line of the search inside an app.
+            key.startsWith(SearchEngine.IN_APP) -> if (row.provider == io.github.kuscher.booklight.providers.Songs.PROVIDER) "play" else "appsearch"
             key.startsWith("own:") -> "own"
             else -> key.takeIf { k -> ids.contains(k) }
         }

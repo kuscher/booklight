@@ -25,19 +25,20 @@ import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * "Play … on Spotify" finds the song and plays it: Spotify's app plays a link (`spotify:track:…`),
+ * Play in Spotify finds the song and plays it: Spotify's app plays a link (`spotify:track:…`),
  * and the link for a name is found in Spotify's catalogue.
  *
  * That needs a key of the user's own for Spotify's Web API (a client id and its secret, set in the
- * Booklight window › Labs; Booklight ships none). With it, the text typed after `play` and the key's token
- * go to api.spotify.com over HTTPS, the key itself to accounts.spotify.com for the token, and
- * nothing else does (no cookies, no identifiers, a plain "Booklight" user agent, as in
- * `FlightsProvider`). When: once, after a pause in typing, while Spotify is the player the row is
- * aimed at; never for each letter. The token is the app's, not a person's: nothing of anybody's
- * account is read. An answer is kept for five minutes and the token until a minute before it ends,
- * both in memory only. Without a key nothing is sent, and the row reads "Search in Spotify".
+ * Booklight window › Labs; Booklight ships none). With it, the text typed under Spotify's chip while
+ * Play is armed and the key's token go to api.spotify.com over HTTPS, the key itself to
+ * accounts.spotify.com for the token, and nothing else does (no cookies, no identifiers, a plain
+ * "Booklight" user agent, as in `FlightsProvider`). When: once, after a pause in typing, while
+ * Spotify is the chip and Play is armed; never for each letter, and never under Search. The token is
+ * the app's, not a person's: nothing of anybody's account is read. An answer is kept for five minutes
+ * and the token until a minute before it ends, both in memory only. Without a key nothing is sent,
+ * and Spotify's row has no Play.
  *
- * The row is `PlayScope`'s. The panel asks ([waits], [answer]); this class looks up and remembers.
+ * The row is `AppChips`'. The panel asks ([waits], [asks], [answer]); this class looks up and remembers.
  */
 class Songs(private val context: Context, private val prefs: Prefs, private val scope: CoroutineScope) {
     /** What Spotify said for a request, or why it said nothing; [at] by the clock that never jumps. */
@@ -46,8 +47,8 @@ class Songs(private val context: Context, private val prefs: Prefs, private val 
     /** A token, the key it was got with, and until when it is used. */
     private class Held(val value: String, val key: Int, val until: Long)
 
-    /** A row that stands waiting: what it asks for, and how it is made again once the answer is in. */
-    private class Waiting(val what: PlayRequest, val row: suspend () -> Result?)
+    /** A row that stands waiting: what it asks for, whether only Enter asks it ([unasked]), and how the row is made again once the answer is in. */
+    private class Waiting(val what: PlayRequest, val unasked: Boolean, val row: suspend () -> Result?)
 
     private val kept = ConcurrentHashMap<String, Kept>()
     private val asking = HashMap<String, Deferred<Kept>>()
@@ -67,8 +68,12 @@ class Songs(private val context: Context, private val prefs: Prefs, private val 
         it.key == prefs.spotifyKey.value.hashCode() && SystemClock.elapsedRealtime() - it.at < Spotify.keep(it.failure).toMillis()
     }
 
-    /** The row [id] stands waiting for what Spotify has for [what]; [row] makes it again when that is known. */
-    fun wait(id: String, what: PlayRequest, row: suspend () -> Result?) { waiting[id] = Waiting(what, row) }
+    /**
+     * The row [id] stands waiting for what Spotify has for [what]; [row] makes it again when that is
+     * known. [unasked]: nothing is sent for it until the user's Enter (Spotify is the chip merely for
+     * being first by name, or the text may be an app's name).
+     */
+    fun wait(id: String, what: PlayRequest, unasked: Boolean = false, row: suspend () -> Result?) { waiting[id] = Waiting(what, unasked, row) }
 
     /**
      * The row [id] waits no more, if what it waits for is [what] (null: whatever it waits for). A row
@@ -78,6 +83,9 @@ class Songs(private val context: Context, private val prefs: Prefs, private val 
 
     /** True if [r] is a row that stands waiting for Spotify's answer. */
     fun waits(r: Result): Boolean = r.provider == PROVIDER && waiting.containsKey(r.id)
+
+    /** True if [r] waits and may be looked up without an Enter: after a pause in typing, or when the user goes to it. */
+    fun asks(r: Result): Boolean = r.provider == PROVIDER && waiting[r.id]?.unasked == false
 
     /**
      * Asks Spotify for the row [id], after a pause if [pause] (a pause that is cancelled sends
@@ -175,7 +183,7 @@ class Songs(private val context: Context, private val prefs: Prefs, private val 
     }
 
     companion object {
-        /** The provider of the rows that wait here: `PlayScope`'s key. */
+        /** The provider of the rows that wait here (an app's row with Play armed), and the key of `play`. */
         const val PROVIDER = "play"
         /** "This needs the answer, which is on its way": the panel runs the action once the answer is in. */
         val WAIT: Effect = Effect.Internal("song")

@@ -1,0 +1,705 @@
+<title>Booklight flights</title>
+<style>
+/* Layout: one column. The controls, then the panel drawn at 1 px = 1 dp on a desk of its own (it scrolls inside its box on a narrow screen), the pinned window, three notes. */
+@property --pt { syntax: "<length>"; inherits: true; initial-value: 8px }
+@property --pb { syntax: "<length>"; inherits: true; initial-value: 144px }
+:root {
+  /* the page */
+  --bg: #F5F3F9; --surface: #FFFFFF; --surface-2: #ECE8F3; --fg: #1D1B20; --muted: #5F5A69; --line: #D9D4E3;
+  --accent: #5B45A0; --accent-soft: #E6DEF8; --on-accent-soft: #2A1F55;
+  --font: "Google Sans Flex", "Google Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* the panel in light theme (the values of design-system.md, the device's lilac) */
+  --pl-on: 29 27 32; --pl-veil: 255 255 255; --pl-tint: .42; --pl-rim: .8; --pl-hair: .2; --pl-shade: .26;
+  --pl-sel: 232 222 248; --pl-sela: .78; --pl-rim2: .55; --pl-cap: .1; --pl-disc: .08; --pl-pane: .62; --pl-dim: .1;
+  --pl-primary: #6750A4; --pl-solid: #ECE6F0;
+  --pl-ok: 182 242 190; --pl-on-ok: #00210A; --pl-late: 255 222 166; --pl-on-late: #261900;
+  --pl-ok-text: #17662B; --pl-late-text: #7A5200;
+  --pl-togo: .5; --pl-rest: .3;
+  /* the panel in dark theme */
+  --pd-on: 230 224 233; --pd-veil: 15 13 19; --pd-tint: .5; --pd-rim: .44; --pd-hair: .28; --pd-shade: .5;
+  --pd-sel: 74 68 88; --pd-sela: .42; --pd-rim2: .3; --pd-cap: .14; --pd-disc: .12; --pd-pane: .36; --pd-dim: .22;
+  --pd-primary: #D0BCFF; --pd-solid: #2B2930;
+  --pd-ok: 10 82 38; --pd-on-ok: #B6F2BE; --pd-late: 92 67 0; --pd-on-late: #FFDEA6;
+  --pd-ok-text: #8FDB9B; --pd-late-text: #F1C267;
+  --pd-togo: .55; --pd-rest: .34;
+  /* what is behind the glass */
+  --wall: #B9B2CB; --opaque: #000; --white: 255 255 255; --black: 0 0 0; --shadow: 8 10 30;
+  --wl-bg: #FFFFFF; --wl-bar: #F1EFF5; --wl-ink: 40 38 48; --wl-edge: #D8D4E0;
+  --wd-bg: #101114; --wd-bar: #1B1C21; --wd-ink: 214 220 232; --wd-edge: #2C2D34;
+  --place: cubic-bezier(.22, 1.1, .36, 1); --lead: cubic-bezier(.3, 1.25, .4, 1); --trail: cubic-bezier(.25, .9, .3, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131217; --surface: #1C1A22; --surface-2: #26232E; --fg: #E6E0E9; --muted: #A9A3B5; --line: #37333F;
+  --accent: #CDBBFF; --accent-soft: #3A3158; --on-accent-soft: #E9DFFF; --wall: #3B364A;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131217; --surface: #1C1A22; --surface-2: #26232E; --fg: #E6E0E9; --muted: #A9A3B5; --line: #37333F;
+  --accent: #CDBBFF; --accent-soft: #3A3158; --on-accent-soft: #E9DFFF; --wall: #3B364A;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 1rem; line-height: 1.5; margin: 0; padding-inline: 16px; padding-block: 2rem 4rem; -webkit-font-smoothing: antialiased }
+main { max-width: 60rem; margin-inline: auto; display: flex; flex-direction: column; gap: 2rem; min-width: 0 }
+header { display: flex; flex-direction: column; gap: .6rem }
+h1 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); font-weight: 650; letter-spacing: -.01em; line-height: 1.15; margin: 0; text-wrap: balance }
+h2 { font-size: 1.05rem; font-weight: 650; margin: 0; line-height: 1.3 }
+p { margin: 0 }
+.lede { font-size: 1.08rem; max-width: 42rem }
+.muted { color: var(--muted) }
+.small { font-size: .9rem }
+section { display: flex; flex-direction: column; gap: .9rem; min-width: 0 }
+
+/* the switches */
+.ctls { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .55rem 1rem; align-items: start; font-size: .9rem }
+.ctls .lbl { font-weight: 650; padding-top: .3rem; white-space: nowrap }
+.seg { display: flex; flex-wrap: wrap; gap: .35rem }
+.seg button { font: inherit; font-weight: 550; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .28rem .8rem; cursor: pointer }
+.seg button:hover { border-color: var(--accent) }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--on-accent-soft); border-color: var(--accent) }
+button:focus-visible, .deskscroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+@media (max-width: 34rem) { .ctls { grid-template-columns: minmax(0, 1fr); gap: .25rem } .ctls .lbl { padding-top: .5rem } }
+
+/* ---- the desk: drawn at 1 px = 1 dp ---- */
+.deskscroll { overflow-x: auto; max-width: 100%; border-radius: 20px; border: 1px solid var(--line) }
+.desk { position: relative; width: max-content; min-width: 100%; padding: 44px 24px 56px; background: var(--wall); display: flex; justify-content: center; overflow: hidden; isolation: isolate }
+.win { position: absolute; z-index: -2; left: 3%; right: 3%; top: 16px; bottom: -40px; border-radius: 14px; background: var(--w-bg); border: 1px solid var(--w-edge); overflow: hidden }
+.win::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 30px; background: var(--w-bar); border-bottom: 1px solid var(--w-edge) }
+.win i { position: absolute; left: 34px; height: 7px; border-radius: 3px; background: rgb(var(--w-ink) / .42) }
+.win i.h { height: 14px; background: rgb(var(--w-ink) / .7) }
+.dim { position: absolute; z-index: -1; inset: 0; background: rgb(var(--black) / var(--dim)) }
+.back-light { --w-bg: var(--wl-bg); --w-bar: var(--wl-bar); --w-ink: var(--wl-ink); --w-edge: var(--wl-edge) }
+.back-dark { --w-bg: var(--wd-bg); --w-bar: var(--wd-bar); --w-ink: var(--wd-ink); --w-edge: var(--wd-edge) }
+.th-light { --on: var(--pl-on); --veil: var(--pl-veil); --tint: var(--pl-tint); --rim: var(--pl-rim); --hair: var(--pl-hair); --shade: var(--pl-shade); --sel: var(--pl-sel); --sela: var(--pl-sela); --rim2: var(--pl-rim2); --cap: var(--pl-cap); --disc: var(--pl-disc); --pane: var(--pl-pane); --dim: var(--pl-dim); --primary: var(--pl-primary); --solid: var(--pl-solid);
+  --ok: var(--pl-ok); --on-ok: var(--pl-on-ok); --late: var(--pl-late); --on-late: var(--pl-on-late); --ok-text: var(--pl-ok-text); --late-text: var(--pl-late-text); --togo: var(--pl-togo); --rest: var(--pl-rest) }
+.th-dark { --on: var(--pd-on); --veil: var(--pd-veil); --tint: var(--pd-tint); --rim: var(--pd-rim); --hair: var(--pd-hair); --shade: var(--pd-shade); --sel: var(--pd-sel); --sela: var(--pd-sela); --rim2: var(--pd-rim2); --cap: var(--pd-cap); --disc: var(--pd-disc); --pane: var(--pd-pane); --dim: var(--pd-dim); --primary: var(--pd-primary); --solid: var(--pd-solid);
+  --ok: var(--pd-ok); --on-ok: var(--pd-on-ok); --late: var(--pd-late); --on-late: var(--pd-on-late); --ok-text: var(--pd-ok-text); --late-text: var(--pd-late-text); --togo: var(--pd-togo); --rest: var(--pd-rest) }
+
+.panel { position: relative; width: 720px; flex: none; border-radius: 32px; color: rgb(var(--on)); font-size: 17px; line-height: 22px; text-align: left;
+  background: rgb(var(--veil) / var(--tint)); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px);
+  box-shadow: inset 0 0 0 1.25px rgb(var(--white) / var(--rim)), 0 0 0 1px rgb(var(--black) / var(--hair)), 0 26px 50px -22px rgb(var(--shadow) / var(--shade)) }
+.panel svg.i { width: 18px; height: 18px; fill: currentColor; flex: none; display: block }
+.panel svg.ent { width: 14px; height: 14px }
+/* the field: 68. The mark from 20, the text from 72 */
+.fld { height: 68px; display: flex; align-items: center; padding: 0 20px; font-size: 24px; font-weight: 500; white-space: nowrap }
+.fld .g { width: 36px; text-align: center; font-weight: 600; flex: none; margin-right: 16px }
+.fld .caret { width: 2px; height: 30px; background: var(--primary); border-radius: 1px; margin-left: 1px }
+/* rows on the list's 8 dp inset: the mark's box 20 to 56, text from 72, the right end at 700 */
+.rows { position: relative; padding: 8px 8px 0 }
+.pill { position: absolute; left: 8px; right: 8px; top: var(--pt); height: calc(var(--pb) - var(--pt)); border-radius: 24px; background: rgb(var(--sel) / var(--sela)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)) }
+.r { position: relative; height: 56px; border-radius: 24px; cursor: default }
+.r.plainrow { display: flex; align-items: center; padding: 0 12px }
+.ic { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: rgb(var(--on) / var(--disc)); color: rgb(var(--on) / .8); transition: color .12s }
+.ic svg.i { width: 20px; height: 20px }
+.r.on .ic { color: rgb(var(--on)) }
+.ttl { flex: 1; min-width: 0; padding: 0 12px 0 16px; font-size: 17px; font-weight: 500; line-height: 22px; white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent); mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent) }
+.kind { font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; color: rgb(var(--on) / .8); white-space: nowrap }
+/* what stands at a row's right end: its kind, or (selected) the strip of what it can do */
+.trailbox { position: relative; flex: none; height: 32px; display: flex; align-items: center; justify-content: flex-end }
+.trailbox > .kind { transition: opacity .06s }
+.trailbox > .strip { position: absolute; right: 0; top: 0; opacity: 0; transform: translateX(12px); pointer-events: none }
+.r.on .trailbox > .kind { opacity: 0 }
+.r.on .trailbox > .strip { position: static; opacity: 1; transform: none; transition: opacity .11s .06s, transform .32s .06s var(--place) }
+.r.on .trailbox > .kind { position: absolute; right: 0 }
+.strip { display: flex; align-items: center; height: 32px }
+.a { width: 32px; height: 32px; display: grid; place-items: center; flex: none }
+.a.arm { width: auto; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 16px; background: rgb(var(--veil) / var(--pane)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)); margin-right: 4px }
+.a.arm:last-child { margin-right: 0 }
+.a.arm b { font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; margin: 0 6px 0 7px; white-space: nowrap }
+.a.off { opacity: .4 }
+.spark { width: 15px; height: 15px }
+
+/* ---- the flight's row ---- */
+.r.fl { height: var(--fh, 136px); transition: height .36s var(--place) }
+.fl .lay { position: absolute; inset: 0; opacity: 0; transition: opacity .09s; pointer-events: none }
+.fl[data-row="new"] .v-new, .fl[data-row="today"] .v-today, .fl[data-row="plain"] .v-plain { opacity: 1; transition: opacity .11s .04s; pointer-events: auto }
+.fl .ic { position: absolute; left: 12px; top: 28px }
+.fl .trailbox { position: absolute; right: 12px; top: 30px }
+.fl .shared { transition: opacity .11s }
+.fl[data-row="plain"] .shared { opacity: 0 }
+.fl .v-plain .ic { top: 10px } .fl .v-plain .trailbox { top: 12px }
+.fl .v-plain .ttl { position: absolute; left: 48px; top: 17px; right: calc(12px + var(--trailw2, 60px)); }
+/* the new row, 136: caption 12 to 32, headline 34 to 58 (its centre line, 46, is the mark's and the strip's), the line on y = 84, the two ends 100 to 122 */
+.texts { position: absolute; left: 64px; top: 12px; right: calc(12px + var(--trailw, 60px) + 16px) }
+.cap { height: 20px; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; white-space: nowrap; overflow: hidden; color: rgb(var(--on) / .8); -webkit-mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent); mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent) }
+.r.on .cap { color: rgb(var(--on)) }
+.head { margin-top: 2px; height: 24px; display: flex; align-items: baseline; gap: 10px; font-size: 17px; font-weight: 500; line-height: 24px; white-space: nowrap; font-variant-numeric: tabular-nums; overflow: hidden; -webkit-mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent); mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent) }
+.head > span { flex: none }
+.badge { flex: none; display: inline-block; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 13px; font-weight: 600; letter-spacing: .1px; line-height: 22px; background: rgb(var(--on) / var(--cap)); color: rgb(var(--on)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)) }
+.badge.ok { background: rgb(var(--ok) / .88); color: var(--on-ok) }
+.badge.late { background: rgb(var(--late) / .88); color: var(--on-late) }
+.inkonly .badge.ok, .inkonly .badge.late { background: rgb(var(--on) / var(--cap)); color: rgb(var(--on)) }
+.track { position: absolute; left: 64px; top: 74px; width: 628px; height: 20px; --x: -60; --s: 20; color: rgb(var(--on)) }
+.track .d { position: absolute; inset: 0; display: block; overflow: visible }
+.track .d line { stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 9.058; fill: none }
+.track .base { opacity: var(--rest); transition: opacity .11s }
+.track.has-plane .base { opacity: 0 }
+.track .togo { opacity: 0; transition: opacity .11s; -webkit-mask-image: linear-gradient(to right, transparent calc((var(--x) + var(--s) + 2) * 1px), var(--opaque) calc((var(--x) + var(--s) + 10) * 1px)); mask-image: linear-gradient(to right, transparent calc((var(--x) + var(--s) + 2) * 1px), var(--opaque) calc((var(--x) + var(--s) + 10) * 1px)) }
+.track.has-plane .togo { opacity: var(--togo) }
+.track .flown { position: absolute; left: 0; top: 8.5px; height: 3px; border-radius: 1.5px; background: currentColor; width: max(0px, calc(var(--x) * 1px - 4px)); opacity: 0; transition: opacity .11s }
+.track.has-plane .flown { opacity: clamp(0, calc((var(--x) - 7) / 3), 1) }
+.track .plane { position: absolute; left: -2px; top: -1.5px; width: 24px; height: 24px; fill: currentColor; transform: translateX(calc(var(--x) * 1px)); opacity: 0; transition: opacity .11s }
+.track.has-plane .plane { opacity: 1 }
+.ends { position: absolute; left: 64px; top: 100px; width: 628px; height: 22px; display: flex; justify-content: space-between; align-items: baseline; font-size: 17px; font-weight: 500; line-height: 22px; white-space: nowrap; font-variant-numeric: tabular-nums }
+.ends > span { display: flex; align-items: baseline }
+.ends .code { color: rgb(var(--on) / .8) }
+.ends .l .code { margin-right: 7px } .ends .r2 .code { margin-left: 7px }
+.ends .where { font-size: 14px; letter-spacing: .1px; color: rgb(var(--on) / .8) }
+.r.on .ends .where { color: rgb(var(--on)) }
+.ends .l .where { margin-left: 12px } .ends .r2 .where { margin-right: 12px }
+.ends .struck { text-decoration: line-through; color: rgb(var(--on) / .8) }
+.ends .rule { width: 20px; height: 2px; border-radius: 1px; background: rgb(var(--on) / .3); position: relative; top: -5px }
+/* today's row, 92: caption, two slots, a third line */
+.v-today .col { position: absolute; left: 64px; top: 12px; right: calc(12px + var(--trailw, 60px) + 16px); display: flex; flex-direction: column; gap: 3px }
+.v-today .cap { height: 19px; line-height: 19px }
+.sl { display: flex; gap: 20px; height: 24px; align-items: baseline; font-size: 17px; font-weight: 500; line-height: 24px; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums }
+.sl > span:first-child { min-width: var(--first, 196px) }
+.sl em { font-style: normal; font-size: 12px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: rgb(var(--on) / .8); margin-right: 7px }
+.sl .none { color: rgb(var(--on) / .4) }
+.sl .struck { text-decoration: line-through; color: rgb(var(--on) / .8) }
+.note { height: 19px; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.note i { font-style: normal; color: rgb(var(--on) / .8) }
+/* the footer: 36 and the list's lower 8 */
+.foot { height: 44px; display: flex; align-items: center; padding: 0 20px; font-size: 13px; font-weight: 500; letter-spacing: .1px; color: rgb(var(--on) / .8); white-space: nowrap }
+.foot .src { margin-right: auto }
+.fk { height: 22px; padding: 0 7px; border-radius: 7px; background: rgb(var(--on) / var(--cap)); display: inline-grid; place-items: center; margin: 0 6px 0 16px }
+.foot .tabhint { transition: opacity .12s }
+.foot .tabhint.gone { opacity: 0 }
+
+/* ---- the pinned window: 280 x 118 on solid ground ---- */
+.pinwrap { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center }
+.pin { position: relative; width: 280px; height: 118px; flex: none; border-radius: 16px; background: var(--solid); color: rgb(var(--on)); padding: 15px 20px; box-shadow: 0 0 0 1px rgb(var(--black) / .14), 0 14px 30px -14px rgb(var(--shadow) / .4); text-align: left }
+.pin .pl { height: 20px; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; color: rgb(var(--on) / .8); white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent); mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent) }
+.pin .pl .ok { color: var(--ok-text) } .pin .pl .late { color: var(--late-text) }
+.inkonly .pin .pl .ok, .inkonly .pin .pl .late { color: rgb(var(--on)) }
+.pin .fig { margin-top: 2px; height: 42px; font-size: 34px; font-weight: 600; line-height: 42px; white-space: nowrap; font-variant-numeric: tabular-nums }
+.pin .fig.long { font-size: 28px }
+.pin .track { position: relative; left: 0; top: 0; margin-top: 8px; width: 240px; height: 16px; --s: 16 }
+.pin .track .d line { stroke-width: 2; stroke-dasharray: 0 7 }
+.pin .track .flown { top: 7px; height: 2px; border-radius: 1px; width: max(0px, calc(var(--x) * 1px - 3px)) }
+.pin .track .plane { left: -1.6px; top: -1.2px; width: 19.2px; height: 19.2px }
+.pinnote { max-width: 26rem }
+.narrow, .calmnote { display: none }
+@media (max-width: 50rem) { .narrow { display: block } }
+
+/* the notes */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1.5rem 2rem }
+.notes > div { display: flex; flex-direction: column; gap: .5rem; min-width: 0 }
+.notes ul, .notes ol { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: .4rem; font-size: .93rem }
+.notes b { font-weight: 650 }
+hr { border: 0; border-top: 1px solid var(--line); margin: 0; width: 100% }
+
+/* A change the app would not animate (another language, another look): nothing on the desk moves for it. */
+.still, .still * { transition: none !important }
+@media (prefers-reduced-motion: reduce) {
+  .r.fl, .pill, .fl .lay, .track *, .trailbox > *, .ic, .foot .tabhint { transition: none !important }
+  .calmnote { display: block } #speednote { display: none }
+}
+</style>
+
+<main>
+  <header>
+    <h1>A flight’s row, with a line and a plane</h1>
+    <p class="lede">The row is 136 high where today’s is 92. The two times moved to the ends of a line, the plane stands where the flight is, and one badge says whether it runs to plan. Try it: every switch below changes the panel.</p>
+  </header>
+
+  <section id="controls" aria-label="Switches">
+    <div class="ctls">
+      <span class="lbl" id="l-phase">The flight</span>
+      <div class="seg" role="group" aria-labelledby="l-phase">
+        <button type="button" id="b-fri" data-k="phase" data-v="fri">Leaves Friday</button>
+        <button type="button" id="b-soon" data-k="phase" data-v="soon">Leaves in 42 min</button>
+        <button type="button" id="b-airok" data-k="phase" data-v="airok">In the air, on time</button>
+        <button type="button" id="b-airlate" data-k="phase" data-v="airlate">In the air, delayed</button>
+        <button type="button" id="b-landed" data-k="phase" data-v="landed">Landed</button>
+        <button type="button" id="b-cancelled" data-k="phase" data-v="cancelled">Cancelled</button>
+        <button type="button" id="b-looking" data-k="phase" data-v="looking">Looking it up</button>
+        <button type="button" id="b-offline" data-k="phase" data-v="offline">No connection</button>
+        <button type="button" id="b-nokey" data-k="phase" data-v="nokey">Without a key</button>
+      </div>
+      <span class="lbl" id="l-row">The row</span>
+      <div class="seg" role="group" aria-labelledby="l-row">
+        <button type="button" id="b-new" data-k="row" data-v="new">New, 136 high</button>
+        <button type="button" id="b-today" data-k="row" data-v="today">Today’s, 92 high</button>
+      </div>
+      <span class="lbl" id="l-theme">The panel</span>
+      <div class="seg" role="group" aria-labelledby="l-theme">
+        <button type="button" id="b-tl" data-k="theme" data-v="light">Light</button>
+        <button type="button" id="b-td" data-k="theme" data-v="dark">Dark</button>
+      </div>
+      <span class="lbl" id="l-back">Behind the glass</span>
+      <div class="seg" role="group" aria-labelledby="l-back">
+        <button type="button" id="b-bl" data-k="back" data-v="light">A light window</button>
+        <button type="button" id="b-bd" data-k="back" data-v="dark">A dark window</button>
+      </div>
+      <span class="lbl" id="l-lang">Language</span>
+      <div class="seg" role="group" aria-labelledby="l-lang">
+        <button type="button" id="b-en" data-k="lang" data-v="en">English</button>
+        <button type="button" id="b-de" data-k="lang" data-v="de">Deutsch</button>
+      </div>
+      <span class="lbl" id="l-badges">The badge</span>
+      <div class="seg" role="group" aria-labelledby="l-badges">
+        <button type="button" id="b-col" data-k="badges" data-v="colour">Green and amber</button>
+        <button type="button" id="b-ink" data-k="badges" data-v="ink">No colour</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="stage" aria-label="The panel">
+    <div class="deskscroll" id="deskscroll" tabindex="0" aria-label="The Booklight panel, drawn at its real size. Arrow down and up move the selection.">
+      <div class="desk th-light back-light" id="desk">
+        <div class="win" id="win" aria-hidden="true"></div>
+        <div class="dim" aria-hidden="true"></div>
+        <div class="panel" id="panel">
+          <div class="fld"><span class="g">G</span><span>lh400</span><span class="caret"></span></div>
+          <div class="rows" id="rows">
+            <div class="pill" id="pill"></div>
+            <div class="r fl on" id="flight" data-i="0" data-row="new">
+              <div class="shared">
+                <span class="ic"><svg class="i" viewBox="0 0 24 24"><use href="#g-plane"/></svg></span>
+                <div class="trailbox" id="trail"><span class="kind" id="fkind"></span><span class="strip" id="fstrip"></span></div>
+              </div>
+              <div class="lay v-new">
+                <div class="texts"><div class="cap" id="cap"></div><div class="head" id="head"></div></div>
+                <div class="track" id="track">
+                  <svg class="d base" width="628" height="20" aria-hidden="true"><line x1="1.5" y1="10" x2="626.5" y2="10"/></svg>
+                  <svg class="d togo" width="628" height="20" aria-hidden="true"><line x1="1.5" y1="10" x2="626.5" y2="10"/></svg>
+                  <i class="flown"></i>
+                  <svg class="plane" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-plane" transform="rotate(90 12 12)"/></svg>
+                </div>
+                <div class="ends"><span class="l" id="endl"></span><span class="r2" id="endr"></span></div>
+              </div>
+              <div class="lay v-today">
+                <div class="col"><div class="cap" id="tcap"></div><div class="sl" id="tsl"></div><div class="note" id="tnote"></div></div>
+              </div>
+              <div class="lay v-plain">
+                <span class="ic"><svg class="i" viewBox="0 0 24 24"><use href="#g-plane"/></svg></span>
+                <div class="ttl" id="pttl"></div>
+                <div class="trailbox" id="ptrail"><span class="kind" id="pkind"></span><span class="strip" id="pstrip"></span></div>
+              </div>
+            </div>
+            <div class="r plainrow" id="row1" data-i="1">
+              <span class="ic"><svg class="i" viewBox="0 0 24 24"><use href="#g-search"/></svg></span>
+              <div class="ttl" id="r1t"></div>
+              <div class="trailbox"><span class="kind">Web</span><span class="strip" id="r1s"></span></div>
+            </div>
+            <div class="r plainrow" id="row2" data-i="2">
+              <span class="ic"><svg class="i spark" viewBox="0 0 24 24"><use href="#g-spark"/></svg></span>
+              <div class="ttl" id="r2t"></div>
+              <div class="trailbox"><span class="kind">Gemini</span><span class="strip" id="r2s"></span></div>
+            </div>
+          </div>
+          <div class="foot"><span class="src" id="src"></span><span class="tabhint" id="tabhint"><span class="fk">tab</span><span id="f-act"></span></span><span class="fk">esc</span><span id="f-close"></span></div>
+        </div>
+      </div>
+    </div>
+    <p class="small muted narrow">The panel is drawn at its real size: slide it sideways to see the rest.</p>
+    <p class="small muted" id="speednote">In the two “in the air” states time runs 240 times faster than real, so the plane can be seen to move: a minute passes every quarter of a second, and when it lands the switch goes to Landed by itself. In the app the plane takes one small step a minute. Click a row, or press ↓ and ↑ with the panel in focus, to move the selection.</p>
+    <p class="small muted calmnote">Your system asks for less motion, so nothing moves on this page: every state stands as it ends.</p>
+  </section>
+
+  <section id="pinsec" aria-label="The pinned flight">
+    <h2>Pinned</h2>
+    <div class="pinwrap th-light" id="pinwrap">
+      <div class="pin" id="pin">
+        <div class="pl" id="pinline"></div>
+        <div class="fig" id="pinfig"></div>
+        <div class="track" id="pintrack">
+          <svg class="d base" width="240" height="16" aria-hidden="true"><line x1="1" y1="8" x2="239" y2="8"/></svg>
+          <svg class="d togo" width="240" height="16" aria-hidden="true"><line x1="1" y1="8" x2="239" y2="8"/></svg>
+          <i class="flown"></i>
+          <svg class="plane" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-plane" transform="rotate(90 12 12)"/></svg>
+        </div>
+      </div>
+      <p class="small muted pinnote" id="pinnote"></p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section id="notes" aria-label="Notes">
+    <div class="notes">
+      <div>
+        <h2>What each part means</h2>
+        <ul>
+          <li><b>Line one</b> is the flight: number, airline and the two cities.</li>
+          <li><b>The large line</b> is the one thing you came for: when it leaves, or how long until it lands.</li>
+          <li><b>The badge</b> says whether that is the plan: On time, Delayed, early, or Planned when only the plan is known. A cancelled flight has no badge: the word is the large line.</li>
+          <li><b>The line</b> is the flight from take-off to landing. The solid part is behind the plane, the dots are still to come. No plane means nobody knows where it is.</li>
+          <li><b>Under the line’s ends</b>: the airport and its time, in that airport’s own clock, and in small words what matters at that end now: gate and terminal before it leaves; after, the arrival terminal, and at the start the aircraft when the service names it.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>What is real and what is worked out</h2>
+        <ul>
+          <li><b>From the flight service:</b> the airports, the planned, expected and actual times, terminal and gate, the aircraft, and whether it is planned, in the air, landed or cancelled.</li>
+          <li><b>Worked out in Booklight:</b> the plane’s place (the share of the flying time that has passed; time, not distance on a map), “Leaves in” and “Lands in” (the same times against your clock), and the badge (the time shown against the plan).</li>
+          <li><b>Never shown as known:</b> a gate, a belt or an aircraft the service left out. Their words are simply not there, and nothing leaves a gap.</li>
+          <li>The flight on this page is an example, and its times are made up.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>What you are asked to decide</h2>
+        <ol>
+          <li><b>Colour in the badge.</b> Green for on time and early, amber for late, nowhere else: the line and the plane stay in the row’s own ink. We recommend it. It changes two of your rules: “a delay is said, not painted” and “the selection is the only coloured surface”. The last switch shows the row without it.</li>
+          <li><b>When “late” starts.</b> We recommend 15 minutes after the plan (today 5): with a colour on it, “Delayed 6 min” is alarm for nothing, and the exact time stands at the line’s end either way.</li>
+          <li><b>Cancelled without red.</b> The word alone, the times struck, no plane. Red stays the colour of what removes something. If you want it louder, it becomes a red badge.</li>
+          <li><b>The height.</b> 136, the height of an answer that has grown; the most we would go to is 148.</li>
+          <li><b>The aircraft</b> in small words under the line’s start once it has left, and no altitude or speed. Say so if you want them.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</main>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <path id="g-plane" d="M21 16v-2l-8-5V3.5a1.500 1.500 0 0 0-3 0V9l-8 5v2l8-2.500V19l-2 1.500V22l3.500-1 3.500 1v-1.500L13 19v-5.500z"/>
+    <path id="g-search" d="M15.500 14h-.79l-.28-.27C15.410 12.590 16 11.110 16 9.500 16 5.910 13.090 3 9.500 3S3 5.910 3 9.500 5.910 16 9.500 16c1.610 0 3.090-.59 4.230-1.570l.27.28v.79l5 4.990L20.490 19l-4.990-5zm-6 0C7.010 14 5 11.990 5 9.500S7.010 5 9.500 5 14 7.010 14 9.500 11.990 14 9.500 14z"/>
+    <path id="g-open" d="M14 3h7v7h-2V6.410l-8.300 8.300-1.400-1.420L17.580 5H14zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
+    <path id="g-copy" d="M8 3h10a2 2 0 0 1 2 2v12h-2V5H8zM5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h10V9z"/>
+    <path id="g-pin" d="M16 3v2h-1v6l2 3v2h-4v5l-1 1-1-1v-5H7v-2l2-3V5H8V3z"/>
+    <path id="g-more" d="M7.410 8.590 12 13.170l4.590-4.580L18 10l-6 6-6-6z"/>
+    <path id="g-enter" d="M19 7v4H5.830l3.580-3.590L8 6l-6 6 6 6 1.410-1.410L5.830 13H21V7z"/>
+    <path id="g-send" d="M3 20.500v-7L14 12 3 10.500v-7L22 12z"/>
+    <path id="g-spark" d="M12 2c.6 5.400 4.600 9.400 10 10-5.400.6-9.400 4.600-10 10-.6-5.400-4.600-9.400-10-10 5.400-.6 9.400-4.600 10-10z"/>
+    <path id="g-settings" d="M19.140 12.940c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.030-1.580c.18-.14.23-.41.12-.61l-1.920-3.320c-.12-.22-.37-.29-.59-.22l-2.390.96c-.5-.38-1.030-.7-1.620-.94l-.36-2.540c-.04-.24-.24-.41-.48-.41h-3.840c-.24 0-.43.17-.47.41l-.36 2.540c-.59.24-1.130.57-1.620.94l-2.390-.96c-.22-.08-.47 0-.59.22L2.740 8.870c-.12.21-.08.47.12.61l2.030 1.580c-.05.3-.09.63-.09.94s.02.64.07.94l-2.030 1.580c-.18.14-.23.41-.12.61l1.920 3.320c.12.22.37.29.59.22l2.390-.96c.5.38 1.030.7 1.620.94l.36 2.540c.05.24.24.41.48.41h3.840c.24 0 .44-.17.47-.41l.36-2.540c.59-.24 1.130-.56 1.620-.94l2.390.96c.22.08.47 0 .59-.22l1.920-3.320c.12-.22.07-.47-.12-.61l-2.010-1.580zM12 15.600c-1.980 0-3.600-1.620-3.600-3.600s1.620-3.600 3.600-3.600 3.600 1.620 3.600 3.600-1.620 3.600-3.600 3.600z"/>
+  </defs>
+</svg>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var calm = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // One simulated minute lasts this many milliseconds (240 times faster than real).
+  var MINUTE_MS = 250;
+
+  var state = { phase: "airlate", row: "new", theme: "light", back: "light", lang: "en", badges: "colour", sel: 0, flight: "late", left: 247, ago: 12, frozen: false };
+
+  // The example: LH 400, Frankfurt to New York. Planned 10:55 to 13:35, each in its airport's own time.
+  var FLIGHTS = {
+    late: { dep: [11, 19], arr: [14, 2], minutes: 523, verdict: "late", by: 27 },   // left 24 minutes late, lands 27 minutes late
+    ok: { dep: [11, 2], arr: [13, 38], minutes: 516, verdict: "ok", by: 0 }
+  };
+  var START = { airok: 72, airlate: 247 };
+
+  var W = {
+    en: {
+      who: "LH 400 · Lufthansa", route: "Frankfurt/Main → New York", craft: "Boeing 747-8", fri: "Fri",
+      planned: "Planned", ontime: "On time", delayed: function (m) { return "Delayed " + len(m); }, late: function (m) { return len(m) + " late"; },
+      leavesAt: function (t) { return "Leaves " + t; }, leavesIn: function (m) { return "Leaves in " + count(m); }, landsIn: function (m) { return "Lands in " + count(m); },
+      landedAgo: function (m) { return m < 1 ? "Landed just now" : "Landed " + len(m) + " ago"; },
+      cancelled: "Cancelled", looking: "Looking it up", offline: "No connection", landed: "Landed",
+      where: function (gate, term) { return (gate ? "Gate " + gate + " · " : "") + "Terminal " + term; },
+      open: "Open", copy: "Copy", pin: "Pin", more: "More", search: "Search", ask: "Ask", setup: "Set up times", kind: "Flight",
+      actions: "Actions", close: "Close", row1: "Search Google for “lh400”", row2: "Ask Gemini",
+      tLeaves: "Leaves", tLeft: "Left", tLands: "Lands", tLanded: "Landed", tTimetable: "from the timetable", tAir: "In the air", tOnTime: "on time",
+      tWhere: function (gate, term) { return "Terminal " + term + (gate ? ", gate " + gate : ""); }, tLandedLate: function (m) { return "Landed " + len(m) + " late"; },
+      pOnTime: "on time", pGate: function (g) { return "gate " + g; }, pWas: function (t) { return "was " + t; },
+      pinNone: { looking: "Nothing to pin yet: Pin waits for the answer and runs when it is in.", offline: "Nothing to pin: without an answer Pin stays in its place, dimmed.", nokey: "Nothing to pin: without a key the row only names the airline and opens the flight’s page." },
+      pinSays: "The pin keeps its size, 280 by 118. The line runs under the figure and moves with it, by the clock, between two answers."
+    },
+    de: {
+      who: "LH 400 · Lufthansa", route: "Frankfurt/Main → New York", craft: "Boeing 747-8", fri: "Fr.",
+      planned: "Geplant", ontime: "Pünktlich", delayed: function (m) { return len(m) + " verspätet"; }, late: function (m) { return len(m) + " verspätet"; },
+      leavesAt: function (t) { return "Abflug " + t; }, leavesIn: function (m) { return "Abflug in " + count(m); }, landsIn: function (m) { return "Landung in " + count(m); },
+      landedAgo: function (m) { return m < 1 ? "Gerade gelandet" : "Vor " + len(m) + " gelandet"; },
+      cancelled: "Gestrichen", looking: "Wird nachgeschlagen", offline: "Keine Verbindung", landed: "Gelandet",
+      where: function (gate, term) { return (gate ? "Gate " + gate + " · " : "") + "Terminal " + term; },
+      open: "Öffnen", copy: "Kopieren", pin: "Anheften", more: "Mehr", search: "Suchen", ask: "Fragen", setup: "Zeiten einrichten", kind: "Flug",
+      actions: "Aktionen", close: "Schließen", row1: "Mit Google nach „lh400“ suchen", row2: "Gemini fragen",
+      tLeaves: "Ab", tLeft: "Ab", tLands: "An", tLanded: "An", tTimetable: "laut Flugplan", tAir: "In der Luft", tOnTime: "pünktlich",
+      tWhere: function (gate, term) { return "Terminal " + term + (gate ? ", Gate " + gate : ""); }, tLandedLate: function (m) { return len(m) + " verspätet gelandet"; },
+      pOnTime: "pünktlich", pGate: function (g) { return "Gate " + g; }, pWas: function (t) { return "war " + t; },
+      pinNone: { looking: "Nothing to pin yet: Pin waits for the answer and runs when it is in.", offline: "Nothing to pin: without an answer Pin stays in its place, dimmed.", nokey: "Nothing to pin: without a key the row only names the airline and opens the flight’s page." },
+      pinSays: "The pin keeps its size, 280 by 118. The line runs under the figure and moves with it, by the clock, between two answers."
+    }
+  };
+  function de() { return state.lang === "de"; }
+  /** "25 min", "1 h 15 min", "2 h". */
+  function len(m) {
+    var h = Math.floor(m / 60), r = m % 60;
+    if (de()) return h === 0 ? r + " Min." : r === 0 ? h + " Std." : h + " Std. " + r + " Min.";
+    return h === 0 ? r + " min" : r === 0 ? h + " h" : h + " h " + r + " min";
+  }
+  /** A countdown: from an hour on the minutes keep two places, so the words stand still while it counts. */
+  function count(m) {
+    var h = Math.floor(m / 60), r = m % 60, rr = (r < 10 ? "0" : "") + r;
+    if (de()) return h === 0 ? r + " Min." : h + " Std. " + rr + " Min.";
+    return h === 0 ? r + " min" : h + " h " + rr + " min";
+  }
+  /** A clock time as the device says it: twelve hours in English, twenty-four in German. */
+  function clock(t) {
+    var h = t[0], m = (t[1] < 10 ? "0" : "") + t[1];
+    if (de()) return (h < 10 ? "0" : "") + h + ":" + m;
+    return (h % 12 === 0 ? 12 : h % 12) + ":" + m + (h < 12 ? " AM" : " PM");
+  }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function icon(id, cls) { return '<svg class="i ' + (cls || "") + '" viewBox="0 0 24 24"><use href="#g-' + id + '"/></svg>'; }
+
+  /** Everything the panel says in the present state. */
+  function view() {
+    var w = W[state.lang], f = FLIGHTS[state.flight], p = state.phase;
+    var v = { cap: w.who + " · " + w.route, head: "", badge: null, l: null, r: null, share: null, src: "", off: false, plain: false,
+      today: { cap: "", a: ["", ""], b: ["", ""], struck: false, note: "", tail: "" }, pin: null };
+    function end(code, time, opts) { return { code: code, time: time, where: opts && opts.where, struck: opts && opts.struck }; }
+    function src(en, d) { return "AirLabs · " + (de() ? d : en); }
+    var plan = [[10, 55], [13, 35]];
+    if (p === "fri") {
+      v.head = w.leavesAt(w.fri + " " + clock(plan[0])); v.badge = ["plain", w.planned]; v.share = 0;
+      v.l = end("FRA", w.fri + " " + clock(plan[0])); v.r = end("JFK", w.fri + " " + clock(plan[1])); v.src = src("6:55 AM", "15:55");
+      v.today = { cap: v.cap, a: [w.tLeaves, "FRA " + w.fri + " " + clock(plan[0])], b: [w.tLands, "JFK " + w.fri + " " + clock(plan[1])], note: w.planned, tail: w.tTimetable };
+      v.pin = { line: "LH 400 · " + w.fri + " " + clock(plan[0]), fig: count(43 * 60), share: 0 };
+    } else if (p === "soon") {
+      v.head = w.leavesIn(42); v.badge = ["ok", w.ontime]; v.share = 0;
+      v.l = end("FRA", clock(plan[0]), { where: w.where("Z58", "1") }); v.r = end("JFK", clock(plan[1])); v.src = src("1:13 AM", "10:13");
+      v.today = { cap: v.cap, a: [w.tLeaves, "FRA " + clock(plan[0])], b: [w.tLands, "JFK " + clock(plan[1])], note: w.ontime, tail: w.tWhere("Z58", "1") };
+      v.pin = { line: "LH 400 · <span class=\"ok\">" + w.pOnTime + "</span> · " + w.pGate("Z58"), fig: count(42), share: 0 };
+    } else if (p === "airok" || p === "airlate") {
+      var left = Math.max(1, Math.ceil(state.left));
+      v.head = w.landsIn(left); v.badge = f.verdict === "ok" ? ["ok", w.ontime] : ["late", w.delayed(f.by)];
+      // The share of the flying time that has passed. In the air the plane never stands on either end.
+      v.share = Math.min(0.98, Math.max(0.02, 1 - state.left / f.minutes));
+      v.l = end("FRA", clock(f.dep), { where: w.craft }); v.r = end("JFK", clock(f.arr), { where: w.where(null, "1") });
+      v.src = f.verdict === "ok" ? src("9:26 AM", "18:26") : src("6:55 AM", "15:55");
+      v.today = { cap: w.who + " · " + w.route, a: [w.tLeft, "FRA " + clock(f.dep)], b: [w.tLands, "JFK " + clock(f.arr)], note: w.tAir, tail: (f.verdict === "ok" ? w.tOnTime : w.late(f.by)) + " · " + w.tWhere(null, "1") };
+      v.pin = { line: "LH 400 · " + (f.verdict === "ok" ? "<span class=\"ok\">" + w.pOnTime + "</span>" : "<span class=\"late\">" + w.late(f.by) + "</span>") + " · " + clock(f.arr), fig: count(left), share: v.share };
+    } else if (p === "landed") {
+      v.head = w.landedAgo(state.ago); v.badge = f.verdict === "ok" ? ["ok", w.ontime] : ["late", w.late(f.by)]; v.share = 1;
+      v.l = end("FRA", clock(f.dep), { where: w.craft }); v.r = end("JFK", clock(f.arr), { where: w.where(null, "1") });
+      v.src = f.verdict === "ok" ? src("10:38 AM", "19:38") : src("11:14 AM", "20:14");
+      v.today = { cap: w.who + " · " + w.route, a: [w.tLeft, "FRA " + clock(f.dep)], b: [w.tLanded, "JFK " + clock(f.arr)], note: f.verdict === "ok" ? w.landed : w.tLandedLate(f.by), tail: w.tWhere(null, "1") };
+      v.pin = { line: "LH 400 · " + (f.verdict === "ok" ? "<span class=\"ok\">" + w.pOnTime + "</span>" : "<span class=\"late\">" + w.late(f.by) + "</span>") + " · " + clock(f.arr), fig: w.landed, share: 1 };
+    } else if (p === "cancelled") {
+      v.head = w.cancelled;
+      v.l = end("FRA", clock(plan[0]), { struck: true }); v.r = end("JFK", clock(plan[1]), { struck: true }); v.src = src("12:40 AM", "09:40");
+      v.today = { cap: v.cap, a: [w.tLeaves, "FRA " + clock(plan[0])], b: [w.tLands, "JFK " + clock(plan[1])], struck: true, note: w.cancelled, tail: "" };
+      v.pin = { line: "LH 400 · " + w.pWas(clock(plan[0])), fig: w.cancelled, share: null };
+    } else if (p === "looking" || p === "offline") {
+      v.cap = w.who; v.head = p === "looking" ? w.looking : w.offline; v.off = p === "offline";
+      v.today = { cap: w.who, a: [w.tLeaves, null], b: [w.tLands, null], note: v.head, tail: "" };
+    } else { v.cap = w.who; v.plain = true; }
+    return v;
+  }
+
+  // ---- the line and its plane: one number (--x, where the plane's tail is) places the plane, ends the flown part and uncovers the dots
+  var OPENS = bezier(0.55, 0, 0.1, 1);
+  function bezier(x1, y1, x2, y2) {
+    function at(a, b, t) { return ((1 - 3 * b + 3 * a) * t + (3 * b - 6 * a)) * t * t + 3 * a * t; }
+    function slope(a, b, t) { return 3 * (1 - 3 * b + 3 * a) * t * t + 2 * (3 * b - 6 * a) * t + 3 * a; }
+    return function (x) {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      var t = x;
+      for (var i = 0; i < 8; i++) { var s = slope(x1, x2, t); if (Math.abs(s) < 1e-6) break; t -= (at(x1, x2, t) - x) / s; t = Math.min(1, Math.max(0, t)); }
+      return at(y1, y2, t);
+    };
+  }
+  function Track(el, length, size) { this.el = el; this.room = length - size; this.share = null; this.x = 0; this.anim = null; this.timer = 0; }
+  Track.prototype.put = function () { this.el.style.setProperty("--x", this.x.toFixed(2)); };
+  /** [share]: where the plane is, 0 to 1; null: no plane. */
+  Track.prototype.go = function (share, instant) {
+    var had = this.share != null, was = this.share, self = this;
+    clearTimeout(this.timer);
+    this.share = share;
+    if (share == null) { this.anim = null; this.el.classList.remove("has-plane"); return; }   // it goes in a fade, where it stands
+    if (instant) { this.anim = null; this.x = share * this.room; this.put(); this.el.classList.add("has-plane"); return; }
+    if (had && share < was - 0.001 && this.el.classList.contains("has-plane")) {
+      // Another answer that puts it further back: a plane does not fly backwards. It goes, and is drawn in again from the departure's end.
+      this.el.classList.remove("has-plane"); this.anim = null;
+      this.timer = setTimeout(function () { self.x = 0; self.put(); self.draw(0); }, 130);
+      return;
+    }
+    if (!had || !this.el.classList.contains("has-plane")) { this.x = 0; this.put(); }
+    this.draw(this.x);
+  };
+  Track.prototype.draw = function (from) {
+    this.el.classList.add("has-plane");
+    var way = Math.abs(this.share * this.room - from) / this.room;
+    if (way < 0.0005) { this.x = this.share * this.room; this.put(); return; }
+    this.anim = { t0: performance.now() + 60, ms: 300 + 300 * way, from: from };
+    run();
+  };
+  Track.prototype.frame = function (now) {
+    if (this.share == null) return false;
+    var to = this.share * this.room;
+    if (this.anim) {
+      var u = (now - this.anim.t0) / this.anim.ms;
+      if (u >= 1) { this.anim = null; this.x = to; } else this.x = this.anim.from + (to - this.anim.from) * OPENS(u);
+    } else this.x = to;
+    this.put();
+    return this.anim != null;
+  };
+  var line = new Track($("track"), 628, 20), pinLine = new Track($("pintrack"), 240, 16);
+
+  // ---- words change in a fade where they stand: 70 ms out, then 110 in after a pause of 40
+  function say(el, html, instant) {
+    if (el._html === html) return;
+    el._html = html;
+    clearTimeout(el._t);
+    if (instant || calm.matches) { el.style.transition = "none"; el.style.opacity = ""; el.innerHTML = html; return; }
+    el.style.transition = "opacity 70ms linear"; el.style.opacity = "0";
+    el._t = setTimeout(function () {
+      el.innerHTML = el._html;
+      el.style.transition = "opacity 110ms 40ms cubic-bezier(.4, 0, .2, 1)"; el.style.opacity = "";
+    }, 80);
+  }
+
+  function strip(list) {
+    return list.map(function (a) {
+      if (a.arm) return '<span class="a arm">' + icon(a.icon, a.cls) + "<b>" + esc(a.name) + "</b>" + icon("enter", "ent") + "</span>";
+      return '<span class="a' + (a.off ? " off" : "") + '">' + icon(a.icon, a.cls) + "</span>";
+    }).join("");
+  }
+  function endHtml(e, right) {
+    if (!e) return '\u200b<span class="rule"></span>';
+    var code = '<span class="code">' + e.code + "</span>", time = '<span class="' + (e.struck ? "struck" : "time") + '">' + esc(e.time) + "</span>";
+    var where = e.where ? '<span class="where">' + esc(e.where) + "</span>" : "";
+    return right ? where + time + code : code + time + where;
+  }
+
+  var HEIGHT = { "new": 136, today: 92, plain: 56 };
+  var first = true, lastRow = null;
+
+  function render(o) {
+    o = o || {};
+    var instant = !!o.instant || first || calm.matches, w = W[state.lang], v = view();
+    var desk = $("desk"), flight = $("flight"), stage = $("stage"), pinsec = $("pinsec");
+    if (instant) {
+      stage.classList.add("still"); pinsec.classList.add("still");
+      if (!state.frozen) requestAnimationFrame(function () { requestAnimationFrame(function () { stage.classList.remove("still"); pinsec.classList.remove("still"); }); });
+    }
+    desk.className = "desk th-" + state.theme + " back-" + state.back + (state.badges === "ink" ? " inkonly" : "");
+    $("pinwrap").className = "pinwrap th-" + state.theme + (state.badges === "ink" ? " inkonly" : "");
+    var row = v.plain ? "plain" : state.row;
+    flight.dataset.row = row;
+    flight.style.setProperty("--first", de() ? "176px" : "196px");
+
+    // the new row
+    say($("cap"), esc(v.cap), instant);
+    say($("head"), "<span>" + esc(v.head) + "</span>" + (v.badge ? '<span class="badge ' + v.badge[0] + '">' + esc(v.badge[1]) + "</span>" : ""), instant || o.tick);
+    say($("endl"), endHtml(v.l, false), instant);
+    say($("endr"), endHtml(v.r, true), instant);
+    // today's row
+    var t = v.today;
+    function slot(s) { return "<span><em>" + esc(s[0]) + "</em>" + (s[1] == null ? '<span class="none">–</span>' : '<span class="' + (t.struck ? "struck" : "") + '">' + esc(s[1]) + "</span>") + "</span>"; }
+    say($("tcap"), esc(t.cap), instant);
+    say($("tsl"), slot(t.a) + slot(t.b), instant);
+    say($("tnote"), esc(t.note) + (t.tail ? "<i> · " + esc(t.tail) + "</i>" : ""), instant);
+    // the row without a key
+    $("pttl").textContent = w.who;
+    $("fkind").textContent = w.kind; $("pkind").textContent = w.kind;
+    $("fstrip").innerHTML = strip([{ arm: true, icon: "open", name: w.open }, { icon: "copy", off: v.off }, { icon: "pin", off: v.off }, { icon: "more" }]);
+    $("pstrip").innerHTML = strip([{ arm: true, icon: "open", name: w.open }, { icon: "search" }, { icon: "spark", cls: "spark" }, { icon: "settings" }]);
+    $("r1t").textContent = w.row1; $("r2t").textContent = w.row2;
+    $("r1s").innerHTML = strip([{ arm: true, icon: "search", name: w.search }]);
+    $("r2s").innerHTML = strip([{ arm: true, icon: "send", name: w.ask }]);
+    $("f-act").textContent = w.actions; $("f-close").textContent = w.close;
+    say($("src"), esc(v.src), instant);
+    $("tabhint").classList.toggle("gone", state.sel !== 0);
+
+    // which row is selected, and the room the strip takes from the words beside it
+    var rows = [flight, $("row1"), $("row2")];
+    rows.forEach(function (r, i) { r.classList.toggle("on", i === state.sel); });
+    flight.style.setProperty("--trailw", (state.sel === 0 ? $("fstrip") : $("fkind")).offsetWidth + "px");
+    flight.style.setProperty("--trailw2", (state.sel === 0 ? $("pstrip") : $("pkind")).offsetWidth + "px");
+
+    // heights, and the selection: its leading edge is quick, the other follows
+    var h = HEIGHT[row], tops = [8, 8 + h, 8 + h + 56], heights = [h, 56, 56];
+    var pill = $("pill"), top = tops[state.sel], bottom = top + heights[state.sel];
+    var grew = lastRow != null && lastRow !== row, down = o.from != null && state.sel > o.from;
+    if (instant) { pill.style.transition = "none"; flight.style.transition = "none"; }
+    else if (grew) pill.style.transition = "--pb .36s var(--place), --pt .36s var(--place)";
+    else pill.style.transition = down ? "--pb .22s var(--lead), --pt .42s var(--trail)" : "--pt .22s var(--lead), --pb .42s var(--trail)";
+    flight.style.setProperty("--fh", h + "px");
+    pill.style.setProperty("--pt", top + "px"); pill.style.setProperty("--pb", bottom + "px");
+    if (instant) { void pill.offsetWidth; pill.style.transition = ""; flight.style.transition = ""; }
+    lastRow = row;
+
+    // the line
+    if (!o.tick) { line.go(v.share, instant); }
+    else line.share = v.share;
+
+    // the pin
+    var pin = $("pin");
+    if (v.pin) {
+      pin.hidden = false;
+      say($("pinline"), v.pin.line, instant);
+      say($("pinfig"), esc(v.pin.fig), instant || o.tick);
+      $("pinfig").classList.toggle("long", v.pin.fig.length > 12);
+      if (!o.tick) pinLine.go(v.pin.share, instant); else pinLine.share = v.pin.share;
+      $("pinnote").textContent = w.pinSays;
+    } else {
+      pin.hidden = true; pinLine.go(null, true);
+      $("pinnote").textContent = w.pinNone[state.phase] || "";
+    }
+
+    // the switches
+    var buttons = document.querySelectorAll(".seg button");
+    for (var i = 0; i < buttons.length; i++) buttons[i].setAttribute("aria-pressed", String(state[buttons[i].dataset.k] === buttons[i].dataset.v));
+    first = false;
+    if (inAir() && !state.frozen && !calm.matches) run();
+  }
+
+  function inAir() { return state.phase === "airok" || state.phase === "airlate"; }
+
+  // ---- the clock of the example: it runs only while the flight is in the air
+  var running = false, last = 0;
+  function run() { if (!running) { running = true; last = 0; requestAnimationFrame(frame); } }
+  function frame(now) {
+    var dt = last ? Math.min(100, now - last) : 0; last = now;
+    var more = false;
+    if (inAir() && !state.frozen && !calm.matches) {
+      var before = Math.ceil(state.left);
+      state.left -= dt / MINUTE_MS;
+      if (state.left <= 0) { set({ phase: "landed", ago: 0 }); more = true; }
+      else { if (Math.ceil(state.left) !== before) render({ tick: true }); else { var s = Math.min(0.98, Math.max(0.02, 1 - state.left / FLIGHTS[state.flight].minutes)); line.share = s; pinLine.share = s; } more = true; }
+    }
+    if (line.frame(now)) more = true;
+    if (pinLine.frame(now)) more = true;
+    if (more) requestAnimationFrame(frame); else running = false;
+  }
+
+  function set(patch, o) {
+    o = o || {};
+    var from = state.sel;
+    if (patch.phase && patch.phase !== state.phase) {
+      if (patch.phase === "airok") { patch.flight = "ok"; patch.left = START.airok; }
+      if (patch.phase === "airlate") { patch.flight = "late"; patch.left = START.airlate; }
+      if (patch.phase === "landed" && patch.ago == null) { patch.flight = "late"; patch.ago = 12; }
+    }
+    for (var k in patch) state[k] = patch[k];
+    if (o.frozen != null) state.frozen = o.frozen;
+    // Another language or another look is not something the app animates: it is simply the other one.
+    var cut = o.instant || patch.lang != null || patch.theme != null || patch.back != null || patch.badges != null;
+    render({ instant: cut, from: from });
+  }
+
+  // ---- the window behind the glass: lines of text, so the blur has something to blur
+  (function () {
+    var win = $("win"), widths = [38, 62, 55, 68, 30, 0, 64, 58, 66, 41, 0, 60, 52, 67, 63, 35, 0, 57, 65, 48, 61, 28], y = 54, html = "";
+    widths.forEach(function (wd, i) {
+      if (wd === 0) { y += 14; return; }
+      html += '<i' + (i === 0 ? ' class="h"' : "") + ' style="top:' + y + "px;width:" + wd + '%"></i>';
+      y += i === 0 ? 34 : 21;
+    });
+    win.innerHTML = html;
+  })();
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".seg button") : null;
+    if (b) { var p = {}; p[b.dataset.k] = b.dataset.v; set(p); return; }
+    var r = e.target.closest ? e.target.closest(".r") : null;
+    if (r && r.dataset.i != null) set({ sel: Number(r.dataset.i) });
+  });
+  $("deskscroll").addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown" && state.sel < 2) { e.preventDefault(); set({ sel: state.sel + 1 }); }
+    else if (e.key === "ArrowUp" && state.sel > 0) { e.preventDefault(); set({ sel: state.sel - 1 }); }
+  });
+  if (calm.addEventListener) calm.addEventListener("change", function () { render({ instant: true }); });
+
+  window.flightsDemo = { set: set, state: state };
+  render({ instant: true });
+  // The first picture is the row with its answer in; a moment later it is drawn in once, as the app would when the answer lands.
+  if (!calm.matches) setTimeout(function () { if (!state.frozen && state.phase === "airlate" && line.share != null) { line.go(null); pinLine.go(null); setTimeout(function () { if (!state.frozen) { var v = view(); line.go(v.share); if (v.pin) pinLine.go(v.pin.share); } }, 160); } }, 500);
+})();
+</script>

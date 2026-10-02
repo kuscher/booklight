@@ -347,3 +347,61 @@ The design: `zero-state.md`. Behind the switch "Show your usual", off unless cho
 - **One line each.** A thing whose row has a second line (a link, a recipe) is not suggested in this version.
 - **What counts as a run** (for every list): any action that is not dangerous and is not App info, Edit or Delete.
 
+## 18. One structure for apps (2 October 2026)
+
+The design: `app-structure/ux.md` (with the drawn rows in `rows.html` and the five decisions in its
+`README.md`); how it was built and where it differs: `app-structure/BUILD.md`. It replaces what §2, §3, §4 and
+§14 say of an app's row, of `play` and of the built-in links. Built, not yet judged on a device.
+
+The sentence: **type the app, Tab to what you want, Enter; if it takes words, type them and press Enter again.**
+
+- **An app's row** is Open · Search · Play · Window · the arrow, in that order for every app. An app shows only
+  what it has (a calculator: Open · Window · arrow), and nothing is dimmed to hold a place. Search: an app that
+  can be searched. Play: a music app that answers Android's "play from search" and is not known to only search;
+  Spotify once the user's key is in. The order and what stands where is core `AppRow`.
+- **Two lists, never one inside the other.** Window is a stop like the arrow: Enter, or Right again, opens New
+  window, Maximise, Left half, Right half and the ten other places under the row; the arrow opens App info, the
+  app's four pages in Settings, Don't suggest (among your usual) and, after its gap and in red, Uninstall. Left
+  closes, typing closes. Right again on Window opens it, so the arrow is reached with Tab.
+- **Typed words are unchanged** (§3): a typed place stands unrolled in Window's slot (`chrome left`), a typed
+  page or `uninstall` in the arrow's (`spotify notifications`).
+- **Tab only moves; Enter does.** On a row that offers more than one thing, Tab and Right go along its stops and
+  enter nothing: Enter enters Search and Play, and opens Window and the arrow. Tab still types into a row that
+  offers nothing else (a keyword's own row, "Search YouTube"), and makes an exact keyword the chip (§14).
+- **After Enter on Search or Play the app is the chip**: the app's own icon and its name, one chip for an app
+  whichever action is armed. The placeholder names what to type ("Search Spotify", "Song, artist or album").
+  With nothing typed there is no row and Enter does nothing; for an app with both actions one line stands in
+  row one's seat and offers the other ("Play in Spotify", a `tab` cap), built like the copy's line. Typed text
+  gives one row whose strip is Search · Play · arrow; its words follow the armed one. Tab changes between them:
+  going to Play starts the lookup (after its pause), going to Search sends nothing. A held Tab does not change it.
+- **Under Play** the row is the play row: "Play “…”" over "Looking it up", then what Spotify found, its artists
+  and album; Enter before the answer waits for it. Nothing found: Play is dimmed, Search is armed in its place,
+  and "Which song is this?" waits behind the arrow. The mark is the app's icon; the action reads "Play".
+- **Backspace on the empty field** is one step back to where Enter was pressed: the letters as typed (`spo`),
+  the app's row selected, the action that was left still armed (core `Origin`). From one of the usual rows: back
+  to the usual rows. Escape closes; Up on the empty field brings chip, action and words back.
+- **The other ways in end in the same chip and row.** `play` and a space is the chip of the music app last
+  played in (the first by name the first time), Play armed; `album`, `by` and `… on spotify` stay, and a named
+  app is the chip. With several music apps the others stand under it, each with its icon and Play. `yt`, `store`,
+  `maps`, `drive` are their app's chip with Search armed where the app is installed, with "On the web" behind
+  the row's arrow; else the link as before. `play` alone has no row of its own: it is the Media row, and Enter
+  resumes. The "Resume" row, "Search" behind the arrow and an app's own shortcut called Search are gone.
+- **The typed sentence** (`netflix severance`): without a chip, words after an app's name are a web search
+  first, with "Search Netflix for “…”" directly under the web's row. Pick that row once and the app leads for
+  words after its name; pick the web's row twice running and the web leads again (core `Lead`, kept with what
+  is learned). A local match for the whole text leads both. Suggestions are held back only while the app leads.
+  The row under a chip teaches nothing.
+- **One rule for marks**: the mark is what the row is about. An app's icon where that is one app (its row, a
+  search or a play in it, its shortcuts, a command or link of the user's that opens it, an address of its own);
+  a symbol in the disc for anything else. An action has a symbol for what it does, never an app's icon.
+- **Screen reader**: the row is one item; its actions are Open, Search, Play, every line of Window by its own
+  name, App info, the pages, Uninstall. Tab says "Search, 2 of 5"; entering the chip says the app, the action and
+  what to type; a change of action and what a lookup found are said once.
+
+| Key | On an app's row | Under an app's chip, nothing typed | Under an app's chip, typed |
+| --- | --- | --- | --- |
+| Tab · Shift + Tab | next · previous stop, wrapping; enters and opens nothing | the app's other action (one press) | Search · Play · arrow; a change of action on its first press only |
+| → at the end | next stop; again on Window or the arrow: opens its list | – | the same |
+| Enter | Open opens; Search and Play make the app the chip; Window and the arrow open their list | nothing | runs the armed action; under Play before the answer, waits for it |
+| Backspace on empty | – | back to where Enter was pressed | the text's |
+

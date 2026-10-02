@@ -82,7 +82,6 @@ import androidx.compose.ui.unit.sp
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.Body
-import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.Fonts
@@ -366,9 +365,10 @@ fun Panel(
         // A waiting confirmation is cancelled by any key but Enter; Esc then only cancels.
         if (!enter && model.cancelConfirm() && e.key == Key.Escape) return true
         val r = model.current
-        // (Not in a row's opened list: there Tab goes on to the next action, and Enter is what enters "Search". Nor on an
-        // answer that stands where it was asked: Tab and Right go along what can be done with it, as on a prompt's.)
-        val entersScope = model.opened == null && !model.inAnswer && r?.actions?.getOrNull(model.armed)?.effect is Effect.EnterScope
+        // Tab and Right type into a row only where it offers nothing else (a keyword's own row). On an app's row they move
+        // along its stops and Enter is what enters Search or Play. (Nor in a row's opened list, nor on an answer that stands
+        // where it was asked: there they go along what can be done with it.)
+        val entersScope = model.tabEnters
         return when (e.key) {
             // On the copy's line Down opens it, as Tab does: the line is where row one will be.
             Key.DirectionDown -> { model.down(again); true }
@@ -391,8 +391,10 @@ fun Panel(
                     entersScope && !e.isShiftPressed -> if (!again) model.fill()
                     // A row is open: Tab is the next of its actions, wrapping inside them.
                     model.opened != null -> model.step(if (e.isShiftPressed) -1 else 1)
-                    // Along the row's stops, wrapping. It stops on the arrow like on any other; only Enter opens it.
-                    else -> model.arm(if (e.isShiftPressed) -1 else 1, wrap = true)
+                    // The empty field under an app's chip: Tab changes to the app's other action, and the placeholder with it.
+                    model.otherAct != null -> if (!again) model.swap()
+                    // Along the row's stops, wrapping. It stops on Window and on the arrow like on any other; only Enter opens them.
+                    else -> model.arm(if (e.isShiftPressed) -1 else 1, wrap = true, again = again)
                 }
                 true
             }
@@ -404,16 +406,16 @@ fun Panel(
                 model.nudge(1) -> true
                 entersScope -> { if (!again) model.fill(); true }
                 model.opened != null -> true                                  // nowhere to go from an action's row
-                // On the arrow, Right again opens the row (a press of its own: a held key stops on the arrow).
-                model.onMore -> { if (!again) model.open(); true }
-                else -> model.arm(1, wrap = false)
+                // On Window or on the arrow, Right again opens that stop's list (a press of its own: a held key stops there).
+                model.onList != null -> { if (!again) model.open(); true }
+                else -> model.arm(1, wrap = false, again = again)
             }
             Key.DirectionLeft -> when {
                 !bare -> false
                 model.opened != null -> { if (!again) model.close(); true }   // Left closes an opened row
                 r?.body is Body.Grid -> atEnd && model.moveCell(-1, 0)
                 atEnd && model.nudge(-1) -> true
-                else -> model.arm(-1, wrap = false)     // on the first action Left is the caret's again
+                else -> model.arm(-1, wrap = false, again = again)     // on the first action Left is the caret's again
             }
             // One step back for one press: a held Backspace empties the text and stops there.
             Key.Backspace -> field.text.isEmpty() && (again || model.back())
@@ -467,7 +469,7 @@ fun Panel(
                         .offset { IntOffset(0, -glassTop()) }
                         .graphicsLayer { alpha = shown() },
                 ) {
-                    Field(model, field, focus = focus, ends = ::ends, onChange = change@{ v, held ->
+                    Field(model, field, icons, focus = focus, ends = ::ends, onChange = change@{ v, held ->
                         // An edit is made on the text the editor holds ([held]), and that can be older than the text that
                         // counts, the model's: a keyword that has just become the chip is taken out of the field, a scope
                         // was entered, the last text came back, and the editor hears of it a frame later. A key can be
@@ -536,8 +538,9 @@ fun Panel(
                             }
                         }
                         // The copy's line stands in row one's seat, over whatever comes into it: it fades where it
-                        // stands while the rows arrive under it.
+                        // stands while the rows arrive under it. So does the line under the empty field of an app's chip.
                         CopyLine(model)
+                        ChipLine(model)
                     }
                     // The footer shows once its band is (nearly) whole: while the window has not grown that far it would hang
                     // below the glass's lower edge and be cut by it.
