@@ -283,3 +283,11 @@ private projects and paths into their repos, and where keys are backed up. Those
   The demo's loop runs in `Stages.Demo()` while a stage shows it.
 - `wrapContentSize(unbounded = true)` centres what is larger than its room: say `Alignment.TopCenter` where the
   top must stay (the stage's panel was pushed up out of a low stage).
+- Typed keys reach the field before the input method (`KeysFirst` in `OverlayActivity`: plain keys that print, and
+  Backspace, only if the field takes them; not for languages the input method puts together). The editor can hold an
+  older text than the model's for a frame (a keyword just became the chip): `Field` remembers what the editor holds,
+  and `Panel`'s `onChange` keeps `model.query` as the truth and adds only what the edit added. Check typing with real
+  keys (`adb shell input text` / `keyevent`) or `./bl debug keys`; dead keys and AltGr were not tried.
+- The list's highlight moves as two edges (`Band`, `Edge` in `Rows`; `pillLead`, `pillTrail`, `pillHold` and the stretch
+  limits in `Motion`): the edge in front leads, the old one holds a few frames and follows. Change the feel there,
+  then measure with `./bl debug pill N` (`docs/design/rubber-highlight.md` has the numbers it should meet).

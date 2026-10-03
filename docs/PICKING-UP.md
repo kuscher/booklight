@@ -2,6 +2,17 @@
 
 *Living status. Newest first.*
 
+## 2026-10-03: after 3.0, where the next session starts
+
+- **Play:** 3.0 (versionCode 8) was sent for review on closed testing and, for the first time, production, with the
+  listing. Managed publishing is on: once approved it waits for Alex's Publish click. The store pictures were made
+  again from the 3.0 captures (the feature graphic has the new mark), and the privacy page on googlebook.studio says
+  what `PRIVACY.md` says.
+- **main** is everything: the local branches of the road to 3.0 are history only and are not pushed.
+- **Next:** nothing is started. Before the next release, carry the "Not seen on a device" list of 3.0 below into its
+  checks, and run the release on the HP Googlebook once Alex says it may be used again.
+- A new session starts from the private notes' handover (the private notes say where) and this file.
+
 ## 2026-10-02 (evening): 3.0 is released
 
 Alex, on the flight row's design: "Go ahead, approved. When done ship v3.0!"
