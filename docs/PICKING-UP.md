@@ -22,8 +22,12 @@ Alex, on the finished branch: "Let's push and release to closed testing and make
 - **The store's texts:** the release notes (`store-submission/listing/*/release-notes.txt`) go with the release;
   the listing's paragraph "Your shortcut" tells the new way in `store-submission/listing/` and reaches Play when
   the listing is next sent.
-- **Play:** the tag puts a draft on closed testing; sending it for review is a step of its own
-  (`docs/RELEASING.md`). Production is not part of this release.
+- **Play:** the tag's draft was sent for review on closed testing the same day, with the release notes in English
+  and German. Managed publishing is on: once approved it waits for Alex's Publish click. Production was not
+  touched: it holds 3.0.
+- **GitHub:** the release "Booklight 3.1" is the latest. `Booklight.apk` was downloaded through the README's
+  link, its checksum and its certificate checked (version 3.1, code 9), and installed on the Lenovo Googlebook,
+  where it opens.
 
 ## 2026-10-05: first run is built (on branch `first-run`; it went out the same day, as 3.1: see above)
 
