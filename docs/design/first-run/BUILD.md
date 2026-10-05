@@ -1,7 +1,8 @@
 # First run: what is built, and what was decided on the way
 
 *Kept by whoever coordinates the build. The plan's parts are in `docs/superpowers/plans/` (`2026-10-04-first-run…`).
-All five parts are built. Nothing of this branch (`first-run`) is pushed or released.*
+All five parts are built. It came onto main and went out as 3.1, to GitHub and to Play's closed testing, on 5 October
+2026 on Alex's word; his answers to the table of decisions below, and the checks marked as his, are still open.*
 
 ## Part 1: the proof and the logic (done, 5 October 2026)
 
@@ -152,8 +153,7 @@ All five parts are built. Nothing of this branch (`first-run`) is pushed or rele
   (Action + M on a keyboard without that key), and the system's dialog opens from the window on a page that
   begins with the five steps.
 - **The documents**: README, the privacy text, the changelog ("Unreleased"), the status, `ux-model.md` §19,
-  `design-system.md` §17, the store's form. Nothing is released: the version is 3.0, and the README, the privacy
-  text and the form describe first run before a release has it (`PICKING-UP.md`, "Before a release").
+  `design-system.md` §17, the store's form. They went out with 3.1, the release that has first run.
 - **The rules are core's**, tested: what "First steps" does to a run, a run with sums off, when a screen is in view (also under the
   system's dialog), where the command is offered, the schedule of every way a screen can come (148 first-run
   tests in thirteen classes, the schedule's fifteen, the show's thirteen; 728 core tests in all).

@@ -24,7 +24,7 @@ MADE FOR THE KEYBOARD
 Up and Down move through the rows. Enter runs the selected row. Tab moves along what a row can do. Ctrl with a number runs that row. Esc, a click outside, or your shortcut again closes the panel.
 
 YOUR SHORTCUT
-Booklight opens when its keyboard shortcut is pressed. In Keyboard shortcuts, choose App shortcuts, then Add shortcut, pick Booklight and press your keys. The app's icon opens a window that shows you where, and holds every setting.
+Booklight opens when its keyboard shortcut is pressed. The first time you open it, Booklight helps you set one: it suggests Action + Quick Insert and opens the system's Keyboard shortcuts with the steps on its own page. The app's icon opens a window with every setting, and First steps.
 
 HOW IT LOOKS
 One panel in the upper middle of the screen, in the colours of your wallpaper or its own, light or dark. It unfolds when it opens, the selection glides from row to row, lists arrive in a quick cascade, and nothing pops. You choose how see-through it is and how fast it opens.

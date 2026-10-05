@@ -1,8 +1,6 @@
 # Changelog
 
-## Unreleased
-
-On the branch `first-run`: built, and in no release.
+## 3.1 (5 October 2026)
 
 **First steps** (`docs/design/first-run/`; `BUILD.md` there says what was built and what was decided on the way).
 

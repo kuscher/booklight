@@ -24,7 +24,7 @@ FÜR DIE TASTATUR GEMACHT
 Pfeil auf und ab gehen durch die Zeilen. Enter führt die gewählte Zeile aus. Tab geht durch, was eine Zeile kann. Esc, ein Klick daneben oder noch einmal dein Tastenkürzel schließt das Fenster.
 
 DEIN TASTENKÜRZEL
-Booklight öffnet sich, wenn sein Tastenkürzel gedrückt wird. Wähle unter „Tastenkürzel“ erst „App-Verknüpfungen“, dann „Tastenkürzel hinzufügen“, dann Booklight, und drück deine Tasten. Das App-Symbol öffnet ein Fenster, das dir zeigt, wo, und alle Einstellungen enthält.
+Booklight öffnet sich, wenn sein Tastenkürzel gedrückt wird. Beim ersten Öffnen hilft Booklight dir: Es schlägt Aktion + Schnelles Einfügen vor und öffnet die Tastenkürzel des Systems mit seinen Schritten. Das App-Symbol öffnet ein Fenster mit allen Einstellungen.
 
 WIE ES AUSSIEHT
 Ein Fenster oben in der Mitte des Bildschirms, in den Farben deines Hintergrundbilds oder in eigenen, hell oder dunkel. Es entfaltet sich beim Öffnen, die Auswahl gleitet von Zeile zu Zeile, und nichts springt ins Bild.
