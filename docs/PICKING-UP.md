@@ -2,6 +2,36 @@
 
 *Living status. Newest first.*
 
+## 2026-10-05: first run is built, on branch `first-run` (local, nothing pushed, nothing released)
+
+Alex, on the plan and its designs: "Go ahead and build it". The papers are in `docs/design/first-run/`; its
+`00-brief.md`, "Settled for the build", wins over the others.
+
+- **What it is:** a new installation's first opening plays a welcome and a show, then the key's step (Action +
+  Quick Insert, the system's dialog guided from the panel held behind it), three lessons that are practice, the
+  question about suggestions, two choices, and the fold to the bare field. "First steps" plays it again: a
+  command in the panel, a row on the window's Start page. `CHANGELOG.md`, "Unreleased", says it for a user.
+- **Where it is:** branch `first-run`, on top of main (3.0). Not merged, not tagged, not pushed; the version is
+  still 3.0 / code 8. It was built in five parts, each from a plan in `docs/superpowers/plans/`
+  (`2026-10-04-first-run-…` and `2026-10-05-first-run-…`); `docs/design/first-run/BUILD.md` is the record of
+  what each part built and of everything that was decided on the way, for Alex to overturn.
+- **Where the rules are:** core `FirstRun.kt` (who gets a run, which screen stands, what an answer changes, what
+  Enter does in a lesson, what a key does while the piece plays), `Show.kt` (the show as data) and `SetDown.kt`
+  (when each part of a stage comes), each with its tests. `CLAUDE.md` has the hooks (`./bl debug first …`) and
+  the gotchas.
+- **Checked on the Lenovo Googlebook:** parts 2 to 4, in `docs/research/first-run-key.md`,
+  `first-run-lessons.md` and `first-run-welcome.md`. **The last pass** is `docs/research/first-run-last-pass.md`:
+  part 5's own checks, and every check the three earlier lists left open, each marked as one for adb or one for
+  Alex. An answer there says whether it was run.
+- **Not seen on a device until that pass is run:** the stage's motion between its screens, the key held down on
+  the glass, "First steps" from the window, the three mends to the welcome.
+- **Before a release:** the last pass, the HP Googlebook with Alex, his answers to `BUILD.md`'s table, the store
+  listing's text about the key (it still tells the old way), and his word.
+- **What already describes first run, and goes out only with it:** the README, `PRIVACY.md` and the store's
+  data-safety form (`store-submission/`) speak of first run as the app has it on this branch. They ship with the
+  release that has first run, not before it: until then the README's download is 3.0, which has none of it, and the
+  privacy page on the store's site says what 3.0's `PRIVACY.md` says.
+
 ## 2026-10-03: after 3.0, where the next session starts
 
 - **Play:** 3.0 (versionCode 8) was sent for review on closed testing and, for the first time, production, with the

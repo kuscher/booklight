@@ -262,6 +262,8 @@ sealed interface Body {
     data class Keys(val keys: List<String>) : Body
     /** A task: a box, ticked or not. */
     data class Task(val done: Boolean) : Body
+    /** A switch at the row's end, [on] or off, with its state as a [word] before it ("On", "Off"). The row has no strip: its one action flips the switch. */
+    data class Switch(val on: Boolean, val word: String) : Body
     /**
      * A text under a caption, on up to four lines: what a prompt will be asked about, and then the
      * answer of the device's own model as it arrives. [answer]: [text] is the model's; before that

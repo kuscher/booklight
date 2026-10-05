@@ -92,7 +92,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.R
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.data.Settings
+import io.github.kuscher.booklight.device.Keyboards
+import io.github.kuscher.booklight.device.SystemWords
 import io.github.kuscher.booklight.overlay.LocalDark
 import io.github.kuscher.booklight.overlay.LocalMotion
 import io.github.kuscher.booklight.overlay.Motion
@@ -128,6 +131,12 @@ class MainActivity : ComponentActivity() {
     /** How often the system has asked this window for its keys (the Keyboard Shortcuts Helper does, when it opens). */
     var asked = 0
         private set
+    /**
+     * The Start page has asked for the system's Keyboard shortcuts dialog to give Booklight a key: from then on this
+     * window's page in it begins with the five steps to a key, as the panel's page does while it waits for its key
+     * (`SystemWords.rows`).
+     */
+    var guides = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -159,6 +168,8 @@ class MainActivity : ComponentActivity() {
     override fun onProvideKeyboardShortcuts(data: MutableList<KeyboardShortcutGroup>, menu: Menu?, deviceId: Int) {
         super.onProvideKeyboardShortcuts(data, menu, deviceId)
         asked++
+        // (The keys are suggested for the keyboard the dialog was asked from, where the system says which that is.)
+        if (guides) data.add(SystemWords.rows(this, FirstRun.suggest(FirstRun.hasQuickInsert(Keyboards.attached(), deviceId))))
         val ctrl = KeyEvent.META_CTRL_ON
         val keys = Part.entries.mapIndexed { i, part -> KeyboardShortcutInfo(getString(part.title), KeyEvent.KEYCODE_1 + i, ctrl) } + listOf(
             KeyboardShortcutInfo(getString(R.string.win_find), KeyEvent.KEYCODE_F, ctrl),

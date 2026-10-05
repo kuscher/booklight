@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="first_helper_title">Ein Tastenkürzel für diese App, in fünf Schritten</string>
+    <string name="first_helper_1">1. Oben rechts auf &#8222;%1$s&#8220; klicken</string>
+    <string name="first_helper_2">2. Den Namen dieser App tippen, dann auf + klicken</string>
+    <string name="first_helper_3">3. Aktion halten und %1$s drücken, oder Tasten deiner Wahl</string>
+    <string name="first_helper_4">4. Auf &#8222;%1$s&#8220; klicken</string>
+    <string name="first_helper_5">5. Die Tasten noch einmal drücken. Das hier schließt sich von selbst.</string>
+    <!-- The system's own German words as a Googlebook's system UI says them (read off a device on 5 October 2026, docs/research/first-run-proof.md, checks 4 and 10): the fallbacks, used where they cannot be read from it. -->
+    <string name="first_sys_customize">Anpassen</string>
+    <string name="first_sys_set">Speichern</string>
+    <string name="first_key_quick">Schnelles Einfügen</string>
+
+    <string name="first_key_text">Ein Druck, aus jeder App, und Booklight ist da.</string>
+    <string name="first_key_where">%1$s liegt links neben A</string>
+    <string name="first_key_any">oder Tasten deiner Wahl</string>
+    <string name="first_key_press">Jetzt deine Tasten drücken</string>
+    <string name="first_key_press_text">Nichts passiert? Öffne die Tastenkürzel noch einmal.</string>
+    <string name="first_key_yours">deine Tasten</string>
+    <string name="first_key_retry">Hat nicht geklappt?</string>
+    <string name="first_key_retry_text">Zuerst „%1$s“ klicken. Aktion halten, dann die zweite Taste drücken.</string>
+    <string name="first_key_try">Oder Aktion + %1$s versuchen</string>
+    <string name="first_key_works_text">Dieselben Tasten schließen Booklight wieder.</string>
+    <string name="first_next">Weiter</string>
+    <string name="first_key_change">Taste ändern</string>
+    <string name="first_step">%1$d von %2$d</string>
+    <string name="a11y_first_keys">Vorgeschlagene Tasten: %1$s und %2$s</string>
+    <string name="a11y_first_opens">Enter öffnet die Tastenkürzel. Tab für „Nicht jetzt“.</string>
+    <string name="a11y_first_tab_opens">Tab, dann Enter öffnet die Tastenkürzel.</string>
+    <string name="a11y_first_goes_on">Enter geht weiter.</string>
+
+    <string name="first_open_title">Eine App öffnen</string>
+    <string name="first_open_text">Die ersten Buchstaben tippen, dann Enter.</string>
+    <string name="first_open_hint">Die ersten Buchstaben einer App</string>
+    <string name="first_search_title">In einer App suchen</string>
+    <string name="first_search_text">Tab geht die Zeile entlang, Enter führt aus. Dann tippen, was du suchst.</string>
+    <string name="first_search_hint">%1$s, dann Tab</string>
+    <string name="first_sum_title">Eine Rechnung</string>
+    <string name="first_sum_text">Das Ergebnis steht da, während du tippst. Enter kopiert es.</string>
+    <string name="first_practice">Zum Üben: nichts öffnet sich. Sonst schließt Enter auch Booklight.</string>
+    <string name="first_enter_stays">Sonst schließt Enter auch Booklight. Heute bleibt es.</string>
+    <string name="first_skip">Überspringen</string>
+    <string name="first_practice_open">Das öffnet %1$s</string>
+    <string name="first_practice_search">Das durchsucht %1$s</string>
+    <string name="first_coach_open">öffnet sie · zum Üben: nichts öffnet sich</string>
+    <string name="first_coach_tab">geht zu „Suchen“</string>
+    <string name="first_coach_into">geht in die App</string>
+    <string name="first_coach_search">sucht dort · zum Üben: nichts öffnet sich</string>
+    <string name="first_coach_sum">kopiert das Ergebnis · Booklight bleibt nur heute</string>
+
+    <string name="first_suggest_title">Beim Tippen Suchen vorschlagen?</string>
+    <string name="first_suggest_text">Booklight sendet, was du tippst, schon beim Tippen an %1$s, um Suchen vorzuschlagen. %1$s sieht dabei auch deine IP-Adresse. Nicht gesendet werden Berechnungen, Webadressen und alles nach einem Stichwort oder mit einer App im Feld.</string>
+    <string name="first_suggest_note">Aus, bis du zustimmst. Änderbar in Booklights Fenster › Ergebnisse.</string>
+    <string name="first_agree">Zustimmen</string>
+
+    <string name="first_usual_text">Ohne Eingabe stehen deine zwei meistgenutzten Dinge unter dem Feld. Nichts ändert sich, bis zwei Dinge je zweimal liefen.</string>
+    <string name="first_off">Aus</string>
+    <string name="first_on">An</string>
+    <string name="first_labs">Musik nach Namen, Flugzeiten: eigener Schlüssel, im Fenster › Labs</string>
+    <string name="first_end_hint">Tippe ? für alles, was Booklight kann</string>
+
+    <string name="a11y_first_example">Zum Beispiel: %1$s</string>
+    <string name="a11y_first_skips">Tab, dann Enter überspringt.</string>
+    <string name="a11y_first_asks">Nichts ist gewählt. Tab für „Nicht jetzt“, noch einmal Tab für „Zustimmen“.</string>
+    <string name="a11y_first_choices">Pfeil nach unten zum Auswählen. Enter zum Beenden.</string>
+    <string name="a11y_first_done">Die ersten Schritte sind fertig. Fragezeichen tippen für alles.</string>
+
+    <string name="first_hello_title">Willkommen bei Booklight</string>
+    <string name="first_hello_line">Dein Schweizer Taschenmesser zum Tippen. Ohne Klinge.</string>
+    <string name="first_hello_cue">Kurz angeben</string>
+    <string name="first_show_example">Beispiel</string>
+    <string name="first_show_flight">Ein Beispiel. Live-Zeiten brauchen deinen eigenen AirLabs-Schlüssel.</string>
+
+    <string name="first_name">Erste Schritte</string>
+    <string name="first_words">tour,willkommen,intro,einführung</string>
+    <string name="first_row_text">Die Taste, drei Dinge zum Ausprobieren, deine Auswahl. Etwa eine Minute.</string>
+    <string name="first_row_go_on">Erste Schritte fortsetzen</string>
+    <string name="first_later_hint">Die ersten Schritte warten in Booklights Fenster</string>
+    <string name="a11y_first_later">Die ersten Schritte warten in Booklights Fenster, auf der Seite „Start“.</string>
+    <string name="a11y_first_goes_on_change">Enter geht weiter. Tab für „Taste ändern“.</string>
+</resources>

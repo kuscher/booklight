@@ -13,8 +13,8 @@ Everything Google Play asks for, in the layout the other Googlebook apps use.
   alpha), made by googlebook-tech's `scripts/play/graphics.mjs`:
   `node ~/googlebook-tech/scripts/play/graphics.mjs store-submission/graphics/spec.json store-submission/graphics`
 - `forms/`: the answers for App content and Data safety. `forms/data-safety.md` is the source for the
-  privacy page (googlebook.studio/privacy/booklight) too: the app's first-run card, that file and the
-  page must say the same thing.
+  privacy page (googlebook.studio/privacy/booklight) too: the question in the app's first steps, that file
+  and the page must say the same thing.
 
 Play app id 4972005003444967962 (Fika Labs). App signing and upload key: the Booklight release key
 (SHA-256 `61:30:F1:F9:…:90:A7:F6`). Closed testing only for now.

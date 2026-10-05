@@ -12,6 +12,7 @@ import io.github.kuscher.booklight.core.Calc
 import io.github.kuscher.booklight.core.Jumps
 import io.github.kuscher.booklight.scopes.gemini
 import io.github.kuscher.booklight.core.Effect
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Icon
 import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Matcher
@@ -88,7 +89,7 @@ class SettingsProvider(private val context: Context, private val prefs: Prefs) :
         else pages.map { it to score(text, it) }.filter { it.second > 0 }.sortedByDescending { it.second }.map { row(it.first, 1.0) }
 }
 
-/** Booklight's own pages, findable like anything else; and the Clock's lists of alarms and timers. */
+/** Booklight's own pages, findable like anything else; the Clock's lists of alarms and timers; and "First steps", first run asked for again. */
 class CommandsProvider(private val context: Context) : Provider {
     override val id = "commands"
 
@@ -98,12 +99,21 @@ class CommandsProvider(private val context: Context) : Provider {
     private val all by lazy {
         listOf(
             Command("settings", R.string.cmd_settings, null, R.string.cmd_settings_words, Effect.Internal("settings")),
+            // First run, once more, in the panel that is open (core `FirstRun.AGAIN`: the panel catches it, nothing is run).
+            Command("first", R.string.first_name, null, R.string.first_words, FirstRun.AGAIN, "again"),
             Command("shortcut", R.string.cmd_shortcut, R.string.cmd_shortcut_sub, R.string.cmd_shortcut_words, Effect.Internal("shortcuts")),
             // The Clock's two lists. Its timers and alarms are set from the `timer` and `alarm` keywords; these show what is set.
             Command("alarms", R.string.cmd_alarms, R.string.cmd_clock_sub, R.string.cmd_alarms_words, Effect.ClockList(timers = false), "bell", AlarmClock.ACTION_SHOW_ALARMS),
             Command("timers", R.string.cmd_timers, R.string.cmd_clock_sub, R.string.cmd_timers_words, Effect.ClockList(timers = true), "timer", AlarmClock.ACTION_SHOW_TIMERS),
         ).filter { it.asks == null || Intent(it.asks).resolveActivity(context.packageManager) != null }
     }
+
+    /**
+     * "First steps" is not offered on a screen too low for first run to stand in the panel. Asked each time and not once
+     * with the list: it is the open panel's own screen that counts (`BooklightApp.firstFits`), and that can be another
+     * one at the next opening.
+     */
+    private fun offered(c: Command) = c.effect != FirstRun.AGAIN || (context.applicationContext as io.github.kuscher.booklight.BooklightApp).firstFits
 
     private fun row(c: Command, score: Double) = Result(
         id = "command:${c.key}", provider = id, kind = Kind.COMMAND, title = context.getString(c.title), subtitle = c.subtitle?.let(context::getString),
@@ -112,11 +122,17 @@ class CommandsProvider(private val context: Context) : Provider {
     )
 
     override suspend fun query(q: Query): List<Result> = all.mapNotNull { c ->
-        val s = maxOf(Matcher.score(q.text, context.getString(c.title)), context.getString(c.words).split(',').maxOf { Matcher.keyword(q.text, it) })
+        val title = context.getString(c.title)
+        val words = context.getString(c.words).split(',')
+        // "First steps" is offered only where it was typed for (core `FirstRun.typedFor`: three letters or more that begin
+        // its name, or one of its other words in full). By the matching below, "f", "fi" and "w" would find it too, as
+        // row one where no app begins with those letters: someone who never asked for first run sees no row of it.
+        if (c.effect == FirstRun.AGAIN && !(FirstRun.typedFor(q.text, title, words) && offered(c))) return@mapNotNull null
+        val s = maxOf(Matcher.score(q.text, title), words.maxOf { Matcher.keyword(q.text, it) })
         if (s <= 0) null else row(c, s)
     }
 
-    override fun byIds(ids: Set<String>): List<Result> = all.filter { "command:${it.key}" in ids }.map { row(it, 1.0) }
+    override fun byIds(ids: Set<String>): List<Result> = all.filter { "command:${it.key}" in ids && offered(it) }.map { row(it, 1.0) }
 }
 
 /**

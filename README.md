@@ -47,14 +47,26 @@ newer); on Google Play it is offered to Googlebooks only.
 
 ## Give it a key
 
-Booklight opens whenever you start it, so a keyboard shortcut for the app is all it needs:
+Booklight opens whenever you start it, so a keyboard shortcut for the app is all it needs. The first time you
+open it, Booklight takes you there: it suggests **Action + Quick Insert** (Quick Insert is the key left of A),
+opens the system's Keyboard shortcuts with the steps on its page, and says so when your key works. By hand:
 
-1. Open **Keyboard shortcuts** (Action + /).
-2. Choose **App shortcuts**, then **Add shortcut**.
-3. Find **Booklight**, choose **+**, press your keys, then **Set shortcut**.
+1. Open **Keyboard shortcuts** (Action + /) and click **Customize**.
+2. Type **Booklight** and click the **+** beside it.
+3. Hold Action and press your second key, then click **Set shortcut**.
+4. Press your keys once more: Booklight opens.
 
-The system wants the Action key in every shortcut. **Action + Alt + Space** and **Action + K** are both
-free. The same keys close the panel again. Booklight shows these steps the first time you open it.
+The system wants the Action key in every shortcut. On a keyboard without the Quick Insert key, **Action + M** is
+a good one. The same keys close the panel again.
+
+## First steps
+
+After the key come three things to try once each (open an app, search inside one, a sum), one question (may
+searches be suggested as you type: nothing is sent until you agree) and two choices. About a minute. Nothing
+opens while you practise, and Esc leaves at any point. To see them again, type `first steps` in the panel, or
+choose First steps on the Booklight window's Start page, which plays the welcome too (not where the system's
+animations are off or a screen reader is on, nor on a low screen). Steps that were left unfinished go on where
+they stopped.
 
 ## Keys
 
@@ -96,7 +108,7 @@ free. The same keys close the panel again. Booklight shows these steps the first
 ## The Booklight window
 
 The app's icon opens an ordinary desktop window with everything else, its navigation on the window's edge, in
-six sections: Start (what Booklight is, your key, tips, your usual, what you copied), Commands (everything it
+six sections: Start (what Booklight is, your key, tips and the first steps again, your usual, what you copied), Commands (everything it
 does, and yours: links, snippets, recipes, prompts; Enter on a row types the example into the panel), Look
 (theme, colours, glass, shadow, opening, with a live preview), Results (the search engine, suggestions, which
 kinds of rows show, other apps' commands), Labs (what needs a key of your own: Spotify, flight times) and Privacy (the notes folder, brightness,

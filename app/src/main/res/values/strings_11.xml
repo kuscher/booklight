@@ -137,9 +137,9 @@
     <string name="verb_right">right,right half</string>
     <string name="verb_uninstall">uninstall,remove,delete</string>
     <string name="win_lead">Press a key, type a few letters, press Enter. Booklight opens apps, finds settings, searches the web, and does small things at once: a sum, a timer, a note, an emoji.</string>
-    <string name="win_key_text">Booklight opens when its keyboard shortcut is pressed, and the same keys put it away. The system asks for the Action key in every shortcut; these two are free.</string>
-    <string name="win_key_or">or</string>
-    <string name="win_key_steps">Choose App shortcuts, then Add shortcut, then Booklight</string>
+    <string name="win_key_text">Booklight opens when its keyboard shortcut is pressed, and the same keys put it away. The system asks for the Action key in every shortcut.</string>
+    <!-- %1$s and %2$s are the system's own words for the two buttons of its Keyboard shortcuts dialog: Customize, Set shortcut. -->
+    <string name="win_key_steps">Click %1$s, type Booklight, click +, press your keys, click %2$s. Then press your keys once more.</string>
     <string name="key_action">Action</string>
     <string name="key_space">Space</string>
     <string name="set_theme">Theme</string>

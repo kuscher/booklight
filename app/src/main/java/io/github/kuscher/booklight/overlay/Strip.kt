@@ -127,6 +127,8 @@ fun ActionStrip(
     turn: () -> Float = { 0f },
     /** Where an app's own icon comes from, for an action that is marked by one. */
     icons: AppIcons? = null,
+    /** The armed slot shows as pressed: Enter was taken there and the row is about to go (first run's practice). */
+    pressed: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -156,6 +158,9 @@ fun ActionStrip(
     val rim = Color.White.copy(alpha = if (dark) 0.30f else 0.55f)
     val alarm = scheme.errorContainer.copy(alpha = if (dark) 0.70f else 0.85f)
     val drain = scheme.onErrorContainer
+    // Pressed: the pane gains a little ink, the design system's pressed token (0.08, 80 ms in and 120 out). No colour.
+    val press by animateFloatAsState(if (pressed) 1f else 0f, motion.fade(if (pressed) 80 else 120), label = "press")
+    val pressInk = scheme.onSurface.copy(alpha = 0.08f)
 
     Layout(
         modifier = modifier
@@ -168,6 +173,7 @@ fun ActionStrip(
                 if (sum <= 0f) return@drawBehind
                 x0 /= sum; x1 /= sum
                 pane(x0, x1, lerp(pane, alarm, (red / sum).coerceIn(0f, 1f)), rim)
+                if (press > 0f) drawRoundRect(pressInk.copy(alpha = pressInk.alpha * press), Offset(x0, 0f), Size(x1 - x0, size.height), CornerRadius(size.height / 2))
                 if (confirming && left.value > 0f) {
                     val inset = 14.dp.toPx()
                     val y = size.height - 5.dp.toPx()
@@ -270,7 +276,7 @@ private fun DrawScope.pane(x0: Float, x1: Float, fill: Color, rim: Color) {
 }
 
 /**
- * A choice between a few named options, all visible: the first-run card's two answers, a setting's
+ * A choice between a few named options, all visible: the answers on first run's stage, a setting's
  * values. One highlight for the whole strip; its leading edge travels on a quicker spring than its
  * trailing edge. No option has a background of its own and none changes size or weight when
  * chosen, so nothing can jump: the mark sits in every slot and shows where the highlight is.
@@ -282,7 +288,7 @@ fun OptionStrip(
     onChoose: (Int) -> Unit,
     onRun: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    /** One under the other, all as wide as the widest (the card); else side by side. */
+    /** One under the other, all as wide as the widest (first run's stage); else side by side. */
     vertical: Boolean = false,
     mark: ImageVector = Symbols.enter,
     /** On a row that may itself be selected (the Booklight window): the highlight is a pane of glass, not the selection's colour. */
@@ -291,6 +297,14 @@ fun OptionStrip(
     ink: Color? = null,
     /** False: nothing is chosen yet (a tip's answers before Tab): no highlight and no mark, until something is. */
     lit: Boolean = true,
+    /** How far each option is there, 0 to 1, read as it is drawn: first run's stage sets its answers down a moment after its band. The highlight is as far there as the option it is on. Nothing moves by it. */
+    shown: (Int) -> Float = { 1f },
+    /**
+     * How far each option shows as pressed, 0 to 1, read as it is drawn: ink over its slot, the design system's pressed
+     * token (0.08 of the text's colour, and no colour of its own). First run's stage alone says it (`pressedInk`); null
+     * for every other strip, which composes and keeps nothing for it.
+     */
+    pressed: ((Int) -> Float)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -312,7 +326,15 @@ fun OptionStrip(
     Layout(
         modifier = modifier
             .drawBehind {
-                if (n == 0 || glow <= 0f) return@drawBehind
+                if (pressed != null) for (k in 0 until n) {
+                    val press = pressed(k)
+                    if (press <= 0f) continue
+                    val at = if (vertical) Offset(0f, slots.x[k].toFloat()) else Offset(slots.x[k].toFloat(), 0f)
+                    val box = if (vertical) Size(size.width, slots.w[k].toFloat()) else Size(slots.w[k].toFloat(), size.height)
+                    drawRoundRect(scheme.onSurface.copy(alpha = 0.08f * press.coerceAtMost(1f)), at, box, CornerRadius(SLOT.toPx() / 2))
+                }
+                val there = if (n == 0) 0f else glow * shown(chosen.coerceIn(0, n - 1))
+                if (there <= 0f) return@drawBehind
                 // Before the first move the highlight simply is where the chosen slot is.
                 val still = head.value.isNaN()
                 val lo = if (still) slots.x[chosen.coerceIn(0, n - 1)].toFloat() else minOf(head.value, tail.value)
@@ -321,9 +343,9 @@ fun OptionStrip(
                 val r = CornerRadius(SLOT.toPx() / 2)
                 val o = if (vertical) Offset(0f, lo) else Offset(lo, 0f)
                 val s = if (vertical) Size(across, hi - lo) else Size(hi - lo, across)
-                if (hair.alpha > 0f) drawRoundRect(hair.copy(alpha = hair.alpha * glow), o - Offset(0.5f, 0.5f), Size(s.width + 1f, s.height + 1f), CornerRadius(r.x + 0.5f), style = Stroke(1f))
-                drawRoundRect(fill.copy(alpha = fill.alpha * glow), o, s, r)
-                drawRoundRect(rim.copy(alpha = rim.alpha * glow), o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
+                if (hair.alpha > 0f) drawRoundRect(hair.copy(alpha = hair.alpha * there), o - Offset(0.5f, 0.5f), Size(s.width + 1f, s.height + 1f), CornerRadius(r.x + 0.5f), style = Stroke(1f))
+                drawRoundRect(fill.copy(alpha = fill.alpha * there), o, s, r)
+                drawRoundRect(rim.copy(alpha = rim.alpha * there), o + Offset(0.5f, 0.5f), Size(s.width - 1f, s.height - 1f), r, style = Stroke(1f))
             }
             .pointerInput(n) { detectTapGestures { run(slots.at(if (vertical) it.y else it.x)) } }
             .pointerInput(n) {
@@ -337,8 +359,8 @@ fun OptionStrip(
         content = {
             options.forEachIndexed { k, label ->
                 Text(label, color = ink ?: scheme.onSurface, style = LABEL.copy(fontSize = 14.sp, fontWeight = FontWeight(600)), maxLines = 1, softWrap = false,
-                    modifier = Modifier.graphicsLayer { alpha = SECOND + (1f - SECOND) * on(a.value, k) * glow })
-                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) * glow }, tint = ink ?: scheme.onSurface)
+                    modifier = Modifier.graphicsLayer { alpha = (SECOND + (1f - SECOND) * on(a.value, k) * glow) * shown(k) })
+                Icon(mark, null, Modifier.size(14.dp).graphicsLayer { alpha = on(a.value, k) * glow * shown(k) }, tint = ink ?: scheme.onSurface)
             }
         },
     ) { measurables, _ ->

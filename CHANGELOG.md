@@ -1,5 +1,38 @@
 # Changelog
 
+## Unreleased
+
+On the branch `first-run`: built, and in no release.
+
+**First steps** (`docs/design/first-run/`; `BUILD.md` there says what was built and what was decided on the way).
+
+- **A welcome, once.** A new installation's very first opening is a slow one: the glass grows tall and goes to
+  night, a lamp strikes at the caret, and "Welcome to Booklight" stands in its light with a small Swiss Army
+  knife. Then Booklight shows off with its own panel: your apps, a sum, an example flight, the emoji grid. It
+  runs nothing and sends nothing. Enter or Space in the welcome begins the show; a typed character ends it and
+  is simply typed; every other key sets the key's step down at once (a key that types nothing by itself, such
+  as Shift, does nothing). Not played with the system's animations off, with a screen reader on, or on a low
+  screen.
+- **Give Booklight a key.** Under the empty field, where a card stood: Action + Quick Insert is suggested
+  (Action + M on a keyboard without that key), "Open Keyboard shortcuts" opens the system's dialog on a page of
+  Booklight's own with the five steps, and the panel waits behind it. Press your new keys: the dialog goes, and
+  "Your key works". An installation that was there before and has no key yet is shown this step alone.
+- **Three things to try**, each once and for practice: open an app, search inside one, a sum. Nothing opens; the
+  footer says what Enter would have done, and the sum is copied.
+- **One question**: may searches be suggested as you type? Nothing is armed, "Not now" comes first, and only
+  "Agree" switches suggestions on. Then two choices: "Show your usual", and the list of everything.
+- **It never nags.** Esc leaves at any point; an unfinished run stands in three openings and then waits in the
+  Booklight window, and the bare field says so once. "Not now" on the key ends it.
+- **First steps, again**: type `first steps` in the panel, or choose First steps on the window's Start page,
+  which plays the welcome too (not where the system's animations are off or a screen reader is on, nor on a low
+  screen). Where the steps were left unfinished, both go on where they stopped. It changes no switch.
+- **The screens are set down, not shown**: caps come up a beat apart, a recipe is written a letter at a time,
+  an answer shows as pressed, the key that lands is held down on the glass and comes up with its check, and the
+  run ends in one lap of light round the bare field. A screen takes a key only once the answer it would run has
+  been in view for a moment. With the system's animations off everything stands at once.
+- The window's Start page and the README tell the same way to a key. The two cards under the empty field are gone.
+- Nothing new is asked of the system: no new permission, nothing in the background, no new connection.
+
 ## 3.0 (2 October 2026)
 
 **A flight's row shows the flight** (`docs/design/flights-row/`; with your own AirLabs key, as before).

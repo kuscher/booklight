@@ -24,12 +24,8 @@
     <string name="cmd_shortcut_sub">Open Keyboard shortcuts</string>
     <string name="cmd_shortcut_words">booklight,hotkey,key,shortcut</string>
     <string name="card_shortcut_title">Give Booklight a key</string>
-    <string name="card_shortcut_text">In Keyboard shortcuts, choose App shortcuts, then Add shortcut. Action + Alt + Space works well.</string>
     <string name="card_shortcut_action">Open Keyboard shortcuts</string>
     <string name="card_done">Done</string>
-    <string name="card_suggest_title">Search suggestions are off</string>
-    <string name="card_suggest_text">Turn them on and what you type is sent to %1$s to suggest searches. Sums and web addresses are not sent.</string>
-    <string name="card_suggest_on">Turn on</string>
     <string name="card_not_now">Not now</string>
     <string name="a11y_search_field">Search</string>
     <string name="a11y_selected">%1$s, %2$s</string>

@@ -43,6 +43,8 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     @Volatile private var index: List<App> = emptyList()
     @Volatile var loadedMs: Long = -1; private set
     val count: Int get() = index.size
+    /** Every app's name, as it is shown: for what is counted over all of them (first run's show types the letter most of them begin with). */
+    fun names(): List<String> = index.map { it.label }
 
     private val launcher = context.getSystemService(LauncherApps::class.java)
     private val users = context.getSystemService(UserManager::class.java)

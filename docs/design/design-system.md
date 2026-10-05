@@ -84,7 +84,7 @@ Roles are the same in both themes; alphas as §2.
 - **With the title.** The strip is measured once per row; the title takes the rest. Chips that don't fit in 340 dp go to "more".
 - **Ownership.** The strip belongs to the selection, not the row. When the pill moves, the old strip fades and the new one arrives 60 ms after the pill's target changes, cancelled if it changes again: a held arrow key shows no strips. When the row under the pill changes during typing, the strip stays; differing labels cross-fade (80 ms) and the pane's left edge springs.
 - **Second line.** The row grows to 96 dp; a 40 dp band holds the other slots, flush right, centred at y = 76. The destructive slot is last, after 12 dp of extra space. "⋯ 4" keeps its place; its glyph cross-fades to a chevron.
-- **First-run card.** The same strip, vertical: two 32 dp slots 4 dp apart, both as wide as the wider label plus the mark home, flush right, `word`. One highlight in the pill recipe.
+- **First run's answers** (§17). The same strip, vertical: two 32 dp slots 4 dp apart, both as wide as the wider label plus the mark home, flush right, `word`. One highlight in the pill recipe.
 - **Narrow:** the title keeps 240 dp; under a 560 dp panel only the armed chip and "more" show.
 - **Pointer.** Hovering a chip (on movement) arms it.
 
@@ -301,7 +301,7 @@ New specs: `open` = spring(0.9, 800); `drain` = tween(3000, linear); `roll` = 1.
 | 15 | Confirmation arms | Pane's left edge to its measured width; fill to `errorContainer` (120); label out 60, in 110, clipped by the pane; siblings dim (80); the line shortens | `lead`; `drain` · label 40, line 120 | The right edge and the mark |
 | 16 | Cancels, completes | Cancel: edge back, fill back 120, line fades 60. Complete: the row's height goes to 0 and it fades (80); rows below and the window follow; the pill takes the next row | `trail`; `place` | Other rows keep their keys |
 | 17 | Feedback word | Check scales from 0.6; the word slides 8 dp from the left, fades 120; out 80 | `pop`; `place` | The footer's right side |
-| 18 | First-run card's options | One highlight: upper and lower edges | `lead`, `trail` | Both labels, marks, widths and the weight. No slot has a background or a size that depends on being chosen, so the 1.0 defect cannot recur |
+| 18 | First run's answers (§17) | One highlight: upper and lower edges | `lead`, `trail` | Both labels, marks, widths and the weight. No slot has a background or a size that depends on being chosen, so the 1.0 defect cannot recur |
 | 19 | Long text in the field | The scroll offset follows the caret | cut | Tied to typing, never animated |
 | 20 | Unfold, close | §4 | `open`, tweens | Content position on screen |
 | 21 | The list's pill moves (§15) | The front edge at once; the old edge holds on, then follows. Only from rest: a pill that is moving (a held key, the pointer) does not hold, and every edge keeps its speed. Never drawn more than 56 dp longer than its row. A row that only grows: the lower edge alone. Its own row moved by the list: both edges with it | `pillLead`; `pillTrail` · the old edge 5 frames of the screen (2 on a way of more than 98 dp, then on its firmer spring); `place`; `place` | Width, radius, colour, alpha: one flat shape. Each edge is rounded to a pixel by itself: one that holds on stands still, none steps back |
@@ -367,7 +367,7 @@ the grid's square. A debug build stretches all of them: `./bl open stay slow=4`.
   Enter on the arrow, or Right again, opens the rest as a list under the row: 40 dp lines, uncovered by one edge
   on `place`, the list's own pill as their highlight. A typed place among the rest takes the arrow's slot.
   Store page is gone.
-- **The opening** (§4): always at the field's height. What is under the field (a card, a tip, rows for handed
+- **The opening** (§4): always at the field's height. What is under the field (first run's stage, a tip, rows for handed
   text) comes once the glass is 85 % open. The closing draws in to the field's centre line.
 - **The answer row**: a caption, then two lines; the answer is written in behind a head that follows what
   arrives (14 letters soft), and the row grows once, to four lines, on `place`. The mark and the strip keep
@@ -376,7 +376,7 @@ the grid's square. A debug build stretches all of them: `./bl open stay slow=4`.
 - **Key caps in a row**: 24 dp, strong ink, plus signs between; 200 dp kept free at their right for the strip.
 - **A task**: a 20 dp box in the mark column; ticked, the check draws itself (one 140 ms stroke, the same mark
   as "Copied" and "Your key works") and a line strikes the title from its start.
-- **The tip card**: the first-run card's measure. Nothing armed at rest; a `tab` cap beside the two answers.
+- **The tip card**: 96 dp, two answers as on first run's stage (§17). Nothing armed at rest; a `tab` cap beside the two answers.
   It comes 320 ms after the gate, never as part of the opening.
 - **The shadow**: the system's window shadow, cast from the glass as it opens, cleared under the glass.
   Low 72 dp / 0.14, medium 96 dp / 0.24, high 128 dp / 0.36 (height, darkness under the lower edge); darker by
@@ -631,4 +631,73 @@ new colour, type size, row height or spring: every part is one the panel had.
   that room and not against the row as it stands, so it does not change while the strip unrolls.
 - **Marks**: the web's row and a link's row have the magnifier for their Search action (an action carries a
   symbol for what it does); the play row has the app's icon as its mark and no icon inside its action.
+
+## 17. First run (5 October 2026)
+
+Drawn in `first-run/first-run.html`; the papers are `first-run/design.md` and `first-run/motion.md`, and
+`first-run/00-brief.md`, "Settled for the build", wins over both. The interaction is `ux-model.md` §19. Every time
+and curve of motion below is in `overlay/Motion.kt`: the stage's as `PACE` and the constants beside it, the
+welcome's as `Lights`. When each part of a stage comes is core's `SetDown`, which takes `PACE` and has tests; and
+the 350 ms a screen must have been in view before it takes a key are core's too (`FirstRun.SEEN_MS`): a rule, not
+a motion.
+
+**The stage** stands where a card stood: under the empty field, on the glass, with no frame of its own.
+
+| Part | Measure |
+| --- | --- |
+| The stage | 184 dp: 8 of air, a seat (56), a band (112), 8 of air. With the field the panel is 252 dp |
+| The seat | a row's own: a 36 dp disc with a 20 dp symbol at x = 20, a title and a line as a row's, a counter ("1 of 5") in the kind's place |
+| The band | the keys or a recipe on its centre line, a caption (13 sp, weight 500) on the line a footer's words stand on |
+| A large cap | 56 dp high and at least as wide, 16 dp corners, 20 dp inside each end, the field's type (24 sp, weight 500); ink at 10 % (14 % in dark) under a hairline of white |
+| A recipe | large caps and typed words in the field's type, 12 dp between two caps, 16 dp otherwise; one too wide for its room is drawn smaller as a whole, from its left end, never cut |
+| The answers | the strip, vertical, flush right, 20 dp from the edge: one or two 32 dp slots, 4 dp apart; a `tab` cap beside them while none is armed |
+| The question's stage | 256 dp: the seat, the disclosure on lines of 20 in strong ink (four lines, and taller by as much as it needs more), a note, the two answers. With the field 324 dp |
+| The choices | two rows of the list's own kind: a switch's row (92 dp) and a row |
+
+**It is set down, not shown.** One clock runs from the moment a screen comes; every part has a mark on it, and
+draws by where the clock stands, so a still at any moment is whole.
+
+| A screen comes | Its parts, in order | Enter counts |
+| --- | --- | --- |
+| Set down, as a run's first opening opens on it | the disc, the words, the counter, 22 ms apart from the gate, each rising 12 dp as a row does; the band once the glass is at rest (120 ms after the gate at the least): its caps a beat (66 ms) apart, each fading in over 110 ms and growing from 0.96 on `pop`, a recipe's typed words a letter at a time (40 ms); the caption a beat after the last piece; the answers 22 ms after the caption | 350 ms after the answers began to show |
+| Back, as a later opening opens on it | as rows come: the seat's three parts, the band whole, the caption and the answers, 22 ms apart. Nothing is written twice | the same |
+| In another's place (an answer, Skip, a key that landed) | the seat stays and its title, line and counter roll 22 ms apart; the band's old pieces fade in 80 ms and the new ones are written from 120 ms on; what the two screens share does not move | the same |
+| After a list that gave way (a lesson's Enter, the sum copied, "First steps" typed) | as set down, from 60 ms after the list gave way | the same |
+| At the landing of the opening piece | the disc at 80 ms, the words at 150, the counter at 190; the armed answer's words at 180, inside the highlight that has travelled there; the band from 260. The answers do not rise: they fade in where they stand | 350 ms after the armed answer's words began to show; Tab, the pointer and a click, which reach the other answer, 350 ms after that one's did (300 ms later) |
+| Whole (the field emptied again, a panel turned round, animations off) | everything in one frame | 350 ms after it came |
+
+- **Pressed.** An answer that was given shows as pressed: 8 % ink over its slot, whole in the frame of the press
+  and out over 120 ms. It has no way in, because what the answer does is not held up by it: the screen changes in
+  that frame, and answers that give way carry the ink while they fade (80 ms); the answers that take their place
+  never show it. A large cap that is held down goes to 0.96 of its size under the same ink in 80 ms, and comes
+  back up on `pop`.
+- **The key lands.** "Your key" on the glass is held down as the user's own key is: for 160 ms where the panel
+  was in view, for 400 where it was under the system's dialog and is only now uncovered. It comes up, the check
+  draws itself 60 ms later (one 140 ms stroke), and 240 ms after the key came up the edge light runs one lap.
+  Under the dialog the stage turns to "Now press your keys" 300 ms after the panel lost the focus to it. A screen
+  that came under the dialog takes a key 350 ms after the dialog has gone, not after it came: nothing of it is
+  drawn again for that. The user's key, held, repeats: for 700 ms of real time after its last start none of them
+  puts the panel away.
+- **The question** rises: its text at 66 ms, the note at 120, the answers at 142. Nothing is armed, "Not now"
+  stands before "Agree", and nothing is pressed for the user.
+- **The fold.** After the choices the glass folds to the field on `place`, the field's `esc` cap fades back
+  120 ms later, and one lap of light runs 360 ms after the fold, unless a letter was typed first.
+- **Interrupted.** A typed letter puts the stage away in that frame and is never held up. A key during a set-down
+  answers nothing. A stage that gives way fades as it stood: it is not finished first.
+- **Animations off.** Every mark is at its end from the first frame: nothing moves, everything stands, and a key
+  counts 350 ms after the screen came. One wait stays, because it is no motion: for the frame or two until the
+  list for a typed letter lands, the glass keeps the stage's height (it would else step down to the bare field
+  and up again).
+
+**The welcome and the show** are the one place the daily panel's rules are lifted, and by the owner's word alone
+(Alex, 4 October 2026: `first-run/00-brief.md`); they hold again from the key's step on. The glass grows to 468 dp
+for something that is not a result, the veil goes to night, the desk behind is dimmed, the title is 40 dp type, and a
+piece of light is drawn that is no highlight. It happens once, at a new installation's very first opening, which
+runs at Slow. Its times are `Lights` (in `Motion.kt`), on one clock from the gate: night falls over 420 ms; the
+lamp strikes at the caret (60 %, back to 35 %, on) and floods the field; a seam of light falls and opens to its
+shape; the words stand in it once it has reached them, and not before; the handle rises with the cue on it, and
+five tools flick out a beat apart. At the hand-over the handle is pressed, the tools fold, the shaft turns up to
+the caret and the night lifts without an edge; the handle travels to row one's seat and becomes the list's
+pill. The show then types on `Show`'s script (core) with the panel's own motion, and its first rows stand in the
+frame the pill arrives. Nothing of the two is drawn outside the glass, and the window is never resized in width.
 

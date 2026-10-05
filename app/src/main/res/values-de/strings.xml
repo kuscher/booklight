@@ -22,12 +22,8 @@
     <string name="cmd_shortcut_sub">Tastenkürzel öffnen</string>
     <string name="cmd_shortcut_words">booklight,hotkey,taste,tastenkürzel,kürzel</string>
     <string name="card_shortcut_title">Booklight eine Taste geben</string>
-    <string name="card_shortcut_text">Unter „Tastenkürzel“ erst „App-Verknüpfungen“, dann „Tastenkürzel hinzufügen“ wählen. Aktion + Alt + Leertaste passt gut.</string>
     <string name="card_shortcut_action">Tastenkürzel öffnen</string>
     <string name="card_done">Fertig</string>
-    <string name="card_suggest_title">Suchvorschläge sind aus</string>
-    <string name="card_suggest_text">Wenn sie an sind, wird dein Text an %1$s gesendet, um Suchen vorzuschlagen. Berechnungen und Webadressen werden nicht gesendet.</string>
-    <string name="card_suggest_on">Einschalten</string>
     <string name="card_not_now">Nicht jetzt</string>
     <string name="a11y_search_field">Suchen</string>
     <string name="a11y_selected">%1$s, %2$s</string>

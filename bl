@@ -11,10 +11,11 @@
 #                            `open stay slow=4`: every spring four times as long (to step through a recording)
 #   ./bl debug CMD...        test hooks (DebugReceiver.kt, debug builds): ping, apps, find TEXT, type TEXT,
 #                            keys TEXT (one character at a time, as a person types: use this to test typing),
-#                            key up|down|tab|esc|enter, dump, shot [NAME], close, forget,
+#                            key up|down|tab|esc|enter|enter2, dump, shot [NAME], close, forget,
 #                            pill N (the next N frames in which the list's highlight travels, a line each
 #                            in `./bl logs`: ms since it set off, its two edges as drawn, its row, in px),
 #                            held down|up [TIMES] [MS] (the key as a held key repeats it),
+#                            turn MS [enter] (close, and the key again MS later; with `enter`, Enter in that moment),
 #                            pref flightkey KEY|none (the flight service's key; it is never printed),
 #                            flight TEXT (a flight's row, looked up at once, without the panel),
 #                            flight show NAME (a sample flight's row in the open panel, in the phase its
@@ -33,7 +34,9 @@
 #                            screenshot around the panel's window (it shows what is behind the panel)
 #   ./bl backdrop            a window of test content (white page, dark terminal, colour) to put behind
 #                            the panel; debug builds. Captures over it show nobody's real windows
-#   ./bl logs [N]            Booklight's log lines
+#   ./bl logs [N]            Booklight's log lines (the last 40, or N; every `./bl debug` and `./bl shot` clears the log first)
+#   ./bl trace [all]         the frames the last `./bl debug first trace N` took, a line each: those in which something
+#                            changed, or all of them. The app keeps them, so no hook that was run meanwhile loses them
 #   ./bl sh CMD...           adb shell on the device
 #   ./bl idle                seconds since the last user input on the device, and the focused window
 #
@@ -42,6 +45,34 @@
 # Unix-socket adb is used instead (never tcp:5037 there: the Terminal forwards every TCP port to Android).
 # House rules: never touch the Debian VM (no Terminal launch or force-stop, no `vm`, no reboot), and
 # check `./bl idle` before opening the panel: it takes the keyboard from whoever is typing.
+# First run's stored state (core FirstRun; debug builds). It touches first run's own fields only, but for `key` and `answer agree`:
+#   ./bl debug first                     shows it: the run, what is done, the screen that stands, its counter, the opening, the suggested key
+#   ./bl debug first new|update|off | replay [show] | resume | key | helper | opened | shown | older
+#   ./bl debug first answer not_now|go_on|change_key|skip|agree|done | ran open|search|sum | at k1|k2|k3|k4|l2|l3|l4|q|c
+#   ./bl debug first welcome [at MS]     first run's welcome in the open panel; with `at`, standing still at that ms of the paper's clock
+#   ./bl debug first show [at apps|row|stop|sum|answer|flight|grid|cell] | land     its show, or the show up to that moment and standing; the key's step set down
+# While the piece plays, `./bl debug key enter|esc|tab|…` is taken by it first, as the keys are, and `dump` says `playing=`, `cast=`, `laps=`.
+#   ./bl debug first again               as the window's "First steps" row writes it (then `./bl open stay` is the panel that row starts)
+#   ./bl debug first stage at MS         the stage's clock stands at that ms after its screen came (a set-down as a still); `first stage` lets it run
+#   ./bl debug first stage as whole|set_down|back|turn|after_list|lands [at MS]     the screen that stands comes again that way, now
+#   ./bl debug first press [under] [held [TIMES] [MS]]     the user's key lands on the screen that waits for it: in view, or as under the
+#                                        system's dialog, which is asked to go, as the real landing asks it; with `held`, TIMES more starts
+#                                        by the key follow, MS apart, as a held key repeats: each starts the panel's own activity again
+#   ./bl debug first says                what first run told a screen reader in this panel, and what every node of the panel says to one
+#   ./bl debug first trace N             takes the next N frames (1 to 2400; 120 unless said): ms, the stage's clock, the window's height, `enter` and
+#                                        `seen`, the key on the glass, laps, `hold=`. Read them with `./bl trace`: the app keeps them, the log does not
+#   ./bl debug turn MS [enter]           the panel is closed and the key comes again MS later (60 unless said): "turned", or "not turned" where the
+#                                        panel had already gone; with `enter`, Enter in the moment of the turn, and what it answered on the stage
+#   ./bl debug pref sums on|off          "Show sums" (a run asked for again leaves the sum out where they are off)
+# `dump` also says `comes=`, `lead=`, `all=`, `end=` and `enter` or `seen` for the stage that stands (how it came; when the armed answer
+# begins to show and, where that is later, when every answer has; when it is at rest; `enter`: Enter on the armed answer counts, `seen`:
+# every key and click does; `covered`: the screen came under the system's dialog and is still under it, and takes a key a third of a
+# second after the dialog has gone), `later` (the bare field says where the steps wait), `keydown`, and `landing` (the user's key has
+# just landed: for 0.7 s after its last start a start by the key does nothing).
+# While a lesson stands (l2, l3, l4), `./bl debug key enter` on an app's row is practice, as the key is: nothing opens.
+# `./bl debug in TEXT` types under the chip that is there (lesson 3's word); `key enter2` is Enter twice in one turn.
+# `./bl debug dump` says `due=` (the screen that is due whatever the field holds), `coach=` (the footer's coach line),
+# `pressed`, `choices` and `ended`; `./bl debug first` says `example=` (what the lessons' recipes show on this device).
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 PKG=io.github.kuscher.booklight
@@ -111,9 +142,13 @@ case "$cmd" in
     python3 -c "import sys; from PIL import Image; w,h,x,y,m=map(int,sys.argv[3:8]); im=Image.open(sys.argv[1]); im.crop((max(0,x-m),max(0,y-m),min(im.width,x+w+m),min(im.height,y+h+m))).save(sys.argv[2])" "$out.full" "$out" "$w" "$h" "$x" "$y" "$m"
     rm -f "$out.full"; echo "$out" ;;
   logs) A shell "logcat -d -s Booklight:V AndroidRuntime:E" | tail -n "${1:-40}" ;;
+  trace)   # the frames of the last `./bl debug first trace N`, asked of the app a page at a time (debug builds); `all`: every frame
+    said=$(dbg first trace show ${1:+"$1"}); echo "$said" >&2
+    pages=$(echo "$said" | sed -n 's/.* in \([0-9][0-9]*\) pages.*/\1/p'); p=1
+    while [ "$p" -le "${pages:-0}" ]; do dbg first trace show ${1:+"$1"} "$p" | sed 's/^page [0-9]*\/[0-9]*: //' | tr ';' '\n'; p=$((p + 1)); done ;;
   sh) A shell "$@" ;;
   idle)
     A shell dumpsys power | grep -E "lastUserActivityTime=|mWakefulness=" | head -2
     A shell "dumpsys window | grep -E 'mCurrentFocus' | head -1" ;;
-  *) sed -n '3,28p' "$0" ;;
+  *) awk 'NR >= 3 { if ($0 !~ /^#/) exit; print }' "$0" ;;   # the header, all of it: from line 3 to the first line that is no comment
 esac

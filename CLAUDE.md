@@ -46,7 +46,7 @@ private projects and paths into their repos, and where keys are backed up. Those
   - Parsers, each with its tests: `Verbs.kt` ("chrome uninstall"), `When.kt` + `WhenParts.kt` + `Durations.kt`
     (dates and times, English and German), `Jot.kt` (mail, event, reminder, timer, new), `Colors.kt`,
     `Templates.kt` (link placeholders), `Clip.kt` (the clipboard's transforms, and when a fresh copy is offered),
-    `Zero.kt` (your usual: which rows stand under the empty field, and `Under`: what has that place),
+    `Zero.kt` (your usual: which rows stand under the empty field, and `Under`: what has that place), `FirstRun.kt` (first run: which screen stands at the next opening, what an answer changes, who gets a run at all, what Enter does while a lesson stands, the coach line, the recipes and this device's example; `overlay/FirstStage.kt` draws the key's step, the three lessons and the question on one skeleton, the choices are a list of two rows; `Show.kt` is the opening's show as data, its beats, their times and its example flight; `overlay/Welcome.kt` draws the welcome on one clock, whose marks are `Lights` in `overlay/Motion.kt`, and the highlight's way into the key's step; `SetDown.kt` says when each part of a stage comes, for every way a screen can come (set down part by part, come back to, in another's place, after a list, at the piece's landing), and from which of those marks a key counts (`since`), and the stage is drawn by those marks on one clock; "First steps" asks for the run again, as a command in the panel and as a row on the window's Start page),
     `Reach.kt` (a way to go, a phone number and its text, a Telegram name, a Meet code, and their links), `Schemes.kt` (which addresses a link may have, and when typed text is an app's address), `Requests.kt` (what an app command asks an app for, as an `intent:` address and back; the `am start` reader),
     `Play.kt` (what was typed after `play`, split), `Spotify.kt` (its searches, its replies, the links that play), `AppSearch.kt` (a search inside an app: the bundled table, which source wins, the name split from the text),
     `Links.kt` (a link without its tracking tail), `Languages.kt`, `Plain.kt` (an answer without Markdown), `Secrets.kt`, `Emoji.kt`, `Letters.kt` (`abc`: other
@@ -113,7 +113,7 @@ private projects and paths into their repos, and where keys are backed up. Those
 
 ## Dev loop
 - `./bl app` builds, installs and opens the panel on the Googlebook. `./bl test` runs the core tests.
-- `./bl debug type TEXT | key up|down|left|right|tab|backtab|back|enter|stay|esc|more|window | dump | find TEXT | apps | close | forget | pref …`
+- `./bl debug type TEXT | key up|down|left|right|tab|backtab|back|enter|enter2|stay|esc|more|window | dump | find TEXT | apps | close | forget | pref …`
   drives the panel without injecting input, as the keys do (`key more` and `key window` arm the row's arrow and its
   Window stop). `dump` shows the chip (an app's as `chip=appsearch:PKG:search|play`, with `via=` the keyword it was
   entered by and `line=` the action the line under the empty field offers), the placeholder, each row's body and
@@ -147,6 +147,41 @@ private projects and paths into their repos, and where keys are backed up. Those
   once and so never shows a row changing under the selection (a crash hid behind that in 1.1's review). `./bl shot NAME` = PNG of the panel's own window (debug builds).
   `./bl open stay tint=0.2 blur=24 dim=0.1 opening=slow` tries glass values and the arrival; `DARK=true ./bl open stay` the dark theme.
   The highlight's motion: `./bl debug pill N` logs the pill's two edges for the next N frames it moves in (`./bl logs`), `./bl debug held down|up [TIMES] [MS]` repeats a key as a held one does (debug builds).
+- First run's stored state (core `FirstRun`; `docs/design/first-run/`): `./bl debug first` shows the run, what is done, the screen that stands and its
+  counter, whether the opening piece would play, the key that would be suggested for the keyboards attached, the system's words for its
+  dialog as they were read (`words=`), the hold (`hold=`) and the last start as the panel read it (`last start:`). `first new|update|off`,
+  `first replay [show]`, `first resume|key|helper|opened|shown`, `first answer not_now|go_on|change_key|skip|agree|done`, `first ran open|search|sum`
+  and `first at k1…k4|l2|l3|l4|q|c` set it through the same pure functions the panel calls, and an open panel follows at once; `first older`
+  reads the settings as after an older build wrote them. They change first run's own fields only, but for `first key` (`keySeen`) and
+  `first answer agree` (suggestions on). While a stage stands (the key's step, a lesson, the question), `./bl debug key tab|backtab|enter` act
+  on it as the keys do; on a lesson's typed list `key enter` is practice, as the key is, and `key enter2` is Enter twice in one turn.
+  `dump` says `first=` (the stage under the empty field), `due=` (the screen that is due whatever the field holds), `coach=` (the footer's coach
+  line), `pressed`, `choices` and `ended`; `./bl debug first` says `example=` (what the lessons' recipes show on this device: never copy it
+  into a file of this repo, it names an app of the device). The checks for a device: `docs/research/first-run-key.md` (the key's step),
+  `docs/research/first-run-lessons.md` (the lessons, the question, the choices, the ending) and `docs/research/first-run-welcome.md` (the
+  welcome and the show).
+  The opening piece (the welcome, then the show) begins a new installation's very first opening, which runs at Slow. In an open panel:
+  `./bl debug first welcome` plays the welcome, `first welcome at MS` stands it still at that ms of `motion.md`'s own clock (for `./bl shot`
+  beside the prototype's frame of the same moment), `first show` plays the show, `first show at apps|row|stop|sum|answer|flight|grid|cell`
+  stands it still there, `first land` sets the key's step down. While it plays `./bl debug key …` is taken by it first, as the keys are;
+  `dump` says `playing=welcome|show|landing|none`, `cast=ready|none`, `laps=` and `gliding`, and `./bl debug first` says `overture=`,
+  `slow=` and `greets=`. The show's first rows are apps of the device: never copy them from a dump into a file of this repo.
+  The stage between its screens (`motion.md` §3): `./bl debug first stage at MS` stands the stage's clock still at that ms after its
+  screen came, `first stage` lets it run, and `first stage as whole|set_down|back|turn|after_list|lands [at MS]` has the screen that stands
+  come again in that way; `first at SCREEN` in an open panel is a real turn from the screen that stands. `first press [under]` lands the
+  user's key on the screen that waits for it (in view, or as under the system's dialog) and asks the system's dialog to go, as the real
+  landing does; `first press held TIMES MS` sends that many more starts by the key after it, as a held key's repeats come (each starts
+  the panel's own activity again); `first again` writes what the window's "First
+  steps" row writes; `first says` prints what first run told a screen reader and what every node of the panel says to one; `first trace N`
+  takes the next N frames (1 to 2400, 120 unless said: ms, the stage's clock, the window's height, whether it takes Enter and every
+  key, the key on the glass, laps, the hold behind the system's dialog), and `./bl trace` prints them, `./bl trace all` every one: the app keeps them, because every
+  `./bl debug` and `./bl shot` clears the log first (`./bl logs` is its last 40 lines); `pref sums on|off` is "Show sums".
+  `./bl debug turn MS` closes the panel and brings the key again MS later ("turned", or "not turned" where the panel had already
+  gone), and `turn MS enter` presses Enter in that moment and says what it answered. `dump` says `comes=`, `lead=`, `all=` (where
+  the last answer comes later than the armed one), `end=` and `enter` or `seen` for the stage that stands (Enter on the armed answer
+  counts; every key and click does) or `covered` (it came under the system's dialog and is still under it: no key counts yet),
+  `later`, `keydown` and `landing` (a start by the key does nothing just now).
+  The last pass on a device, with every check the three earlier lists left open: `docs/research/first-run-last-pass.md`.
 - Pictures: captures in `docs/design/captures/` → `tools/store_scenes.py` (a drawn desktop behind them) →
   `store-submission/graphics/` (see its README) and `docs/images/`. `tools/logo.py` draws the icon PNGs.
 - Motion can only be judged in motion: `adb shell screenrecord`, then step through the frames
@@ -194,11 +229,12 @@ private projects and paths into their repos, and where keys are backed up. Those
   amber for late (`FlightColors` in `ui/Theme.kt`; Alex, 2 October 2026). Always a small fill with its own ink on it,
   never a coloured word or line on the glass, and never red: red is for what removes something.
 - Flat glass: visibly see-through, blurred, a thin tint, a crisp white outline. No bevels, glows or
-  sculpted highlights (Alex: "not too 3D esp the highlights. I do like the white outline").
+  sculpted highlights (Alex: "not too 3D esp the highlights. I do like the white outline"). Lifted for first run's welcome alone, by
+  his word (night, a lamp's light, large type, a drawn knife: `overlay/Welcome.kt`); it holds again from the key's step on.
 - Motion everywhere, all from `Motion.kt`: highlights move, lists cascade in, names unroll, nothing pops.
   Sizes are known before anything moves; typed text changes in the same frame. Never hold up typing.
-- Nothing typed = nothing shown, apart from one thing that may stand under the empty field, in this order: a
-  first-run card, the line for a fresh copy, your usual (a switch, off unless chosen), a tip (core `Under`).
+- Nothing typed = nothing shown, apart from one thing that may stand under the empty field, in this order: first
+  run's stage, the line for a fresh copy, your usual (a switch, off unless chosen), a tip (core `Under`).
 - The window is exactly the panel: never WRAP_CONTENT, never bigger than what is drawn, and never resized in
   width (it is neither smooth nor symmetric). The arrival grows the glass inside a window that stays put.
   **The blur is the window's root view**, so before each frame that view is framed to the glass
@@ -207,7 +243,7 @@ private projects and paths into their repos, and where keys are backed up. Those
 - Destructive actions are last, in the error colour, never first, and never run by an arrow or Ctrl + digit.
 - What the device's model says is only shown, copied, pinned or put back where the text came from: it never
   runs anything and never outranks a local match.
-- The opening is always the field's height; whatever is under the field comes after it (a tip, a card).
+- The opening is always the field's height; whatever is under the field comes after it (a tip, first run's stage).
 - Every user-facing string is a resource, English and German. Copy is plain: "Open", "Copy", "Search".
 - The Booklight window is not the panel: rows in Material's containers, hover and focus as two things, one focus
   ring that glides. Its lines: the title, the lead, a group's name and every row's mark start 16 dp in from the
@@ -229,6 +265,64 @@ private projects and paths into their repos, and where keys are backed up. Those
 - `Metrics.maxRows` keeps room for one row of the list to be 136 dp (a flight's, a grown answer): a taller kind of
   row in an ordinary list needs that room made larger.
 - Hover selects only on pointer movement (rows appear under a resting pointer as the list grows).
+- While a lesson of first run stands (`OverlayModel.lesson`: also while its list is typed, when `stage` is null), nothing opens:
+  `OverlayActivity.run`, where everything that runs passes, asks core `FirstRun.enters` before the executor. An app's Open and a
+  search inside an app are practice (and a settings page under its keyword, where Settings stands in for an app that can be searched
+  or the example is not worked out yet: `example?.enter`); a sum is copied and the panel stays; 520 ms later the list gives way to what stands next
+  (`lessonOver`, `OverlayModel.giveWay`), and until then `settled` keeps a second Enter from running anything. Anything that runs
+  an action by another way than `OverlayActivity.run` would open things in a lesson.
+- A screen of first run takes a key or a click only once the answer it would run has been in view for 350 ms (`OverlayModel.seen`,
+  core `FirstRun.inView`: the glass open, the screen not just come, and that answer begun to show): the Enter that skipped a lesson,
+  pressed again at once, answers nothing on the screen that took its place, and nothing is answered that is still being set down. On the
+  question the first answer is "Not now" (core `FirstRun.answers`): Tab then Enter, the keys that skip, agree to nothing. A hook that
+  changes the screen and a key hook need that moment between them. Which mark a key counts from is core's `SetDown.since`: Enter on the
+  answer that was armed when the screen came, from that answer's own (`Marks.lead`); Tab, the pointer, a click, and Enter once Tab has
+  moved the arming, from the last answer's (`Marks.all`, later at a landing alone). A screen that could not stand when it came (a
+  lesson's Enter on a list that is typed on) or was covered before it had been in view (a letter, the last text, a chip:
+  `OverlayModel.covered`, which everything that fills the field calls first) is `unseen`: it comes, and is counted, when the field
+  is empty again (`search`). One that was in view before it was covered is only back, and counts at once. (`unseen` is `rearm`'s and `covered`'s to
+  set, where something really is in the screen's place: what ends the opening piece for a typed character only says that the key's step
+  came, and the character's own `covered` does the rest.) The system's dialog covers a screen too: one of the key's that came while the
+  dialog was over the panel ("Now press your keys" a moment after the dialog came, "Your key works" where the key landed under it), or
+  that the dialog came over before it had been in view, counts from when the panel is uncovered and not from when it came
+  (`OverlayModel.uncoveredAt`, core `FirstRun.inView`'s `uncovered`). Nothing is drawn or said again for that, and no key counts while
+  it is covered. The end of the hold reaches the model through `OverlayModel.under`, which `OverlayActivity.signal` sets, the one
+  place the hold changes: a hold that ended any other way would leave such a screen deaf.
+- A screen of first run comes onto the glass by marks (core `SetDown.marks` with `Motion.kt`'s times, as `PACE`): the model works them
+  out in the moment the screen comes (`OverlayModel.came`: at its making, in `rearm`, `giveWay`, `again`, `land`, `turned`, `closing`,
+  and for the choices in `offerChoices`) and counts by them; `overlay/FirstStage.kt` draws every part by its mark on one clock that
+  starts at `OverlayModel.viewFrom`. Whatever makes a screen come must say so through `came`, or the screen is drawn and counted by the
+  marks of the one before; and what sets a screen down in a way of its own after Booklight emptied the field (`giveWay`, `again`) calls
+  `empty()` first and `came` after it: emptying the field brings an `unseen` screen into view whole, which would undo that way. The parts
+  move as layers over a layout that never changes: nothing may move the answers' place (the highlight's way into the armed answer reads
+  it once), and what gives way is drawn by the clock, the marks, the arming and the counter of its last moment (`own`, `kept`).
+- "First steps" is the panel's own: its command carries core `FirstRun.AGAIN`, which `OverlayActivity.run` catches before the executor
+  (`OverlayModel.again`: the run stands in the panel that is open, without the opening piece). Its row is offered only where it was typed
+  for (core `FirstRun.typedFor`, asked by `CommandsProvider`: three letters or more that begin its name, or one of its other words in
+  full): by the matching every other row is found by, "f", "fi" and "w" find it too, and someone who never asked for first run would
+  meet it in an everyday list. And only on a screen that can hold a stage: the open panel's own (`BooklightApp.firstFits`, which the
+  panel answers for the display it stands on; the window's row asks the window's). The window's row writes the state and
+  starts a plain panel by `ACTION_PANEL`, as a row of the Commands page does for an example: Booklight starts its panel in no other
+  way, and never over another app's window.
+- First run's choices are no stage: they are `results` with nothing selected, as the usual rows stand at rest (`choicesUp`; `atRest`
+  is either). They are left, and the run is over, by Enter at rest, a typed letter, their second row, or the panel closing. Their keys
+  (Enter, Ctrl + digit, Tab or Right on the second row, a click) count 350 ms from the moment they are set down, as a stage's do.
+- The user's key, held, repeats, and each repeat is a new start of the panel. Where the key has just landed ("Your key works": in view,
+  under the system's dialog, or in a panel the key made), a start by the key does nothing for 700 ms of real time after the last one
+  (`Motion.KEY_SETTLES_MS`, `OverlayModel.keyAgain`, asked first in `onNewIntent`): not built from motion's times, so it holds with the
+  system's animations off.
+- While first run's opening piece plays (`OverlayModel.playing`), the show performs with the panel's real rows and runs nothing: its
+  rows are the cast's (`BooklightApp.cast`), whose every action carries core `Show.NOTHING`; `stage` is null while the welcome or the show plays, and the key's step's at the landing; `Panel.keys` and a layer
+  over the glass give every key and click to `OverlayModel.press` first (core `FirstRun.pressed`), and `enter`, `runRow`, `went` and
+  `OverlayActivity.run` return at once. Only a typed character passes, and the piece is over by then. The key's step it lands in takes a
+  key 350 ms after its armed answer has begun to show (`seen`): the piece is `LANDING` until then. The piece stops performing in one
+  place (`stop`), whichever way it ends. A panel that closes ends its piece
+  (`closing`), and one the key turns round while it folds counts what stands under its field as come in that moment (`turned`). `OverlayModel.playing` is declared before
+  `stage`, which reads it while the model is made: keep that order.
+- The welcome's height is `Metrics.welcome` under the field (468 dp in all), from which core `FirstRun.WELCOME_SCREEN_DP` is reckoned.
+  Its layer is the first child of the glass, 720 × 468 dp, cut by the glass: nothing of it may be drawn outside that layer.
+- The glass's shader (`Glass.kt`, `GLASS`) is compiled on the device, not by the build: a mistake in it stops every panel from opening.
+  After a change to it, open the panel on a device before anything else.
 - A constant alone is not a sum (`e`, `pi`): otherwise typing "e" shows 2.718 instead of apps.
 - `LauncherApps.startMainActivity` is used for every launch so work-profile apps open too.
 - The app list skips Booklight itself.

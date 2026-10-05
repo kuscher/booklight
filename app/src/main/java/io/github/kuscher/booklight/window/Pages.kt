@@ -55,12 +55,17 @@ import io.github.kuscher.booklight.BuildConfig
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.core.Engines
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Icon as RowIcon
 import io.github.kuscher.booklight.data.Recipes
 import io.github.kuscher.booklight.data.Settings
+import io.github.kuscher.booklight.data.firstRun
+import io.github.kuscher.booklight.device.Keyboards
+import io.github.kuscher.booklight.device.SystemWords
 import io.github.kuscher.booklight.entry.PickFolderActivity
 import io.github.kuscher.booklight.overlay.DrawnCheck
 import io.github.kuscher.booklight.overlay.LocalMotion
+import io.github.kuscher.booklight.overlay.OverlayActivity
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.Symbols
 import kotlinx.coroutines.delay
@@ -170,8 +175,16 @@ fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, askedFor
         // window has the keys again.
         val seen = remember(resumed) { app.prefs.now.keySeen }
         var asked by askedForKey
+        // The keys that are suggested, as first run suggests them (core `FirstRun.suggest`): Action + Quick Insert where the
+        // keyboard has that key, Action + M where it has not. The key's name and the dialog's two buttons are quoted in
+        // the system's own words where they can be read (`SystemWords`: no permission), else in Booklight's.
+        LaunchedEffect(Unit) { SystemWords.load(activity, app.scope) }
+        val key = remember(resumed) { FirstRun.suggest(FirstRun.hasQuickInsert(Keyboards.attached(), null)) }
+        val name = SystemWords.name(activity, key)
+        val words = SystemWords.words(activity)
+        val where = if (key == FirstRun.Key.QUICK_INSERT) stringResource(R.string.first_key_where, name) + " · " + stringResource(R.string.first_key_any) else stringResource(R.string.first_key_any)
         Group(stringResource(R.string.win_open_title)) {
-            // What is so: no key yet (and then the two shortcuts the system has free), or the key works. Not a row to press.
+            // What is so: no key yet (and then the keys that are suggested, and where the second one is), or the key works. Not a row to press.
             row("status") { place ->
                 PageRow(page, "status", stringResource(if (seen) R.string.key_works else if (asked) R.string.key_press else R.string.key_none),
                     stringResource(if (seen) R.string.win_key_works_text else R.string.win_key_text), still = true, roll = true, place = place, onTitleLine = !seen,
@@ -182,17 +195,18 @@ fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, askedFor
                     },
                     below = {
                         AnimatedVisibility(!seen, enter = expandVertically(motion.place()) + fadeIn(motion.fade(140)), exit = shrinkVertically(motion.place()) + fadeOut(motion.fade(70))) {
-                            Row(Modifier.padding(top = 8.dp, bottom = 2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Keys(stringResource(R.string.key_action), "Alt", stringResource(R.string.key_space), ink = scheme.onSurfaceVariant)
-                                Text(stringResource(R.string.win_key_or), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                                Keys(stringResource(R.string.key_action), "K", ink = scheme.onSurfaceVariant)
+                            // The caps on the text's edge, and under them what first run's own caption says: one edge for all three lines.
+                            Column(Modifier.padding(top = 8.dp, bottom = 2.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Keys(stringResource(R.string.key_action), name, ink = scheme.onSurfaceVariant)
+                                Text(where, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                     })
             }
             row("key") { place ->
-                PageRow(page, "key", stringResource(R.string.set_shortcut_button), stringResource(R.string.win_key_steps), place = place,
-                    mark = { MarkIcon("key") }, onEnter = { asked = true; activity.requestShowKeyboardShortcuts() }) { Opens() }
+                // The dialog then opens on the window's own page, which begins with the five steps (`MainActivity.guides`).
+                PageRow(page, "key", stringResource(R.string.set_shortcut_button), stringResource(R.string.win_key_steps, words.customize, words.set), place = place,
+                    mark = { MarkIcon("key") }, onEnter = { asked = true; (activity as? MainActivity)?.guides = true; activity.requestShowKeyboardShortcuts() }) { Opens() }
             }
             // The assistant key is a way to open Booklight too, so it stands beside the keyboard shortcut.
             row("assistant") { place ->
@@ -203,15 +217,36 @@ fun StartPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, askedFor
     }
     Rise(arrive, 3, from) {
         var again by remember { mutableStateOf(false) }
+        val fits = remember(resumed) { FirstRun.fits(activity.windowManager.maximumWindowMetrics.bounds.height() / activity.resources.displayMetrics.density) }
         Group(stringResource(R.string.set_tips)) {
             row("tips") { Toggle(page, "tips", stringResource(R.string.set_tips_show), stringResource(R.string.set_tips_text), s.tips, mark = "bulb", place = it) { v -> set { st -> st.copy(tips = v) } } }
             row("again") { place ->
                 PageRow(page, "tips-again", stringResource(R.string.set_tips_again), null, place = place, mark = { MarkIcon("again") },
-                    onEnter = { set { it.copy(tips = true, tipsSeen = emptyList(), tipId = "", tipMs = 0) }; again = true }) {
+                    onEnter = { set { it.copy(tips = true, tipsSeen = FirstRun.keepMark(it.tipsSeen), tipId = "", tipMs = 0) }; again = true }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         DrawnCheck(again, LocalContentColor.current, Modifier.size(16.dp))
                         if (again) Text(stringResource(R.string.set_tips_again_done), style = MaterialTheme.typography.labelLarge)
                         else Word(stringResource(R.string.win_reset))
+                    }
+                }
+            }
+            // "First steps": first run, once more. The row plays the whole of it in a new panel, the opening piece first; while
+            // a run is unfinished it goes on where that stopped, and says where (core `FirstRun.offer`, `again`). The panel is
+            // started as a row of the Commands page starts it for an example: by this click, over Booklight's own window.
+            // Not on a screen too low for first run to stand in the panel: the screen this window stands on, which is
+            // where the panel it starts opens (it need not be the application's own display). Read when the window has
+            // the keys again, as the key is.
+            if (fits) row("first") { place ->
+                val offer = FirstRun.offer(s.firstRun())
+                PageRow(page, "first", stringResource(if (offer.goesOn) R.string.first_row_go_on else R.string.first_name), stringResource(R.string.first_row_text), place = place, roll = true,
+                    mark = { MarkIcon("again") },
+                    onEnter = {
+                        app.prefs.firstRun { FirstRun.again(it, overture = true) }
+                        activity.startActivity(Intent(activity, OverlayActivity::class.java).setAction(OverlayActivity.ACTION_PANEL))
+                    }) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        offer.count?.let { Text(stringResource(R.string.first_step, it.first, it.second), style = MaterialTheme.typography.labelLarge, maxLines = 1) }
+                        Opens()
                     }
                 }
             }

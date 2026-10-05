@@ -1,6 +1,7 @@
 package io.github.kuscher.booklight.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
@@ -77,6 +78,14 @@ class FlightColors(val good: Color, val onGood: Color, val late: Color, val onLa
 /** Whether Booklight is dark: the user's choice (`light`, `dark`), else the system's. */
 @Composable
 fun isDark(theme: String): Boolean = when (theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
+
+/**
+ * The light scheme, whatever the theme is: first run's welcome is one night in both themes, and the one coloured
+ * surface in it, the knife's handle, is the selection as light theme has it. The device's own colours when [tint] is
+ * on, else Booklight's own.
+ */
+@Composable
+fun lightScheme(tint: Boolean): ColorScheme = if (tint) dynamicLightColorScheme(LocalContext.current) else OwnLight
 
 /** The device's own colours (Material You, from the wallpaper) when [tint] is on, else Booklight's own; light or dark. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

@@ -203,6 +203,7 @@
         <item>play|controls|music|play|play lofi|Abspielen|In der Musik-App, in der du zuletzt abgespielt hast. Auch: play album …, play … auf spotify. Oder in der Zeile einer Musik-App: Tab bis Abspielen, Enter, dann der Name</item>
         <item>media|controls|pause||pause|Medientasten|pause, play, stopp, weiter, zurück: für das, was gerade läuft</item>
         <item>window|booklight|booklight||booklight|Booklights Fenster|Einstellungen und deine Links, Bausteine, Rezepte, Prompts und App-Befehle</item>
+        <item>first|booklight|again||erste schritte|Erste Schritte|Die Taste, drei Dinge zum Ausprobieren und deine Auswahl, noch einmal, hier im Panel</item>
     </string-array>
 
     <!-- Tipps -->

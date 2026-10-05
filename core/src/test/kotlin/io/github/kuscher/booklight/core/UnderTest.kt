@@ -5,17 +5,17 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class UnderTest {
-    private fun at(untouched: Boolean = true, card: Boolean = false, copy: Boolean? = false, zero: Boolean = false, seats: Int? = 0, tip: Boolean = false, last: Boolean = false) =
-        Under.choose(untouched, card, copy, zero, seats, tip, last)
+    private fun at(untouched: Boolean = true, stage: Boolean = false, copy: Boolean? = false, zero: Boolean = false, seats: Int? = 0, tip: Boolean = false, last: Boolean = false) =
+        Under.choose(untouched, stage, copy, zero, seats, tip, last)
 
     @Test fun onceTouchedNothingComes() {
-        assertEquals(What.NOTHING, at(untouched = false, card = true, copy = true, zero = true, seats = 3, tip = true))
+        assertEquals(What.NOTHING, at(untouched = false, stage = true, copy = true, zero = true, seats = 3, tip = true))
         assertEquals(What.NOTHING, at(untouched = false, zero = true, seats = 3, last = true))
     }
 
-    @Test fun aCardComesFirstAtEitherMoment() {
-        assertEquals(What.CARD, at(card = true, copy = true, zero = true, seats = 3, tip = true))
-        assertEquals(What.CARD, at(card = true, copy = true, zero = true, seats = 3, tip = true, last = true))
+    @Test fun firstRunsStageComesFirstAtEitherMoment() {
+        assertEquals(What.STAGE, at(stage = true, copy = true, zero = true, seats = 3, tip = true))
+        assertEquals(What.STAGE, at(stage = true, copy = true, zero = true, seats = 3, tip = true, last = true))
     }
 
     @Test fun aFreshCopyHasThePlaceAndComesAtTheLastMoment() {

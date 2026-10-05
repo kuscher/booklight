@@ -22,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Act
 import io.github.kuscher.booklight.core.AppChip
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Scope
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.Fonts
@@ -116,8 +118,22 @@ fun Field(
             if (chip != null) ScopeChip(chip, icons, said = (chip as? AppChip)?.let { c -> model.act?.let { stringResource(R.string.a11y_selected, c.name, stringResource(if (it == Act.SEARCH) R.string.action_search else R.string.action_play)) } }) { model.leaveScope(withText = true) }
             // The search engine's mark where the magnifier would be: Google's G when Google does the searching.
             else Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
-                if (model.settings.engine == "google") Text("G", color = scheme.onSurface, style = TextStyle(fontFamily = Fonts.round, fontSize = 24.sp, fontWeight = FontWeight(600)))
-                else Icon(Symbols.search, null, Modifier.size(22.dp), tint = scheme.onSurface.copy(alpha = SECOND))
+                val engine: @Composable () -> Unit = {
+                    if (model.settings.engine == "google") Text("G", color = scheme.onSurface, style = TextStyle(fontFamily = Fonts.round, fontSize = 24.sp, fontWeight = FontWeight(600)))
+                    else Icon(Symbols.search, null, Modifier.size(22.dp), tint = scheme.onSurface.copy(alpha = SECOND))
+                }
+                // A panel that began with first run's opening piece: no mark in the welcome, where the whole panel is the mark;
+                // Booklight's own while Booklight types, which says who is typing, and from the moment the welcome's light has
+                // closed past its seat, just before the first letter; the engine's again as the key's step lands.
+                // Each comes up as a mark does here. In every other panel the mark is drawn as it always was.
+                if (!model.began) engine()
+                else AnimatedContent(if (model.playing == FirstRun.Playing.WELCOME && model.marked) FirstRun.Playing.SHOW else model.playing?.takeIf { it != FirstRun.Playing.LANDING }, transitionSpec = { (scaleIn(motion.pop(), 0.6f) + fadeIn(motion.fade(110))) togetherWith fadeOut(motion.fade(80)) }, contentAlignment = Alignment.Center, label = "who") { who ->
+                    when (who) {
+                        FirstRun.Playing.WELCOME -> Spacer(Modifier.size(22.dp))
+                        FirstRun.Playing.SHOW -> Icon(Symbols.booklight, null, Modifier.size(22.dp), tint = scheme.onSurface)
+                        else -> engine()
+                    }
+                }
             }
         }
         Box(Modifier.weight(1f).padding(start = if (model.chip != null) 12.dp else 16.dp), contentAlignment = Alignment.CenterStart) {
@@ -126,7 +142,8 @@ fun Field(
                 // The placeholder says what to type: what Booklight finds, or what the scope takes.
                 // While a tip shows, its example stands here: where it would be typed, in the ink that means "not typed yet".
                 // (Under an app's chip: what to type for the action that is armed, which Tab changes.)
-                AnimatedContent(model.hint ?: model.tip?.takeIf { !model.tipOff }?.example?.trim() ?: stringResource(R.string.search_hint), transitionSpec = {
+                // (While a lesson of first run stands: what that lesson types.)
+                AnimatedContent(model.hint ?: model.firstHint ?: model.tip?.takeIf { !model.tipOff }?.example?.trim() ?: stringResource(R.string.search_hint), transitionSpec = {
                     // Their box changes its width on our spring and without a clip: a longer placeholder is never cut through its
                     // letters while it comes.
                     ((fadeIn(motion.fade(140, 60)) + slideInHorizontally(motion.place()) { it / 40 }) togetherWith fadeOut(motion.fade(60)))
@@ -146,7 +163,8 @@ fun Field(
                 modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = label },
                 singleLine = true,
                 textStyle = style,
-                cursorBrush = SolidColor(scheme.primary),
+                // (In first run's welcome the caret is the lamp's switch, and the welcome draws it in the lamp's colours.)
+                cursorBrush = SolidColor(if (model.playing == FirstRun.Playing.WELCOME) Color.Transparent else scheme.primary),
                 visualTransformation = remember(rest, ghost) { Ghost(rest.orEmpty(), ghost) },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false, imeAction = ImeAction.Go),
             )
@@ -154,9 +172,11 @@ fun Field(
         // The footer says "esc Close" once there is one; until then the field does.
         // Rows that come while the glass is still opening (the usual rows) take the cap away before it was ever seen: from
         // then on it never gets brighter than it was at that moment, or it would flash in the middle of its own leaving.
-        val none = model.results.isEmpty()
+        // (Nor in first run's welcome: there the cap is drawn in the night's ink, and in the lamp's once the head is lit.)
+        val none = model.results.isEmpty() && model.playing != FirstRun.Playing.WELCOME
         val most = remember(none) { if (none) 1f else androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { ends() } }
-        AnimatedVisibility(none, Modifier.graphicsLayer { alpha = minOf(ends(), most) }, enter = fadeIn(motion.fade(120)), exit = fadeOut(motion.fade(120))) { Keycap("esc", wide = true) }
+        // (At first run's fold it fades back a moment after the choices' rows have gone: motion.md T10.)
+        AnimatedVisibility(none, Modifier.graphicsLayer { alpha = minOf(ends(), most) }, enter = fadeIn(motion.fade(120, if (model.ended) Motion.FOLD_CAP_MS else 0)), exit = fadeOut(motion.fade(120))) { Keycap("esc", wide = true) }
     }
 }
 

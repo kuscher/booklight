@@ -1,7 +1,11 @@
 package io.github.kuscher.booklight.overlay
 
 import android.graphics.RuntimeShader
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
@@ -72,6 +76,22 @@ fun selectionFill(scheme: ColorScheme, dark: Boolean, glass: Boolean, danger: Bo
     else -> scheme.secondaryContainer.copy(alpha = 0.66f)
 }
 
+/** First run's welcome is one night in both themes: the veil's colour then, and how much of it lies over the blur (by day: white at 0.42, near-black at 0.50). */
+val NIGHT = Color(0xFF0A0C12)
+const val NIGHT_VEIL = 0.80f
+/** How far the desk behind the panel dims in that night. */
+const val NIGHT_DESK = 0.50f
+
+/**
+ * What first run's welcome asks of the glass, written for each frame and read where the glass is drawn: how far the
+ * [veil] has gone to night and how far the outline has ([rim]: full white at 1), each 0 to 1. Two numbers: a typed key
+ * puts the lamp out in its frame, and the veil is the theme's own at once while the outline relaxes with the rest.
+ */
+class Night {
+    var veil by mutableFloatStateOf(0f)
+    var rim by mutableFloatStateOf(0f)
+}
+
 /**
  * The panel's glass, as a shader over the system's window blur: a flat veil (white in light theme,
  * near-black in dark: the most contrast for the least tint), two flat rings at the edge (a black
@@ -93,6 +113,7 @@ uniform float glow;       // how bright the reflection is, 0..1
 uniform float tail;       // how long its tail is, in dp
 uniform float dark;       // 0 light theme, 1 dark
 uniform float solid;      // 1: no blur behind, so stay opaque
+uniform float night;      // first run's welcome: 0 by day, 1 at night, when the outline is full white
 
 float box(float2 p, float2 b, float r) {
     float2 q = abs(p) - b + r;
@@ -145,7 +166,7 @@ half4 main(float2 xy) {
     // is full white and a little wider (more so in light theme, where it has less brightness to gain).
     float w = (1.25 + mix(0.75, 0.5, dark) * refl) * density;
     float line = smoothstep(0.6, 1.2, depth) * (1.0 - smoothstep(1.0 + w - 0.5, 1.0 + w + 0.5, depth));
-    float base = mix(0.80, 0.44, dark);
+    float base = mix(mix(0.80, 0.44, dark), 1.0, night);
     float la = line * mix(base, 1.0, refl);
     pm = mix(pm, float3(1.0), la);
     a = mix(a, 1.0, la);
@@ -162,15 +183,23 @@ half4 main(float2 xy) {
  * Draws the glass behind the content. [run] is how far round the outline the reflection has come, in laps
  * from the middle of the top edge; [glow] its brightness; [tail] the length of its tail in dp.
  */
-fun Modifier.glass(tint: Color, radiusPx: Float, density: Float, run: () -> Float, glow: () -> Float, tail: () -> Float, dark: Boolean, solid: Boolean): Modifier = composed {
+fun Modifier.glass(
+    tint: Color, radiusPx: Float, density: Float, run: () -> Float, glow: () -> Float, tail: () -> Float, dark: Boolean, solid: Boolean,
+    /** First run's welcome: how far the veil has gone to night, and how far the outline has gone to full white, each 0 to 1 ([Night]). */
+    veil: () -> Float = { 0f }, rim: () -> Float = { 0f },
+): Modifier = composed {
     val shader = remember { RuntimeShader(GLASS) }
     drawWithCache {
         val brush = ShaderBrush(shader)
         onDrawBehind {
+            // The veil as it stands in this frame: the theme's own by day, on its way to the night's while first run's welcome says so.
+            val dusk = veil().coerceIn(0f, 1f)
+            val veiled = if (dusk > 0f) lerp(tint, NIGHT.copy(alpha = NIGHT_VEIL), dusk) else tint
+            shader.setFloatUniform("night", rim().coerceIn(0f, 1f))
             shader.setFloatUniform("size", size.width, size.height)
             shader.setFloatUniform("radius", minOf(radiusPx, size.width / 2f, size.height / 2f))
             shader.setFloatUniform("density", density)
-            shader.setFloatUniform("tint", tint.red, tint.green, tint.blue, tint.alpha)
+            shader.setFloatUniform("tint", veiled.red, veiled.green, veiled.blue, veiled.alpha)
             shader.setFloatUniform("run", run())
             shader.setFloatUniform("glow", glow())
             shader.setFloatUniform("tail", tail())

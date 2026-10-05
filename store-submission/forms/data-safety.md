@@ -15,7 +15,9 @@ typed for Play in Spotify goes to Spotify (see "Spotify lookups"). (The library 
   activity name), the text that was typed when it was picked, a count and a time. Used to put the usual
   choice first. Cleared by Settings › What Booklight keeps › Forget everything, and by uninstalling.
 - `files/settings.json`: the chosen search engine, whether suggestions are on, the look, which result kinds
-  show, which first-run cards were seen, and (1.1) what the user made: links, snippets, recipes, the emoji
+  show, where the first steps stand (which are done, in how many openings they stood, how often the system's
+  Keyboard shortcuts dialog was opened from them, whether the app's icon has shown the panel once), and (1.1)
+  what the user made: links, snippets, recipes, the emoji
   picked lately, and the address of the notes folder the user granted.
 - (1.1) `Notes.md` in a folder the user chose with the system's folder picker: the notes typed with `note …`.
   Outside the app's storage, in the user's own files; Booklight holds a write grant for that folder only.
@@ -25,10 +27,12 @@ typed for Play in Spotify goes to Spotify (see "Spotify lookups"). (The library 
 
 ## What leaves the device, and when
 **Search suggestions (off by default).**
-- Turned on only by the user: the first-run card under the search field ("Search suggestions are off.
-  Turn them on and what you type is sent to Google to suggest searches. Sums and web addresses are not
-  sent." with **Turn on** / **Not now**), or Settings › Web search › Search suggestions. Turned off in
-  the same setting at any time.
+- Turned on only by the user: the question in the first steps, alone under the search field ("Suggest
+  searches as you type? Booklight sends what you type to Google while you type, to suggest searches. Google
+  also sees your IP address. Not sent: sums, web addresses, and anything after a keyword or with an app in
+  the field." with **Not now** / **Agree**; nothing is chosen for the user, and Enter alone, Esc and waiting
+  agree to nothing), or Settings › Web search › Search suggestions. Turned off in the same setting at any
+  time.
 - When on: after a 140 ms pause in typing, if the text is 2 to 80 characters and reads as words, Booklight
   makes one HTTPS GET request with the typed text as a query parameter to the chosen engine's suggestion
   address. Never sent, also while still being typed: sums (anything with a digit next to a sign of

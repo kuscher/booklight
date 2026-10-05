@@ -8,6 +8,7 @@ import io.github.kuscher.booklight.core.Seed
 import io.github.kuscher.booklight.core.Seeds
 import io.github.kuscher.booklight.core.Engine
 import io.github.kuscher.booklight.core.Engines
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Site
 import io.github.kuscher.booklight.core.Sites
 import kotlinx.coroutines.CoroutineScope
@@ -54,7 +55,7 @@ data class PromptEntry(val id: String, val name: String, val keyword: String = "
 @Serializable
 data class OwnCommandEntry(val id: String, val name: String, val keyword: String = "", val app: String, val intent: String)
 
-/** Everything the user can choose, plus which first-run cards are still to show. */
+/** Everything the user can choose, plus where first run stands. */
 @Serializable
 data class Settings(
     val engine: String = Engines.default.id,
@@ -124,16 +125,53 @@ data class Settings(
     val keySeen: Boolean = false,
     val shortcutCard: Boolean = true,
     val suggestionsCard: Boolean = true,
+    /**
+     * First run (core `FirstRun`): which run this installation is in (0 none, 1 a new installation's, 2 the key alone for one
+     * that was there before, 3 asked for again); the steps that are over (and `show`: the opening has been shown; `change`: a
+     * replay asks for another key); in how many openings the run has stood; how often the system's dialog came for the key;
+     * and whether the icon's first click has shown the panel. A build from before first run drops these five when it writes
+     * the settings: that step 1 is over is therefore also marked in [tipsSeen] (`FirstRun.MARK`).
+     */
+    val first: Int = 0,
+    val firstDone: List<String> = emptyList(),
+    val firstOpens: Int = 0,
+    val firstHelper: Int = 0,
+    val firstIcon: Boolean = false,
     /** The section the Booklight window was left on (`window/Nav.kt`): it opens there again. */
     val windowPart: String = "start",
     /** How many of the ready-made prompts this installation has been given: a version that brings a new one adds it once. */
     val seeded: Int = 0,
-    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference, 6 = app commands of the user's own. */
+    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference, 6 = app commands of the user's own, 7 = first run. */
     val schema: Int = 1,
 ) {
     fun engine(): Engine = Engines.byId(engine)
     fun sites(): List<Site> = sites.map { it.site() }
 }
+
+/**
+ * What first run needs of the settings, as the core's own state. That step 1 is over is read from the list the mark is in.
+ * Whether sums are answered ("Show sums") is only read: where they are switched off the sum's lesson is no step.
+ */
+fun Settings.firstRun(): FirstRun.State = FirstRun.State(FirstRun.Run.of(first), firstDone, firstOpens, firstHelper, firstIcon, keySeen, suggestions, FirstRun.MARK in tipsSeen, sums = showSums)
+
+/** The settings with first run's state [f] in them: its own fields, `keySeen` and `suggestions` (the consent switch) too, and nothing else. The mark is only ever added. */
+fun Settings.withFirstRun(f: FirstRun.State): Settings = copy(
+    first = f.run.id, firstDone = f.done, firstOpens = f.opens, firstHelper = f.helper, firstIcon = f.icon, keySeen = f.key, suggestions = f.suggestions,
+    tipsSeen = if (f.mark && FirstRun.MARK !in tipsSeen) tipsSeen + FirstRun.MARK else tipsSeen,
+)
+
+/**
+ * Changes first run's state inside one settings update: [change] is worked out from the settings as they are at the write,
+ * so a state read earlier never puts older `keySeen` or `suggestions` values back.
+ */
+fun Prefs.firstRun(change: (FirstRun.State) -> FirstRun.State) = update { it.withFirstRun(change(it.firstRun())) }
+
+/**
+ * Schema 7, for settings that were there before this build: no run where a key is known or step 1 is marked as over, else
+ * the key's step once (core `FirstRun.forUpdate`). It reads only what every build keeps, so it gives the same answer each
+ * time the same file is read, and again after an older build has written the file.
+ */
+fun Settings.asUpdate(): Settings = withFirstRun(FirstRun.forUpdate(firstRun()))
 
 /** The settings as `files/settings.json`: read once at start, written off the main thread on change. */
 class Prefs(private val context: Context, private val scope: CoroutineScope) {
@@ -141,7 +179,7 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val writing = Mutex()
     private companion object {
-        const val SCHEMA = 6
+        const val SCHEMA = 7
         /** The ready-made prompts 2.0 came with: what an installation from before schema 5 has been given. */
         const val FIRST_SEEDS = 5
     }
@@ -162,13 +200,14 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
      * to other apps and asks for no permission, with nothing granted along.
      */
     private fun load(): Settings = try {
-        if (file.exists()) current(migrate(json.decodeFromString(Settings.serializer(), file.readText()))) else started(Settings(schema = SCHEMA))
+        if (file.exists()) current(migrate(json.decodeFromString(Settings.serializer(), file.readText()))) else started(Settings(schema = SCHEMA, first = FirstRun.Run.NEW.id))
     } catch (e: Exception) {
         // The file holds what the user made (links, snippets, recipes): put it aside rather than write over it.
         // Only the kind of error is logged: the message of a parse error quotes the file.
         Log.w(BooklightApp.TAG, "settings unreadable (${e.javaClass.simpleName}); kept as settings.json.bad, using defaults")
         runCatching { file.copyTo(File(file.parentFile, file.name + ".bad"), overwrite = true) }
-        started(Settings(schema = SCHEMA))
+        // (What was in the file is not known: like an installation that was there before, with no key known.)
+        started(Settings(schema = SCHEMA).asUpdate())
     }
 
     /**
@@ -198,6 +237,8 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
         // has none that were made here (a build from before ignored such a step): whatever it holds of either is not taken.
         // Nothing else changed its shape.
         if (s.schema < 6) s = s.copy(ownCommands = emptyList(), recipes = s.recipes.map { r -> r.copy(steps = r.steps.filter { it.kind != "open" }) })
+        // Schema 7: first run. An installation that was there before gets no run, or the key's step once ([asUpdate]).
+        if (s.schema < 7) s = s.asUpdate()
         return s.copy(schema = SCHEMA)
     }
 

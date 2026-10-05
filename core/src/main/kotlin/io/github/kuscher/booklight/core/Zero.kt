@@ -95,23 +95,25 @@ object Zero {
 }
 
 /**
- * What stands under the untouched empty field. At most one thing, chosen in one order: a first-run
- * card, the line for a fresh copy, the usual rows, a tip. The card comes at once; the others wait
- * for the last moment ([last]: a moment after the panel has opened), except that the usual rows may
- * come before it once it is known that no copy is fresh.
+ * What stands under the untouched empty field. At most one thing, chosen in one order: first run's
+ * stage (the screen of first run that is due, [FirstRun.stage]), the line for a fresh copy, the
+ * usual rows, a tip. The stage comes at once; the others wait for the last moment ([last]: a
+ * moment after the panel has opened), except that the usual rows may come before it once it is
+ * known that no copy is fresh.
  */
 object Under {
-    enum class What { CARD, COPY, USUAL, TIP, NOTHING, WAIT }
+    enum class What { STAGE, COPY, USUAL, TIP, NOTHING, WAIT }
 
     /**
-     * [untouched]: nothing typed, no chip, no rows, nothing under the field yet. [copy]: a copy is
-     * fresh, or null while the system has not said. [zero]: the switch for the usual rows.
-     * [seats]: how many of them there are, or null while they are not worked out. [tip]: tips are
-     * on and one is left. At the [last] moment nothing waits any longer, and "not known" counts as no.
+     * [untouched]: nothing typed, no chip, no rows, nothing under the field yet. [stage]: a screen of
+     * first run is due. [copy]: a copy is fresh, or null while the system has not said. [zero]: the
+     * switch for the usual rows. [seats]: how many of them there are, or null while they are not
+     * worked out. [tip]: tips are on and one is left. At the [last] moment nothing waits any longer,
+     * and "not known" counts as no.
      */
-    fun choose(untouched: Boolean, card: Boolean, copy: Boolean?, zero: Boolean, seats: Int?, tip: Boolean, last: Boolean): What = when {
+    fun choose(untouched: Boolean, stage: Boolean, copy: Boolean?, zero: Boolean, seats: Int?, tip: Boolean, last: Boolean): What = when {
         !untouched -> What.NOTHING
-        card -> What.CARD
+        stage -> What.STAGE
         copy == true -> if (last) What.COPY else What.WAIT
         zero && (seats ?: 0) >= Zero.MIN && (copy == false || last) -> What.USUAL
         !last -> What.WAIT

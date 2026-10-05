@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: the page Booklight has in the system's Keyboard shortcuts dialog while it waits for its key (docs/design/first-run/design.md section 5): -->
+<!-- five numbered steps, read once. No label and no heading holds the app's name: the dialog's search would then stay on this page. -->
+<resources>
+    <string name="first_helper_title">A shortcut for this app, in five steps</string>
+    <!-- %1$s is the system's own word for its Customize button. -->
+    <string name="first_helper_1">1. Click %1$s, top right</string>
+    <string name="first_helper_2">2. Type this app’s name, then click +</string>
+    <!-- %1$s is the name of the suggested key: Quick Insert, or M. -->
+    <string name="first_helper_3">3. Hold Action and press %1$s, or any keys you like</string>
+    <!-- %1$s is the system's own word for its Set shortcut button. -->
+    <string name="first_helper_4">4. Click %1$s</string>
+    <string name="first_helper_5">5. Press your keys again. This closes by itself.</string>
+    <!-- The system's own two words as a Googlebook's system UI says them (read off a device on 5 October 2026): the fallbacks, used where they cannot be read from it. -->
+    <string name="first_sys_customize">Customize</string>
+    <string name="first_sys_set">Set shortcut</string>
+    <!-- The two suggested keys by name, as the system's dialog says them (read off a device on 5 October 2026): the fallbacks, used where the name cannot be read. The letter is no word and is not translated. -->
+    <string name="first_key_quick">Quick Insert</string>
+    <!-- On the large cap, where the system's name for the key has no room: short, and the same in every language. -->
+    <string name="first_key_quick_cap" translatable="false">Quick Insert</string>
+    <string name="first_key_letter" translatable="false">M</string>
+
+    <!-- First run · the key's step under the empty field (design.md §4 and §5): four screens on one skeleton. -->
+    <string name="first_key_text">One press, from any app, and Booklight is there.</string>
+    <!-- Under the caps. %1$s is the Quick Insert key's name, as the system says it. -->
+    <string name="first_key_where">%1$s is left of A</string>
+    <string name="first_key_any">or any keys you like</string>
+    <!-- Back from the system's dialog without a key. -->
+    <string name="first_key_press">Now press your keys</string>
+    <string name="first_key_press_text">Nothing happens? Open Keyboard shortcuts once more.</string>
+    <string name="first_key_yours">your keys</string>
+    <!-- Back again. %1$s is the system's own word for its Customize button. -->
+    <string name="first_key_retry">Didn’t work?</string>
+    <string name="first_key_retry_text">Click %1$s first. Hold Action, then press the second key.</string>
+    <!-- %1$s is the other key to try: M. -->
+    <string name="first_key_try">Or try Action + %1$s</string>
+    <string name="first_key_works_text">The same keys put Booklight away.</string>
+    <string name="first_next">Go on</string>
+    <string name="first_key_change">Change the key</string>
+    <!-- Where a screen is in first run: "1 of 5". -->
+    <string name="first_step">%1$d of %2$d</string>
+    <!-- For a screen reader, once when a screen comes. %1$s and %2$s are the two suggested keys. -->
+    <string name="a11y_first_keys">Suggested keys: %1$s and %2$s</string>
+    <string name="a11y_first_opens">Enter opens Keyboard shortcuts. Tab for Not now.</string>
+    <string name="a11y_first_tab_opens">Tab, then Enter opens Keyboard shortcuts.</string>
+    <string name="a11y_first_goes_on">Enter goes on.</string>
+
+    <!-- First run · the three lessons (design.md §6): the same skeleton, with a recipe where the key caps stood. Nothing opens in first run: -->
+    <!-- Enter on an app's row and on a search inside an app is practice. -->
+    <string name="first_open_title">Open an app</string>
+    <string name="first_open_text">Type its first letters, then Enter.</string>
+    <!-- The field's placeholder while the lesson stands. -->
+    <string name="first_open_hint">An app’s first letters</string>
+    <string name="first_search_title">Search inside an app</string>
+    <string name="first_search_text">Tab moves along the row, Enter does. Then type what to look for.</string>
+    <!-- %1$s is what to type first: the letters of an app of this device. -->
+    <string name="first_search_hint">%1$s, then Tab</string>
+    <string name="first_sum_title">A sum</string>
+    <string name="first_sum_text">The answer stands there as you type. Enter copies it.</string>
+    <!-- What lesson 4 shows as what to type, and its placeholder. A sum is no word. -->
+    <string name="first_sum_example" translatable="false" formatted="false">150 + 20%</string>
+    <!-- What lesson 3 looks for where no app of the device can be searched: a page of Settings, found by this word in every language. -->
+    <string name="first_search_page" translatable="false">wifi</string>
+    <!-- Two keys as a recipe's caps name them, and as a screen reader says them. -->
+    <string name="first_key_tab" translatable="false">Tab</string>
+    <string name="first_key_enter" translatable="false">Enter</string>
+    <!-- Under the recipe: what other days are like. -->
+    <string name="first_practice">Practice: nothing opens. Enter also puts Booklight away.</string>
+    <string name="first_enter_stays">Enter also puts Booklight away. Today it stays.</string>
+    <string name="first_skip">Skip</string>
+    <!-- In the footer, with its check, after Enter in a lesson. %1$s is the app, or the settings page. -->
+    <string name="first_practice_open">That opens %1$s</string>
+    <string name="first_practice_search">That searches %1$s</string>
+    <!-- The coach line, at the footer's left end while a lesson's list is typed: after the counter and a key cap (Enter or tab), what that key does today. -->
+    <string name="first_coach_open">opens it · practice: nothing opens</string>
+    <string name="first_coach_tab">moves to Search</string>
+    <string name="first_coach_into">goes into the app</string>
+    <string name="first_coach_search">searches there · practice: nothing opens</string>
+    <string name="first_coach_sum">copies the answer · Booklight stays today only</string>
+
+    <!-- First run · the question (design.md §7, pm.md §8): alone on its screen, nothing armed. %1$s is the search engine. -->
+    <string name="first_suggest_title">Suggest searches as you type?</string>
+    <string name="first_suggest_text">Booklight sends what you type to %1$s while you type, to suggest searches. %1$s also sees your IP address. Not sent: sums, web addresses, and anything after a keyword or with an app in the field.</string>
+    <string name="first_suggest_note">Off until you agree. Change it in Booklight’s window › Results.</string>
+    <string name="first_agree">Agree</string>
+
+    <!-- First run · the choices (design.md §7): a list of two rows, and the placeholder the ending leaves behind. -->
+    <string name="first_usual_text">With nothing typed, the two things you run most stand under the field. Nothing changes until you have run two things twice each.</string>
+    <string name="first_off">Off</string>
+    <string name="first_on">On</string>
+    <string name="first_labs">Play by name and flight times need your own key: window › Labs</string>
+    <string name="first_end_hint">Type ? for everything Booklight does</string>
+
+    <!-- For a screen reader. %1$s is a lesson's recipe, a piece at a time. -->
+    <string name="a11y_first_example">For example: %1$s</string>
+    <string name="a11y_first_skips">Tab, then Enter skips.</string>
+    <string name="a11y_first_asks">Nothing is chosen. Tab for Not now, Tab again for Agree.</string>
+    <string name="a11y_first_choices">Down arrow to choose. Enter when done.</string>
+    <string name="a11y_first_done">First steps are done. Type question mark for everything.</string>
+
+    <!-- First run · the welcome (design.md §3, words A): a title, one line and the cue on the knife's handle, in the lamp's light. The one place where copy is not plain (Alex, 4 October 2026). -->
+    <!-- The title is also the field's placeholder for an opening in which the welcome is due and not played (animations off, a screen reader). -->
+    <string name="first_hello_title">Welcome to Booklight</string>
+    <!-- One line, 55 characters at most: it must fit the light. -->
+    <string name="first_hello_line">Your Swiss Army knife launcher. Blades not included.</string>
+    <string name="first_hello_cue">Show off</string>
+    <!-- First run · the show's flight is an example, and says so: where a row names its kind, and at the footer's left end, where a flight's row names its source. -->
+    <string name="first_show_example">Example</string>
+    <string name="first_show_flight">An example. Live times need your own AirLabs key.</string>
+
+    <!-- First run · "First steps": the run asked for again (design.md §11). A command in the panel, found by its name and by these other words; a row on the Booklight window's Start page. -->
+    <string name="first_name">First steps</string>
+    <string name="first_words">tour,welcome,intro</string>
+    <!-- The row in the window: what it plays; and its name while a run is not finished. -->
+    <string name="first_row_text">The key, three things to try, your choices. About a minute.</string>
+    <string name="first_row_go_on">Go on with the first steps</string>
+    <!-- The field's placeholder for the rest of an opening in which the steps began to wait in the window: "Not now" on the key's step, or a run that has stood in its three openings. -->
+    <string name="first_later_hint">First steps wait in Booklight’s window</string>
+    <!-- For a screen reader: the same, as a sentence; and what "Your key works" offers where the run was asked for again. -->
+    <string name="a11y_first_later">The first steps wait in Booklight’s window, on its Start page.</string>
+    <string name="a11y_first_goes_on_change">Enter goes on. Tab for “Change the key”.</string>
+</resources>

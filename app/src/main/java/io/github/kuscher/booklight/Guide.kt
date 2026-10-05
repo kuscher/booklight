@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.AlarmClock
 import io.github.kuscher.booklight.core.Action
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Requests
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
@@ -45,7 +46,8 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
         }
         return context.resources.getStringArray(R.array.guide).mapNotNull { row ->
             val f = row.split('|')
-            if (f.size < 7 || f[3] in gone || (f[0] == "alarms" && !clock)) return@mapNotNull null
+            // (Nor "First steps" on a screen too low for first run to stand in the panel: its command is not there.)
+            if (f.size < 7 || f[3] in gone || (f[0] == "alarms" && !clock) || (f[0] == "first" && !(context.applicationContext as BooklightApp).firstFits)) return@mapNotNull null
             val example = when (f[4]) { "{link}" -> link; "{prompt}" -> prompt; "{command}" -> offered; "{own}" -> own; APP_SEARCH -> searched; else -> f[4] } ?: return@mapNotNull null
             Entry(f[0], f[1], f[2], f[3].ifEmpty { null }, example, f[5], f[6])
         }
@@ -73,9 +75,9 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
         return when {
             key == null -> when (row.provider) {
                 AppsProvider.ID -> if (action.id in PLACES) "places" else if (action.id in AppPages.ids) "pages" else "apps"
-                "commands" -> if (row.id == "command:alarms" || row.id == "command:timers") "alarms" else null
-                "calc" -> "sums"
-                "appcommands" -> if (row.id.startsWith(SearchEngine.IN_APP)) "appsearch" else "commands"
+                "commands" -> if (row.id == "command:alarms" || row.id == "command:timers") "alarms" else if (row.id == "command:first") "first" else null
+                "calc" -> FirstRun.LINE_SUMS
+                "appcommands" -> if (row.id.startsWith(SearchEngine.IN_APP)) FirstRun.LINE_SEARCH else "commands"
                 "web" -> "web"
                 "answers" -> if (row.id == "answer:color") "color" else "password"
                 "flights" -> "flight"
@@ -86,7 +88,7 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
             key.startsWith("site:") -> "links"
             key.startsWith("prompt:") -> "prompts"
             // Under an app's chip: Play is the `play` line's, Search the line of the search inside an app.
-            key.startsWith(SearchEngine.IN_APP) -> if (row.provider == io.github.kuscher.booklight.providers.Songs.PROVIDER) "play" else "appsearch"
+            key.startsWith(SearchEngine.IN_APP) -> if (row.provider == io.github.kuscher.booklight.providers.Songs.PROVIDER) "play" else FirstRun.LINE_SEARCH
             key.startsWith("own:") -> "own"
             else -> key.takeIf { k -> ids.contains(k) }
         }

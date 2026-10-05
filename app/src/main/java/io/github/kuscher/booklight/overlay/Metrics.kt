@@ -4,6 +4,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.kuscher.booklight.core.Body
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Result
 
@@ -30,6 +31,15 @@ object Metrics {
     val picture = 208.dp
     val cell = 48.dp
     val card = 96.dp
+    /** First run's stage under the field, for the key's step and for a lesson: 8 of air, a row's seat (56), a band of two rows for the keys (112), 8 of air (docs/design/first-run/design.md §4). With the field the panel is 252 dp. */
+    val stage = 184.dp
+    /** The question's stage: 8 of air, the seat (56), then 8, its text on four lines of 20, 20, its two answers (68), 8; and 8 of air (design.md §7). With the field the panel is 324 dp. */
+    val ask = 256.dp
+    /**
+     * First run's welcome under the field: with the field the glass is 468 dp high, the most that fits every Googlebook
+     * (core `FirstRun.WELCOME_SCREEN_DP` is reckoned from it, so a change here needs a change there; docs/design/first-run/design.md §2 and §3).
+     */
+    val welcome = 400.dp
     val pad = 8.dp
     val footer = 36.dp
     val radius = 32.dp
@@ -47,7 +57,8 @@ object Metrics {
     fun rowHeight(r: Result): Dp = when (val b = r.body) {
         is Body.Grid -> cell * gridRows(b) + 16.dp
         is Body.Code -> picture
-        is Body.Slots, is Body.Mono -> tall
+        // (A switch's row has two lines under its name: what the switch does, and when.)
+        is Body.Slots, is Body.Mono, is Body.Switch -> tall
         is Body.Flight -> flight
         is Body.Stream -> if (b.tall) tall + streamLine * 2 else tall
         else -> if (r.kind == Kind.ACTION) action else if (r.answer != null) tall else row
@@ -67,15 +78,24 @@ object Metrics {
 
     fun listHeight(rows: List<Result>): Dp = rows.fold(0.dp) { h, r -> h + gap(r) + rowHeight(r) }
 
+    /**
+     * How tall first run's stage is for the screen [on]: one fixed height for each. [more]: what the question's text needs
+     * beyond its four lines (a long name of a search engine, a large type size): its disclosure is never cut.
+     */
+    fun stage(on: FirstRun.Screen?, more: Dp): Dp = if (on == FirstRun.Screen.Q) ask + more else stage
+
     /** The panel's height for what the model is showing. Must match what [Panel] draws. */
-    fun height(m: OverlayModel): Dp = field + when {
+    fun height(m: OverlayModel): Dp = m.heldHeight ?: (field + when {
+        // First run's welcome: the glass is a stage. (Its show is the list's own height, below; at its landing the height is held for a moment.)
+        m.playing == FirstRun.Playing.WELCOME -> welcome
         m.results.isNotEmpty() -> pad + listHeight(m.results) + pad + footer
-        m.card != null || m.tip != null -> card + pad
+        m.stage != null -> stage(m.stage, m.askMore)
+        m.tip != null -> card + pad
         m.copy != null -> pad + row + pad
         // Under the empty field of an app's chip: the line that offers the app's other action.
         m.otherAct != null -> pad + row + pad
         else -> 0.dp
-    }
+    })
 
     /**
      * How many rows fit under the field on a screen this tall, so the panel never runs off it. Counted as ordinary rows,

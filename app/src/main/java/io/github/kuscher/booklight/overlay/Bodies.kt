@@ -343,6 +343,31 @@ fun qr(text: String): BitMatrix? = runCatching {
     QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 0, 0, mapOf(EncodeHintType.MARGIN to 0, EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M, EncodeHintType.CHARACTER_SET to "UTF-8"))
 }.getOrNull()
 
+/**
+ * A switch at a row's end (docs/design/design-system.md §3): its state as a word, 12 dp before an 18 dp thumb in a
+ * 44 × 24 dp track. On: the track at full ink, the thumb in the ground's colour, at the right. Off: the track at rest,
+ * the thumb in ink, at the left. The thumb travels on a spring, the track's fill changes in a fade, the word rolls. It
+ * shows the state and takes no pointer of its own: the row has the key and the click.
+ */
+@Composable
+fun PanelSwitch(b: Body.Switch) {
+    val scheme = MaterialTheme.colorScheme
+    val motion = LocalMotion.current
+    val rest = scheme.onSurface.copy(alpha = if (LocalDark.current) 0.24f else 0.20f)
+    val at by animateFloatAsState(if (b.on) 1f else 0f, motion.pop(), label = "thumb")
+    val filled by animateFloatAsState(if (b.on) 1f else 0f, motion.fade(120), label = "track")
+    AnimatedContent(b.word, transitionSpec = { motion.roll() }, contentAlignment = Alignment.CenterEnd, label = "state") {
+        Text(it, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1, softWrap = false)
+    }
+    Box(Modifier.padding(start = 12.dp).size(44.dp, 24.dp).drawBehind {
+        drawRoundRect(androidx.compose.ui.graphics.lerp(rest, scheme.onSurface, filled), cornerRadius = CornerRadius(size.height / 2))
+        // (3 dp inside the track at either end: the spring's small overshoot stays inside it.)
+        val r = 9.dp.toPx()
+        val from = 3.dp.toPx() + r
+        drawCircle(androidx.compose.ui.graphics.lerp(scheme.onSurface, scheme.surfaceContainerLowest, filled), r, Offset(from + (size.width - 2 * from) * at, size.height / 2))
+    })
+}
+
 /** A swatch of one colour, with a hairline so white and black still have an edge. */
 @Composable
 fun Swatch(argb: Int, ink: Color, size: androidx.compose.ui.unit.Dp = 40.dp, radius: androidx.compose.ui.unit.Dp = 12.dp) {

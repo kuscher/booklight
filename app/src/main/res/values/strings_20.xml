@@ -212,6 +212,7 @@
         <item>play|controls|music|play|play lofi|Play|In the music app you played in last. Also: play album …, play … on spotify. Or on a music app’s row: Tab to Play, Enter, then the name</item>
         <item>media|controls|pause||pause|Media keys|pause, play, stop, next, previous: for whatever is playing</item>
         <item>window|booklight|booklight||booklight|Booklight’s window|Settings, and your links, snippets, recipes, prompts and app commands</item>
+        <item>first|booklight|again||first steps|First steps|The key, three things to try and your choices, once more, here in the panel</item>
     </string-array>
 
     <!-- Tips -->

@@ -11,6 +11,9 @@ for such a text. The Booklight window › What Booklight keeps › Forget
 everything clears what it has learned. If you turn on Show your usual, the empty panel shows the two things you
 run most from Booklight and the one you ran last. This uses the same record; the only new things kept are the
 switch, which two things had the first two rows last time, and the list of things you asked not to be suggested.
+Booklight also keeps where its first steps stand: which of them are done, in how many openings they have stood,
+how often the system's Keyboard shortcuts dialog was opened from them, and whether the app's icon has shown the
+panel once.
 
 **Notes** you jot down go into files (Notes.md, Todo.md, a file per day if you ask for one) in a folder
 you choose once. Booklight reads and writes in that folder only, and reads it only when you search your
@@ -27,8 +30,19 @@ to play) are not sent. An app's name followed by other words, typed in one go (`
 web search like any other and is sent, until you have picked that app's own row for such a text: from then
 on the app comes first for words after its name, and they are not sent (picking the web's row twice running
 makes it a web search again). No cookies or identifiers are added; like any
-internet request it shows the search engine your IP address. Turn suggestions off again in the
-Booklight window › Web search.
+internet request it shows the search engine your IP address. Booklight asks in its first steps ("Suggest
+searches as you type?"), whenever they come to that question while suggestions are off (an installation that was
+there before and is only shown the step for the key is never asked), and only "Agree" there, or the switch
+in the Booklight window, turns them on: Enter alone, Esc and waiting agree to nothing. Turn suggestions off again
+in the Booklight window › Web search.
+
+**The first steps** send nothing and open nothing. In the welcome Booklight types into its own field and shows
+your own apps for one letter, a sum, a flight and the emoji grid: nothing of that is opened, looked up, sent or
+kept, and the flight is an example that Booklight carries and that says so. In the three things to try, an app's
+row and a search inside an app are practice and start nothing; the sum's answer is copied, as on any day. To quote
+the two buttons of the system's Keyboard shortcuts dialog and the name of the key it suggests, Booklight reads
+those words from the system's own resources, as any app reads a label, and it asks which keyboards are attached
+and whether they have the Quick Insert key. Neither needs a permission, and nothing of either is kept or sent.
 
 **Flights: nothing is sent unless you put in a key of your own.** A flight number you type (`LH455`) is
 read on the device: Booklight carries a table of airlines, names the airline, and Enter opens the

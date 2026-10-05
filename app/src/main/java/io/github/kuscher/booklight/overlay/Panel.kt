@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
@@ -22,6 +23,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
@@ -65,6 +68,7 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -82,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.Body
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.Fonts
@@ -103,6 +108,12 @@ data class Arrival(val unfold: Boolean, val slow: Float) {
     val leave: Float get() = if (slow >= 4f) 2f else 1f
     /** How long the panel takes to leave, for the activity to wait before finishing. */
     val leaveMs: Long get() = if (unfold) ((FOLD_MS + LEAVE_WAIT_MS) * leave).toLong() + 20 else Motion.LEAVE_MS
+    /**
+     * How long after the gate the band of a screen of first run begins that is set down as the panel opens: when the
+     * glass is at rest, and 120 ms after the gate at the least (docs/design/first-run/motion.md §3, "Clocks": 120 ms at
+     * Fast, about 163 at Medium, 325 at Slow).
+     */
+    val bandAfter: Int get() = if (unfold) maxOf(Motion.BAND_AFTER_MS, (Motion.GATE_TO_REST_MS * slow).toInt()) else Motion.BAND_AFTER_MS
 
     companion object {
         /** From the setting: `off` is 1.0's small settle and fade; `fast`, `medium` and `slow` unfold. */
@@ -127,13 +138,8 @@ data class Arrival(val unfold: Boolean, val slow: Float) {
 private fun landed(v: Float) = 1f - abs(1f - v)
 private fun smooth(a: Float, b: Float, x: Float): Float { val t = ((x - a) / (b - a)).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
 
-/** The seam the glass opens out of, as a width. */
+/** The seam the glass opens out of, as a width. (Its curves, `SEAM_GROWS`, `SEAM_DRAWS_IN` and `FOLDS`, are in `Motion.kt`: first run's welcome makes the same moves with its light.) */
 private val SEAM = 6.dp
-private val SEAM_GROWS = CubicBezierEasing(0.2f, 0f, 0f, 1f)
-/** [SEAM_GROWS] run backwards. */
-private val SEAM_DRAWS_IN = CubicBezierEasing(1f, 0f, 0.8f, 1f)
-/** The glass closing: the opening spring's way from the seam to full width, backwards (it lands softly on the seam; the bounce is left out). */
-private val FOLDS = CubicBezierEasing(0.45f, 0f, 0.4f, 1f)
 
 @Composable
 fun Panel(
@@ -148,11 +154,14 @@ fun Panel(
     onHeight: (Dp) -> Unit,
     /** How far the room has dimmed and how far the glass has come into focus, each 0 to 1: the window's dim and blur follow. */
     onPresence: (dim: Float, blur: Float) -> Unit,
+    /** First run's opening piece: how far the desk behind the panel is to dim for this frame, 0 to 1. Called only in a panel that began with the piece. */
+    onDesk: (Float) -> Unit,
     /** Asked by the window before each frame is drawn: where the glass stands (its blur and its shadow follow it), and how much of its shadow it casts. */
     frame: GlassFrame,
     /** Runs an action; [stay]: Shift was held, keep the panel open. */
     onRun: (Result, Action, stay: Boolean) -> Unit,
-    onCard: (Card, primary: Boolean) -> Unit,
+    /** An answer on first run's stage. */
+    onStage: (FirstRun.Answer) -> Unit,
     onClose: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -160,14 +169,12 @@ fun Panel(
     val density = LocalDensity.current
     val focus = remember { FocusRequester() }
     var field by remember { mutableStateOf(TextFieldValue("")) }
-    var cardChoice by remember { mutableIntStateOf(0) }
     // Text set by the model (a scope entered, the last text restored, the debug hook) lands in the field too.
     LaunchedEffect(model.query) { if (field.text != model.query) field = TextFieldValue(model.query, TextRange(model.query.length)) }
     LaunchedEffect(Unit) { focus.requestFocus() }
-    LaunchedEffect(model.card) { cardChoice = 0 }
 
     // The window follows the panel on a spring: taller as rows arrive, never moving its top edge. The opening itself is
-    // always the field's height: whatever is under the field (a card, rows for text another app handed over) arrives
+    // always the field's height: whatever is under the field (first run's stage, rows for text another app handed over) arrives
     // once the glass is nearly open, never as part of the opening.
     var gate by remember { mutableStateOf(!arrival.unfold) }
     val height by animateDpAsState(if (gate) Metrics.height(model) else Metrics.field, motion.place(), label = "height")
@@ -200,6 +207,9 @@ fun Panel(
     val view = androidx.compose.ui.platform.LocalView.current
     val said = stringResource(R.string.a11y_usual, model.results.takeIf { model.zeroUp }.orEmpty().joinToString(", ") { it.title })
     LaunchedEffect(model.zeroUp) { if (model.zeroUp) view.announceForAccessibility(said) }
+    // So do first run's choices; its ending is only a placeholder, and so is the word that the steps wait in the window: a
+    // screen reader is told of each, once.
+    if (model.choicesUp || model.ended || model.later) ChoicesSaid(model)
     // The seam the glass grows out of, and draws back into, lies on the field's centre line whatever the panel's height.
     val seamPx = with(density) { Metrics.field.toPx() * 0.1f }
     val fieldPx = with(density) { Metrics.field.toPx() }
@@ -275,6 +285,10 @@ fun Panel(
     fun outlineDp() = 2f * (Metrics.width.value + height.value)
     LaunchedEffect(gate, leaving) {
         if (!motion.on || !gate || leaving) return@LaunchedEffect
+        // A panel that began with first run's opening piece has no lap of its own: none while the welcome stands, and the one
+        // the show asks for afterwards (below). Nor has a panel that opens on a screen of first run: there the lap is the
+        // reward that first run asks for itself, when the key lands and when the run folds to the bare field.
+        if (model.began || model.due != null) return@LaunchedEffect
         val since = SystemClock.uptimeMillis()
         var came = false
         var first = true
@@ -288,6 +302,11 @@ fun Panel(
             val open = SystemClock.uptimeMillis() - since
             delay(motion.hold(maxOf(Motion.REFLECTION_QUIET_MS, Motion.REFLECTION_AFTER_MS - open)))
             if (model.working || think.value > 0f || thought) return@collectLatest
+            // Asked again, now that the wait is over: first run may have come into this panel since the gate ("First steps"
+            // typed there), and may be over again. Where it stands, or has asked for a lap of its own, this panel has no
+            // idle lap any more: over a stage it would be in the way of the lap first run asks for (that one is dropped
+            // while another runs), and after the fold it would set the fold's own lap off a second time.
+            if (model.began || model.due != null || model.laps > 0) { came = true; return@collectLatest }
             came = true
             // Its own job: what happens next must not stop it where it stands.
             laps.launch {
@@ -300,6 +319,28 @@ fun Panel(
                 } finally { lapping = false }
             }
         }
+    }
+    // First run asks for the light itself (`OverlayModel.laps`): its show once the grid's cells have come (core `Show.script`'s
+    // own cue, by which the show's landing is timed); "Your key works" once the key on the glass has come up; the fold to
+    // the bare field. One lap each, as built.
+    // Booklight's own typing and moves do not put it out; any key of the user's does, in 160 ms. Composed only in a panel
+    // that began with the piece, or in which first run has asked for a lap.
+    if (model.began || model.laps > 0) {
+        LaunchedEffect(Unit) {
+            snapshotFlow { model.laps }.collect { asked ->
+                if (asked == 0 || !motion.on || lapping) return@collect
+                laps.launch {
+                    lapping = true
+                    try {
+                        flourish.snapTo(1f); run.snapTo(0f)
+                        val ms = (outlineDp() * Motion.REFLECTION_MS_PER_DP).toInt().coerceAtMost(Motion.REFLECTION_MAX_MS)
+                        run.animateTo(1f, motion.fade(ms, easing = Motion.REFLECTS))
+                        run.snapTo(0f)
+                    } finally { lapping = false }
+                }
+            }
+        }
+        LaunchedEffect(Unit) { snapshotFlow { stir }.collect { if (lapping) flourish.animateTo(0f, motion.fade(160)) } }
     }
     LaunchedEffect(leaving) { present.animateTo(if (leaving) 0f else 1f, motion.fade(if (leaving) 90 else 160)) }
     /** The lap's own brightness: in over its first twentieth, out over its last fifth. */
@@ -352,15 +393,26 @@ fun Panel(
 
     /** The Escape that is down went back from an answer: its repeats do nothing more. */
     val leftAnswer = remember { booleanArrayOf(false) }
+    /** The key that is down was used up by first run's opening piece (its key code; 0: none): its repeats do nothing more. */
+    val spent = remember { intArrayOf(0) }
 
     fun keys(e: KeyEvent): Boolean {
         if (e.type != KeyEventType.KeyDown) return false
         stir++   // any key is something happening: the reflection waits for quiet, and gives way
-        val card = model.card
-        val atEnd = field.selection.collapsed && field.selection.end == field.text.length
-        val enter = e.key == Key.Enter || e.key == Key.NumPadEnter
+        // (Which keyboard the keys come from says which key first run suggests.)
+        model.keyboard = e.nativeKeyEvent.deviceId
         // A key that is held repeats. Whatever runs something takes one press for one run: a held Enter must not confirm its own delete.
         val again = e.nativeKeyEvent.repeatCount > 0
+        // First run's opening piece takes every key first (core `FirstRun.pressed`): only a typed character goes on, to the
+        // field, and the piece is over by then. A key the piece has used up does nothing more for as long as it is held: one
+        // press, one step, and a held Esc that skipped the show does not go on to close the panel.
+        if (!again) spent[0] = 0
+        if (again && spent[0] != 0 && spent[0] == e.nativeKeyEvent.keyCode) return true
+        // (Not a key that is the system's own: the volume, the brightness, a media key go where they go on any day.)
+        if (model.playing != null && !e.nativeKeyEvent.isSystem && model.press(pressOf(e), again)) { spent[0] = e.nativeKeyEvent.keyCode; return true }
+        val stage = model.stage
+        val atEnd = field.selection.collapsed && field.selection.end == field.text.length
+        val enter = e.key == Key.Enter || e.key == Key.NumPadEnter
         val bare = !e.isShiftPressed && !e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed
         // A waiting confirmation is cancelled by any key but Enter; Esc then only cancels.
         if (!enter && model.cancelConfirm() && e.key == Key.Escape) return true
@@ -374,21 +426,22 @@ fun Panel(
             Key.DirectionDown -> { model.down(again); true }
             Key.DirectionUp -> { model.up(again); true }
             Key.Enter, Key.NumPadEnter -> {
-                if (!again) { if (card != null) onCard(card, cardChoice == 0) else if (model.tip != null) model.tipEnter() else model.enter { row, a -> go(row, a, e.isShiftPressed) } }
+                if (!again) { if (stage != null) model.stageEnter(e.nativeKeyEvent.eventTime)?.let(onStage) else if (model.tip != null) model.tipEnter() else model.enter(e.nativeKeyEvent.eventTime) { row, a -> go(row, a, e.isShiftPressed) } }
                 true
             }
             Key.Tab -> {
                 when {
-                    card != null -> if (!again) cardChoice = 1 - cardChoice
+                    stage != null -> if (!again) model.stageTab(e.isShiftPressed, e.nativeKeyEvent.eventTime)
                     model.tip != null -> if (!again) model.tipTab()
                     // The usual rows at rest, where nothing is selected: Tab is Down. It acts on what is on screen.
                     // (Not in the frames between a typed letter, or a scope entered, and its list: those rows are on their way out.)
-                    model.zeroUp && model.current == null && model.chip == null && model.query.isBlank() -> if (!again && !e.isShiftPressed) model.down(false)
+                    // (So do first run's choices.)
+                    model.atRest && model.chip == null && model.query.isBlank() -> if (!again && !e.isShiftPressed) model.down(false)
                     // The copy's line, or the empty field before the line has come: Tab opens what was copied.
                     model.copy != null || model.bare -> if (!again && !e.isShiftPressed) model.tabCopy()
                     // The text is exactly a keyword and nothing has been moved: Tab makes it the chip. Text and chip change in one frame.
                     model.keyword != null && !e.isShiftPressed -> if (!again && model.enterKeyword()) field = TextFieldValue("")
-                    entersScope && !e.isShiftPressed -> if (!again) model.fill()
+                    entersScope && !e.isShiftPressed -> if (!again) model.fill(e.nativeKeyEvent.eventTime)
                     // A row is open: Tab is the next of its actions, wrapping inside them.
                     model.opened != null -> model.step(if (e.isShiftPressed) -1 else 1)
                     // The empty field under an app's chip: Tab changes to the app's other action, and the placeholder with it.
@@ -404,7 +457,7 @@ fun Panel(
                 !atEnd || !bare -> false
                 r?.body is Body.Grid -> model.moveCell(1, 0)
                 model.nudge(1) -> true
-                entersScope -> { if (!again) model.fill(); true }
+                entersScope -> { if (!again) model.fill(e.nativeKeyEvent.eventTime); true }
                 model.opened != null -> true                                  // nowhere to go from an action's row
                 // On Window or on the arrow, Right again opens that stop's list (a press of its own: a held key stops there).
                 model.onList != null -> { if (!again) model.open(); true }
@@ -430,7 +483,7 @@ fun Panel(
                 // Ctrl+1…9 runs that row's first action straight away (never one that removes something: those are never first).
                 val n = DIGITS.indexOf(e.key)
                 if (n >= 0 && e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed) {
-                    if (!again) model.runRow(n) { row, a -> go(row, a, false) }
+                    if (!again) model.runRow(n, e.nativeKeyEvent.eventTime) { row, a -> go(row, a, false) }
                     true
                 } else false
             }
@@ -438,8 +491,12 @@ fun Panel(
     }
 
     val radiusPx = with(density) { Metrics.radius.toPx() }
+    /** First run's welcome: how far the glass has gone to night, written by the welcome for each frame and read where the glass is drawn. */
+    val night = remember { Night() }
     BoxWithConstraints(Modifier.fillMaxSize().onPreviewKeyEvent(::keys)) {
         val full = maxWidth
+        // First run's question: how much room its text needs is measured as soon as it is due, before its screen stands.
+        if (model.due == FirstRun.Screen.Q) AskRoom(model, full)
         // The window as it stands in this frame. It follows the height's spring a frame behind (a window is resized through
         // the system), and its blur is the whole of it: so the glass and what is in it are sized from the window, never from
         // the spring, or a list that shrinks would leave a strip of blur with no glass on it under the panel.
@@ -458,11 +515,20 @@ fun Panel(
                     tint = if (glass) scheme.surfaceContainerLowest.copy(alpha = if (dark) Look.tintDark else Look.tintLight) else scheme.surfaceContainerHigh,
                     radiusPx = radiusPx, density = density.density,
                     run = { run.value }, glow = ::glow, tail = ::tail,
-                    dark = dark, solid = !glass,
+                    dark = dark, solid = !glass, veil = { night.veil }, rim = { night.rim },
                 )
                 .clip(RoundedCornerShape(Metrics.radius)),
         ) {
             CompositionLocalProvider(LocalDark provides dark, LocalGlass provides glass) {
+                // First run's opening piece draws under the field and the rows, in a layer of the glass's own: laid out once, as
+                // wide as the panel and as high as the welcome's glass, placed as the contents are, uncovered by the glass as it
+                // grows and cut by its edge: nothing of it is outside the glass. It lets go with the contents when the panel
+                // leaves. Composed only in a panel that began with the piece.
+                if (model.began) Box(
+                    Modifier.wrapContentSize(Alignment.TopCenter, unbounded = true).requiredSize(full, Metrics.field + Metrics.welcome)
+                        .offset { IntOffset(0, -glassTop()) }
+                        .graphicsLayer { alpha = shown() },
+                ) { Piece(model, gate, ::ends, night, onDesk) }
                 // Laid out once at the panel's width and only uncovered: it never moves on screen while the glass grows.
                 Column(
                     Modifier.wrapContentSize(Alignment.TopCenter, unbounded = true).requiredWidth(full)
@@ -475,6 +541,20 @@ fun Panel(
                         // was entered, the last text came back, and the editor hears of it a frame later. A key can be
                         // quicker ("fix " and a "t", after "fix" has become the chip). What was typed is what the edit
                         // added to the old text; any other edit of a text that is no longer there is dropped.
+                        // First run's opening piece ends for a typed character by whichever way it comes: a key has ended it in
+                        // `keys` already; text the input method puts together arrives only here. Booklight's own text is then
+                        // gone from the model, and what the edit added is the whole text.
+                        // (Only for a change of the text: the input method also reports where the caret stands, and it does so after
+                        // the show's own letters. That is no typed character, and must not end the show.)
+                        // (A space is the cue, as the Space key is: it types nothing, by this way either.)
+                        if (model.playing != null && v.text != held.text) {
+                            if (v.text.startsWith(held.text) && v.text.drop(held.text.length).isBlank()) {
+                                model.press(FirstRun.Press.ENTER)
+                                field = TextFieldValue(model.query, TextRange(model.query.length))
+                                return@change
+                            }
+                            model.press(FirstRun.Press.TYPES)
+                        }
                         val text = model.query
                         val now = when {
                             held.text == text -> v
@@ -487,11 +567,15 @@ fun Panel(
 
                     val body = when {
                         model.results.isNotEmpty() -> "results"
-                        model.card != null -> "card:${model.card}"
+                        model.stage != null -> "first"
                         model.tip != null -> "tip"
                         else -> "none"
                     }
                     val rows = body == "results"
+                    // The stage that stood is drawn on while it fades where it stood (a letter typed over it, the choices in the
+                    // question's place, "Not now"): the model has none by then.
+                    val stood = remember { arrayOfNulls<FirstRun.Screen>(1) }
+                    model.stage?.let { stood[0] = it }
                     val footerPx = with(density) { (Metrics.footer + Metrics.pad).roundToPx() }
                     // The footer comes and goes as a fade, and keeps its band at the window's lower edge for as long as any of it shows.
                     val foot = androidx.compose.animation.core.animateFloatAsState(if (rows) 1f else 0f, motion.fade(if (rows) 140 else 70), label = "footer")
@@ -526,13 +610,17 @@ fun Panel(
                     ) {
                         AnimatedContent(
                             targetState = body,
-                            transitionSpec = { (fadeIn(motion.fade(140)) togetherWith fadeOut(motion.fade(70))).using(null) },
+                            // (First run's show begins with the welcome's handle in row one's seat: its list is there in the very frame
+                            // the handle is drawn no more, the pill in that seat with row one in it, and the other rows rise. It comes
+                            // with no transition at all: even one that cuts needs a frame to begin, and in that frame the seat stood
+                            // empty, or without a highlight.)
+                            transitionSpec = { ((if (model.playing == FirstRun.Playing.SHOW && initialState == "none") EnterTransition.None else fadeIn(motion.fade(140))) togetherWith fadeOut(motion.fade(70))).using(null) },
                             contentAlignment = Alignment.TopStart,
                             label = "body",
                         ) { state ->
                             when {
                                 state == "results" -> ResultsBody(model, icons) { r, a -> go(r, a, false) }
-                                state.startsWith("card") -> model.card?.let { CardBody(it, model, cardChoice, onChoice = { c -> cardChoice = c }, onCard = onCard) }
+                                state == "first" -> (model.stage ?: stood[0])?.let { FirstStage(model, it, onStage) }
                                 state == "tip" -> TipBody(model)
                                 else -> Spacer(Modifier.fillMaxWidth())
                             }
@@ -548,6 +636,16 @@ fun Panel(
                     fun band() = smooth(0.75f, 1f, ((windowPx - fieldPx - seatPx) / footerPx).coerceIn(0f, 1f))
                     if (rows || foot.value > 0f) Box(Modifier.graphicsLayer { alpha = foot.value * edges() * band() }) { Footer(model) }
                 }
+                // While first run's opening piece plays, the glass takes every click itself, and no row is hovered or clicked: on
+                // the welcome's handle a click is the cue, anywhere else it sets the key's step down (core `FirstRun.pressed`).
+                if (model.playing != null) Box(Modifier.matchParentSize().pointerInput(Unit) {
+                    detectTapGestures { at ->
+                        // (In the stage's own measures: dp of a panel 720 wide.)
+                        val unit = size.width / Metrics.width.value
+                        val cue = model.playing == FirstRun.Playing.WELCOME && model.cueUp && onHandle(at.x / unit, at.y / unit)
+                        model.press(if (cue) FirstRun.Press.CUE else FirstRun.Press.OTHER)
+                    }
+                })
             }
         }
     }
@@ -557,7 +655,7 @@ fun Panel(
 private const val TIP_AFTER_MS = 320L
 
 /**
- * A tip: the first-run card's shape. The feature's own mark, its name, one line that begins with
+ * A tip: a card under the empty field. The feature's own mark, its name, one line that begins with
  * what to type (in full ink: it is what "Try it" types), and two answers. Neither answer is armed at
  * rest, so Enter on an empty panel still does nothing; a `tab` cap says how to get to them. Its
  * parts rise in one after the other, once the panel has made room.
@@ -607,30 +705,22 @@ private fun TipBody(model: OverlayModel) {
 
 private val DIGITS = listOf(Key.One, Key.Two, Key.Three, Key.Four, Key.Five, Key.Six, Key.Seven, Key.Eight, Key.Nine)
 
-/** The first-run card: one small step under the field, only while nothing is typed. Its two answers are one option strip. */
-@Composable
-private fun CardBody(card: Card, model: OverlayModel, choice: Int, onChoice: (Int) -> Unit, onCard: (Card, Boolean) -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    val engine = model.settings.engine()
-    val (title, text, yes, no) = when (card) {
-        Card.SHORTCUT -> listOf(stringResource(R.string.card_shortcut_title), stringResource(R.string.card_shortcut_text),
-            stringResource(R.string.card_shortcut_action), stringResource(R.string.card_done))
-        Card.SUGGESTIONS -> listOf(stringResource(R.string.card_suggest_title), stringResource(R.string.card_suggest_text, engine.name),
-            stringResource(R.string.card_suggest_on), stringResource(R.string.card_not_now))
-    }
-    Row(
-        Modifier.padding(horizontal = Metrics.pad).fillMaxWidth().height(Metrics.card)
-            // No plate of its own: a box inside the glass would read as a second rim.
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(36.dp).clip(CircleShape).background(scheme.primary.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
-            Icon(Symbols.booklight, null, Modifier.size(20.dp), tint = scheme.primary)
-        }
-        Column(Modifier.weight(1f).padding(start = 16.dp, end = 14.dp)) {
-            Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight(600)), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(text, color = scheme.onSurface.copy(alpha = SECOND), style = TextStyle(fontFamily = Fonts.text, fontSize = 13.sp, fontWeight = FontWeight(500), lineHeight = 17.sp), maxLines = 3, overflow = TextOverflow.Ellipsis)
-        }
-        OptionStrip(listOf(yes, no), choice, onChoose = onChoice, onRun = { onCard(card, it == 0) }, vertical = true)
-    }
+/** Keys that are nothing to first run's opening piece: the locks, and the Quick Insert key, which shares its place with Caps Lock on a Googlebook. */
+private val LOCKS = intArrayOf(
+    android.view.KeyEvent.KEYCODE_CAPS_LOCK, android.view.KeyEvent.KEYCODE_NUM_LOCK, android.view.KeyEvent.KEYCODE_SCROLL_LOCK,
+    android.view.KeyEvent.KEYCODE_CONTEXTUAL_INSERT,
+)
+
+/**
+ * A key as first run's opening piece sees it (core `FirstRun.Press`). A key that types is one that puts a character into
+ * the field as it is pressed now: not Enter, Tab, Esc or Backspace, and not with Ctrl or Alt held. A modifier alone is
+ * nothing, and neither is a key pressed with the Action key: that is the system's. A lock key is nothing either: a touch
+ * of it must not end the show. Space is the key people press to go on: it is the cue as Enter is, and types nothing (a
+ * field that held a space alone would show nothing at all: no step, no list).
+ */
+private fun pressOf(e: KeyEvent): FirstRun.Press = when {
+    android.view.KeyEvent.isModifierKey(e.nativeKeyEvent.keyCode) || e.isMetaPressed || e.nativeKeyEvent.keyCode in LOCKS -> FirstRun.Press.MODIFIER
+    e.key == Key.Enter || e.key == Key.NumPadEnter || e.key == Key.Spacebar -> FirstRun.Press.ENTER
+    !e.isCtrlPressed && !e.isAltPressed && e.key != Key.Tab && e.key != Key.Escape && e.key != Key.Backspace && e.nativeKeyEvent.unicodeChar != 0 -> FirstRun.Press.TYPES
+    else -> FirstRun.Press.OTHER
 }

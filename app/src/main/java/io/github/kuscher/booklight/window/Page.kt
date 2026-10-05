@@ -449,7 +449,7 @@ fun Cap(label: String, ink: Color, large: Boolean = false) {
     ) { Text(label, color = ink, style = MaterialTheme.typography.labelMedium.copy(fontFamily = Fonts.text, fontWeight = FontWeight(600)), maxLines = 1) }
 }
 
-/** A few key caps in a row, with plus signs between them: Action + K. */
+/** A few key caps in a row, with plus signs between them: Action + M. */
 @Composable
 fun Keys(vararg keys: String, ink: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {

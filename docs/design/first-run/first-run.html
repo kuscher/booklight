@@ -1,0 +1,1219 @@
+<title>Booklight first run</title>
+<style>
+/* Layout: one column, 1000 px at most. The prototype is a desk of 1000 x 660 dp drawn at 1 px a dp and scaled to the column; over it the film and the steps, under it the keys pressed and the switches; then short sections. */
+:root {
+  /* the page (the lilac of the earlier pages) */
+  --bg: #F5F3F9; --surface: #FFFFFF; --surface-2: #ECE8F3; --fg: #1D1B20; --muted: #5F5A69; --line: #D9D4E3;
+  --accent: #5B45A0; --accent-soft: #E6DEF8; --on-accent-soft: #2A1F55; --wall: #B9B2CB;
+  --font: "Google Sans Flex", "Google Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* the panel in light theme (design-system.md) */
+  --pl-on: 29 27 32; --pl-veil: 255 255 255; --pl-tint: .42; --pl-rim: .8; --pl-hair: .2; --pl-shade: .26; --pl-sel: 232 222 248; --pl-sela: .78; --pl-rim2: .55;
+  --pl-cap: .1; --pl-capd: .18; --pl-disc: .08; --pl-pane: .62; --pl-dim: .1; --pl-track: .2; --pl-primary: #6750A4; --pl-solid: #ECE6F0; --pl-card: #FFFFFF;
+  /* the panel in dark theme */
+  --pd-on: 230 224 233; --pd-veil: 15 13 19; --pd-tint: .5; --pd-rim: .44; --pd-hair: .28; --pd-shade: .5; --pd-sel: 74 68 88; --pd-sela: .42; --pd-rim2: .3;
+  --pd-cap: .14; --pd-capd: .22; --pd-disc: .12; --pd-pane: .36; --pd-dim: .22; --pd-track: .24; --pd-primary: #D0BCFF; --pd-solid: #2B2930; --pd-card: #1D1B20;
+  /* what is behind the glass, and the stand-in apps' tiles */
+  --opaque: #000; --white: 255 255 255; --black: 0 0 0; --shadow: 8 10 30;
+  --wl-bg: #FFFFFF; --wl-bar: #F1EFF5; --wl-ink: 40 38 48; --wl-edge: #D8D4E0;
+  --wd-bg: #101114; --wd-bar: #1B1C21; --wd-ink: 214 220 232; --wd-edge: #2C2D34;
+  --a1: #4F7BD9; --a2: #D9654F; --a3: #46505F; --a4: #C99A2E; --a5: #3F9C7C;
+  /* the welcome's night, a flight's badge and line, the rounded cut of the answer's type */
+  --night: 10 12 18; --pl-ok: 182 242 190; --pl-onok: #00210A; --pd-ok: 10 82 38; --pd-onok: #B6F2BE; --pl-togo: .5; --pd-togo: .55; --pl-rest: .3; --pd-rest: .34;
+  --round: "Google Sans Flex", ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+  /* Motion.kt. The springs are worked out by the script from their damping and stiffness; these curves stand in where a browser cannot take them. */
+  --slow: 1; --std: cubic-bezier(.4, 0, .2, 1);
+  --dp: 330ms; --ep: cubic-bezier(.22, 1.1, .36, 1); --dq: 380ms; --eq: cubic-bezier(.3, 1.5, .5, 1); --dl: 230ms; --el: cubic-bezier(.3, 1.25, .4, 1);
+  --dt: 340ms; --et: cubic-bezier(.25, .9, .3, 1); --da: 340ms; --ea: cubic-bezier(.25, 1.15, .4, 1); --dpl: 200ms; --epl: cubic-bezier(.3, 1.2, .4, 1); --dpt: 240ms; --ept: cubic-bezier(.25, 1.05, .35, 1); --dpf: 185ms; --epf: cubic-bezier(.25, 1, .3, 1);
+  --tp: calc(var(--dp) * var(--slow)); --tq: calc(var(--dq) * var(--slow)); --tl: calc(var(--dl) * var(--slow)); --tt: calc(var(--dt) * var(--slow)); --ta: calc(var(--da) * var(--slow)); --tpl: calc(var(--dpl) * var(--slow)); --tpt: calc(var(--dpt) * var(--slow)); --tpf: calc(var(--dpf) * var(--slow));
+  --f60: calc(60ms * var(--slow)); --f70: calc(70ms * var(--slow)); --f80: calc(80ms * var(--slow)); --f110: calc(110ms * var(--slow)); --f120: calc(120ms * var(--slow)); --f140: calc(140ms * var(--slow)); --f240: calc(240ms * var(--slow));
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131217; --surface: #1C1A22; --surface-2: #26232E; --fg: #E6E0E9; --muted: #A9A3B5; --line: #37333F;
+  --accent: #CDBBFF; --accent-soft: #3A3158; --on-accent-soft: #E9DFFF; --wall: #3B364A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131217; --surface: #1C1A22; --surface-2: #26232E; --fg: #E6E0E9; --muted: #A9A3B5; --line: #37333F;
+  --accent: #CDBBFF; --accent-soft: #3A3158; --on-accent-soft: #E9DFFF; --wall: #3B364A; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 1rem; line-height: 1.5; margin: 0; padding-inline: 16px; padding-block: 2rem 4rem; -webkit-font-smoothing: antialiased }
+main { max-width: 62.5rem; margin-inline: auto; display: flex; flex-direction: column; gap: 2.4rem; min-width: 0 }
+header { display: flex; flex-direction: column; gap: .6rem }
+h1 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); font-weight: 650; letter-spacing: -.01em; line-height: 1.15; margin: 0; text-wrap: balance }
+h2 { font-size: 1.2rem; font-weight: 650; margin: 0; line-height: 1.3; text-wrap: balance }
+h3 { font-size: 1rem; font-weight: 650; margin: 0; line-height: 1.35 }
+p { margin: 0; max-width: 44rem }
+ul, ol { margin: 0; padding-left: 1.2rem; max-width: 44rem; display: flex; flex-direction: column; gap: .35rem }
+section { display: flex; flex-direction: column; gap: .9rem; min-width: 0 }
+.lede { font-size: 1.08rem }
+.muted { color: var(--muted) }
+a { color: var(--accent); text-underline-offset: .15em }
+code { font-size: .9em }
+.small { font-size: .9rem }
+.scroll { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--surface) }
+table.t { border-collapse: collapse; width: 100%; font-size: .92rem }
+table.t th, table.t td { text-align: left; vertical-align: top; padding: .55rem .8rem; border-bottom: 1px solid var(--line) }
+table.t th { font-weight: 650; white-space: nowrap; background: var(--surface-2) }
+table.t tr:last-child td { border-bottom: 0 }
+.note { background: var(--surface-2); border-radius: 12px; padding: .7rem .9rem; font-size: .92rem; max-width: 44rem }
+.tag { display: inline-block; font-size: .75rem; font-weight: 650; letter-spacing: .02em; padding: .1rem .55rem; border-radius: 999px; background: var(--accent-soft); color: var(--on-accent-soft); vertical-align: middle; white-space: nowrap }
+
+/* the film, the steps, the switches */
+.ctls { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .55rem 1rem; align-items: start; font-size: .9rem }
+.ctls .lbl { font-weight: 650; padding-top: .3rem; white-space: nowrap }
+.seg { display: flex; flex-wrap: wrap; gap: .35rem }
+.seg button { font: inherit; font-weight: 550; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .28rem .8rem; cursor: pointer }
+.seg button:hover { border-color: var(--accent) }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--on-accent-soft); border-color: var(--accent) }
+.seg button.go { background: var(--accent); color: var(--bg); border-color: var(--accent) }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+@media (max-width: 34rem) { .ctls { grid-template-columns: minmax(0, 1fr); gap: .25rem } .ctls .lbl { padding-top: .5rem } }
+.keys { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; min-height: 1.9rem; font-size: .85rem }
+.keys .who { font-weight: 650; color: var(--muted); margin-left: .3rem }
+.keys .k { padding: .08rem .5rem; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--line); font-weight: 550; white-space: nowrap; transition: background-color .3s, color .3s }
+.keys .k.b { background: var(--accent-soft); color: var(--on-accent-soft); border-color: var(--accent-soft) }
+.keys .k.c { border-style: dashed }
+.keys .k.now { background: var(--accent); color: var(--bg); border-color: var(--accent); transition: none }
+#say { min-height: 2.7em }
+
+/* ---- the desk: 1000 x 660 dp at 1 px a dp, scaled as one piece ---- */
+.stagebox { position: relative; aspect-ratio: 1000 / 660; max-width: 100%; border-radius: 20px; border: 1px solid var(--line); overflow: hidden; background: var(--wall) }
+.desk { position: absolute; left: 0; top: 0; width: 1000px; height: 660px; transform-origin: 0 0; transform: scale(var(--k, 1)); overflow: hidden; isolation: isolate; font-size: 17px; line-height: 22px; text-align: left; cursor: default }
+.back-light { --w-bg: var(--wl-bg); --w-bar: var(--wl-bar); --w-ink: var(--wl-ink); --w-edge: var(--wl-edge) }
+.back-dark { --w-bg: var(--wd-bg); --w-bar: var(--wd-bar); --w-ink: var(--wd-ink); --w-edge: var(--wd-edge) }
+.th-light { --on: var(--pl-on); --veil: var(--pl-veil); --tint: var(--pl-tint); --rim: var(--pl-rim); --hair: var(--pl-hair); --shade: var(--pl-shade); --sel: var(--pl-sel); --sela: var(--pl-sela); --rim2: var(--pl-rim2); --cap: var(--pl-cap); --capd: var(--pl-capd); --disc: var(--pl-disc); --pane: var(--pl-pane); --dim: var(--pl-dim); --track: var(--pl-track); --primary: var(--pl-primary); --solid: var(--pl-solid); --card: var(--pl-card); --ok: var(--pl-ok); --onok: var(--pl-onok); --togo: var(--pl-togo); --rest: var(--pl-rest) }
+.th-dark { --on: var(--pd-on); --veil: var(--pd-veil); --tint: var(--pd-tint); --rim: var(--pd-rim); --hair: var(--pd-hair); --shade: var(--pd-shade); --sel: var(--pd-sel); --sela: var(--pd-sela); --rim2: var(--pd-rim2); --cap: var(--pd-cap); --capd: var(--pd-capd); --disc: var(--pd-disc); --pane: var(--pd-pane); --dim: var(--pd-dim); --track: var(--pd-track); --primary: var(--pd-primary); --solid: var(--pd-solid); --card: var(--pd-card); --ok: var(--pd-ok); --onok: var(--pd-onok); --togo: var(--pd-togo); --rest: var(--pd-rest) }
+.win { position: absolute; left: 30px; right: 30px; top: 16px; bottom: -40px; border-radius: 14px; background: var(--w-bg); border: 1px solid var(--w-edge); overflow: hidden; color: rgb(var(--w-ink)) }
+.win::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 30px; background: var(--w-bar); border-bottom: 1px solid var(--w-edge) }
+.win i { position: absolute; left: 34px; height: 7px; border-radius: 3px; background: rgb(var(--w-ink) / .42) }
+.win i.h { height: 14px; background: rgb(var(--w-ink) / .7) }
+/* the stand-in app the lessons open */
+.app { left: 90px; right: 90px; top: 40px; opacity: 0; transform: scale(.97); transition: opacity var(--f140) var(--std), transform var(--f240) var(--std) }
+.app.on { opacity: 1; transform: none }
+.app b { position: absolute; left: 16px; top: 4px; font-size: 13px; font-weight: 600; opacity: .8 }
+.aq { position: absolute; left: 230px; right: 230px; top: 46px; height: 34px; border-radius: 17px; background: rgb(var(--w-ink) / .1); padding: 0 16px; line-height: 34px; font-size: 14px }
+.ag { position: absolute; left: 34px; right: 34px; top: 104px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px }
+.ag u { display: block; aspect-ratio: 16 / 9; border-radius: 10px; background: rgb(var(--w-ink) / .14) }
+.app.res .ag { grid-template-columns: 1fr; gap: 14px } .app.res .ag u { aspect-ratio: auto; height: 78px; width: 58% }
+/* the desk dimmed behind the opening: by half in the welcome's night, a little through the show; it lifts over 640 ms */
+.dim { position: absolute; z-index: 1; inset: 0; background: rgb(var(--black) / .5); opacity: var(--do, 0); transition: opacity calc(640ms * var(--slow)) var(--std) }
+.desk.wl .dim { transition: none }
+
+/* the panel: 720 wide. Lines: x = 38 (marks), 72 (text), 700 (right ends); y = 76, 104, 160, 188, 216, 230 */
+.panel { position: absolute; z-index: 2; left: 500px; top: 110px; width: 720px; height: var(--h, 68px); transform: translateX(-50%); border-radius: 32px; overflow: hidden; color: rgb(var(--on));
+  background: rgb(var(--veil) / var(--tint)); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px);
+  box-shadow: inset 0 0 0 1.25px rgb(var(--white) / var(--rim)), 0 0 0 1px rgb(var(--black) / var(--hair)), 0 26px 50px -22px rgb(var(--shadow) / var(--shade)); transition: height var(--tp) var(--ep) }
+.panel.gone { visibility: hidden }
+.pin, .foot, .lap { position: absolute; left: 50%; margin-left: -360px; width: 720px }
+.pin { top: 0; height: 480px }
+.desk svg.i { width: 20px; height: 20px; fill: currentColor; fill-rule: evenodd; display: block; flex: none }
+.fk { height: 22px; min-width: 22px; padding: 0 7px; border-radius: 7px; background: rgb(var(--on) / var(--cap)); display: inline-grid; place-items: center; font-size: 12px; font-weight: 500; letter-spacing: .1px; line-height: 16px; color: rgb(var(--on) / .8); flex: none }
+.fk svg.i { width: 13px; height: 13px }
+.fk.st { height: 24px; min-width: 24px; color: rgb(var(--on)) }
+/* the one highlight of a list and of the opening: its four edges are set in the panel's dp and each rides its own spring */
+.hi { position: absolute; left: var(--l, 8px); top: var(--t, 76px); right: var(--r, 8px); bottom: var(--b, 348px); border-radius: var(--q, 24px); background: rgb(var(--sel) / var(--sela)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)); opacity: 0; transition: opacity var(--f120) var(--std) }
+.hi.on { opacity: 1 }
+/* the field, 68: the mark centred on 38, the text from 72, the placeholder from 74, the esc cap ending at 700 */
+.fld { position: absolute; left: 0; top: 0; width: 720px; height: 68px }
+.fm { position: absolute; left: 20px; top: 16px; width: 36px; height: 36px; display: grid; place-items: center; font-size: 24px; font-weight: 600; transition: opacity var(--f110) var(--std), transform var(--tq) var(--eq) }
+.fm svg.i { width: 22px; height: 22px }
+.chip { position: absolute; left: 20px; top: 16px; height: 36px; border-radius: 18px; padding: 0 14px 0 8px; display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; background: rgb(var(--on) / var(--cap)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)); opacity: 0; transform: scale(.8); transform-origin: 18px 50%; transition: opacity var(--f80) var(--std), transform var(--f80) var(--std) }
+.fld.sc .chip { opacity: 1; transform: none; transition: opacity var(--f110) var(--std), transform var(--tp) var(--ep) }
+.fld.sc .fm { opacity: 0; transform: scale(.6); transition: opacity var(--f80) var(--std), transform var(--f80) var(--std) }
+.ft { position: absolute; left: var(--tx, 72px); top: 0; height: 68px; display: flex; align-items: center; font-size: 24px; font-weight: 500; line-height: 32px; white-space: pre; transition: left var(--tp) var(--ep) }
+.caret { width: 2px; height: 30px; background: var(--primary); border-radius: 1px; margin-left: 1px; animation: blink 1.06s steps(1) infinite }
+@keyframes blink { 50% { opacity: 0 } }
+.ph { position: absolute; left: calc(var(--tx, 72px) + 2px); top: 0; line-height: 68px; font-size: 24px; font-weight: 400; color: rgb(var(--on) / .6); white-space: nowrap; transition: opacity var(--f140) var(--std), left var(--tp) var(--ep) }
+.ph.off { opacity: 0; transition: opacity var(--f60) var(--std) }
+.ph.gone { opacity: 0; transition: none }
+.fesc { position: absolute; right: 20px; top: 23px; min-width: 36px; transition: opacity var(--f120) var(--std) var(--f120), color var(--f80) var(--std), background-color var(--f80) var(--std) }
+.panel[data-v="l"] .fesc { opacity: 0; transition: opacity var(--f120) var(--std) }
+/* what stands under the field: the stage (s), the question (q), a list (l). One at a time; it fades where it stands */
+.ly { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity var(--f70) var(--std), visibility 0s var(--f70) }
+.ly.q { transition: opacity var(--f80) var(--std), visibility 0s var(--f80) }
+.panel[data-v="s"] .ly.s, .panel[data-v="q"] .ly.q, .panel[data-v="l"] .ly.l { opacity: 1; visibility: visible; transition: opacity var(--f140) var(--std) }
+.panel.both .ly.l { opacity: 1; visibility: visible }
+/* a part that rises: 12 dp on place, fade 140 */
+.pt { opacity: 0; transform: translateY(12px) }
+.pt.in { opacity: 1; transform: none; transition: opacity var(--f140) var(--std), transform var(--tp) var(--ep) }
+.out { opacity: 0 !important; transition: opacity var(--f80) var(--std) !important }
+/* seat 1: y 76 to 132, centre line 104 */
+.disc { position: absolute; left: 20px; top: 86px; width: 36px; height: 36px; border-radius: 50%; background: rgb(var(--on) / var(--disc)); display: grid; place-items: center; color: rgb(var(--on) / .8) }
+.disc svg { transition: opacity var(--f110) var(--std), transform var(--tq) var(--eq) }
+.disc svg.sw { opacity: 0; transform: scale(.6); transition: opacity var(--f80) var(--std), transform var(--f80) var(--std) }
+.wd { position: absolute; left: 72px; right: 80px; top: 71px; padding: 12px 0; -webkit-mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent); mask-image: linear-gradient(to right, var(--opaque) calc(100% - 24px), transparent) }
+.rb { position: relative; height: 22px; font-size: 17px; font-weight: 500; line-height: 22px }
+.rb.sub { height: 20px; font-size: 14px; letter-spacing: .1px; line-height: 20px; color: rgb(var(--on) / .8) }
+.rb > span { position: absolute; left: 0; top: 0; white-space: nowrap; transition: opacity var(--f120) var(--std), transform var(--tp) var(--ep) }
+.rb > .new { opacity: 0; transform: translateY(50%); transition: none }
+.rb > .old { opacity: 0; transform: translateY(-50%); transition: opacity var(--f70) var(--std), transform var(--tp) var(--ep) }
+.rb.rt > span { left: auto; right: 0 }
+.cnt { position: absolute; right: 20px; top: 94px; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; color: rgb(var(--on) / .8); white-space: pre; font-variant-numeric: tabular-nums }
+.cnt .rb { display: inline-block; width: 1ch; height: 20px; font: inherit; vertical-align: top }
+/* the band: y 132 to 244. Large caps 160 to 216, centre line 188; the caption on the line a footer's words have, y 230 */
+.rec { position: absolute; left: 72px; top: 160px; height: 56px; display: flex; align-items: center; white-space: nowrap }
+.kc { height: 56px; min-width: 56px; padding: 0 20px; border-radius: 16px; background: rgb(var(--on) / var(--cap)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)); display: inline-grid; place-items: center; font-size: 24px; font-weight: 500; line-height: 32px; flex: none; opacity: 0; transform: scale(.96) }
+.kc.in { opacity: 1; transform: none; transition: opacity var(--f110) var(--std), transform var(--tq) var(--eq), background-color var(--f120) var(--std) }
+.kc.dn { transform: scale(.96); background: rgb(var(--on) / var(--capd)); transition: transform var(--f80) var(--std), background-color var(--f80) var(--std) }
+.kc svg.i { width: 24px; height: 24px }
+.kc.me { width: 112px; padding: 0 }
+.chk { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.14; stroke-linecap: round; stroke-linejoin: round }
+.chk path { stroke-dasharray: 1; stroke-dashoffset: 1 }
+.kc.ok .chk path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--f140) linear }
+.plus { margin: 0 12px; font-size: 17px; font-weight: 500; color: rgb(var(--on) / .8); opacity: 0 }
+.plus.in { opacity: 1; transition: opacity var(--f110) var(--std) }
+.ty { font-size: 24px; font-weight: 500; line-height: 32px } .ty i { font-style: normal; opacity: 0 } .ty i.in { opacity: 1 }
+.g12 { margin-left: 12px } .g16 { margin-left: 16px }
+.capn { position: absolute; left: 72px; top: 221px; font-size: 13px; font-weight: 500; letter-spacing: .1px; line-height: 18px; color: rgb(var(--on) / .8); white-space: nowrap; opacity: 0; transition: opacity var(--f80) var(--std) }
+.capn.in { opacity: 1; transition: opacity var(--f140) var(--std) }
+/* the answers: the card's strip, vertical. Slots 32, 4 apart; right edge at 700; the block centred on y = 188 (274 in the question) */
+.ans { position: absolute; right: 20px; top: var(--ay, 188px); margin-top: calc(var(--n, 1) * -18px + 2px) }
+.strip { position: relative; display: flex; flex-direction: column; gap: 4px }
+.sl { position: relative; height: 32px; padding: 0 10px 0 14px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; letter-spacing: .1px; white-space: nowrap; color: rgb(var(--on) / .8); transition: color var(--f120) var(--std), opacity var(--f110) var(--std), transform var(--tp) var(--ep) }
+.sl.w8 { opacity: 0 } .sl.lo { transform: translateY(12px) }
+.sl span { flex: 1 }
+.sl svg.i { width: 14px; height: 14px; opacity: 0; transition: opacity var(--f120) var(--std) }
+.sl.on { color: rgb(var(--on)) } .sl.on svg.i { opacity: 1 }
+.sl::after { content: ""; position: absolute; inset: 0; border-radius: 16px; background: rgb(var(--on) / .08); opacity: 0; transition: opacity var(--f120) var(--std) }
+.sl.pr::after { opacity: 1; transition: opacity var(--f80) var(--std) }
+.hl { position: absolute; left: 0; right: 0; top: var(--t0, 0px); bottom: var(--b0, 0px); border-radius: 16px; background: rgb(var(--sel) / var(--sela)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)); opacity: 0; transition: opacity var(--f120) var(--std), top var(--tt) var(--et), bottom var(--tl) var(--el) }
+.hl.up { transition: opacity var(--f120) var(--std), top var(--tl) var(--el), bottom var(--tt) var(--et) }
+.hl.on { opacity: 1 }
+.tabc { position: absolute; right: 100%; margin-right: 10px; top: 50%; margin-top: -11px; transition: opacity var(--f120) var(--std) }
+.ans.lit .tabc { opacity: 0 }
+/* the question, 324: text top at 140, the note and the tab cap centred on 274 */
+.qt { position: absolute; left: 72px; top: 93px; font-size: 17px; font-weight: 500; line-height: 22px; white-space: nowrap }
+.qx { position: absolute; left: 72px; top: 140px; width: 628px; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px }
+.qn { position: absolute; left: 72px; top: 254px; width: 442px; height: 40px; display: flex; align-items: center; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; color: rgb(var(--on) / .8) }
+/* a list: rows from y = 76, the footer's line 22 above the lower edge */
+.lst { position: absolute; left: 0; top: 76px; width: 720px }
+.r { position: relative; height: 56px; display: flex; align-items: center; padding: 0 20px }
+.r.tl { height: 92px }
+.ic { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgb(var(--on) / var(--disc)); color: rgb(var(--on) / .8) }
+.ic.ap, .chip svg.yt { border-radius: 10px; background: rgb(var(--on) / .82); color: rgb(var(--veil)) }
+.ic.ap svg.i { width: 18px; height: 18px } .chip svg.yt { border-radius: 6px; padding: 3px }
+.ic.ti { border-radius: 10px; background: var(--c); color: rgb(var(--white)) }
+.ic.ti svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round }
+.tx { flex: 1; min-width: 0; padding: 0 16px }
+.tt { font-size: 17px; font-weight: 500; line-height: 22px; white-space: nowrap }
+.sb, .kd, .sv { font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; color: rgb(var(--on) / .8) }
+.rb.big { height: 42px; font: 600 34px/42px var(--round); font-variation-settings: "ROND" 100; font-variant-numeric: tabular-nums }
+.end { position: relative; flex: none; display: flex; align-items: center; justify-content: flex-end; min-height: 32px }
+.kd { transition: opacity var(--f110) var(--std) } .r.on .kd { opacity: 0; transition-duration: var(--f60) }
+.sv.rb { width: 40px; height: 20px; font-size: 14px; line-height: 20px }
+.acts { position: absolute; right: 0; display: flex; align-items: center; height: 32px; opacity: 0; transform: translateX(12px); transition: opacity var(--f60) var(--std) }
+.r.on .acts { opacity: 1; transform: none; transition: opacity var(--f110) var(--std) var(--f60), transform var(--tp) var(--ep) var(--f60) }
+.pane { position: absolute; top: 0; height: 32px; left: var(--pl, 0px); width: var(--pw, 32px); border-radius: 16px; background: rgb(var(--veil) / var(--pane)); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)); transition: left var(--ta) var(--ea), width var(--ta) var(--ea) }
+.a { position: relative; height: 32px; display: flex; align-items: center; padding: 0 7px }
+.a svg.i { width: 18px; height: 18px }
+.a b { display: block; width: 0; overflow: hidden; font-size: 14px; font-weight: 500; letter-spacing: .1px; white-space: nowrap; opacity: 0; transition: width var(--ta) var(--ea), margin var(--ta) var(--ea), opacity var(--f110) var(--std) }
+.a svg.e { width: 0; height: 14px; opacity: 0; transition: width var(--ta) var(--ea), margin var(--ta) var(--ea), opacity var(--f110) var(--std) }
+.a.arm b { width: var(--w); margin: 0 6px 0 7px; opacity: 1 } .a.arm svg.e { width: 14px; margin-right: 2px; opacity: 1 }
+.nt, .nt * { transition: none !important }
+/* the emoji grid: 14 x 5 cells of 48 at a pitch of 49.4 from x = 14, lines from y = 84; the wave is 8 ms a step */
+.gr { position: absolute; left: 0; top: 0; width: 720px; height: 256px }
+.ce { position: absolute; width: 48px; height: 48px; display: grid; place-items: center; font: normal 28px/1 "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; opacity: 0; transform: translateY(8px) }
+.ce.in { opacity: 1; transform: none; transition: opacity var(--f110) var(--std) calc(var(--d) * 1ms * var(--slow)), transform var(--tp) var(--ep) calc(var(--d) * 1ms * var(--slow)) }
+.ce.go { opacity: 0; transition: opacity var(--f80) var(--std) calc(var(--d) * 1ms * var(--slow)) }
+.sw { position: relative; flex: none; width: 44px; height: 24px; border-radius: 12px; margin-left: 12px; background: rgb(var(--on) / var(--track)); transition: background-color var(--f120) var(--std) }
+.sw::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: rgb(var(--on)); transition: transform var(--tq) var(--eq), background-color var(--f120) var(--std) }
+.sw.on { background: rgb(var(--on)) } .sw.on::after { transform: translateX(20px); background: rgb(var(--veil)) }
+.foot { bottom: 0; height: 44px; display: flex; align-items: center; padding: 0 20px; font-size: 13px; font-weight: 500; letter-spacing: .1px; color: rgb(var(--on) / .8); white-space: nowrap; opacity: 0; transition: opacity var(--f70) var(--std) }
+.panel[data-v="l"] .foot { opacity: 1; transition: opacity var(--f140) var(--std) }
+.co { margin-right: auto; display: flex; align-items: center }
+.co, #fr { transition: opacity var(--f120) var(--std) }
+.co.x, #fr.x { opacity: 0; transition: opacity var(--f80) var(--std) }
+.co .fk { margin: 0 6px } .co b { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: rgb(var(--on)) } .co b svg.i { width: 16px; height: 16px }
+#fr { display: flex; align-items: center } #fr .fk { margin: 0 6px 0 16px }
+/* the welcome: for four seconds the glass is a stage. The light, the dust and the tools are drawn per frame on one canvas, with paths and gradients; the words are type in two layers, the lit one masked by the light */
+.wc { position: absolute; left: 0; top: 0; width: 720px; height: 480px; pointer-events: none }
+.ring { position: absolute; inset: 0; border-radius: 32px; box-shadow: inset 0 0 0 1.25px rgb(var(--white)); opacity: 0; pointer-events: none }
+.wt, .wn { position: absolute; left: 0; width: 720px; text-align: center; white-space: nowrap; pointer-events: none }
+.wt { top: 124px; height: 48px; font: 600 40px/48px var(--round); font-variation-settings: "ROND" 100 }
+.wn { top: 188px; height: 22px; font-size: 17px; font-weight: 500; line-height: 22px }
+.wt span, .wn span { position: absolute; left: 0; right: 0; top: 0; opacity: 0; color: rgb(var(--white) / .38) }
+.wt .lt, .wn .lt { color: rgb(var(--white)); text-shadow: 0 0 9px rgb(var(--white) / .45), 0 0 32px rgb(var(--white) / .32); -webkit-mask-composite: source-in; mask-composite: intersect }
+.sol .lt { color: rgb(var(--night)); text-shadow: none }
+.cue { position: absolute; left: 252px; top: 372px; width: 216px; height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; font-weight: 600; white-space: nowrap; color: rgb(var(--pl-on)); opacity: 0; pointer-events: none }
+.cue svg.i { width: 16px; height: 16px }
+.panel.nite .fesc { color: rgb(var(--white) / .8); background: rgb(var(--white) / .14) }
+.panel.lit .fesc { color: rgb(var(--night) / .8); background: rgb(var(--night) / .1) }
+.fld.nm .fm { opacity: 0; transform: scale(.6) }
+/* a flight's row, 136: line one 12 to 32, the headline 34 to 58 on the mark's centre line, the line on y = 84, the two ends 100 to 122 (flights-row/design.md) */
+.r.fl { display: block; height: 136px; padding: 0 }
+.fl .ic { position: absolute; left: 20px; top: 28px }
+.fc { position: absolute; left: 72px; top: 12px; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; white-space: nowrap; color: rgb(var(--on) / .8) }
+.r.on .fc, .r.on .fz u { color: rgb(var(--on)) }
+.fh { position: absolute; left: 72px; top: 34px; height: 24px; display: flex; align-items: baseline; gap: 10px; font-size: 17px; font-weight: 500; line-height: 24px; white-space: nowrap; font-variant-numeric: tabular-nums }
+.bd { font-style: normal; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 13px; font-weight: 600; letter-spacing: .1px; line-height: 22px; background: rgb(var(--ok) / .88); color: var(--onok); box-shadow: inset 0 0 0 1px rgb(var(--white) / var(--rim2)) }
+.fe { position: absolute; right: 20px; top: 36px; font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px }
+.trk { position: absolute; left: 72px; top: 74px; width: 628px; height: 20px; --x: 0; color: rgb(var(--on)) }
+.trk svg.d { position: absolute; left: 0; top: 0; overflow: visible }
+.trk line { stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 9.058; fill: none }
+.trk .ba { opacity: var(--rest); transition: opacity var(--f110) var(--std) } .trk.has .ba { opacity: 0 }
+.trk .tg { opacity: 0; transition: opacity var(--f110) var(--std); -webkit-mask-image: linear-gradient(to right, transparent calc((var(--x) + 22) * 1px), var(--opaque) calc((var(--x) + 30) * 1px)); mask-image: linear-gradient(to right, transparent calc((var(--x) + 22) * 1px), var(--opaque) calc((var(--x) + 30) * 1px)) }
+.trk.has .tg { opacity: var(--togo) }
+.trk .fw { position: absolute; left: 0; top: 8.5px; height: 3px; border-radius: 1.5px; background: currentColor; width: max(0px, calc(var(--x) * 1px - 4px)); opacity: 0 }
+.trk.has .fw { opacity: clamp(0, calc((var(--x) - 7) / 3), 1) }
+.trk .pl { position: absolute; left: -2px; top: -1.5px; width: 24px; height: 24px; fill: currentColor; transform: translateX(calc(var(--x) * 1px)); opacity: 0; transition: opacity var(--f110) var(--std) }
+.trk.has .pl { opacity: 1 }
+.fz { position: absolute; left: 72px; top: 100px; width: 628px; height: 22px; display: flex; justify-content: space-between; align-items: baseline; font-size: 17px; font-weight: 500; line-height: 22px; white-space: nowrap; font-variant-numeric: tabular-nums }
+.fz b { font-weight: 500; color: rgb(var(--on) / .8) }
+.fz u { text-decoration: none; font-size: 14px; letter-spacing: .1px; color: rgb(var(--on) / .8) }
+.fz span:first-child b { margin-right: 7px } .fz span:first-child u { margin-left: 12px } .fz span:last-child b { margin-left: 7px } .fz span:last-child u { margin-right: 12px }
+/* the reflection: one white light on the outline */
+.lap { top: 0; height: 480px; pointer-events: none; overflow: visible }
+.lap path { fill: none; stroke: rgb(var(--white)); stroke-width: 2; stroke-linecap: round; opacity: 0 }
+.lap path:last-child { stroke-width: 7 }     /* a little of it falls on the glass beside the outline */
+
+/* the system's helper, a stand-in: smaller than it is, its layout as on a device */
+.scrim { position: absolute; z-index: 3; inset: 0; background: rgb(var(--black) / .45); opacity: 0; pointer-events: none; transition: opacity var(--f240) var(--std) }
+.hp { position: absolute; z-index: 4; left: 60px; top: 35px; width: 880px; height: 590px; border-radius: 28px; background: var(--solid); color: rgb(var(--on)); font-size: 14px; line-height: 20px; font-weight: 500; box-shadow: 0 30px 60px -20px rgb(var(--shadow) / .5);
+  opacity: 0; visibility: hidden; transform: translateY(16px) scale(.97); transition: opacity var(--f240) var(--std), transform var(--f240) var(--std), visibility 0s var(--f240) }
+.desk.help .scrim { opacity: 1 }
+.desk.help .hp { opacity: 1; visibility: visible; transform: none; transition: opacity var(--f240) var(--std), transform var(--f240) var(--std) }
+.ht { position: absolute; left: 0; right: 0; top: 22px; text-align: center; font-size: 22px; line-height: 28px }
+.cz { position: absolute; right: 68px; top: 16px; height: 40px; padding: 0 20px; border-radius: 20px; background: rgb(var(--sel)); display: grid; place-items: center; font-weight: 600 }
+.hx { position: absolute; right: 20px; top: 16px; width: 40px; height: 40px; display: grid; place-items: center; font-size: 18px }
+.sf { position: absolute; left: 24px; top: 76px; width: 268px; height: 48px; border-radius: 24px; background: var(--card); display: flex; align-items: center; gap: 10px; padding: 0 16px; color: rgb(var(--on) / .6) }
+.sf b { font-weight: 500; color: rgb(var(--on)) }
+.cats { position: absolute; left: 24px; top: 140px; width: 268px; display: flex; flex-direction: column; gap: 2px }
+.cats div, .an { display: flex; align-items: center; gap: 12px }
+.cats div { height: 44px; border-radius: 22px; padding: 0 16px }
+.cats div.on { background: rgb(var(--sel)) }
+.hp i.d { width: 18px; height: 18px; border-radius: 5px; background: rgb(var(--on) / .45); flex: none }
+.hp i.bl { background: var(--primary) }
+.pg { position: absolute; left: 308px; right: 24px; top: 76px; bottom: 24px; border-radius: 24px; background: var(--card); padding: 16px 24px }
+.hd { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 4px }
+.rw { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 0; border-top: 1px solid rgb(var(--on) / .12); font-size: 15px; line-height: 21px }
+.rw .lb { max-width: 215px }
+.hd + .rw { border-top: 0 }
+.ks { flex: none; white-space: nowrap }
+.hk { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; min-width: 28px; padding: 0 8px; border-radius: 8px; background: rgb(var(--on) / .1); font-size: 13px; font-weight: 600; margin-left: 6px; white-space: nowrap }
+.hk i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid currentColor }
+.add { width: 36px; height: 36px; border-radius: 50%; background: rgb(var(--sel)); display: grid; place-items: center; font-size: 20px }
+.cdw { position: absolute; inset: 0; border-radius: 28px; background: rgb(var(--black) / .32); display: grid; place-items: center; opacity: 0; visibility: hidden; transition: opacity var(--f140) var(--std), visibility 0s var(--f140) }
+.hp[data-s="cap"] .cdw, .hp[data-s="keys"] .cdw { opacity: 1; visibility: visible; transition: opacity var(--f140) var(--std) }
+.cd { width: 440px; border-radius: 28px; background: var(--card); padding: 24px; text-align: center }
+.cd b { display: block; font-size: 22px; font-weight: 500; line-height: 28px }
+.cd .s { margin: 10px 0 18px; color: rgb(var(--on) / .8) }
+.kr { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 22px }
+.kr .hk { height: 44px; padding: 0 14px; margin: 0; font-size: 14px }
+.pk { height: 44px; min-width: 150px; border-radius: 12px; border: 1.5px solid rgb(var(--on) / .4); display: grid; place-items: center; color: rgb(var(--on) / .6) }
+.pk .hk { margin: 0; height: 30px; color: rgb(var(--on)) }
+.bt { display: flex; justify-content: flex-end; gap: 8px }
+.bt span { height: 40px; padding: 0 20px; border-radius: 20px; display: grid; place-items: center; font-weight: 600 }
+.bt .ok { background: var(--primary); color: var(--card); opacity: .4; transition: opacity var(--f120) var(--std) }
+.hp[data-s="keys"] .ok { opacity: 1 }
+.ptr { position: absolute; z-index: 5; left: 0; top: 0; width: 22px; height: 22px; opacity: 0; transform: translate(var(--x, 700px), var(--y, 400px)); transition: transform calc(420ms * var(--slow)) var(--std), opacity var(--f120) var(--std); fill: rgb(var(--white)); stroke: rgb(var(--black) / .8); stroke-width: 1.2; stroke-linejoin: round }
+.ptr.on { opacity: 1 }
+
+/* A change the app would not animate, and the stills of reduced motion: nothing on the desk moves */
+.still, .still * { transition: none !important; animation: none !important }
+
+/* the three stages, drawn at a quarter */
+.ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1.4rem 1.8rem }
+.way { display: flex; flex-direction: column; gap: .5rem; min-width: 0 }
+.way p { font-size: .92rem }
+.mini { position: relative; height: 112px; width: 240px; max-width: 100% }
+.mini i { position: absolute; left: 30px; top: 4px; width: 180px; border: 1.5px solid var(--fg); border-radius: 8px }
+.mini i::before { content: ""; position: absolute; left: 0; right: 0; top: 16px; border-top: 1px solid var(--muted) }
+.mini i.d { border-style: dashed; border-color: var(--muted) } .mini i.d::before { content: none }
+.mini u { position: absolute; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 3px }
+.moments { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .5rem 1.2rem; max-width: 50rem }
+.moments dt { font-weight: 650 } .moments dd { margin: 0 }
+@media (max-width: 34rem) { .moments { grid-template-columns: minmax(0, 1fr); gap: .1rem } .moments dd { margin-bottom: .6rem } }
+</style>
+
+<main>
+  <header>
+    <h1>First run, in the panel</h1>
+    <p class="lede">First run begins with a welcome. The glass grows tall and goes dark, the caret comes back as Booklight’s own lamp, and its light falls on a few words and on a small Swiss Army knife. Then Booklight shows off for six seconds in the real panel: the user’s apps, a sum, an example flight, the emoji grid, one highlight travelling through all of it. Then it asks for one thing, a key, and stands under the field, where rows stand. The field is never covered: type at any moment and it is Booklight. Each step shows what to press as large key caps and has the user do it once for real. It is one opening from the first frame to the bare field, and the user’s keys are pressed once.</p>
+    <p class="small muted">Nothing of this is built. On this page: <a href="#proto">the prototype</a> · <a href="#minute">how the minute goes</a> · <a href="#stages">the stage</a> · <a href="#moments">the moments</a> · <a href="#shortcut">the shortcut’s options</a> · <a href="#decisions">what you are asked to decide</a> · <a href="#cost">what it costs</a></p>
+  </header>
+
+  <section id="proto" aria-labelledby="h-proto">
+    <h2 id="h-proto">The prototype</h2>
+    <p class="small muted">Play runs the whole first run, the opening first. The opening is the welcome and the show. A step shows one screen at rest, and the left and right arrow keys step too. Quarter speed is for judging the motion.</p>
+    <div class="ctls">
+      <span class="lbl" id="l-film">Film</span>
+      <div class="seg" role="group" aria-labelledby="l-film">
+        <button type="button" id="b-play" class="go">Play the minute</button>
+        <button type="button" id="b-ov">Play the opening</button>
+        <button type="button" id="b-wl">Play the welcome</button>
+        <button type="button" id="b-step">Play this step</button>
+        <button type="button" id="b-key">Play: a key ends the opening</button>
+        <button type="button" id="b-skip">Play: Skip a lesson</button>
+      </div>
+      <span class="lbl" id="l-step">Step</span>
+      <div class="seg" role="group" aria-labelledby="l-step">
+        <button type="button" id="s-WL" data-s="WL">The welcome</button>
+        <button type="button" id="s-OV" data-s="OV">The show</button>
+        <button type="button" id="s-K1" data-s="K1">K1 Ask</button>
+        <button type="button" id="s-H" data-s="H">The helper</button>
+        <button type="button" id="s-K2" data-s="K2">K2 Back</button>
+        <button type="button" id="s-K3" data-s="K3">K3 Again</button>
+        <button type="button" id="s-K4" data-s="K4">K4 Works</button>
+        <button type="button" id="s-L2" data-s="L2">L2 Open</button>
+        <button type="button" id="s-L3" data-s="L3">L3 Search</button>
+        <button type="button" id="s-L4" data-s="L4">L4 Sum</button>
+        <button type="button" id="s-Q" data-s="Q">Q</button>
+        <button type="button" id="s-C" data-s="C">C</button>
+        <button type="button" id="s-END" data-s="END">The end</button>
+      </div>
+    </div>
+    <div class="stagebox" id="stagebox" role="img" aria-label="A drawn desk with the Booklight panel on it. The line under it says what is on screen.">
+      <div class="desk th-light back-light" id="desk">
+        <div class="win" id="win"></div>
+        <div class="win app" id="app"><b>YouTube</b><div class="aq" id="aq"></div><div class="ag"><u></u><u></u><u></u><u></u><u></u><u></u><u></u><u></u></div></div>
+        <div class="dim" id="dim"></div>
+        <div class="panel gone" id="panel" data-v="b">
+          <div class="pin" id="pin">
+            <canvas class="wc" id="wc" width="720" height="480"></canvas>
+            <i class="hi" id="hi"></i>
+            <div id="wl"><div class="wt" id="w-t"><span></span><span class="lt"></span></div><div class="wn" id="w-n"><span></span><span class="lt"></span></div><div class="cue" id="cue"><span></span><svg class="i" viewBox="0 0 24 24"><use href="#g-enter"/></svg></div></div>
+            <div class="fld" id="fld">
+              <span class="fm" id="fm">G</span>
+              <span class="chip" id="chip"></span>
+              <span class="ft"><span id="fx"></span><i class="caret"></i></span>
+              <span class="ph" id="ph"></span>
+              <span class="fk fesc" id="fesc">esc</span>
+            </div>
+            <div class="ly s" id="stg">
+              <span class="disc pt" id="s-disc"><svg class="i" viewBox="0 0 24 24"><use id="s-g" href="#g-key"/></svg></span>
+              <div class="wd pt" id="s-wd"><div class="rb" id="ttl"></div><div class="rb sub" id="sub"></div></div>
+              <div class="cnt pt" id="cnt"></div>
+              <div class="rec" id="rec"></div>
+              <div class="capn" id="capn"></div>
+              <div class="ans pt" id="s-ans"></div>
+            </div>
+            <div class="ly q" id="qq">
+              <span class="disc pt" data-at="0"><svg class="i" viewBox="0 0 24 24"><use href="#g-globe"/></svg></span>
+              <div class="qt pt" id="q-t" data-at="22"></div>
+              <div class="cnt pt" id="q-c" data-at="44"></div>
+              <div class="qx pt" id="q-x" data-at="66"></div>
+              <div class="qn pt" data-at="120"><span id="q-n"></span></div>
+              <div class="ans pt" id="q-ans" data-at="142" style="--ay:274px"></div>
+            </div>
+            <div class="ly l"><div class="lst" id="lst"></div></div>
+          </div>
+          <div class="foot" id="foot"><span class="co" id="co"></span><span id="fr"></span></div>
+          <svg class="lap" id="lap" width="720" height="480" aria-hidden="true"><path/><path/><path/><path/><path/></svg>
+          <i class="ring" id="ring"></i>
+        </div>
+        <div class="scrim"></div>
+        <div class="hp" id="hp">
+          <div class="ht" id="h-t"></div><span class="cz" id="h-c"></span><span class="hx">✕</span>
+          <div class="sf"><svg class="i" viewBox="0 0 24 24"><use href="#g-search"/></svg><span id="h-s"></span></div>
+          <div class="cats" id="h-cats"></div>
+          <div class="pg" id="h-pg"></div>
+          <div class="cdw"><div class="cd"><b>Booklight</b><div class="s">To create this shortcut, press the Action key and one or more other keys together</div>
+            <div class="kr"><span class="hk"><i></i>Action</span><span>+</span><span class="pk" id="h-pk"></span></div>
+            <div class="bt"><span>Cancel</span><span class="ok" id="h-ok">Set shortcut</span></div></div></div>
+        </div>
+        <svg class="ptr" id="ptr" viewBox="0 0 22 22" aria-hidden="true"><path d="M4 2v16l4.500-4 3 6.500 2.500-1.200-3-6.300h6z"/></svg>
+      </div>
+    </div>
+    <div class="keys" id="keys" aria-hidden="true"><span class="muted">Keys pressed</span></div>
+    <p class="small" id="say" aria-live="polite"></p>
+    <div class="ctls">
+      <span class="lbl" id="l-theme">The panel</span>
+      <div class="seg" role="group" aria-labelledby="l-theme"><button type="button" id="b-tl" data-k="theme" data-v="light">Light</button><button type="button" id="b-td" data-k="theme" data-v="dark">Dark</button></div>
+      <span class="lbl" id="l-back">Behind the glass</span>
+      <div class="seg" role="group" aria-labelledby="l-back"><button type="button" id="b-bl" data-k="back" data-v="light">A light window</button><button type="button" id="b-bd" data-k="back" data-v="dark">A dark window</button></div>
+      <span class="lbl" id="l-lang">Language</span>
+      <div class="seg" role="group" aria-labelledby="l-lang"><button type="button" id="b-en" data-k="lang" data-v="en">English</button><button type="button" id="b-de" data-k="lang" data-v="de">Deutsch</button></div>
+      <span class="lbl" id="l-speed">Speed</span>
+      <div class="seg" role="group" aria-labelledby="l-speed"><button type="button" id="b-s1" data-k="slow" data-v="1">Full speed</button><button type="button" id="b-s4" data-k="slow" data-v="4">Quarter speed</button></div>
+      <span class="lbl" id="l-words">The welcome’s words</span>
+      <div class="seg" role="group" aria-labelledby="l-words"><button type="button" id="b-wa" data-k="words" data-v="A">A: Blades not included</button><button type="button" id="b-wb" data-k="words" data-v="B">B: Small panel, big ego</button><button type="button" id="b-wc" data-k="words" data-v="C">C: Hi, I’m Booklight</button></div>
+      <span class="lbl" id="l-light">The light</span>
+      <div class="seg" role="group" aria-labelledby="l-light"><button type="button" id="b-lr" data-k="light" data-v="rich">With dust and a lap</button><button type="button" id="b-ls" data-k="light" data-v="shaft">The shaft</button><button type="button" id="b-lo" data-k="light" data-v="solid">Solid, as the icon</button></div>
+      <span class="lbl" id="l-motion">Motion</span>
+      <div class="seg" role="group" aria-labelledby="l-motion"><button type="button" id="b-mon" data-k="motion" data-v="1">On</button><button type="button" id="b-moff" data-k="motion" data-v="0">Off</button></div>
+    </div>
+    <p class="small muted" id="calm" hidden>Motion is off: every screen stands as it ends, as it does with the system’s animations off. There is no welcome and no show then: K1 stands in the first frame, with the welcome’s title as the field’s placeholder.</p>
+    <div class="note">Drawn, not filmed. The welcome is drawn with what the app has: paths, gradients and type in layers, on one clock; the light is one pass that the app would run as a shader, and the soft glow round the lit letters is the one thing that is a blur. The apps, their icons and the Action key’s glyph are stand-ins: on a device the show has that device’s own apps. The flight is an example held in the app, and nothing is fetched. The emoji and the large rounded type are drawn in this computer’s own fonts. The helper is the system’s dialog: Booklight cannot draw in it, and only the five rows are Booklight’s. It is drawn smaller than it is (on the Lenovo Googlebook about 990 by 955 dp; it covers the panel wholly), and its own words stay English in both languages, because their German must be read off a device. The helper’s coming and going, an app’s window arriving and the fade over a panel that comes back are the system’s, drawn here as about a quarter of a second. Every opening runs at Medium, the default. At quarter speed the motion is four times as long and the user’s pauses are not.</div>
+  </section>
+
+  <section id="minute" aria-labelledby="h-minute">
+    <h2 id="h-minute">How the minute goes</h2>
+    <div class="scroll"><table class="t">
+      <tr><th>#</th><th>Step</th><th>The user does</th><th>Done when</th><th>Time</th></tr>
+      <tr><td></td><td>The opening</td><td>Nothing. A welcome in Booklight’s own light, then Booklight types into its own field: apps, a sum, an example flight, the emoji grid. Any key that types ends it and is typed. Enter starts the show early. Esc skips to step 1.</td><td>It lands in step 1 by itself</td><td>10 s</td></tr>
+      <tr><td>1</td><td>Your key</td><td>Enter on “Open Keyboard shortcuts”. In the helper: Customize, the app’s name, +, the keys, Set shortcut. Then the keys once more.</td><td>The key uncovers or opens the panel</td><td>25 s</td></tr>
+      <tr><td>2</td><td>Open an app</td><td>Types an app’s first letters, Enter. Booklight folds, the app opens, and Booklight is back in front of it by itself.</td><td>An app was opened</td><td>6 s</td></tr>
+      <tr><td>3</td><td>Search inside an app</td><td>The app’s letters, Tab, Enter, a word, Enter. Booklight steps aside and comes back once more.</td><td>A search inside an app ran</td><td>12 s</td></tr>
+      <tr><td>4</td><td>A sum</td><td>Types a sum, Enter. It copies and the panel stays.</td><td>Its answer was copied</td><td>6 s</td></tr>
+      <tr><td>5</td><td>Your choices</td><td>Answers the question, flips what they like, Enter.</td><td>The question is answered</td><td>10 s</td></tr>
+    </table></div>
+    <p class="small muted">About 70 seconds when nobody stalls, 10 of them Booklight’s. It is one opening, and the user’s keys are pressed once, at the end of step 1. No step has a clock; only the opening runs by itself. Esc leaves at any point, and the same step waits at the next opening.</p>
+  </section>
+
+  <section id="stages" aria-labelledby="h-stages">
+    <h2 id="h-stages">The stage: three ways</h2>
+    <div class="ways">
+      <div class="way">
+        <div class="mini" aria-hidden="true"><i style="height:43px"></i><u style="left:48px;top:30px;width:12px;height:6px"></u><u style="left:63px;top:30px;width:6px;height:6px"></u><u style="left:160px;top:26px;width:40px;height:8px"></u></div>
+        <h3>The card’s own size, 720 × 172</h3>
+        <p>Free. The caps can be no larger than 24 dp, and the question’s German text does not fit: a disclosure would be cut. It reads as a card with a paragraph.</p>
+      </div>
+      <div class="way">
+        <div class="mini" aria-hidden="true"><i class="d" style="height:81px"></i><i style="height:63px"></i><u style="left:48px;top:44px;width:29px;height:14px"></u><u style="left:86px;top:44px;width:48px;height:14px"></u><u style="left:158px;top:42px;width:42px;height:8px"></u></div>
+        <h3>The same width, taller: 252 and 324 <span class="tag">Chosen</span></h3>
+        <p>Free to move; the layout is the work. Caps as tall as a row, every part on the row grid, the whole disclosure. The daily opening stays as it is.</p>
+      </div>
+      <div class="way">
+        <div class="mini" aria-hidden="true"><i style="left:0;width:240px;height:101px"></i><i class="d" style="top:4px;height:17px"></i><u style="left:20px;top:46px;width:48px;height:24px"></u><u style="left:80px;top:46px;width:24px;height:24px"></u><u style="left:170px;top:52px;width:52px;height:10px"></u></div>
+        <h3>A larger glass that shrinks, 960 × 404</h3>
+        <p>4 to 5 days and a broken rule: the window is exactly the panel. Caps of 96 dp and an ending in which the glass becomes the panel. The helper hides it for the hard part all the same.</p>
+      </div>
+    </div>
+    <p class="small muted">The opening uses what the chosen stage leaves free, for its ten seconds only. The welcome is the one place where the glass is a stage: 720 by 468, the most height that is free, in the dark, with the desk behind dimmed by half. Through the show the lower edge goes to 400, 212, 256 and 376 and settles at 252. The last screen, C, is 268.</p>
+  </section>
+
+  <section id="moments" aria-labelledby="h-moments">
+    <h2 id="h-moments">The moments</h2>
+    <dl class="moments">
+      <dt>The welcome</dt><dd>Night falls in a tall glass. The caret blinks off, and when it comes back it is a lamp: the field is its head, and its light opens on the stage the way the glass itself opened. The words are white where it falls. A small knife flicks out five tools. Then Booklight presses the handle, the light goes back up into the caret, and the handle rises to be the highlight.</dd>
+      <dt>The show</dt><dd>Five of the user’s own apps in a cascade, the highlight down the list and along a row, a sum rolled into its answer, a flight with its plane arriving, seventy emoji in a wave, one lap of light. As the light turns onto the lower edge the highlight glides into “Open Keyboard shortcuts”. Every part is the product at work, and the first key makes it the user’s.</dd>
+      <dt>The key caps</dt><dd>As tall as a row, flat, with the white ring, their labels in the field’s type. Typed parts stand beside them on the same baseline.</dd>
+      <dt>The reveal</dt><dd>The user’s own keys make the system’s dialog fall away. The key on the glass is down because theirs is. It comes up, the check draws, one lap of light.</dd>
+      <dt>The step aside</dt><dd>Enter opens the app. The glass folds to its seam, the app is there, and the seam comes again in the same place: Booklight opens over the app, on the next lesson.</dd>
+      <dt>The fold</dt><dd>The last list closes to the bare field: one line of placeholder, one lap of light. First run ends as the product.</dd>
+    </dl>
+  </section>
+
+  <section id="shortcut">
+    <h2>The shortcut: what is possible</h2>
+    <p>Android 17 gives an app no way to set a global shortcut or to ask for one, and the system’s Keyboard shortcuts dialog cannot be opened on a chosen page. Every real route goes through that dialog. What can change is the path through it and the guidance, and both change a lot.</p>
+    <ul>
+      <li><strong>The short path is three clicks:</strong> Customize, type Booklight, the plus, the keys, Set shortcut. Today’s card sends people through App shortcuts and Add shortcut into a list of every app.</li>
+      <li><strong>A trap today:</strong> typing the name before Customize shows “No search results”.</li>
+      <li><strong>The instructions can stand inside the system’s dialog.</strong> Opened from a Booklight surface that stays in front, the dialog starts on Booklight’s own page, and its rows are our words. Tried on the Lenovo Googlebook with a stand-in app, in English and German.</li>
+      <li><strong>The new keys close the dialog by themselves.</strong> Right after Set shortcut, pressing them makes the dialog fall away and brings the app forward, and the app is told. No Done, no closing. Tried the same way.</li>
+      <li><strong>Action + Quick Insert works</strong> (your choice). On the Lenovo the dialog draws the key as a cap that reads “Quick Insert”, takes the combination, and pressing it starts the app and closes the dialog. Nothing else uses it there, and Android 17’s source reserves nothing on it. A keyboard without that key gets Action + J as the suggestion.</li>
+      <li><strong>Action + K is no longer suggested anywhere.</strong> Android 17’s source reserves it for a system feature behind a switch.</li>
+    </ul>
+    <div class="scroll"><table class="t">
+      <tr><th>Route</th><th>The user does</th><th>What it costs</th><th>Verdict</th></tr>
+      <tr><td><strong>The system’s dialog, guided</strong></td><td>Customize, the name, the plus, the keys, Set shortcut, then the keys once</td><td>Nothing. No permission.</td><td>The plan <span class="tag">Step 1 of first run</span></td></tr>
+      <tr><td>The assistant key</td><td>One button opens the picker; choose Booklight; confirm</td><td>Gemini loses Action + Space, the keyboard’s assistant key and what else expects it there</td><td>Stays the opt-in row it is in the window</td></tr>
+      <tr><td>Touchpad: three-finger tap</td><td>Settings › Touchpad › three-finger tap › Open another app › Booklight</td><td>Replaces middle click. A gesture, not a key. No link lands on that setting.</td><td>A line under “other ways to open”</td></tr>
+      <tr><td>The Quick Settings tile</td><td>One system dialog adds the tile that exists</td><td>Two actions per use</td><td>A cheap fallback, if you want it</td></tr>
+      <tr><td>A keyboard mapping shipped with the app (your idea)</td><td>Chooses Booklight’s layout in Settings, per keyboard and per language, and still needs one of the routes above</td><td>A layout can only rename keys; it cannot start an app. Ours would replace the user’s own: a German keyboard types QWERTY unless a copy of every layout ships.</td><td>No</td></tr>
+      <tr><td>An app category’s key (Action + U, Action + E)</td><td>Nothing, or a chooser once</td><td>Booklight would claim to be a calculator or a mail app; a chooser on a system key for everyone else; a store-policy risk</td><td>No. Named because it is the only route with no setup.</td></tr>
+      <tr><td>An accessibility service that reads keys</td><td>Switches it on through restricted settings</td><td>It reads every key: against Booklight’s promise and the store’s rules for launchers</td><td>No</td></tr>
+    </table></div>
+    <div class="note">The research is in <code>docs/research/shortcut-setup.md</code>.</div>
+  </section>
+
+  <section id="decisions">
+    <h2>What you are asked to decide</h2>
+    <h3>Settled by you on 4 October</h3>
+    <ul>
+      <li>The route: the system’s dialog, guided. The key: <strong>Action + Quick Insert</strong>.</li>
+      <li><strong>The panel stays through the three lessons</strong>: first run is one opening, and the keys are pressed once.</li>
+      <li><strong>No row for the device’s model.</strong></li>
+      <li><strong>The opening</strong>: Booklight performs before the key step, with <strong>a welcome that goes all out</strong> in an expanded panel and <strong>a flight in the show</strong>.</li>
+      <li>Everything else on the first page at its recommended answer: the three functions, the stage, the first click on the icon, the question alone with nothing armed, the blank key that takes the check, “Your key works” waiting for Enter, the light at the reveal and the fold, updates from 3.0, a proof on a device first.</li>
+    </ul>
+    <h3>New with the welcome and the flight</h3>
+    <p>Each stands at its recommended answer until you say otherwise. The prototype has switches for the words and for the light.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>#</th><th>Decision</th><th>Recommended</th><th>If you say the other thing</th></tr>
+      <tr><td>1</td><td>The welcome’s picture</td><td><strong>Lights on</strong>: the panel plays its own mark. The glass goes to night, the field is the lamp, the words stand in its light</td><td>The knife: blades of glass fan out from the field and fold into the first list; little light, hard to see over a light window. Written in light: the lap of light writes the title; it could open any app</td></tr>
+      <tr><td>2</td><td>How loud the light is</td><td>The shaft with dust in it and a lap of light round the outline, since you said to go all out</td><td>The plain shaft (the designer’s own pick): calmer, less to draw. Or solid, as the icon: hard on the eye at night</td></tr>
+      <tr><td>3</td><td>The words</td><td>A: “Welcome to Booklight” · “Your Swiss Army knife launcher. Blades not included.” · “Show off”</td><td>B: “Small panel, big ego. Ten seconds, tops.” · “Watch this”. C: “Hi, I’m Booklight” · “Launcher by trade, Swiss Army knife at heart.” · “Here goes”</td></tr>
+      <tr><td>4</td><td>The knife in the light</td><td>Five tools flick out of the handle that carries the cue: the four beats of the show and the key</td><td>No knife: the title, the line and the cue alone. Calmer, half a second shorter</td></tr>
+      <tr><td>5</td><td>Where the flight comes</td><td>After the sum, before the emoji grid</td><td>Last, before the key step: the show then ends on the one thing a new user cannot have yet</td></tr>
+      <tr><td>6</td><td>What the flight shows</td><td>LH 455, San Francisco to Frankfurt, in the air, on time, the plane 61 % of the way</td><td>Landed: the plane at the end, less of a journey. Delayed: the amber badge, and a late flight in the show</td></tr>
+      <tr><td>7</td><td>How “example” is said</td><td>“Example” where the row’s kind stands, and the footer’s line “An example. Live times need your own AirLabs key.” The row can do nothing: no Open, no Copy, no Pin</td><td>“Example ·” at the start of line one: seen sooner, and the row is then not word for word the real one</td></tr>
+      <tr><td>8</td><td>With animations off or a screen reader on</td><td>No welcome and no show: the key step stands at once, and the title is the field’s placeholder for that opening</td><td>A still of the lit stage that waits for Enter: the greeting is seen, and it is one more step before the key</td></tr>
+      <tr><td>9</td><td>The speed of the first opening</td><td>The speed that is set: the last ordinary thing before the night</td><td>Slow, as in the second round: 0.4 s more before a welcome that is already four seconds</td></tr>
+    </table></div>
+    <h3>Still open from the second round</h3>
+    <div class="scroll"><table class="t">
+      <tr><th>#</th><th>Decision</th><th>Recommended</th><th>If you say the other thing</th></tr>
+      <tr><td>10</td><td>The show’s app rows</td><td>This device’s real apps and icons, so that beat differs from device to device</td><td>A fixed list, the same everywhere: a day more, and it becomes a film about the product</td></tr>
+      <tr><td>11</td><td>Where Quick Insert is</td><td>A caption under the caps says “left of A”. That is the designer’s reading of “where Caps Lock sits”: please confirm it is true of the keyboard</td><td>No caption: one line less; some will hunt for the key</td></tr>
+      <tr><td>12</td><td>A keyboard without Quick Insert</td><td>Action + J</td><td>Action + Alt + Space: three keys at every opening</td></tr>
+      <tr><td>13</td><td>“Open an app” with the panel staying</td><td>The app really opens and Booklight comes back by itself over it. A device showed this works; how the blink in between looks is filmed first, and if it is ugly the lesson is practice only</td><td>Practice from the start: 1.5 days less, and nothing opens in first run</td></tr>
+      <tr><td>14</td><td>How the returning panel arrives</td><td>Decided on that film. The designer has it open as on any day (the prototype shows this); the tech lead has it stand at once, so that it does not read as three openings</td><td></td></tr>
+      <tr><td>15</td><td>The opening again</td><td>The window’s “First steps” row plays it; the typed command does not</td><td>Never again: seen once in a lifetime. Or always, before every replay</td></tr>
+      <tr><td>16</td><td>An unfinished run</td><td>It comes back in two more openings, then waits on the window’s Start page</td><td>Per step, as in the first plan: up to three openings for each step</td></tr>
+    </table></div>
+  </section>
+
+  <section id="cost">
+    <h2>What it costs to build</h2>
+    <p>The tech lead’s sizes, in working days. All are estimates, and the welcome and the show are tuned by eye, which is open-ended. About 30 days in all; fairly 25 to 38. The second round stood at 22 and the first plan at 16.</p>
+    <div class="scroll"><table class="t">
+      <tr><th>#</th><th>Milestone</th><th>Days</th><th>Was</th></tr>
+      <tr><td>0</td><td>A proof on both Googlebooks: the real panel behind the dialog, the film of an app opening with the panel coming back, one beat of the show, and what a tall glass redrawn every frame costs</td><td>1.5</td><td>1.25</td></tr>
+      <tr><td>1</td><td>The logic and its tests, the stored state</td><td>1.5</td><td>1.5</td></tr>
+      <tr><td>2</td><td>The screens as stills, with the wider caps</td><td>2.5</td><td>2.5</td></tr>
+      <tr><td>3</td><td>Step 1 for real; the key per keyboard</td><td>2.5</td><td>2.5</td></tr>
+      <tr><td>4</td><td>The lessons in one opening; the panel started again after an app opens</td><td>3.5</td><td>3.5</td></tr>
+      <tr><td>5</td><td>The question, the two choices, the fold</td><td>1.5</td><td>1.5</td></tr>
+      <tr><td>6</td><td>The show: apps, a sum, the example flight, the emoji grid, the landing</td><td>4.5</td><td>3.5</td></tr>
+      <tr><td></td><td>The welcome (5 to 9; one to three of these days are tuning by eye)</td><td>6</td><td>new</td></tr>
+      <tr><td>7</td><td>Motion</td><td>2.5</td><td>2.5</td></tr>
+      <tr><td>8</td><td>The replay, the window’s row, the README, German, the screen reader’s words</td><td>1.25</td><td>1.25</td></tr>
+      <tr><td>9</td><td>The device pass, the HP with you, fixes</td><td>2.5</td><td>2</td></tr>
+      <tr><td></td><td><strong>In all</strong></td><td><strong>29.75</strong></td><td>22</td></tr>
+    </table></div>
+    <p><strong>What could be cut first:</strong> the welcome’s own light, using the lap of light that exists instead (a day); the welcome as large type and one drawn mark (two more days, and it is no longer “all out”); the dim that lifts (a quarter day); apps really opening in the lessons (1.5 days: practice instead); reading the system’s own words and the key’s name, the window’s rows in the dialog, the icon’s first click (a day); part of the motion (1.25 days).</p>
+    <h3>Seen on a device, and not</h3>
+    <ul>
+      <li><strong>Seen</strong> on the Lenovo Googlebook, with a throwaway stand-in for the panel: the dialog opens on the app’s own page; the five rows are drawn as designed, in English and German; the panel’s place lies wholly behind the dialog; closing the dialog gives the focus back; the new keys close the dialog and the app is told; Action + Quick Insert is taken and works; a window that opens an app is put behind it and removed by the system, and comes back in front when it starts itself again at once.</li>
+      <li><strong>Not seen:</strong> the real panel behind the dialog; how the step aside and the return look to the eye; what a tall glass full of drawing costs per frame over the window’s blur; anything on the HP Googlebook; the welcome, the show, the screens and the motion, which exist as drawings and as this prototype.</li>
+    </ul>
+    <h3>The largest risks</h3>
+    <ol>
+      <li>The welcome on a device. No frame time has been measured for a tall glass redrawn every frame over the blur, and matching the prototype’s light is tuning by eye. The first milestone measures it before anything is laid out.</li>
+      <li>How the panel’s return over a freshly opened app looks. The system fades a see-through window out and in, and that has not been filmed. Practice only is the fallback.</li>
+      <li>The real panel behind the dialog has never been seen, only the stand-in.</li>
+    </ol>
+  </section>
+</main>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <path id="g-key" d="M12.650 10A6 6 0 1 0 12.650 14H17v4h4v-4h2v-4zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+    <path id="g-open" d="M14 3h7v7h-2V6.410l-8.300 8.300-1.400-1.420L17.580 5H14zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
+    <path id="g-search" d="M15.500 14h-.79l-.28-.27C15.410 12.590 16 11.110 16 9.500 16 5.910 13.090 3 9.500 3S3 5.910 3 9.500 5.910 16 9.500 16c1.610 0 3.090-.59 4.230-1.570l.27.28v.79l5 4.990L20.490 19l-4.990-5zm-6 0C7.010 14 5 11.990 5 9.500S7.010 5 9.500 5 14 7.010 14 9.500 11.990 14 9.500 14z"/>
+    <path id="g-calc" d="M19 3H5c-1.100 0-2 .9-2 2v14c0 1.100.9 2 2 2h14c1.100 0 2-.9 2-2V5c0-1.100-.9-2-2-2zm-5.970 4.060L14.090 6l1.410 1.410L16.910 6l1.060 1.060-1.410 1.410 1.410 1.410-1.060 1.060-1.410-1.400-1.410 1.410-1.060-1.060 1.410-1.410-1.410-1.420zm-6.780.66h5v1.500h-5v-1.500zM11.500 16h-2v2H8v-2H6v-1.500h2v-2h1.500v2h2V16zm6.500 1.250h-5v-1.500h5v1.500zm0-2.500h-5v-1.500h5v1.500z"/>
+    <path id="g-globe" d="M11.990 2C6.470 2 2 6.480 2 12s4.470 10 9.990 10C17.520 22 22 17.520 22 12S17.520 2 11.990 2zm6.930 6h-2.950c-.32-1.250-.78-2.450-1.380-3.560 1.840.63 3.370 1.910 4.330 3.560zM12 4.040c.83 1.200 1.480 2.530 1.910 3.960h-3.820c.43-1.430 1.080-2.760 1.910-3.960zM4.260 14C4.100 13.360 4 12.690 4 12s.1-1.360.26-2h3.380c-.08.66-.14 1.320-.14 2 0 .68.06 1.340.14 2H4.260zm.82 2h2.950c.32 1.250.78 2.450 1.380 3.560-1.840-.63-3.370-1.900-4.330-3.560zm2.950-8H5.080c.96-1.660 2.490-2.930 4.330-3.560C8.810 5.550 8.350 6.750 8.030 8zM12 19.960c-.83-1.200-1.480-2.530-1.910-3.960h3.820c-.43 1.430-1.080 2.760-1.910 3.960zM14.340 14H9.660c-.09-.66-.16-1.320-.16-2 0-.68.07-1.350.16-2h4.680c.09.65.16 1.320.16 2 0 .68-.07 1.340-.16 2zm.25 5.560c.6-1.110 1.060-2.310 1.380-3.560h2.950c-.96 1.650-2.490 2.930-4.330 3.560zM16.360 14c.08-.66.14-1.320.14-2 0-.68-.06-1.340-.14-2h3.380c.16.64.26 1.310.26 2s-.1 1.360-.26 2h-3.380z"/>
+    <path id="g-list" d="M4 5h3v3H4zm5 0h11v3H9zM4 10.500h3v3H4zm5 0h11v3H9zM4 16h3v3H4zm5 0h11v3H9z"/>
+    <path id="g-booklight" d="M6.750 2.800 L17.250 2.800 A3.250 3.250 0 0 1 17.250 9.300 L6.750 9.300 A3.250 3.250 0 0 1 6.750 2.800 Z M7.200 4.500 A0.5 0.5 0 0 1 7.700 4 L8.300 4 A0.5 0.5 0 0 1 8.800 4.500 L8.800 7.600 A0.5 0.5 0 0 1 8.300 8.100 L7.700 8.100 A0.5 0.5 0 0 1 7.200 7.600 Z M6.550 12.770 A1.750 1.750 0 0 1 8.160 11.700 L15.840 11.700 A1.750 1.750 0 0 1 17.450 12.770 L19.760 18.250 A2.120 2.120 0 0 1 17.800 21.200 L6.200 21.200 A2.120 2.120 0 0 1 4.240 18.250 Z"/>
+    <path id="g-enter" d="M19 7v4H5.830l3.580-3.590L8 6l-6 6 6 6 1.410-1.410L5.830 13H21V7z"/>
+    <path id="g-copy" d="M8 3h10a2 2 0 0 1 2 2v12h-2V5H8zM5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h10V9z"/>
+    <path id="g-check" d="M9 16.200 4.800 12l-1.400 1.400L9 19 21 7l-1.400-1.400z"/>
+    <path id="g-play" d="M8 5.200v13.600a.8.8 0 0 0 1.200.67l10.670-6.800a.8.8 0 0 0 0-1.330L9.200 4.530a.8.8 0 0 0-1.200.67z"/>
+    <path id="g-window" d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4v10h16V8zm7 2h2v2h2v2h-2v2h-2v-2H9v-2h2z"/>
+    <path id="g-more" d="M7.410 8.590 12 13.170l4.590-4.580L18 10l-6 6-6-6z"/>
+    <path id="g-plane" d="M21 16v-2l-8-5V3.500a1.500 1.500 0 0 0-3 0V9l-8 5v2l8-2.500V19l-2 1.500V22l3.500-1 3.500 1v-1.500L13 19v-5.500z"/>
+    <path id="g-app" d="M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"/>
+    <path id="g-smile" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm3.500 6a1.500 1.500 0 1 1 0 3 1.500 1.500 0 0 1 0-3zm-7 0a1.500 1.500 0 1 1 0 3 1.500 1.500 0 0 1 0-3zM12 17.500c-2.330 0-4.310-1.460-5.110-3.500h10.220c-.8 2.040-2.780 3.500-5.110 3.500z"/>
+  </defs>
+</svg>
+
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id), root = document.documentElement;
+  const desk = $('desk'), P = $('panel'), HP = $('hp'), ptr = $('ptr'), fld = $('fld'), phE = $('ph'), rec = $('rec'), ttl = $('ttl'), sub = $('sub'), cnt = $('cnt'), capn = $('capn'), hiE = $('hi'), fr = $('fr'),
+    sAns = $('s-ans'), qAns = $('q-ans'), lst = $('lst'), co = $('co'), LAP = [...$('lap').children], PARTS = [$('s-disc'), $('s-wd'), cnt, sAns], QP = [...$('qq').children], ENDS = [$('fm'), $('fesc'), $('stg'), $('qq')];
+  const S = { theme: 'light', back: 'light', lang: 'en', slow: 1, motion: +!matchMedia('(prefers-reduced-motion: reduce)').matches, at: 'K1', words: 'A', light: 'rich' };
+  const ORDER = ['WL', 'OV', 'K1', 'H', 'K2', 'K3', 'K4', 'L2', 'L3', 'L4', 'Q', 'C', 'END'], MAIN = ['OV', 'H', 'K4', 'L2', 'L3', 'L4', 'Q', 'C', 'END'];
+  const I = (g, c = 'i') => `<svg class="${c}" viewBox="0 0 24 24"><use href="#g-${g}"/></svg>`, ENT = I('enter', 'i e'), OPENS = 'cubic-bezier(.55,0,.1,1)';
+  // The opening's stand-ins: seventy emoji in the table's order, and five apps for one letter (a device shows its own), each with a drawn icon.
+  const EMO = '😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 🫠 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😙 🥲 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🫢 🫣 🤫 🤔 😯 🤐 🤨 😐 😑 😶 🫥 😏 😒 🙄 😬 🤥 🫨 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🤧 🥵 🥶 🥴 😵 🤯 🤠 🥳 🥸 😎 🤓 🧐 😕'.split(' ');
+  const G = { calc: '<path d="M7 9h4M9 7v4M13 14.500h4M13 17h4"/>', cal: '<path d="M6 7h12v11H6zM6 10.500h12M9 5v3M15 5v3"/>', cam: '<path d="M5 9h14v9H5zM9.500 9l1-2h3l1 2"/><circle cx="12" cy="13.500" r="2.500"/>',
+    ring: '<circle cx="12" cy="12" r="6.500"/><circle cx="12" cy="12" r="2.200"/>', clock: '<circle cx="12" cy="12" r="6.500"/><path d="M12 8.500V12l2.500 1.500"/>', man: '<circle cx="12" cy="9.500" r="2.800"/><path d="M6.500 18c.6-3 2.800-4.300 5.500-4.300s4.900 1.300 5.500 4.300"/>',
+    pin: '<path d="M12 19s5-4.800 5-8.500a5 5 0 0 0-10 0c0 3.700 5 8.500 5 8.500z"/><circle cx="12" cy="10.500" r="1.700"/>' };
+  const APPS = { en: ['c', ['Calculator', 'calc'], ['Calendar', 'cal'], ['Camera', 'cam'], ['Chrome', 'ring'], ['Clock', 'clock']], de: ['k', ['Kalender', 'cal'], ['Kamera', 'cam'], ['Karten', 'pin'], ['Kompass', 'ring'], ['Kontakte', 'man']] };
+
+  // Every word of design.md, English and German. A K or L screen: title, line, caption (an L screen: which of the two), placeholder.
+  const W = {
+    en: { ph: 'Search apps, settings and the web', of: ' of ', action: 'Action',
+      K1: ['Give Booklight a key', 'One press, from any app, and Booklight is there.', 'Quick Insert is left of A · or any keys you like'],
+      K2: ['Now press your keys', 'Nothing happens? Open Keyboard shortcuts once more.', 'your keys'],
+      K3: ['Didn’t work?', 'Click Customize first. Hold Action, then press the second key.', 'Or try Action + J'],
+      K4: ['Your key works', 'The same keys put Booklight away.', ''],
+      L2: ['Open an app', 'Type its first letters, then Enter.', 0, 'An app’s first letters'],
+      L3: ['Search inside an app', 'Tab moves along the row, Enter does. Then type what to look for.', 0, 'yout, then Tab'],
+      L4: ['A sum', 'The answer stands there as you type. Enter copies it.', 1, '150 + 20%'],
+      cap: ['Enter also puts Booklight away. Today it comes back.', 'Enter also puts Booklight away. Today it stays.'],
+      open: 'Open Keyboard shortcuts', notnow: 'Not now', goon: 'Go on', skip: 'Skip', agree: 'Agree',
+      qt: 'Suggest searches as you type?', qn: 'Off until you agree. Change it in Booklight’s window › Results.',
+      qx: 'Booklight sends what you type to Google while you type, to suggest searches. Google also sees your IP address. Not sent: sums, web addresses, and anything after a keyword or with an app in the field.',
+      c1: 'Show your usual', c1x: 'With nothing typed, the two things you run most stand under the field. Nothing changes until you have run two things twice each.', off: 'Off', on: 'On',
+      c3: 'Everything Booklight does', c3x: 'Every keyword, with an example to try',
+      labs: 'Play by name and flight times need your own key: window › Labs', done: 'Done', close: 'Close', actions: 'Actions', move: 'Move', endph: 'Type ? for everything Booklight does', eph: 'Emoji name',
+      co2: 'opens it · Booklight goes, and today comes back', co3a: 'moves to Search', co3b: 'goes into the app', co3c: 'searches there · Booklight goes, and today comes back', co4: 'copies the answer · Booklight stays today only',
+      aOpen: 'Open', aSearch: 'Search', aCopy: 'Copy', aWin: 'Window', aMore: 'More', app: 'App', web: 'Web', ans: 'Answer', copied: 'Copied', sph: 'Search YouTube',
+      webrow: q => `Search Google for “${q}”`, inapp: q => `Search YouTube for “${q}”`, ht: 'A shortcut for this app, in five steps',
+      hello: { A: ['Welcome to Booklight', 'Your Swiss Army knife launcher. Blades not included.', 'Show off'], B: ['Welcome to Booklight', 'Small panel, big ego. Ten seconds, tops.', 'Watch this'], C: ['Hi, I’m Booklight', 'Launcher by trade, Swiss Army knife at heart.', 'Here goes'] },
+      fl: ['Lands in 4 h 07 min', 'On time', 'Example', '2:47 PM', '10:25 AM', 'An example. Live times need your own AirLabs key.'],
+      cells: ['grinning face', 'grinning face with big eyes', 'grinning face with smiling eyes', 'beaming face with smiling eyes', 'face blowing a kiss'],
+      h: ['1. Click Customize, top right', '2. Type this app’s name, then click +', '3. Hold Action and press Quick Insert, or any keys you like', '4. Click Set shortcut', '5. Press your keys again. This closes by itself.'] },
+    de: { ph: 'Apps, Einstellungen und das Web durchsuchen', of: ' von ', action: 'Aktion',
+      K1: ['Booklight eine Taste geben', 'Ein Druck, aus jeder App, und Booklight ist da.', 'Quick Insert liegt links neben A · oder Tasten deiner Wahl'],
+      K2: ['Jetzt deine Tasten drücken', 'Nichts passiert? Öffne die Tastenkürzel noch einmal.', 'deine Tasten'],
+      K3: ['Hat nicht geklappt?', 'Zuerst „Customize“ klicken. Aktion halten, dann die zweite Taste drücken.', 'Oder Aktion + J versuchen'],
+      K4: ['Deine Taste funktioniert', 'Dieselben Tasten schließen Booklight wieder.', ''],
+      L2: ['Eine App öffnen', 'Die ersten Buchstaben tippen, dann Enter.', 0, 'Die ersten Buchstaben einer App'],
+      L3: ['In einer App suchen', 'Tab geht die Zeile entlang, Enter führt aus. Dann tippen, was du suchst.', 0, 'yout, dann Tab'],
+      L4: ['Eine Rechnung', 'Das Ergebnis steht da, während du tippst. Enter kopiert es.', 1, '150 + 20%'],
+      cap: ['Sonst schließt Enter auch Booklight. Heute kommt es zurück.', 'Sonst schließt Enter auch Booklight. Heute bleibt es.'],
+      open: 'Tastenkürzel öffnen', notnow: 'Nicht jetzt', goon: 'Weiter', skip: 'Überspringen', agree: 'Zustimmen',
+      qt: 'Beim Tippen Suchen vorschlagen?', qn: 'Aus, bis du zustimmst. Änderbar in Booklights Fenster › Ergebnisse.',
+      qx: 'Booklight sendet, was du tippst, schon beim Tippen an Google, um Suchen vorzuschlagen. Google sieht dabei auch deine IP-Adresse. Nicht gesendet werden Berechnungen, Webadressen und alles nach einem Stichwort oder mit einer App im Feld.',
+      c1: 'Das Übliche zeigen', c1x: 'Ohne Eingabe stehen deine zwei meistgenutzten Dinge unter dem Feld. Nichts ändert sich, bis zwei Dinge je zweimal liefen.', off: 'Aus', on: 'An',
+      c3: 'Alles, was Booklight kann', c3x: 'Jedes Stichwort, mit einem Beispiel zum Ausprobieren',
+      labs: 'Musik nach Namen, Flugzeiten: eigener Schlüssel, im Fenster › Labs', done: 'Fertig', close: 'Schließen', actions: 'Aktionen', move: 'Bewegen', endph: 'Tippe ? für alles, was Booklight kann', eph: 'Emoji-Name',
+      co2: 'öffnet sie · Booklight geht und kommt heute zurück', co3a: 'geht zu „Suchen“', co3b: 'geht in die App', co3c: 'sucht dort · Booklight geht und kommt heute zurück', co4: 'kopiert das Ergebnis · Booklight bleibt nur heute',
+      aOpen: 'Öffnen', aSearch: 'Suchen', aCopy: 'Kopieren', aWin: 'Fenster', aMore: 'Mehr', app: 'App', web: 'Web', ans: 'Ergebnis', copied: 'Kopiert', sph: 'YouTube durchsuchen',
+      webrow: q => `Mit Google nach „${q}“ suchen`, inapp: q => `In YouTube nach „${q}“ suchen`, ht: 'Ein Tastenkürzel für diese App, in fünf Schritten',
+      hello: { A: ['Willkommen bei Booklight', 'Dein Schweizer Taschenmesser zum Tippen. Ohne Klinge.', 'Kurz angeben'], B: ['Willkommen bei Booklight', 'Kleines Fenster, großes Ego. Höchstens zehn Sekunden.', 'Pass auf'], C: ['Hallo, ich bin Booklight', 'Launcher von Beruf, im Herzen Taschenmesser.', 'Los geht’s'] },
+      fl: ['Landung in 4 Std. 07 Min.', 'Pünktlich', 'Beispiel', '14:47', '10:25', 'Ein Beispiel. Live-Zeiten brauchen deinen eigenen AirLabs-Schlüssel.'],
+      cells: ['grinsendes Gesicht', 'grinsendes Gesicht mit großen Augen', 'grinsendes Gesicht mit lachenden Augen', 'strahlendes Gesicht mit lachenden Augen', 'Kuss zuwerfendes Gesicht'],
+      h: ['1. Oben rechts auf „Customize“ klicken', '2. Den Namen dieser App tippen, dann auf + klicken', '3. Aktionstaste halten und Quick Insert drücken, oder Tasten deiner Wahl', '4. Auf „Set shortcut“ klicken', '5. Die Tasten noch einmal drücken. Das hier schließt sich von selbst.'] }
+  };
+  // A K or L screen: its mark, its number, its answers, which answer is armed. And its recipe: c a cap, t a typed part, k "your key".
+  const D = { K1: ['key', 1, ['open', 'notnow'], 0], K2: ['key', 1, ['open', 'notnow'], -1], K3: ['key', 1, ['open', 'notnow'], 0], K4: ['key', 1, ['goon'], 0], L2: ['open', 2, ['skip'], -1], L3: ['search', 3, ['skip'], -1], L4: ['calc', 4, ['skip'], -1] };
+  const REC = { K1: ['c:A', '+', 'c:Quick Insert'], K2: ['k'], K3: ['k'], K4: ['k'], L2: ['t:yout', 'c:E'], L3: ['t:yout', 'c:Tab', 'c:E', 't:lofi', 'c:E'], L4: ['t:150 + 20%', 'c:E'] };
+  const SAY = {
+    WL: 'The welcome, as it stands to be read. Night in a tall glass, Booklight’s own lamp on in the field, its light on the words and on a small knife of five tools. The handle is the one coloured thing, and it becomes the highlight.',
+    OV: 'The show, at its peak: the emoji grid. After the welcome Booklight types into its own field: apps, a sum, an example flight, the grid. It lands in K1 without a cut, and any key ends it.',
+    K1: 'K1. One reason, the suggested keys as caps, a caption that says where the key is, one button named for what it opens.',
+    H: 'The system’s helper over the panel. Its page is Booklight’s own: five numbered rows, the suggested keys at each row’s end.',
+    K2: 'K2. Back from the helper and no key came. The key is blank: Booklight cannot know which keys were chosen.',
+    K3: 'K3. From the second return on: the two usual traps, and other keys to try.',
+    K4: 'K4. The key works. It waits for Enter or a letter.',
+    L2: 'L2. Step 2 of 5: open an app. Nothing is armed; the field takes the letters. The caption says what Enter does on other days.',
+    L3: 'L3. Step 3 of 5: search inside an app. The panel came back by itself, over the app that was just opened.',
+    L4: 'L4. Step 4 of 5: a sum. It copies and the panel stays.',
+    Q: 'Q. The question stands alone and nothing is armed: Enter does nothing until Tab.',
+    C: 'C. Your choices: a real list of two rows, nothing selected. Enter ends first run.',
+    END: 'The end. The bare field, with its line for this one opening.'
+  };
+
+  // ---- Motion.kt: spring(dampingRatio, stiffness) as a CSS easing and its time ----
+  function spring(z, k) {
+    const w = Math.sqrt(k), wd = w * Math.sqrt(1 - z * z), T = 6.2 / (z * w), v = [];
+    for (let i = 0; i <= 48; i++) { const t = T * i / 48; v.push(+(1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t))).toFixed(4)); }
+    v[48] = 1; return [Math.round(T * 1000) + 'ms', `linear(${v.join(',')})`];
+  }
+  if (window.CSS && CSS.supports('transition-timing-function', 'linear(0, 1)'))   // place, pop, lead, trail, arm, pillLead, pillTrail, pillTrail(far)
+    for (const [n, z, k] of [['p', .86, 520], ['q', .62, 700], ['l', .82, 1100], ['t', .9, 420], ['a', .78, 560], ['pl', .85, 1400], ['pt', .86, 900], ['pf', .9, 1400]]) { const [d, e] = spring(z, k); root.style.setProperty('--d' + n, d); root.style.setProperty('--e' + n, e); }
+
+  // ---- time: a motion's ms are stretched by the speed and are 0 with motion off; the user's own pauses are neither ----
+  let run = 0, T = [], AN = [], raf = 0, playing = 0, lapOut = 0, whoIs = -1;
+  const ms = n => S.motion ? n * S.slow : 0;
+  function later(n, f, real) { const id = run; T.push(setTimeout(() => id === run && f(), real ? n : ms(n))); }
+  const mv = n => new Promise(ok => later(n, ok)), th = n => new Promise(ok => later(n, ok, 1)), hold = n => new Promise(ok => later(n * S.slow, ok, 1));
+  function halt() { run++; T.forEach(clearTimeout); T = []; AN.forEach(a => a.cancel()); AN = []; cancelAnimationFrame(raf); cancelAnimationFrame(wraf); LAP.forEach(p => p.style.opacity = 0); setPlaying(0); }
+  function A(el, kf, d, delay = 0, easing = 'linear', fill = 'backwards') { if (S.motion) AN.push(el.animate(kf, { duration: d * S.slow, delay: delay * S.slow, easing, fill })); }
+  const flush = () => void desk.offsetWidth;
+  function still(f) { desk.classList.add('still'); f(); flush(); desk.classList.toggle('still', !S.motion); }
+  function xf(el, f) { el.classList.add('x'); later(80, () => { f(); el.classList.remove('x'); }); }      // words cross-fade where they stand: 80 out, 120 in
+
+  // ---- small parts ----
+  const H = h => P.style.setProperty('--h', h + 'px'), key = () => rec.querySelector('.me'), fmark = b => { $('fm').innerHTML = b ? I('booklight') : 'G'; };
+  function view(v, keep) { P.dataset.v = v; if (v !== 'l' && !keep) hiE.classList.remove('on'); }
+  function field(t) { $('fx').textContent = t; phE.classList.toggle('gone', !!t); }
+  function ph(t, now) { if (now) { phE.textContent = t; phE.classList.remove('off'); } else if (phE.textContent !== t) { phE.classList.add('off'); later(60, () => { phE.textContent = t; phE.classList.remove('off'); }); } }
+  function chipOn(h) { if (h) $('chip').innerHTML = h; fld.classList.toggle('sc', !!h); fld.style.setProperty('--tx', h ? 32 + $('chip').offsetWidth + 'px' : '72px'); }
+  /** A changed word rolls up into place: half a line on place, 120 in, 70 out. */
+  function roll(box, html) {
+    const old = box.lastElementChild; if (old && old.innerHTML == html) return;
+    const n = document.createElement('span'); n.className = 'new'; n.innerHTML = html; box.appendChild(n);
+    if (old) { old.className = 'old'; later(400, () => old.remove()); }
+    flush(); n.className = '';
+  }
+  function glyph(g) { const u = $('s-g'), s = u.parentNode; if (u.getAttribute('href') === '#g-' + g) return; s.classList.add('sw'); later(80, () => { u.setAttribute('href', '#g-' + g); s.classList.remove('sw'); }); }
+  function answers(el, keys, arm) {
+    el.style.setProperty('--n', keys.length); el.dataset.a = -1;
+    el.innerHTML = `<span class="fk tabc">tab</span><div class="strip"><i class="hl"></i>${keys.map(k => `<div class="sl"><span>${W[S.lang][k]}</span>${ENT}</div>`).join('')}</div>`;
+    armTo(el, arm);
+  }
+  /** Tab: the pill fades in where it stands; from one answer to the next its far edge leads and its near edge trails. */
+  function armTo(el, i) {
+    const hl = el.querySelector('.hl'), n = el.querySelectorAll('.sl').length, was = +el.dataset.a;
+    if (i >= 0) { if (was < 0) hl.style.transition = 'none'; hl.classList.toggle('up', i < was); hl.style.setProperty('--t0', i * 36 + 'px'); hl.style.setProperty('--b0', (n - 1 - i) * 36 + 'px'); flush(); hl.style.transition = ''; }
+    el.dataset.a = i; el.classList.toggle('lit', i >= 0); hl.classList.toggle('on', i >= 0);
+    el.querySelectorAll('.sl').forEach((s, k) => s.classList.toggle('on', k === i));
+  }
+  function slot(el, i) { const s = el.querySelectorAll('.sl')[i]; s.classList.add('pr'); later(80, () => s.classList.remove('pr')); }
+
+  // ---- the one highlight: the list's pill, the grid's square, and in the opening's landing K1's armed answer ----
+  const sp = (k, d) => `var(--t${k}) var(--e${k})` + (d ? ` calc(${d}ms * var(--slow))` : '');
+  // How its edges go. p: all four on place. d, u: the list's pill down a row (the old edge holds five frames), up a long way (two frames). r, g: the square a cell to the right, from rest and while it moves. a: into the answer.
+  const HT = { p: ['left', 'right', 'top', 'bottom'].map(e => e + ' ' + sp('p')).join(), d: 'bottom ' + sp('pl') + ',top ' + sp('pt', 42), u: 'top ' + sp('pl') + ',bottom ' + sp('pf', 17),
+    r: 'right ' + sp('pl') + ',left ' + sp('pt', 42), g: 'right ' + sp('pl') + ',left ' + sp('pt'), a: 'right ' + sp('pl') + ',left ' + sp('pf', 17) + ',top ' + sp('p') + ',bottom ' + sp('p') };
+  /** The highlight's box in the panel's dp: x1, y1, x2, y2, radius. Without a way to go it is simply there. */
+  function hi(b, m) {
+    hiE.style.transition = m ? HT[m] + ',opacity var(--f120) var(--std),border-radius ' + sp('p') : 'none';
+    b.forEach((v, i) => hiE.style.setProperty('--' + 'ltrbq'[i], (i === 2 ? 720 - v : i === 3 ? 480 - v : v) + 'px'));
+    if (!m) { flush(); hiE.style.transition = ''; }
+  }
+  const rows = () => [...lst.querySelectorAll('.r:not(.out)')], cell = (c, r) => [16 + 49.4 * c, 86 + 48 * r, 60 + 49.4 * c, 130 + 48 * r, 14];
+  /** The pill on row i: it fades in where it stands, and between rows it travels the way m says. */
+  function sel(i, m) {
+    const r = rows()[i]; rows().forEach((x, k) => x.classList.toggle('on', k === i));
+    if (r) hi([8, 76 + r.offsetTop, 712, 76 + r.offsetTop + r.offsetHeight, 24], hiE.classList.contains('on') && m);
+    hiE.classList.toggle('on', !!r);
+  }
+
+  // ---- the stage: K and L screens ----
+  /** The band's pieces and the ms each starts at: a letter 40 after the one before, a new piece one beat (66) after the piece before it. */
+  function recipe(n) {
+    let at = 0, prev = '', h = '';
+    for (const p of REC[n]) {
+      const k = p[0], v = p.slice(2), gap = !prev || prev === '+' || k === '+' ? '' : k === 'c' && prev === 'c' ? ' g12' : ' g16';
+      if (prev) at += 66;
+      if (k === 't') { h += `<span class="ty${gap}">` + [...v].map((ch, i) => `<i data-at="${at + 40 * i}">${ch === ' ' ? '&nbsp;' : ch}</i>`).join('') + '</span>'; at += 40 * (v.length - 1); }
+      else if (k === '+') h += `<b class="plus" data-at="${at}">+</b>`;
+      else h += `<span class="kc${gap}${k === 'k' ? ' me' : ''}" data-at="${at}">${k === 'k' ? '<svg class="chk" viewBox="0 0 24 24"><path pathLength="1" d="M5 12.500 10 17.500 19.500 7"/></svg>' : v === 'E' ? I('enter') : v === 'A' ? W[S.lang].action : v}</span>`;
+      prev = k;
+    }
+    return [h, at];
+  }
+  const capOf = n => { const w = W[S.lang], c = w[n][2]; return n[0] === 'K' ? c : w.cap[c]; };
+  function draw(n) {
+    const w = W[S.lang], [g, num, ans, arm] = D[n];
+    $('s-g').setAttribute('href', '#g-' + g); ttl.innerHTML = `<span>${w[n][0]}</span>`; sub.innerHTML = `<span>${w[n][1]}</span>`;
+    cnt.innerHTML = `<span class="rb"><span>${num}</span></span>${w.of}5`; rec.innerHTML = recipe(n)[0]; capn.textContent = capOf(n); capn.classList.remove('in');
+    answers(sAns, ans, arm); PARTS.forEach(e => e.classList.remove('in', 'out'));
+  }
+  function standS(n) { draw(n); H(252); view('s'); $('stg').querySelectorAll('.pt,[data-at],.capn').forEach(e => e.classList.add('in')); if (n === 'K4') key().classList.add('ok'); }
+  /** The band from its start b: the recipe's pieces, a beat later the caption, then the answers; a key that works takes its check. Returns the ms to rest. */
+  function band(b, end, n, keep) {
+    rec.querySelectorAll('[data-at]').forEach(e => later(b + +e.dataset.at, () => e.classList.add('in')));
+    let at = b + end + 66;
+    if (capn.textContent) { later(at, () => capn.classList.add('in')); at += 22; }
+    if (!keep) later(at, () => sAns.classList.add('in'));
+    if (n === 'K4') later(b + 60, () => key().classList.add('ok'));
+    return at + 170;
+  }
+  /** T1, T5: a screen set down. The seat's parts 22 ms apart, the band from b. */
+  function down(n, b) { draw(n); H(252); view('s'); PARTS.slice(0, 3).forEach((e, i) => later(22 * i, () => e.classList.add('in'))); return band(b, recipe(n)[1], n); }
+  /** T5: one screen gives way to the next where it stands. 252 stays. keep: the answers' words stay (Skip; the two answers of K1 and K2). */
+  function turn(n, keep) {
+    const w = W[S.lang], [g, num, ans, arm] = D[n], [h, end] = recipe(n), c = capOf(n), same = c === capn.textContent;
+    glyph(g); roll(ttl, w[n][0]); later(22, () => roll(sub, w[n][1])); later(44, () => roll(cnt.firstElementChild, num));
+    [...rec.children].forEach(e => e.classList.add('out')); if (!same) capn.classList.remove('in');
+    if (keep) armTo(sAns, arm); else sAns.classList.add('out');
+    later(120, () => { rec.innerHTML = h; capn.textContent = c; if (!keep) { answers(sAns, ans, arm); sAns.classList.remove('in', 'out'); } flush(); band(0, end, n, keep); });
+    return 120 + end + 66 + 22 + 170;
+  }
+  /** T3, T4: K4's words; "your key" down, held, up on pop; the check 60 ms after the release, the lap 240 ms after it. */
+  function keyLands(held) {
+    const w = W[S.lang], k = key();
+    roll(ttl, w.K4[0]); later(22, () => roll(sub, w.K4[1])); capn.classList.remove('in'); sAns.classList.add('out'); if (S.motion) k.classList.add('dn');
+    later(80, () => { answers(sAns, ['goon'], 0); sAns.classList.remove('out'); });
+    later(held, () => k.classList.remove('dn')); later(held + 60, () => k.classList.add('ok')); later(held + 240, () => lap(252));
+    return held + 240 + 1944;
+  }
+
+  // ---- the question, the list, the footer ----
+  function drawQ() { const w = W[S.lang]; $('q-t').textContent = w.qt; $('q-c').textContent = 5 + w.of + 5; $('q-x').textContent = w.qx; $('q-n').textContent = w.qn; answers(qAns, ['agree', 'notnow'], -1); QP.forEach(e => e.classList.remove('in')); }
+  const acts = a => `<span class="acts"><i class="pane"></i>${a.map(([g, t]) => `<span class="a">${I(g)}<b>${t}</b>${ENT}</span>`).join('')}</span>`;
+  const dsc = g => `<span class="ic${g === 'play' ? ' ap' : ''}">${I(g)}</span>`, tile = (g, i) => `<span class="ic ti" style="--c:var(--a${i + 1})"><svg viewBox="0 0 24 24">${G[g]}</svg></span>`;
+  const row = (id, ic, t, kind, a, cls = '') => `<div class="r pt ${cls}" id="${id}">${ic}<div class="tx"><div class="tt" id="${id}t">${t}</div></div><div class="end"><span class="kd">${kind}</span>${acts(a)}</div></div>`;
+  const rApp = w => row('r-app', dsc('play'), 'YouTube', w.app, [['open', w.aOpen], ['search', w.aSearch]]), rWeb = (w, q) => row('r-web', dsc('search'), w.webrow(q), w.web, [['search', w.aSearch]]);
+  const flRow = w => `<div class="r pt fl" id="r-fl">${dsc('plane')}<div class="fc">LH 455 · Lufthansa · San Francisco → Frankfurt/Main</div><div class="fh"><span>${w.fl[0]}</span><i class="bd">${w.fl[1]}</i></div><span class="fe">${w.fl[2]}</span>`
+    + `<div class="trk" id="trk">${['ba', 'tg'].map(k => `<svg class="d ${k}" width="628" height="20"><line x1="1.5" y1="10" x2="626.5" y2="10"/></svg>`).join('')}<i class="fw"></i><svg class="pl" viewBox="0 0 24 24"><use href="#g-plane" transform="rotate(90 12 12)"/></svg></div>`
+    + `<div class="fz"><span><b>SFO</b>${w.fl[3]}<u>Boeing 747-8</u></span><span><u>Terminal 1</u>${w.fl[4]}<b>FRA</b></span></div></div>`;
+  /** A flight's plane arrives as it does when an answer lands: 60 ms after the row it fades in at the line's start and flies to its place on the glass's curve (Motion.flies: 300 ms and 300 more for the whole line). */
+  function fly(el, x) { const id = run, t0 = performance.now() + ms(60), d = ms(300 + 300 * x / 608); el.classList.add('has'); const f = now => { if (id !== run) return; const q = d ? cl((now - t0) / d) : 1; el.style.setProperty('--x', x * OPN(q)); if (q < 1) requestAnimationFrame(f); }; f(performance.now()); }
+  const sumRow = (w, q, v) => row('r-sum', dsc('calc'), `<div class="sb" id="sumq">${q}</div><div class="rb big" id="sumv"><span>${v}</span></div>`, w.ans, [['copy', w.aCopy]], 'tl');
+  function armAct(a, i) { const as = a.querySelectorAll('.a'); as.forEach((x, k) => x.classList.toggle('arm', k === i)); a.style.setProperty('--pl', 32 * i + 'px'); a.style.setProperty('--pw', as[i].querySelector('b').scrollWidth + 61 + 'px'); }
+  function fit() { lst.querySelectorAll('.r:not(.out) .acts:not(.fit)').forEach(a => { a.querySelectorAll('b').forEach(b => b.style.setProperty('--w', b.scrollWidth + 'px')); a.classList.add('nt', 'fit'); armAct(a, 0); flush(); a.classList.remove('nt'); }); }
+  const height = () => 120 + rows().reduce((h, r) => h + r.offsetHeight, 0);
+  /** One list change: what leaves fades where it stands, what comes rises 22 ms apart. */
+  function change(html) {
+    const old = [...lst.children], tops = old.map(e => e.offsetTop);
+    old.forEach((e, i) => { e.style.cssText += `;position:absolute;left:0;right:0;top:${tops[i]}px`; e.classList.add('out'); later(100, () => e.remove()); });
+    lst.insertAdjacentHTML('afterbegin', html); fit(); flush(); rows().forEach((r, i) => later(22 * i, () => r.classList.add('in')));
+  }
+  const fk = c => `<span class="fk">${c === 'E' ? I('enter') : c}</span>`;
+  /** T7: the coach line: the counter, a footer cap, the words. Its words cross-fade where they stand. */
+  function coach(c, cut) {
+    const w = W[S.lang], h = !c ? '' : typeof c === 'string' ? c : `${c[0]}${w.of}5 · ${c[1] ? fk(c[1]) : ''}${c[2]}`, f = () => { co.innerHTML = h; };
+    if (cut) f(); else xf(co, f);
+  }
+  function footR(h, skip) { const w = W[S.lang]; fr.innerHTML = h.concat([['esc', skip ? w.skip : w.close]]).map(([c, t]) => fk(c) + t).join(''); }
+  /** T7: the first typed letter. The stage fades where it stands; the rows rise 22 ms apart; the pill fades in on row one; the footer comes on the lower edge. */
+  function list(html, c, h = [], skip) { lst.innerHTML = ''; change(html); view('l'); coach(c, 1); footR(h, skip); H(height()); sel(0); }
+  function drawC() {
+    const w = W[S.lang], r = (g, t, s, end, cls = '') => `<div class="r pt ${cls}">${dsc(g)}<div class="tx"><div class="tt">${t}</div><div class="sb">${s}</div></div><div class="end">${end}</div></div>`;
+    lst.innerHTML = r('list', w.c1, w.c1x, `<span class="sv rb rt" id="swv"><span>${w.off}</span></span><i class="sw" id="sw"></i>`, 'tl') + r('booklight', w.c3, w.c3x, '<span class="fk st">?</span>');
+    coach(w.labs, 1); footR([['E', w.done]]); H(268);
+  }
+  /** The emoji grid arrives: the keyword is the chip, the old row fades where it stands, the cells rise in their diagonal wave. */
+  function grid(now) {
+    const w = W[S.lang], f = () => footR([['E', w.aCopy], ['↑↓←→', w.move]], 1);
+    chipOn(I('smile') + 'Emoji'); field(''); ph(w.eph, now); coach(w.cells[0], now); if (now) f(); else xf(fr, f);
+    change('<div class="gr">' + EMO.map((e, k) => `<i class="ce" style="left:${14 + 49.4 * (k % 14)}px;top:${8 + 48 * (k / 14 | 0)}px;--d:${Math.min(120, 8 * (k % 14 + (k / 14 | 0)))}">${e}</i>`).join('') + '</div>');
+    lst.querySelectorAll('.ce').forEach(e => e.classList.add('in')); view('l', 1); H(376);
+  }
+
+  // ---- the opening and the leaving, as Arrival in Panel.kt. a: 2 at Medium, the default. sys: the system's own fade over a panel that comes back ----
+  async function unfold(a, sys) {
+    P.classList.remove('gone');
+    const s = getComputedStyle(P).boxShadow;
+    A(P, [{ opacity: 0 }, { opacity: 1 }], sys || 40 * a);
+    A(P, [{ height: '6.8px', transform: 'translate(-50%,30.6px)' }, { height: '68px', transform: 'translate(-50%,0)' }], 80 * a, 0, 'cubic-bezier(.2,0,0,1)');
+    A(P, [{ width: '6px' }, { width: '720px' }], 180 * a, 30 * a, OPENS);
+    A(P, [{ boxShadow: s.replace(/rgba?\([^)]*\)/, 'rgb(255, 255, 255)') }, { boxShadow: s }], 180 * a, 30 * a, OPENS);      // the seam is the outline at full white; it relaxes as the glass opens
+    A($('pin'), [{ opacity: 0 }, { opacity: 1 }], 40 * a, 89 * a);
+    ENDS.forEach(e => A(e, [{ opacity: 0 }, {}], 65 * a, 145 * a));     // the mark, the esc cap and what is under the field wait for the glass's edge
+    await mv(129 * a);                                                   // the gate: the glass is 85 % open
+  }
+  /** An ordinary opening, then at the gate the lesson. The band starts when the glass is at rest (G + 163 at Medium). */
+  async function open(n, sys) { field(''); H(68); draw(n); view('s'); await unfold(2, sys); await mv(down(n, 163)); }
+  async function leave() {
+    A(P, [{ width: '720px' }, { width: '6px' }], 105, 0, 'cubic-bezier(.45,0,.4,1)', 'forwards');
+    [$('pin'), $('foot')].forEach(e => A(e, [{}, { opacity: 0 }], 40, 15, 'linear', 'forwards'));
+    A(P, [{ height: P.offsetHeight + 'px', transform: 'translate(-50%,0)' }, { height: '6.8px', transform: 'translate(-50%,30.6px)' }], 80, 75, 'cubic-bezier(1,0,.8,1)', 'forwards');
+    A(P, [{ opacity: 1 }, { opacity: 0 }], 40, 115, 'linear', 'forwards');
+    await mv(155);
+    AN.forEach(x => x.cancel()); AN = []; still(() => { P.classList.add('gone'); H(68); view('b'); field(''); chipOn(0); });
+  }
+
+  // ---- the reflection of Glass.kt: one light, once round the outline of each frame from the top's middle, clockwise. It answers when it has come as far as cue ----
+  const bez = (a, b, c, d) => x => { let t = x; for (let i = 0; i < 8; i++) { const f = 3 * a * t * (1 - t) * (1 - t) + 3 * c * t * t * (1 - t) + t * t * t - x, g = 3 * a * (1 - t) * (1 - t) + 6 * (c - a) * t * (1 - t) + 3 * (1 - c) * t * t; if (Math.abs(g) < 1e-6) break; t = Math.min(1, Math.max(0, t - f / g)); } return 3 * b * t * (1 - t) * (1 - t) + 3 * d * t * t * (1 - t) + t * t * t; };
+  const REFL = bez(.3, 0, .5, 1), sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function lap(h0, cue, night) {
+    return new Promise(ok => {
+      if (!S.motion) return ok();
+      const i = .9, q = 32 - i, x1 = 720 - i, len = 2 * (720 + h0), full = Math.min(2200, len), id = run, t0 = performance.now(); lapOut = 0;
+      const f = now => {
+        if (id !== run) return;
+        const y1 = P.offsetHeight - i, per = 2 * (x1 - i - 2 * q) + 2 * (y1 - i - 2 * q) + 2 * Math.PI * q,
+          d = `M360 ${i}H${x1 - q}A${q} ${q} 0 0 1 ${x1} ${i + q}V${y1 - q}A${q} ${q} 0 0 1 ${x1 - q} ${y1}H${i + q}A${q} ${q} 0 0 1 ${i} ${y1 - q}V${i + q}A${q} ${q} 0 0 1 ${i + q} ${i}Z`,
+          p = Math.min(1, Math.max(0, (now - t0) / (full * S.slow))), u = REFL(p), v = (REFL(Math.min(1, p + .004)) - REFL(Math.max(0, p - .004))) / .008 * len / full * 1000,   // dp a second, as at full speed
+          tail = 36 + 104 * Math.min(1, v / 1680), g = sm(0, .05, u) * (1 - sm(.82, 1, u)) * (lapOut ? Math.max(0, 1 - (now - lapOut) / (160 * S.slow)) : 1);   // its tail grows with its speed; in over its first twentieth, out over its last fifth; a key puts it out in 160 ms
+        LAP.forEach((e, k) => { const b = tail * [1.5, 1, .55, .2, 1][k], n = b + 40 * [1.4, 1, .55, .2, 1][k]; e.setAttribute('d', d); e.style.strokeDasharray = `${n} ${per - n}`; e.style.strokeDashoffset = -((((u * per - b) % per) + per) % per); e.style.opacity = g * [.16, .28, .4, .6, night ? .3 : .13][k]; });
+        if (cue && u >= cue) { cue = 0; ok(); }
+        if (p < 1) raf = requestAnimationFrame(f);
+      };
+      raf = requestAnimationFrame(f);
+    });
+  }
+
+  // ---- numbers for what is drawn per frame: Motion.kt's springs and curves as functions of the time ----
+  const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), mix = (a, b, t) => a + (b - a) * t, tok = (n, e = root) => getComputedStyle(e).getPropertyValue(n).trim(), nums = v => v.match(/[\d.]+/g).map(Number);
+  const spr = (z, k) => { const w = Math.sqrt(k) / 1000, wd = w * Math.sqrt(1 - z * z); return t => t <= 0 ? 0 : 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t)); };
+  const PLACE = spr(.86, 520), POP = spr(.62, 700), STD = bez(.4, 0, .2, 1), OPN = bez(.55, 0, .1, 1), SEAM = bez(.2, 0, 0, 1), FOLD = bez(.45, 0, .4, 1), DRAW = bez(1, 0, .8, 1), EIN = bez(.4, 0, 1, 1);
+  const tw = (t, t0, d, e = STD) => e(cl((t - t0) / d)), WHT = tok('--white'), BLK = tok('--black'), NIGHT = nums(tok('--night')), HND = nums(tok('--pl-sel')), INK = nums(tok('--pl-on')), wa = a => `rgb(${WHT} / ${a})`, na = a => `rgb(${NIGHT.join(' ')} / ${a})`;
+  const dimTo = v => desk.style.setProperty('--do', v), SHOW = () => S.theme === 'dark' ? .44 : .2;       // the desk behind: by half at night, 0.10 or 0.22 through the show
+
+  // ---- the welcome (motion.md §2.1): one clock, and every mark a function of its time; nothing is kept from frame to frame and the dust is seeded ----
+  const WT = { night: 257, strike: 800, seam: 960, lap: 1000, open: 1180, handle: 1420, tools: 1560, rest: 2900, hand: 3200, end: 3820 };
+  const wc = $('wc'), wtx = [[$('w-t'), 124, 48], [$('w-n'), 188, 22]], cueE = $('cue'), ringE = $('ring'), car = fld.querySelector('.caret');
+  let wl = null, wraf = 0;
+  function wlClear() {
+    cancelAnimationFrame(wraf); if (wl) wl.c.clearRect(0, 0, 720, 480); wl = null;
+    P.style.backgroundColor = ''; [ringE, car, hiE, cueE].forEach(e => e.style.cssText = ''); wtx.forEach(([e]) => e.childNodes.forEach(x => x.style.cssText = ''));
+    P.classList.remove('nite', 'lit'); fld.classList.remove('nm'); desk.classList.remove('wl');
+  }
+  function wlSetup() {
+    wlClear();
+    const k = desk.getBoundingClientRect().width / 1000 || 1, dpr = Math.min(2, (window.devicePixelRatio || 1) * Math.min(1, 1.3 * k)), gc = document.createElement('canvas'), nz = document.createElement('canvas'), words = W[S.lang].hello[S.words], rg = document.createRange();
+    let sd = 7; const rnd = () => { sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };       // seeded: the same grain and the same dust every time
+    wc.width = gc.width = 720 * dpr; wc.height = gc.height = 480 * dpr; nz.width = nz.height = 128;
+    const c = wc.getContext('2d'), g = gc.getContext('2d'), z = nz.getContext('2d'), im = z.createImageData(128, 128);
+    for (let i = 0; i < im.data.length; i += 4) { im.data[i] = im.data[i + 1] = im.data[i + 2] = rnd() < .5 ? 0 : 255; im.data[i + 3] = 22 * rnd(); }
+    z.putImageData(im, 0, 0); c.setTransform(dpr, 0, 0, dpr, 0, 0); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    wtx.forEach(([e], i) => { e.childNodes.forEach(x => x.textContent = words[i]); e.style.fontSize = ''; rg.selectNodeContents(e.firstChild); const wd = rg.getBoundingClientRect().width / k; if (!i && wd > 470) e.style.fontSize = 40 * 470 / wd + 'px'; });     // the title is measured once: it stays inside the light
+    cueE.firstChild.textContent = words[2]; $('wl').classList.toggle('sol', S.light === 'solid'); fmark(1);
+    wl = { c, g, gc, noise: g.createPattern(nz, 'repeat'), bg: nums(getComputedStyle(P).backgroundColor), sel: nums(tok('--sel', desk)).concat(+tok('--sela', desk)), off: null, n0: 0, a0: 0, t0: 0,
+      sym: ['app', 'calc', 'plane', 'smile', 'key'].map(x => new Path2D($('g-' + x).getAttribute('d'))),
+      dust: Array.from({ length: 24 }, () => [60 + 600 * rnd(), 120 + 320 * rnd(), 12 * rnd() - 6, -3 - 7 * rnd(), .6 + .6 * rnd(), .3 + .3 * rnd(), 6.28 * rnd(), 1 + 2 * rnd()]) };
+    if (wl.bg.length < 4) wl.bg[3] = 1;
+    desk.classList.add('wl'); car.style.animation = 'none'; hiE.style.transition = 'none';
+  }
+  // The light's two sides are lines from its upper edge to its foot: [x1, y1, x2, y2]. nrm: the side's normal, pointing into the light.
+  const nrm = ([x1, y1, x2, y2], sg) => { const l = Math.hypot(x2 - x1, y2 - y1) || 1; return [sg * (y2 - y1) / l, -sg * (x2 - x1) / l]; }, sides = L => [[L.a, 1], [L.b, -1]];
+  function ramp(g, px, py, nx, ny, a, b) { const r = g.createLinearGradient(px + nx * a, py + ny * a, px + nx * b, py + ny * b); [[0, 0], [.25, .16], [.5, .5], [.75, .84], [1, 1]].forEach(([q, v]) => r.addColorStop(q, `rgb(${BLK} / ${v})`)); g.fillStyle = r; g.fillRect(0, 0, 720, 480); }
+  const FALL = [.34, .24, .17, .125, .1], RAYS = [[-.84, .1], [-.66, .05], [-.52, .13], [-.33, .07], [-.2, .16], [-.04, .06], [.1, .12], [.27, .05], [.4, .15], [.57, .08], [.7, .12], [.86, .07]];      // rays: where a little more light lies along the shaft, and how wide; they overlap, so no edge of one is seen
+  /** The light as one pass: a fall-off down the shaft that is brightest under the lamp, a few rays, times a soft step inside each of its four edges, and fine grain so that it does not band. The same few lines are the app's shader. */
+  function shaft(L, stops, al, rays) {
+    const { c, g, gc, noise } = wl, v = g.createLinearGradient(0, 92, 0, Math.max(93, L.yf)), m = (L.a[0] + L.b[0]) / 2, w = (L.b[0] - L.a[0]) / 2, mf = (L.a[2] + L.b[2]) / 2, wf = (L.b[2] - L.a[2]) / 2;
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, 720, 480); stops.forEach((a, i) => v.addColorStop(i / (stops.length - 1), wa(a))); g.fillStyle = v; g.fillRect(0, 60, 720, 420);
+    if (rays) for (const [u, d0] of RAYS) for (const d of [d0, d0 * .6, d0 * .3]) { g.globalAlpha = .016 * rays; g.fillStyle = wa(1); g.beginPath(); g.moveTo(m + (u - d) * w, 92); g.lineTo(m + (u + d) * w, 92); g.lineTo(mf + (u + d) * wf, L.yf); g.lineTo(mf + (u - d) * wf, L.yf); g.fill(); }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'destination-in'; sides(L).forEach(([e, sg]) => { const [nx, ny] = nrm(e, sg); ramp(g, e[0], e[1], nx, ny, -L.s, .3 * L.s); }); ramp(g, 0, 92, 0, 1, -8, 6); ramp(g, 0, L.yf, 0, -1, -L.s, .3 * L.s);
+    g.globalCompositeOperation = 'source-atop'; g.fillStyle = noise; g.fillRect(0, 60, 720, 420);
+    c.globalAlpha = al; c.drawImage(gc, 0, 0, 720, 480);
+  }
+  /** How much of the light is at a point: what a speck of dust is lit by. */
+  const lm = (x, y, L) => sides(L).reduce((m, [e, sg]) => { const [nx, ny] = nrm(e, sg); return m * sm(-L.s, .3 * L.s, (x - e[0]) * nx + (y - e[1]) * ny); }, sm(-8, 6, y - 92) * sm(-L.s, .3 * L.s, L.yf - y));
+  /** The same soft edges as a mask for a line of type whose box is 720 wide, hh high, from y0: the light opens across the letters. */
+  const mask = (L, y0, hh) => sides(L).map(([e, sg]) => { const [nx, ny] = nrm(e, sg), th = Math.atan2(nx, -ny), g0 = (e[0] - 360) * nx + (e[1] - y0 - hh / 2) * ny + (Math.abs(720 * Math.sin(th)) + Math.abs(hh * Math.cos(th))) / 2; return `linear-gradient(${th}rad, transparent ${g0 - L.s}px, var(--opaque) ${g0 + .3 * L.s}px)`; }).join() + `,linear-gradient(var(--opaque) ${L.yf - .3 * L.s - y0}px, transparent ${L.yf + L.s - y0}px)`;
+  function welcomeAt(t) {
+    const X = wl, c = X.c, H0 = WT.hand, solid = S.light === 'solid', dead = X.off != null, k = dead ? cl(1 - (t - X.off) / 80) : 1, ink = a => solid ? na(a) : wa(a);
+    // the night: one number. It falls slower than the glass grows, and lifts as the light goes back into the caret
+    const n = dead ? X.n0 * cl(1 - (t - X.off) / 160) : tw(t, WT.night, 420) * (1 - tw(t, H0 + 160, 400));
+    if (dead) P.style.backgroundColor = ''; else { X.n0 = n; P.style.backgroundColor = `rgb(${[0, 1, 2].map(i => mix(X.bg[i], NIGHT[i], n).toFixed(1)).join(' ')} / ${mix(X.bg[3], .8, n).toFixed(3)})`; }
+    ringE.style.opacity = n; dimTo(mix(!dead && t > H0 ? SHOW() : 0, 1, n)); P.classList.toggle('nite', n > .5);
+    c.globalAlpha = 1; c.clearRect(0, 0, 720, 480);
+    if (dead) { c.globalAlpha = .8 * n; c.fillStyle = na(1); c.fillRect(0, 68, 720, 412); }
+    else if (n > 0) { const h = c.createRadialGradient(360, 170, 200, 360, 250, 520); h.addColorStop(0, na(0)); h.addColorStop(1, na(.6)); c.globalAlpha = n; c.fillStyle = h; c.fillRect(0, 0, 720, 480); }        // the night is deeper towards the corners
+    // the lamp: it strikes at the caret, sags, catches. Its light floods the head from the caret, and at the end closes on it
+    const s = t - WT.strike, hb = dead || s < 0 ? 0 : s < 30 ? .6 * s / 30 : s < 70 ? mix(.6, .35, (s - 30) / 40) : mix(.35, 1, 1 - (1 - cl((s - 70) / 130)) ** 2),
+      cls = tw(t, H0 + 440, 160, DRAW), d = 647 * tw(t, WT.strike + 40, 260, SEAM), xl = mix(Math.max(0, 73 - d), 72, cls), xr = mix(Math.min(720, 73 + d), 74, cls), lamp = hb > 0 && cls < 1;
+    if (lamp) {
+      if (s < 200) { const h = c.createRadialGradient(73, 34, 0, 73, 34, 80); h.addColorStop(0, wa(.9)); h.addColorStop(1, wa(0)); c.globalAlpha = s < 30 ? s / 30 : 1 - (s - 30) / 170; c.fillStyle = h; c.fillRect(0, 0, 160, 120); }
+      const q = 30 / (xr - xl + 60), h = c.createLinearGradient(xl - 30, 0, xr + 30, 0); [[0, 0], [q, 1], [1 - q, 1], [1, 0]].forEach(([p, a]) => h.addColorStop(p, wa(a)));
+      c.save(); c.beginPath(); c.roundRect(0, 0, 720, 68, 32); c.clip(); c.globalAlpha = .92 * hb; c.fillStyle = h; c.fillRect(0, 0, 720, 68); c.restore();
+    }
+    car.style.background = dead || t < WT.night ? '' : lamp ? na(1) : wa(1); car.style.opacity = !dead && t >= 560 && t < WT.strike ? 0 : 1;
+    P.classList.toggle('lit', lamp && xr > 700 && cls < .05); fld.classList.toggle('nm', !dead && t < H0 + 520);
+    // the light: how far it has fallen, how far it is open, where its upper edge and its foot stand. It is brighter while it is narrow, and breathes once while it stands
+    const turn = tw(t, H0 + 160, 300, FOLD), o = tw(t, WT.open, 360, OPN) * (1 - turn), cT = mix(360, 73, turn), cF = mix(360, 73, tw(t, H0 + 220, 300, FOLD)), yf = 92 + 356 * tw(t, WT.seam, 160, SEAM) * (1 - tw(t, H0 + 160, 360, EIN)),
+      wT = mix(3, 231, o), wF = mix(3, 328, o), L = { yf, s: solid ? .5 : mix(1.5, 20, o), a: [cT - wT, 92, cF - wF, yf], b: [cT + wT, 92, cF + wF, yf] }, on = !dead && yf > 93, r = sm(0, .6, o), br = cl(hb) * (1 + .06 * Math.sin(Math.PI * cl((t - 1540) / (H0 - 1540))));
+    if (on && solid) { const p = [[L.a[0], 92], [L.b[0], 92], [L.b[2], yf], [L.a[2], yf]]; c.beginPath(); c.moveTo(cT, 92); [24, 32, 32, 24].forEach((rad, i) => c.arcTo(...p[(i + 1) % 4], ...p[(i + 2) % 4], Math.min(rad, wT, (yf - 92) / 2))); c.closePath(); c.globalAlpha = .92 * cl(hb); c.fillStyle = wa(1); c.fill(); }
+    else if (on) {
+      if (r > .02) shaft({ yf, s: mix(1.5, 60, o), a: [cT - wT - 14 * o, 92, cF - wF - 24 * o, yf], b: [cT + wT + 14 * o, 92, cF + wF + 24 * o, yf] }, [.05 * r, .02 * r], br);      // a halo: the penumbra, wider and softer
+      shaft(L, FALL.map(v => mix(1, v, r)), br, r);
+      if (r > .02) shaft({ yf, s: mix(1.5, 50, o), a: [cT - wT / 2, 92, cF - wF / 2, yf], b: [cT + wT / 2, 92, cF + wF / 2, yf] }, [.16 * r, .07 * r, .03 * r], br);                   // the core: brighter along the axis
+      if (S.light === 'rich') X.dust.forEach(([x0, y0, vx, vy, rad, a, p0, f], i) => {            // dust: each speck a function of the time, lit by the light at its place; every fourth is near and soft
+        const x = x0 + vx * t / 1000 + 3 * Math.sin(t / 1000 * f + p0), y = y0 + vy * t / 1000, m = lm(x, y, L); if (m < .02) return;
+        c.globalAlpha = a * m * br * (.7 + .3 * Math.sin(t / 300 * f + p0));
+        if (i % 4) c.fillStyle = wa(1); else { const h = c.createRadialGradient(x, y, 0, x, y, rad * 4); h.addColorStop(0, wa(.7)); h.addColorStop(1, wa(0)); c.fillStyle = h; }
+        c.beginPath(); c.arc(x, y, i % 4 ? rad : rad * 4, 0, 7); c.fill();
+      });
+    }
+    // the words: dim in the lamp's room, white where the light falls
+    const amb = dead ? X.a0 * k : X.a0 = cl(hb) * (1 - tw(t, H0 + 380, 80));
+    wtx.forEach(([e, y0, hh]) => { e.firstChild.style.opacity = amb; const lt = e.lastChild; lt.style.opacity = on ? cl(hb) : 0; if (on) lt.style.maskImage = lt.style.webkitMaskImage = mask(L, y0, hh); });
+    // the knife: the handle rises into the light and five tools flick out of it on pop, a beat apart, each with a glint. At the hand-over they fold, and the handle goes to row one: from then on it is the highlight
+    const born = t >= WT.handle && !(dead && X.off < WT.handle), ha = born ? tw(t, WT.handle, 140) : 0, hy = 12 * (1 - PLACE(t - WT.handle)), go = PLACE(t - (dead ? X.off : H0 + 240)), pr = tw(t, H0, 80) * (1 - tw(t, H0 + 80, 120)), hn = t < H0 ? 1 : n;
+    const bx = [252, 372 + hy, 468, 420 + hy, 24].map((v, i) => mix(v, [8, 76, 712, 132, 24][i], go)); bx.forEach((v, i) => hiE.style.setProperty('--' + 'ltrbq'[i], (i === 2 ? 720 - v : i === 3 ? 480 - v : v) + 'px'));
+    hiE.style.opacity = ha; hiE.style.backgroundColor = `rgb(${[0, 1, 2].map(i => mix(mix(X.sel[i], HND[i], hn), INK[i], .08 * pr).toFixed(1)).join(' ')} / ${mix(X.sel[3], .92, hn).toFixed(3)})`;
+    cueE.style.opacity = ha * k * (1 - tw(t, H0 + 200, 80)); cueE.style.transform = `translate(${(bx[0] + bx[2]) / 2 - 360}px, ${(bx[1] + bx[3]) / 2 - 396}px)`;        // the cue fades inside the handle, wherever the handle is
+    for (let i = 0; i < 5 && ha; i++) {
+      const tau = t - WT.tools - 66 * i, back = dead ? 0 : tw(t, H0 + 30 * (4 - i), 120, EIN), f = i < 3 ? 112 : -112, a = mix(mix(f, 20 * i - 40, POP(tau)), f, back) * Math.PI / 180, px = 288 + 36 * i, py = 372 + hy, sx = Math.sin(a), cx = Math.cos(a), x = px + 64 * sx, y = py - 64 * cx;
+      if (tau < 0 || back >= 1) continue;
+      c.globalAlpha = ha * k; c.strokeStyle = ink(.6); c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(px, py); c.lineTo(x - 18 * sx, y + 18 * cx); c.stroke();
+      c.fillStyle = ink(solid ? .1 : .16); c.beginPath(); c.arc(x, y, 18, 0, 7); c.fill(); c.lineWidth = 1; c.strokeStyle = ink(.3); c.stroke();
+      c.save(); c.translate(x - 10, y - 10); c.scale(20 / 24, 20 / 24); c.fillStyle = ink(1); c.fill(X.sym[i], 'evenodd'); c.restore();
+      if (tau > 90 && tau < 250) { const gx = mix(-30, 30, (tau - 90) / 160), h = c.createLinearGradient(gx - 7, 0, gx + 7, 0); [[0, 0], [.5, .7], [1, 0]].forEach(([q, v]) => h.addColorStop(q, wa(v))); c.save(); c.beginPath(); c.arc(x, y, 18, 0, 7); c.clip(); c.translate(x, y); c.rotate(Math.PI / 4); c.fillStyle = h; c.fillRect(gx - 7, -26, 14, 52); c.restore(); }
+    }
+  }
+  /** The welcome is over: what it drew is gone, and its handle, if it had one, is the list's pill in row one's seat. */
+  function wlEnd() { if (!wl) return; const born = !(wl.off != null && wl.off < WT.handle); wlClear(); hiE.classList.toggle('on', born); }
+  /** Play it from the first frame: to its end, or to stop (the last still before the hand-over). A key of the user's sets wl.off, and the lamp is out in that frame. */
+  function wlPlay(stop) {
+    wlSetup(); const t0 = wl.t0 = performance.now(), id = run;
+    const f = now => { if (id !== run || !wl) return; const t = (now - t0) / S.slow, end = wl.off != null ? wl.off + 440 : stop || WT.end; welcomeAt(Math.min(t, end)); if (t < end) wraf = requestAnimationFrame(f); else if (!stop) wlEnd(); };
+    wraf = requestAnimationFrame(f);
+  }
+  /** The welcome in a film. stop: hold on its last still. key: come back at that ms, for the user's key. */
+  async function welcome(stop, key) {
+    lst.innerHTML = ''; phE.textContent = ''; field(''); H(68); view('b'); wlPlay(stop && WT.hand);
+    await unfold(2); H(468);                                                       // the gate, 257: the lower edge falls to 468, and the night after it
+    if (S.light === 'rich') later(WT.lap - 257, () => lap(468, 0, 1));              // the lap sets off as the head is lit, right over the seam of light
+    await mv((key || WT.hand) - 257); if (stop || key) return;
+    press('⏎', 0, 1); await mv(WT.end - WT.hand); wlEnd();                         // Booklight presses the handle; 620 ms later the caret is all that is left of the lamp
+  }
+
+  // ---- the show (motion.md §2.2). Booklight types into its own field; each wait is the gap to the next thing ----
+  async function overture() {
+    const w = W[S.lang], [L, ...apps] = APPS[S.lang], bk = (t, n) => { press(t, 0, 1); return mv(n); }, ty = (s, n) => { field(s); return bk(s.slice(-1) === ' ' ? 'space' : s.slice(-1), n); };
+    await welcome();                                                             // 0 to 3820: the handle is the pill in row one's seat
+    field(L); press(L, 0, 1);                                                   // B1, 3820: one letter lands on the caret, five apps
+    list(apps.map(([t, g], i) => row('o' + i, tile(g, i), t, w.app, [['open', w.aOpen], ['window', w.aWin], ['more', w.aMore]])).join(''), 0, [['tab', w.actions]], 1);
+    await mv(480); sel(1, 'd'); await bk('↓', 300); sel(2, 'd'); await bk('↓', 320);
+    const a = $('o2').querySelector('.acts'); armAct(a, 1); await bk('Tab', 240); armAct(a, 2); await bk('Tab', 220);
+    for (const [s, n] of [['1', 64], ['15', 64], ['150', 64], ['150 ', 64], ['150 +', 64], ['150 + ', 80]]) await ty(s, n);       // B2, 5380: typed over the letter; the apps stand
+    change(sumRow(w, '150 + 2', 152)); sel(0, 'u'); H(212); xf(fr, () => footR([], 1)); await ty('150 + 2', 340);                 // 5780: the sum's row lands; the pill goes up to it
+    for (const [s, v, n] of [['150 + 20', 170, 300], ['150 + 20%', 180, 480]]) { $('sumq').textContent = s; roll($('sumv'), v); await ty(s, n); }
+    for (const [s, n] of [['L', 64], ['LH', 64], ['LH4', 64], ['LH45', 80]]) await ty(s, n);                                       // B3, 6900: typed over the sum; the answer stands
+    change(flRow(w)); sel(0, 'p'); H(256); coach(w.fl[5]); fly($('trk'), 371); await ty('LH455', 1108);                          // 7172: the flight's row lands, the pill grows with it, the plane flies to its place
+    for (const [s, n] of [['e', 64], ['em', 64], ['emo', 64], ['emoj', 64], ['emoji', 124]]) await ty(s, n);                      // B4, 8280: typed over the flight; its row stands
+    press('space', 0, 1); grid(); hi(cell(0, 0), 'p');                           // 8660: the chip, the wave, the pill becomes the first cell's square
+    await mv(240); const cue = lap(376, .38); await mv(160);                     // 8900: the light sets off as the wave lands
+    hi(cell(1, 0), 'r'); coach(w.cells[1], 1); await bk('→', 110);              // three quick steps, as a held key glides
+    hi(cell(2, 0), 'g'); coach(w.cells[2], 1); await bk('→', 110);
+    hi(cell(3, 0), 'g'); coach(w.cells[3], 1); await bk('→', 160);
+    hi(cell(3, 1), 'd'); coach(w.cells[4]); press('↓', 0, 1);                    // 9440: one settled step
+    await cue; await mv(land()); await mv(760);                                  // B5: the landing waits for the light; then the light runs out
+  }
+  /** B5: one sweep takes the grid away and leaves K1: the cells go in their wave, the highlight glides from its cell into the armed answer. Returns the ms to K1 at rest. */
+  function land() {
+    const w = W[S.lang]; draw('K1');
+    const sl = sAns.querySelectorAll('.sl'); sAns.querySelector('.hl').classList.remove('on'); sl[0].classList.remove('on'); sl[0].classList.add('w8'); sl[1].classList.add('w8', 'lo');
+    sAns.classList.add('nt', 'in'); flush(); sAns.classList.remove('nt');
+    const x = 700 - sAns.querySelector('.strip').offsetWidth;
+    view('s', 1); P.classList.add('both'); later(260, () => P.classList.remove('both'));
+    dimTo(0); lst.querySelectorAll('.ce').forEach(e => e.classList.add('go')); fmark(0); chipOn(0); ph(w.ph);
+    later(160, () => H(252));                                                    // the lower edge draws in behind the wave, with the light at its middle: no cell is cut by it
+    later(32, () => hi([x, 154, 700, 186, 16], 'a'));                            // it leaves its cell as the wave passes it
+    [80, 150, 190].forEach((t, i) => later(t, () => PARTS[i].classList.add('in')));      // K1's seat, each part once the wave has left its place
+    later(180, () => { sl[0].classList.remove('w8'); sl[0].classList.add('on'); });
+    band(260, 132, 'K1', 1);                                                     // the caps a beat apart, then the caption
+    later(480, () => sl[1].classList.remove('w8', 'lo'));
+    later(660, () => { [sAns, hiE].forEach(e => e.classList.add('nt')); armTo(sAns, 0); hiE.classList.remove('on'); flush(); [sAns, hiE].forEach(e => e.classList.remove('nt')); });   // at rest it is the strip's own highlight
+    return 660;
+  }
+
+  // ---- the system's helper, the stand-in app, the pointer, the keys pressed ----
+  function helper(s, typed) {
+    desk.classList.toggle('help', s !== 'off'); if (s === 'off') return;
+    const w = W[S.lang], c = s !== 'page', f = /found|cap|keys|set/.test(s), keys = '<span class="ks"><span class="hk"><i></i></span><span class="hk">Quick Insert</span></span>';
+    HP.dataset.s = s; $('h-t').textContent = c ? 'Customize shortcuts' : 'Keyboard shortcuts'; $('h-c').textContent = c ? 'Done' : 'Customize';
+    $('h-s').innerHTML = f ? '<b>Booklight</b>' : typed ? `<b>${typed}</b>` : 'Search shortcuts';
+    $('h-cats').innerHTML = f ? '<div class="on"><i class="d"></i>App shortcuts</div>' : ['System', 'Multitasking', 'App shortcuts', 'Input', 'Accessibility'].map(x => `<div><i class="d"></i>${x}</div>`).join('') + '<div class="on"><i class="d bl"></i>Booklight</div>';
+    $('h-pg').innerHTML = f ? `<div class="hd">App shortcuts</div><div class="rw"><span class="an"><i class="d bl"></i>Booklight</span>${s === 'set' ? keys : '<span class="add" id="h-add">+</span>'}</div>`
+      : `<div class="hd">${w.ht}</div>` + w.h.map(l => `<div class="rw"><span class="lb">${l}</span>${keys}</div>`).join('');
+    $('h-pk').innerHTML = s === 'keys' ? '<span class="hk">Quick Insert</span>' : 'Press key';
+  }
+  function app(s) { const a = $('app'); a.classList.toggle('on', !!s); a.classList.toggle('res', s === 'res'); $('aq').textContent = s === 'res' ? 'lofi' : ''; }
+  async function point(el) { const r = el.getBoundingClientRect(), d = desk.getBoundingClientRect(), k = d.width / 1000; ptr.style.setProperty('--x', (r.left + r.width / 2 - d.left) / k + 'px'); ptr.style.setProperty('--y', (r.top + r.height / 2 - d.top) / k + 'px'); ptr.classList.add('on'); await mv(420); await th(220); }
+  const strip = (cls, t) => { const k = $('keys'), e = document.createElement('span'); e.className = cls; e.textContent = t; k.appendChild(e); while (k.children.length > 48) k.children[1].remove(); return e; };
+  const noKeys = () => { $('keys').innerHTML = '<span class="muted">Keys pressed</span>'; whoIs = -1; }, tell = t => { whoIs = -1; strip('who', t); };
+  /** A key in the strip under the desk. b: Booklight pressed it, not the user; the strip says who types. */
+  function press(t, click, b) { b = +!!b; if (b !== whoIs) { strip('who', b ? 'Booklight types' : 'The user'); whoIs = b; } const e = strip('k now' + (click ? ' c' : '') + (b ? ' b' : ''), t); setTimeout(() => e.classList.remove('now'), 280); }
+  const say = t => { $('say').textContent = t; }, chord = () => press(W[S.lang].action + ' + Quick Insert');
+  /** The user types into the real field, a letter at a time; each is in the field in its own frame. */
+  async function type(txt, each) { for (let i = 0; i < txt.length; i++) { press(txt[i] === ' ' ? 'space' : txt[i]); field($('fx').textContent + txt[i]); each($('fx').textContent, i); await th(150); } await mv(330); await th(650); }
+  /** L4, as the sum is typed: the answer's row comes over the web row once the text is a sum, and its number rolls. */
+  function sumTyped(q, i) {
+    const w = W[S.lang], m = q.match(/^150 \+ (\d+)(%?)$/), v = m && (m[2] ? 180 : 150 + +m[1]), old = $('r-web');
+    if (!i) return list(rWeb(w, q), [4, 0, w.L4[0]]);
+    $('r-webt').textContent = w.webrow(q); if (!m) return; if ($('r-sum')) { $('sumq').textContent = q; return roll($('sumv'), v); }
+    old.insertAdjacentHTML('beforebegin', sumRow(w, q, v)); fit();
+    old.style.transition = 'none'; old.style.transform = 'translateY(-92px)'; flush(); old.style.transition = old.style.transform = '';
+    $('r-sum').classList.add('in'); sel(0, 'p'); H(height()); coach([4, 'E', w.co4]);
+  }
+
+  // ---- a screen at rest ----
+  function base() { helper('off'); app(''); ptr.classList.remove('on'); P.classList.add('gone'); P.classList.remove('both'); wlClear(); dimTo(0); lst.innerHTML = ''; view('b'); H(68); field(''); chipOn(0); fmark(0); coach(0, 1); ph(W[S.lang].ph, 1); }
+  function stand(n, under) {
+    const w = W[S.lang], i = ORDER.indexOf(n); S.at = n; base();
+    app(i < 8 ? '' : i < 9 ? 'on' : 'res'); P.classList.remove('gone');
+    if (n === 'WL') { phE.textContent = ''; H(468); wlSetup(); welcomeAt(WT.rest); }
+    else if (n === 'OV') { dimTo(SHOW()); grid(1); hi(cell(3, 1)); hiE.classList.add('on'); coach(w.cells[4], 1); }
+    else if (n === 'H') { standS(under || 'K2'); helper('page'); }
+    else if (n === 'Q') { drawQ(); view('q'); H(324); QP.forEach(e => e.classList.add('in')); }
+    else if (n === 'C') { drawC(); view('l'); rows().forEach(e => e.classList.add('in')); }
+    else if (n === 'END') ph(w.endph, 1);
+    else { standS(n); if (n[0] === 'L') ph(w[n][3], 1); }
+  }
+
+  // ---- the film: each step from where the one before it ends ----
+  const SEG = {
+    WL: { pre: base, async play() {
+      if (!S.motion) return SEG.OV.play();
+      say('The welcome. The glass opens as it does every day, then grows tall and night falls. The caret blinks off; when it comes back it is a lamp. The light floods the field, a seam of light falls and opens the way the glass opened, and the words are white where it falls. The handle rises and five tools flick out. It is held here; in the opening Booklight presses the handle next.');
+      await th(500); press('Open', 1); await welcome(1); await th(1000);
+    } },
+    OV: { pre: base, async play() {
+      if (!S.motion) { say('With motion off there is no welcome and no show: K1 stands whole in the first frame, with the welcome’s title as the field’s placeholder.'); await th(500); still(() => { stand('K1'); ph(W[S.lang].hello[S.words][0], 1); }); S.at = 'OV'; return; }
+      say('The opening. A welcome: night falls in a tall glass, the caret comes back as a lamp, and its light opens on the words and on a small knife. Booklight presses the handle, the light goes back into the caret, and the handle rises to be the highlight. Then the show: five apps, a sum, an example flight, the emoji grid. As the light turns onto the lower edge it lands in K1.');
+      await th(500); press('Open', 1); await overture(); await th(900);
+    } },
+    KEY: { pre: base, async play() {
+      const w = W[S.lang]; if (!S.motion) return SEG.OV.play();
+      say('The welcome, and the user types a letter while it stands. The lamp is out in that frame: the field is the theme’s own glass with the letter in it. The stage’s parts fade where they stand, the handle goes to row one of the real list, the night lifts. No show. The field emptied: K1 is set down.');
+      await th(500); press('Open', 1); await welcome(0, 2500);
+      press('y'); lapOut = performance.now(); wl.off = (lapOut - wl.t0) / S.slow; fmark(0); phE.textContent = w.ph; field('y');
+      change(rApp(w) + rWeb(w, 'y')); view('l', 1); coach(0, 1); footR([['tab', w.actions]]); rows()[0].classList.add('on'); H(height());
+      await mv(460); wlEnd(); await th(1700);
+      press('⌫'); field(''); await mv(down('K1', 120)); await th(600);
+    } },
+    K1: { pre: base, async play() {
+      say('K1 without the opening: an update without a key, or a later start. The daily opening, field first. At the gate the height goes to 252 and K1 is set down: mark, words, counter, then the caps one by one, the caption, the answers.');
+      await th(700); press('Open', 1); await open('K1'); await th(1900);
+    } },
+    H: { pre: () => stand('K1'), async play() {
+      say('Enter. The panel stays; the system’s helper covers it. Its page is Booklight’s own: five rows. The user follows them: Customize, the name, +, the keys, Set shortcut.');
+      await th(500); press('⏎'); slot(sAns, 0); await mv(80); helper('page'); later(380, () => turn('K2', 1)); await mv(240); await th(1700);
+      await point($('h-c')); press('Customize', 1); helper('cust'); await th(600);
+      let t = ''; for (const ch of 'Booklight') { press(ch); helper('cust', t += ch); await th(85); }
+      helper('found'); await th(600);
+      await point($('h-add')); press('+', 1); helper('cap'); await th(900);
+      chord(); helper('keys'); await th(600);
+      await point($('h-ok')); press('Set shortcut', 1); helper('set'); ptr.classList.remove('on'); await th(900);
+    } },
+    K2: { pre: () => stand('H'), async play() {
+      say('The helper is closed with Esc and no key came. K2 stands still: it was set under the helper. Nothing is armed; the thing to press is the key.');
+      await th(900); press('Esc'); helper('off'); await mv(240); await th(600);
+    } },
+    K3: { pre: () => stand('H', 'K3'), async play() {
+      say('The second return without a key: K3. Then the keys are pressed with it in view: the blank key goes down, comes up, the check draws, the words roll, one lap of light.');
+      await th(900); press('Esc'); helper('off'); await mv(240); await th(1500);
+      chord(); await mv(keyLands(160)); mark('K4');
+    } },
+    K4: { pre: () => { stand('H'); helper('set'); }, async play() {
+      say('The reveal. Right after Set shortcut the user presses the keys. The dialog falls away and the key on the glass is down, because theirs is. It comes up, the check draws, one lap of light.');
+      await th(900); chord(); helper('off'); await mv(keyLands(400)); await th(500);
+    } },
+    L2: { pre: () => stand('K4'), async play() {
+      const w = W[S.lang];
+      say('Enter on “Go on”. The words roll and the recipe is written. The user types in the real field: the lesson gives way to the real list, and the footer coaches. Enter opens the app, as every day: the glass folds and the app is there.');
+      await th(700); press('⏎'); slot(sAns, 0); ph(w.L2[3]); await mv(turn('L2')); await th(1400);
+      await type('yout', (q, i) => i ? $('r-webt').textContent = w.webrow(q) : list(rApp(w) + rWeb(w, q), [2, 'E', w.co2], [['tab', w.actions]]));
+      press('⏎'); app('on'); await leave();
+    } },
+    L3: { pre: () => { base(); app('on'); }, async play() {
+      const w = W[S.lang];
+      say('0.4 s after the app’s start Booklight asks for itself again: its ordinary opening, over the app, on lesson 3. No key was pressed. Then the letters, Tab to Search, Enter into the app, a word, Enter, and it steps aside once more.');
+      await mv(245); tell('Booklight comes back by itself'); ph(w.L3[3], 1); await open('L3', 200); await th(1500);
+      await type('yout', (q, i) => i ? $('r-webt').textContent = w.webrow(q) : list(rApp(w) + rWeb(w, q), [3, 'tab', w.co3a], [['tab', w.actions]]));
+      press('Tab'); armAct($('r-app').querySelector('.acts'), 1); coach([3, 'E', w.co3b]); await mv(340); await th(700);
+      press('⏎'); ph(w.sph); field(''); view('b'); H(68); chipOn(I('play', 'i yt') + 'YouTube'); await mv(330); await th(600);
+      await type('lofi', (q, i) => i ? $('r-int').textContent = w.inapp(q) : list(row('r-in', dsc('play'), w.inapp(q), 'YouTube', [['search', w.aSearch]]), [3, 'E', w.co3c]));
+      press('⏎'); app('res'); await leave();
+    } },
+    L4: { pre: () => { base(); app('res'); }, async play() {
+      const w = W[S.lang];
+      say('Booklight is back by itself once more, on lesson 4. The answer stands there as the sum is typed.');
+      await mv(245); tell('Booklight comes back by itself'); ph(w.L4[3], 1); await open('L4', 200); await th(1300);
+      await type('150 + 20%', sumTyped);
+    } },
+    Q: { pre: () => { stand('L4'); field('150 + 20%'); list(sumRow(W[S.lang], '150 + 20%', 180) + rWeb(W[S.lang], '150 + 20%'), [4, 'E', W[S.lang].co4]); rows().forEach(r => r.classList.add('in')); }, async play() {
+      const w = W[S.lang];
+      say('Enter copies the answer and the panel stays. When on any other day it would go, the field is emptied and the question rises in the same panel: 324 high, alone, nothing armed. Tab arms Agree: the pill fades in where it stands.');
+      await th(700); press('⏎'); coach(`<b>${I('check')}${w.copied}</b>`); await hold(520);
+      phE.textContent = w.ph; field(''); drawQ(); view('q'); H(324); QP.forEach(e => later(60 + +e.dataset.at, () => e.classList.add('in'))); await mv(380); await th(2400);
+      press('Tab'); armTo(qAns, 0); await mv(120); await th(800);
+    } },
+    C: { pre: () => { stand('Q'); armTo(qAns, 0); }, async play() {
+      say('Enter on Agree. The question’s parts fade where they stand, the lower edge rises to 268 and the two rows rise. Down and Enter flip the switch; the panel stays.');
+      await th(600); press('⏎'); slot(qAns, 0); view('x'); await mv(60);
+      drawC(); flush(); view('l'); rows().forEach((r, i) => later(22 * i, () => r.classList.add('in'))); await mv(360); await th(1500);
+      press('↓'); sel(0); await mv(200); await th(600);
+      press('⏎'); $('sw').classList.add('on'); roll($('swv'), W[S.lang].on); await mv(380); await th(900);
+      press('↑'); sel(-1); await mv(120); await th(600);
+    } },
+    END: { pre: () => stand('C'), async play() {
+      say('Enter with nothing selected. The rows fade where they stand, the height returns to 68, the placeholder says one thing, and the light runs one lap round the bare field. What is left is the product, over the app the user opened.');
+      await th(800); press('⏎'); view('b'); H(68); ph(W[S.lang].endph); later(360, () => lap(68)); await mv(1936); await th(600);
+    } },
+    SKIP: { pre: () => stand('L2'), async play() {
+      say('Tab arms Skip, Enter skips. The words roll, the old recipe fades where it stands and the new one is written. The height stays, and Skip and the caption do not move.');
+      await th(900); press('Tab'); armTo(sAns, 0); await mv(120); await th(700);
+      press('⏎'); slot(sAns, 0); ph(W[S.lang].L3[3]); await mv(turn('L3', 1)); mark('L3'); await th(400);
+    } }
+  };
+  function mark(n) { S.at = n; ORDER.forEach(x => $('s-' + x).setAttribute('aria-pressed', x === n)); }
+  function setPlaying(on) { playing = on; $('b-play').textContent = on ? 'Stop' : 'Play the minute'; }
+  async function film(names) {
+    halt(); noKeys(); const id = run; setPlaying(1); still(() => SEG[names[0]].pre());
+    for (const n of names) { mark(n === 'KEY' ? 'WL' : n === 'SKIP' ? 'L2' : n); await SEG[n].play(); }
+    if (id === run) setPlaying(0);
+  }
+  function go(n) { halt(); noKeys(); still(() => stand(n)); mark(n); say(SAY[n]); }
+
+  // ---- the switches ----
+  function apply() {
+    halt(); desk.className = `desk th-${S.theme} back-${S.back}`; root.style.setProperty('--slow', S.slow);
+    document.querySelectorAll('[data-k]').forEach(b => b.setAttribute('aria-pressed', String(S[b.dataset.k]) === b.dataset.v));
+    $('calm').hidden = !!S.motion; still(() => stand(S.at)); mark(S.at); say(SAY[S.at]);
+  }
+  document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => { S[b.dataset.k] = isNaN(b.dataset.v) ? b.dataset.v : +b.dataset.v; apply(); }));
+  document.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => go(b.dataset.s)));
+  $('b-play').addEventListener('click', () => playing ? go(S.at) : film(MAIN));
+  $('b-ov').addEventListener('click', () => film(['OV']));
+  $('b-wl').addEventListener('click', () => film(['WL']));
+  $('b-step').addEventListener('click', () => film([S.at]));
+  $('b-key').addEventListener('click', () => film(['KEY']));
+  $('b-skip').addEventListener('click', () => film(['SKIP']));
+  document.addEventListener('keydown', e => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0, n = ORDER[ORDER.indexOf(S.at) + d];
+    if (d && n) { e.preventDefault(); go(n); }
+  });
+  for (let i = 0; i < 11; i++) $('win').insertAdjacentHTML('beforeend', `<i class="${i % 4 ? '' : 'h'}" style="top:${56 + i * 46}px;width:${[30, 62, 54, 66][i % 4]}%"></i>`);
+  const box = $('stagebox'), fitDesk = () => desk.style.setProperty('--k', box.clientWidth / 1000);
+  fitDesk(); if (window.ResizeObserver) new ResizeObserver(fitDesk).observe(box); else addEventListener('resize', fitDesk);
+  apply();
+})();
+</script>

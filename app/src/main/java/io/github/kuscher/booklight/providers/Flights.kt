@@ -415,6 +415,29 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
         )
     }
 
+    /**
+     * First run's example flight (core `Show.FLIGHT`): the row of a flight in the air, said with the words of a real
+     * one, from a flight that is held in the app. Nothing is asked of the service for it, with a key in or without, and
+     * nothing of it is kept: its id is none this provider made, so it is never looked up, said again, pinned or taken
+     * for the real flight of that number. It has no actions: an example can be neither opened nor copied, and its
+     * [label] ("Example") stands at its right end where a row's strip would. [source] is what the footer says while it
+     * is selected. [now]: the moment it is looked at, the example's own, so the row is the same on every day and in
+     * every time zone; each end's time is said without a day, and the minutes do not count down.
+     */
+    fun example(f: Flight, now: Instant, label: String, source: String): Result {
+        val shown = Flights.read(f.number, airlines, f.from.time?.toLocalDate() ?: LocalDate.now())?.shown ?: f.number
+        val caption = text(R.string.flight_who, text(R.string.flight_who, shown, f.airline), text(R.string.flight_route, f.from.place, f.to.place))
+        val row = FlightStatus.row(f, now)
+        fun end(e: EndSays) = stop(e, e.time?.toLocalDate() ?: LocalDate.now())
+        return Result(
+            id = EXAMPLE, provider = ID, kind = Kind.OTHER, title = caption, icon = Icon.Symbol("plane"), score = 1.0, learnable = false, label = label, actions = emptyList(),
+            body = Body.Flight(
+                caption, headline(row.headline, f, LocalDate.ofInstant(now, ZoneId.of("UTC"))), row.badge?.let(::badge), row.badge?.tone ?: Tone.PLAIN, row.share?.toFloat(),
+                end(row.from), end(row.to), flight = EXAMPLE, answer = 1, counts = false, source = source, phase = row.phase,
+            ),
+        )
+    }
+
     /** A time in its airport's own clock, with the day when it is not the user's today: "10:55 AM", "Fri 10:55 AM". */
     private fun time(t: LocalDateTime, today: LocalDate) = listOfNotNull(flightDay(context, t, today), clock(context, t)).joinToString(" ")
 
@@ -513,6 +536,8 @@ class FlightsProvider(private val context: Context, private val prefs: Prefs, pr
 
     companion object {
         const val ID = "flights"
+        /** The id of first run's example flight: none a flight number makes. */
+        const val EXAMPLE = "example:flight"
         /** "This needs the answer, which is on its way": the panel runs the action once the answer is in. */
         val WAIT: Effect = Effect.Internal("flight")
         /** The place in Booklight's window where the key is set. */

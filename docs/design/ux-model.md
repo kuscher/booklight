@@ -248,8 +248,8 @@ The plan and its drawings: `milestones/plan.md` §4 and `milestones/04-design.md
   the panel has opened: "Copied 20 s ago · a link and a date". It is not a row: nothing is selected, Enter does
   nothing, and there is no footer. Tab, Down or a click opens it. Tab on the empty field opens a fresh copy
   whether the line is there or not: before it has come, after typing put it away, or with the line switched
-  off. A typed letter takes the line away, and it stays away for that opening. A first-run
-  card has the place before it; it has the place before a tip. No line for a copy marked private, for a copy
+  off. A typed letter takes the line away, and it stays away for that opening. First run's
+  stage has the place before it; it has the place before a tip. No line for a copy marked private, for a copy
   Booklight made, or with the switch off (the window › What you copied).
 - **What Booklight knows before Tab** is the system's description only: that it is text, how old it is, and
   which kinds of thing the system found (it looks at copies of up to 400 characters; a longer one is "text").
@@ -350,7 +350,7 @@ redrawn for 3.0 (`design/flights-row/`, approved by the owner on 2 October 2026;
 
 The design: `zero-state.md`. Behind the switch "Show your usual", off unless chosen. As built:
 
-- **What stands under the empty field** is one thing at most, in this order: a first-run card, the line for a
+- **What stands under the empty field** is one thing at most, in this order: first run's stage (§19), the line for a
   fresh copy, your usual, a tip (`Under.choose` in `core`, with its truth table as a test). The usual rows come
   as the glass lands when it is already known that no copy is fresh, else a moment later with the line and the
   tip, and never after that.
@@ -423,4 +423,72 @@ The sentence: **type the app, Tab to what you want, Enter; if it takes words, ty
 | → at the end | next stop; again on Window or the arrow: opens its list | – | the same |
 | Enter | Open opens; Search and Play make the app the chip; Window and the arrow open their list | nothing | runs the armed action; under Play before the answer, waits for it |
 | Backspace on empty | – | back to where Enter was pressed | the text's |
+
+## 19. First run (5 October 2026)
+
+The papers: `first-run/` (`00-brief.md`, "Settled for the build", wins over the others; `BUILD.md` says what was
+built and what was decided on the way). As built:
+
+- **A stage under the empty field**, where two cards stood: one screen at a time, in this order: the key (four
+  screens), three lessons (open an app, search inside an app, a sum), one question (search suggestions), two
+  choices. It has the place under the empty field before everything else (core `Under`). It is not a row: nothing
+  of it is selected, the field above it is live, and a typed letter puts it away in that frame; it is back, whole,
+  when the field is empty again.
+- **Who gets it.** A new installation gets all of it; an installation that was there before and has no key yet
+  gets the key's step alone, without the opening piece; whoever asks for it again ("First steps", below) gets it
+  again.
+- **The stage's keys.** Tab and Shift + Tab arm its answers, round and round; Enter runs the armed one, and with
+  none armed does nothing; Esc closes, and the same screen stands at the next opening. A screen takes a key or a
+  click only once the answer that key would run has been in view for 350 ms: Enter, once the armed answer has;
+  Tab, the pointer and a click, which reach any answer, once every answer has. Nothing is answered blind, and
+  nothing by the Enter that answered the screen before. A screen that came while something was typed, or was typed
+  over before it had been in view, comes into view when the field is empty again, and counts from then. So does one
+  of the key's screens that came while the system's dialog was over the panel: it counts from when the dialog has
+  gone. Up on a stage is Up on any empty field: the last text that was not run comes back, and the stage gives way
+  to its list.
+- **The key.** Action + Quick Insert is suggested, Action + M on a keyboard without that key. "Open Keyboard
+  shortcuts" asks the system for its dialog; the panel holds on behind it, and the dialog opens on Booklight's own
+  page: five numbered steps in the system's own words. The key that lands is told to the panel: "Your key works";
+  held down, it does not put that panel away again (no start by the key does anything for 0.7 s after its last).
+  "Not now" ends first run.
+- **The lessons are practice.** Nothing opens: Enter on an app's row, and on a search inside an app, shows its
+  slot pressed and the footer says "That opens …"; half a second later the next lesson stands. A sum is copied for
+  real, and the panel stays. While a lesson's list is typed, the field's placeholder says what to type and the
+  footer's left end says the next key and what it does today.
+- **The question is consent**: alone on its screen, nothing armed, "Not now" first; only "Agree" switches
+  suggestions on. It is not asked while they are on.
+- **The choices are a list** of two rows with nothing selected: "Show your usual" with a switch, and the list of
+  everything. Enter with nothing selected is "Done": first run is over and the glass folds to the bare field.
+  Closing the panel on them ends first run too. So does a letter typed over them: the glass shows the typed list,
+  and the choices do not come back.
+- **An unfinished run** stands in three openings, then waits in the Booklight window. The opening in which it
+  begins to wait, and the one in which "Not now" was said to the key, say so in the field's placeholder.
+- **"First steps"** asks for it again. Typed in the panel, the run stands in that panel, from "Your key works"
+  where a key is known, without the opening piece. Its row is there only where it was typed for: for three letters
+  or more that begin its name ("fir", "first s"), or for one of its other words in full (tour, welcome, intro). A
+  letter or two that would find it by the usual matching ("f", "fi", "w") do not: nobody meets it in an everyday
+  list. The row on the window's
+  Start page opens a panel that plays the whole of it, the opening piece first; where a run is unfinished, both go
+  on with it where it stopped, and the row says so ("Go on with the first steps"). The opening piece is left out
+  wherever it is not played (below). It changes no switch: where suggestions are on the question is not asked, and
+  where sums are off there is no sum's lesson and no sum in the show.
+- **The opening piece**, once, at a new installation's very first opening, which runs at Slow: the welcome, then a
+  show in which Booklight types into its own field (this device's apps, a sum, an example flight, the emoji grid)
+  and runs nothing. Every key is the piece's first: Enter and Space are the cue in the welcome and set the key's
+  step down in the show; Esc, Tab, an arrow and Backspace set it down; a typed character ends it and is typed. It
+  is not played with the system's animations off, with a screen reader on, on a screen lower than 655 dp or in a
+  right-to-left layout: the key's step stands at once. With animations off or a screen reader on, the welcome's
+  title greets as the field's placeholder.
+- **Booklight never opens itself over another window**, and nothing in first run opens another app.
+- **Screen reader**: each screen is said once when it comes, with its keys or its recipe and how to act; so are
+  the choices, the ending and the word that the steps wait in the window. The switch is a switch, and its new
+  state is said.
+
+| Key | On a stage | On the choices | While the opening piece plays |
+| --- | --- | --- | --- |
+| A letter | typed; the stage gives way to its list, and is back when the field is empty | typed; first run is over | ends the piece, and is typed |
+| Enter | the armed answer; none armed: nothing | nothing selected: Done, the fold; on a row: that row | the cue in the welcome; in the show the key's step lands |
+| Tab · Shift + Tab | arms the next · the previous answer | as Down | the key's step lands |
+| ↓ ↑ | ↓: nothing. ↑: the last text that was not run comes back, and the stage gives way to its list; with none kept, nothing | the highlight comes to a row, and goes | the key's step lands |
+| Esc | closes; the screen waits | closes; the choices are done | the key's step lands |
 

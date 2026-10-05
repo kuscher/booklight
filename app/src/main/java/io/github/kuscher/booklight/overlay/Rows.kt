@@ -79,6 +79,8 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
@@ -94,6 +96,7 @@ import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.Behind
 import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.Effect
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Icon as RowIcon
 import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Result
@@ -113,6 +116,8 @@ private class Slot(val uid: Int, var result: Result) {
     var index = 0
     var leaving = false
     var delay = 0
+    /** It stands whole from its first frame and does not rise: row one of first run's show, which comes into the seat the highlight already has. */
+    var whole = false
 }
 
 /**
@@ -126,7 +131,12 @@ private class RowSlots {
     private var next = 0
     var removed by mutableIntStateOf(0)
 
-    fun sync(results: List<Result>, motion: Motion): List<Slot> {
+    /**
+     * [held]: the highlight stands in row one's seat already (first run's show, whose pill is the welcome's handle): a list
+     * that comes from nothing has that row whole at once. [late]: a list that comes from nothing waits this long before
+     * its first row rises (first run's choices, which come as the question's words fade: motion.md T9).
+     */
+    fun sync(results: List<Result>, motion: Motion, held: Boolean = false, late: Int = 0): List<Slot> {
         if (results === last) return all
         last = results
         // A flight's row is one row to the list whatever its number is just now ("LH45", then "LH455"): its words change in
@@ -139,7 +149,7 @@ private class RowSlots {
         var fresh = 0
         val now = results.mapIndexedNotNull { i, r ->
             if (r.kind == Kind.ACTION) return@mapIndexedNotNull null
-            val s = live[seat(r)] ?: Slot(next++, r).also { it.delay = motion.stagger(if (fromNothing) i else fresh++) }
+            val s = live[seat(r)] ?: Slot(next++, r).also { it.delay = motion.stagger(if (fromNothing) i else fresh++) + (if (fromNothing) late else 0); it.whole = held && fromNothing && i == 0 }
             s.result = r; s.index = i; s.top = tops[i]
             s
         }
@@ -157,7 +167,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     val motion = LocalMotion.current
     val slots = remember { RowSlots() }
     slots.removed   // read, so a row that has finished fading out is dropped from the composition
-    val rows = slots.sync(model.results, motion)
+    val rows = slots.sync(model.results, motion, held = model.playing == FirstRun.Playing.SHOW, late = if (model.choicesUp) motion.held(Motion.ASK_LEAVES_MS).toInt() else 0)
     val tops = Metrics.tops(model.results)
     val picked = model.results.getOrNull(model.selected)
 
@@ -196,7 +206,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
     Box(Modifier.padding(horizontal = Metrics.pad).padding(top = Metrics.pad).fillMaxWidth().height(tall)) {
         val danger = picked?.kind == Kind.ACTION && picked.actions.firstOrNull()?.danger == true
         // A grid has its own highlight, the square on its cells: one highlight per level.
-        Pill(tops.getOrElse(model.selected) { 0.dp }, picked?.let(Metrics::rowHeight) ?: Metrics.row, visible = picked != null && picked.body !is Body.Grid, danger = danger, row = picked?.id)
+        Pill(tops.getOrElse(model.selected) { 0.dp }, picked?.let(Metrics::rowHeight) ?: Metrics.row, visible = picked != null && picked.body !is Body.Grid, danger = danger, row = picked?.id, gone = model.gliding)
         for (slot in rows) key(slot.uid) {
             val selected = !slot.leaving && slot.index == model.selected
             val r = slot.result
@@ -205,7 +215,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
             // comes as the closing edge passes it, so the list is taken off them from the last row up; a row above it waits
             // until the list has closed, as its row is on its way back down through them.
             val under = closing != null && mine == null && slot.top > closing.top
-            SlotRow(slot.top, slot.leaving, if (under) 0 else slot.delay, onGone = { slots.remove(slot) }, wait = {
+            SlotRow(slot.top, slot.leaving, if (under) 0 else slot.delay, whole = slot.whole, onGone = { slots.remove(slot) }, wait = {
                 when {
                     typedAway || open != null || held == null || mine != null -> false
                     under -> closing!!.top + closing.row + closing.height * block.value > slot.top + Metrics.row / 2
@@ -217,7 +227,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                     armed = if (selected) model.armed else r.armed, confirming = selected && model.confirming, cell = if (selected) model.cell else -1,
                     stops = model.stops(r), opened = model.list.takeIf { open == r.id },
                     // (A pointer passing over a row is not the user going to it: nothing is looked up for that.)
-                    onHover = { if (!slot.leaving) model.select(slot.index, passing = true) }, calm = model.zeroUp && model.current == null,
+                    onHover = { if (!slot.leaving) model.select(slot.index, passing = true) }, calm = model.atRest,
                     onClick = { if (!slot.leaving) { model.select(slot.index); if (open != r.id) model.armAt(r.armed); model.enter(onRun) } },
                     onArm = { if (selected) model.armAt(it) },
                     // (An action that is off takes no click: Enter would run the armed one in its place.)
@@ -236,6 +246,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
                     onPick = { if (!slot.leaving) { model.select(slot.index); model.cellAt(it); model.armAt(0); model.enter(onRun) } },
                     onToggle = { if (!slot.leaving) { model.select(slot.index); if (open == r.id) model.close() else model.open(Behind.ARROW) } },
                     onGrow = { model.grow(r.id) },
+                    pressed = selected && model.pressed,
                 )
                 if (mine != null) ActionBlock(
                     mine.second, under = Metrics.rowHeight(r), shown = { block.value.coerceIn(0f, 1f) }, fading = typedAway,
@@ -253,10 +264,10 @@ private class Closing(val top: Dp, val height: Dp, /** The height of the row the
 
 /** Places a row, moves it when its slot changes, and plays its arrival and departure. */
 @Composable
-private fun SlotRow(top: Dp, leaving: Boolean, delayMs: Int, onGone: () -> Unit, wait: () -> Boolean, content: @Composable () -> Unit) {
+private fun SlotRow(top: Dp, leaving: Boolean, delayMs: Int, onGone: () -> Unit, wait: () -> Boolean, /** It does not arrive: it is there, whole, from its first frame. */ whole: Boolean = false, content: @Composable () -> Unit) {
     val motion = LocalMotion.current
     val y by animateDpAsState(top, motion.place(), label = "row")
-    val here = remember { Animatable(if (motion.on) 0f else 1f) }
+    val here = remember { Animatable(if (motion.on && !whole) 0f else 1f) }
     val gone by rememberUpdatedState(onGone)
     LaunchedEffect(leaving) {
         if (leaving) { here.animateTo(0f, motion.fade(80)); gone() }
@@ -471,7 +482,7 @@ object PillTrace {
  * level down. [row] is the selected row, so that the pill knows when it is its own row that moved.
  */
 @Composable
-fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false, row: String? = null) {
+fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false, row: String? = null, gone: Boolean = false) {
     val motion = LocalMotion.current
     val band = remember { Band(top, height) }
     val shown by animateFloatAsState(if (visible) 1f else 0f, motion.fade(120), label = "pill")
@@ -502,7 +513,8 @@ fun Pill(top: Dp, height: Dp, visible: Boolean, danger: Boolean = false, row: St
             val box = measurable.measure(constraints.copy(minHeight = lower - upper, maxHeight = lower - upper))
             layout(box.width, box.height) { box.place(0, upper) }
         },
-        { shown }, danger,
+        // [gone]: the one highlight has left this list for another place (first run's landing): it is not here a frame longer.
+        { if (gone) 0f else shown }, danger,
     )
 }
 
@@ -579,7 +591,7 @@ private fun ActionRow(r: Result, selected: Boolean, modifier: Modifier, onHover:
 }
 
 @Composable
-private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List<Action>, bare: Boolean, onHover: () -> Unit, onClick: () -> Unit, onAction: (Int) -> Unit, calm: Boolean = false, content: @Composable RowScope.(Dp) -> Unit) {
+private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List<Action>, bare: Boolean, onHover: () -> Unit, onClick: () -> Unit, onAction: (Int) -> Unit, calm: Boolean = false, /** The row is a switch, and whether it is on: said so to a screen reader. */ on: Boolean? = null, content: @Composable RowScope.(Dp) -> Unit) {
     val hover by rememberUpdatedState(onHover)
     val still by rememberUpdatedState(calm)
     val slack = with(LocalDensity.current) { 4.dp.toPx() }
@@ -607,7 +619,9 @@ private fun RowFrame(height: Dp, selected: Boolean, label: String, actions: List
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             // One item for a screen reader, whatever it can do offered as its actions.
             .semantics(mergeDescendants = true) {
-                this.selected = selected; role = Role.Button; contentDescription = label
+                this.selected = selected; contentDescription = label
+                // (A row that holds a switch is one to a reader: it says "on" or "off" itself, also when it is flipped.)
+                if (on != null) { role = Role.Switch; toggleableState = ToggleableState(on) } else role = Role.Button
                 // (Window is a stop, not something to run: its lines are offered by their own names, "Left half".)
                 if (actions.size > 1) customActions = actions.withIndex().drop(1).filter { it.value.effect !is Effect.OpenList }.map { (i, a) -> CustomAccessibilityAction(a.label) { act(i); true } }
             }
@@ -628,6 +642,8 @@ fun ResultRow(
     onCustom: (Int) -> Unit = onAction,
     /** An answer in this row needs more than its two lines. */
     onGrow: () -> Unit = {},
+    /** Its armed action shows as pressed (first run's practice). */
+    pressed: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
@@ -641,14 +657,16 @@ fun ResultRow(
     val kind = r.label ?: if (r.provider == "gemini") "Gemini" else ofKind
     val body = r.body
     // (A flight's row is said with what it answers: who and where, then the headline and the badge.)
-    val described = stringResource(R.string.a11y_selected, if (body is Body.Flight) listOfNotNull(r.title, body.headline.ifEmpty { null }, body.badge).joinToString(", ") else r.title, r.actions.getOrNull(armed)?.label ?: kind)
+    // (A switch's row is said by its name: its state is the switch's own to say.)
+    val described = if (body is Body.Switch) r.title
+        else stringResource(R.string.a11y_selected, if (body is Body.Flight) listOfNotNull(r.title, body.headline.ifEmpty { null }, body.badge).joinToString(", ") else r.title, r.actions.getOrNull(armed)?.label ?: kind)
     // The answer body as it last was: it goes on being drawn while it fades, when the row turns back into its name.
     val lastStream = remember { arrayOfNulls<Body.Stream>(1) }
     if (body is Body.Stream) lastStream[0] = body
     // And the room its strip keeps stays until it has faded, so its lines are not laid out again on their way out.
     var streamed by remember { mutableStateOf(body is Body.Stream) }
     LaunchedEffect(body is Body.Stream) { if (body is Body.Stream) streamed = true else { delay(motion.hold(80)); streamed = false } }
-    RowFrame(Metrics.rowHeight(r), selected, described, r.actions, bare = body is Body.Grid, onHover, onClick, onCustom, calm) { tall ->
+    RowFrame(Metrics.rowHeight(r), selected, described, r.actions, bare = body is Body.Grid, onHover, onClick, onCustom, calm, on = (body as? Body.Switch)?.on) { tall ->
         if (body is Body.Grid) { GridBody(body, cell.coerceAtLeast(0), selected, onCell, onPick); return@RowFrame }
         // A row that grows under its answer keeps its mark and its strip where they were: on the line of the row's first
         // height. A row that is asked where it stands grows from an ordinary row into that: they travel there with its height.
@@ -712,6 +730,9 @@ fun ResultRow(
             Spacer(Modifier.width(if (selected && !body.locked) 16.dp else 0.dp))
         }
 
+        // A switch is the row's own control: it stands at the row's end, selected or not, and the row has no strip.
+        if (body is Body.Switch) { PanelSwitch(body); return@RowFrame }
+
         // What the row can do arrives on the selected row; the others say what kind of thing they are.
         // The icons are the actions that are not kept in a list; the last slot is the arrow, or the one of its lines
         // that a typed verb named. Window is an icon like the others, and a typed place stands in its slot.
@@ -759,7 +780,7 @@ fun ResultRow(
                     // (A click on the arrow while Window's list is open goes the way Enter does: that list closes and the arrow's opens.)
                     onArm = { onArm(full(it)) }, onRun = { if (more && tenth == null && it == shown.size && opened != Behind.WINDOW) onToggle() else onAction(full(it)) },
                     more = more, tenth = tenth, opened = opened == Behind.ARROW,
-                    moreLabel = stringResource(R.string.action_more), lessLabel = less, turn = { arrow.value }, icons = icons)
+                    moreLabel = stringResource(R.string.action_more), lessLabel = less, turn = { arrow.value }, icons = icons, pressed = pressed)
                 // One of its lists is open and the pill is on one of its lines: the row keeps only an arrow, turned over, in
                 // its place; before it, for Window's list, the word that says which list this is.
                 state == 1 -> Row(verticalAlignment = Alignment.CenterVertically) {
@@ -769,7 +790,8 @@ fun ResultRow(
                     }
                 }
                 body is Body.Level -> Spacer(Modifier.width(0.dp))
-                r.kind == Kind.SCOPE -> Keycap("tab")
+                // (A scope's row that names its own key shows that key, as an answer's caps: `?` for the list of everything.)
+                r.kind == Kind.SCOPE -> Keycap(r.label ?: "tab", strong = r.label != null)
                 else -> Text(kind, color = scheme.onSurface.copy(alpha = if (r.provider == "help") 1f else SECOND), style = SMALL, maxLines = 1)
             }
         }

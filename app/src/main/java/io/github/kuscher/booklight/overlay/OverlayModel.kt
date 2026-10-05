@@ -7,6 +7,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.Tips
@@ -24,6 +26,7 @@ import io.github.kuscher.booklight.scopes.PromptScope
 import io.github.kuscher.booklight.scopes.TextFrom
 import io.github.kuscher.booklight.scopes.TextScope
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import io.github.kuscher.booklight.core.Act
 import io.github.kuscher.booklight.core.Action
 import io.github.kuscher.booklight.core.AppChip
@@ -32,22 +35,25 @@ import io.github.kuscher.booklight.core.Chips
 import io.github.kuscher.booklight.core.Origin
 import io.github.kuscher.booklight.core.Body
 import io.github.kuscher.booklight.core.Effect
+import io.github.kuscher.booklight.core.FirstRun
 import io.github.kuscher.booklight.core.Kind
 import io.github.kuscher.booklight.core.Matcher
 import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
+import io.github.kuscher.booklight.core.SearchEngine
+import io.github.kuscher.booklight.core.SetDown
+import io.github.kuscher.booklight.core.Show
 import io.github.kuscher.booklight.core.Stops
 import io.github.kuscher.booklight.data.Settings
+import io.github.kuscher.booklight.data.firstRun
+import io.github.kuscher.booklight.device.Keyboards
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-/** The small first-run card under the field: one step at a time, only while nothing is typed. */
-enum class Card { SHORTCUT, SUGGESTIONS }
 
 /**
  * The panel's state: the chip in the field (a scope) and the text after it, the ranked rows, which
@@ -58,6 +64,8 @@ class OverlayModel(
     private val app: BooklightApp, private val scope: CoroutineScope, private val limit: Int = 8,
     /** The list in the Booklight window that shows what the panel does: it never asks the network and learns nothing. */
     private val demo: Boolean = false,
+    /** The screen's height in dp: on a screen too low for it first run does not stand in the panel (core `FirstRun.fits`). */
+    private val screenDp: Float = Float.MAX_VALUE,
 ) {
     /** The scope the text is an argument for: the chip in the field. Null = ordinary search. */
     var chip by mutableStateOf<Scope?>(null); private set
@@ -105,7 +113,8 @@ class OverlayModel(
      * it: Tab then makes the keyword the chip, as a browser's address bar does. Once the user has
      * moved to a row or along its actions, Tab is that row's again.
      */
-    val keyword: Scope? by derivedStateOf { if (chip != null || touched || opened != null) null else app.engine.keywordScope(query) }
+    // (Not while first run's show types: a keyword Booklight types is not the user's to make a chip of.)
+    val keyword: Scope? by derivedStateOf { if (playing != null || chip != null || touched || opened != null) null else app.engine.keywordScope(query) }
 
     /** Tab on a keyword: it becomes the chip. Only for the list on screen. */
     fun enterKeyword(): Boolean {
@@ -172,19 +181,950 @@ class OverlayModel(
     val current: Result? get() = results.getOrNull(selected)
 
     /** The glass has opened far enough for what is under the field to come (`Motion.GATE`): set by the panel. */
-    var arrived by mutableStateOf(false)
-    /** The panel was opened to have an example typed into it (a row of the window's Commands page): no card and no tip come first. */
+    var arrived: Boolean
+        get() = hasArrived
+        set(value) { if (value && !hasArrived) arrivedAt = SystemClock.uptimeMillis(); hasArrived = value }
+    private var hasArrived by mutableStateOf(false)
+    private var arrivedAt = 0L
+    /** The panel was opened to have an example typed into it (a row of the window's Commands page): neither first run's stage nor a tip comes first. */
     var guided by mutableStateOf(false)
+    /**
+     * The panel carries text another app handed over (its selection menu, its share sheet). Like a guided panel it is
+     * not one of a run's openings: no screen of first run is due in it, so no lesson's coach line stands over that text
+     * and Enter there is as every day.
+     */
+    var carries by mutableStateOf(false)
 
-    /** The first-run step to show, if any is left and nothing is typed. */
-    val card: Card? by derivedStateOf {
-        when {
-            demo || guided || query.isNotEmpty() || chip != null -> null
-            // "Give Booklight a key": not for someone whose key has already opened the panel.
-            settings.shortcutCard && !settings.keySeen -> Card.SHORTCUT
-            settings.suggestionsCard && !settings.suggestions -> Card.SUGGESTIONS
+    // ---- first run: the opening piece (the welcome, then the show)
+
+    // (Its state stands here, before the stage's: the stage asks it, and is first asked while this object is made.)
+    /** Where the opening piece is while it plays (core `FirstRun.Playing`); null: it does not play, or is over. */
+    var playing by mutableStateOf<FirstRun.Playing?>(null); private set
+    /** This panel began with the opening piece: what draws the piece is composed in this panel, and in no other. */
+    var began by mutableStateOf(false); private set
+    /**
+     * The opening piece is this opening's and is not played (the system's animations are off, or a screen reader is on:
+     * core `FirstRun.greets`): the welcome's title greets as the field's placeholder. Set by the activity.
+     */
+    var greets by mutableStateOf(false)
+    /** What the show needs of this device (`BooklightApp.cast`); null until it is worked out, and where the device has nothing to show. */
+    var cast by mutableStateOf<BooklightApp.Cast?>(null); private set
+    private var casting: Job? = null
+    /** Whether the show has something to show here (core `FirstRun.Cast`): its rows are there, still being worked out, or this device has none. */
+    val casts: FirstRun.Cast get() = if (cast != null) FirstRun.Cast.READY else if (casting?.isCompleted == true) FirstRun.Cast.NONE else FirstRun.Cast.WAITS
+    private var performer: Job? = null
+    /** The cue was given (Enter in the welcome, a click on its handle): the welcome hands over as soon as the show can begin. */
+    var cued by mutableStateOf(false); private set
+    /** The welcome's handle stands and carries the cue: a click on it is the cue. Set by the welcome. */
+    var cueUp by mutableStateOf(false)
+    /** The welcome's hand-over has come as far as the field's mark: Booklight's own stands in its seat, a moment before Booklight types. Set by the welcome. */
+    var marked by mutableStateOf(false)
+    /** How often the show has asked for the light to set off round the outline: the panel runs one lap for each. */
+    var laps by mutableIntStateOf(0); private set
+    /** How often the piece has begun in this panel: once, but for a debug hook that plays it again. The welcome's clock starts anew with each. */
+    var rounds by mutableIntStateOf(0); private set
+    /** Debug builds: the welcome's clock stands at this many ms of the paper's own clock (`./bl debug first welcome at MS`); null: it runs. */
+    var standsAt by mutableStateOf<Float?>(null); private set
+    /** The height the glass keeps for a moment while what was Booklight's fades at the landing: the lower edge draws in after it (`Metrics.height`). */
+    var heldHeight by mutableStateOf<Dp?>(null); private set
+    /** How long a wait of the piece really is (`Motion.hold`: a debug build's slow motion stretches it). Set by the activity. */
+    var hold: (Long) -> Long = { it }
+    private var keeping: Job? = null
+
+    /**
+     * The glass keeps the height [high] for [ms] of motion at the most ([lasts]), and then goes to its own: what stood in
+     * it is still fading (the question as the choices come, what was Booklight's at the landing), or what comes has not
+     * landed yet (the list for a letter typed on a stage: the lower edge then turns to that list's height from where it
+     * is, and never sets off for the bare field's first). One hold at a time: a new one takes the place of the one
+     * before, whose wait is given up, so that no old wait lets go of a newer hold. With the system's animations off
+     * nothing fades, and a wait for a fade is nothing: the glass is at its own height at once. [real]: what is waited for
+     * is no motion (the list for what was typed, which the engine makes in its own time): the wait is [ms] as they are,
+     * whatever the motion is, and with the system's animations off too. Without it the glass would step from the stage's
+     * height to the bare field's and on to the list's at the first letter of each lesson.
+     */
+    private fun keep(high: Dp, ms: Long, real: Boolean = false) {
+        val span = if (real) ms else lasts(ms)
+        if (span <= 0L) return
+        keeping?.cancel()
+        heldHeight = high
+        keeping = scope.launch { delay(span); heldHeight = null }
+    }
+    /** The glass is at its own height again, and no wait is left that would let go of a later hold. */
+    private fun letGo() { keeping?.cancel(); keeping = null; heldHeight = null }
+    /**
+     * The screen of first run that is due has not been in view, and something is in its place: the screen came while
+     * the field held a list ([rearm]); or it was typed over before its answers had been in view for a moment
+     * ([covered]: so is the key's step that came as a typed character ended the opening piece, [typed]). It comes when
+     * the field is empty again ([search]), and its keys count from then.
+     */
+    private var unseen = false
+    /**
+     * The one highlight on its way from where the show left it into the armed answer of the screen that lands: where it
+     * stood when the landing began, in dp from the glass's corner (left, top, right, bottom, corner radius). Null: none
+     * travels, or it has arrived.
+     */
+    var glideFrom by mutableStateOf<FloatArray?>(null); private set
+    /** While it is on its way the stage's own answers are not lit: one highlight, never two. */
+    val gliding: Boolean get() = glideFrom != null
+    /** Where the stage's armed answer stands, in px from the glass's corner (left, top, right, bottom), as the stage last said while the highlight was on its way. */
+    var answerAt by mutableStateOf<FloatArray?>(null)
+    /** It has arrived: from now on the highlight is the answers' own. */
+    fun glided() { glideFrom = null }
+
+    /**
+     * Where the highlight of what stands now is drawn, in dp from the glass's corner: the square on a grid's cell (44 dp
+     * in its 48 dp cell, radius 14), else the pill on the selected row (radius 24). By the sums the rows and the grid
+     * draw by. Null: nothing is selected.
+     */
+    private fun highlight(): FloatArray? {
+        val r = current ?: return null
+        val top = Metrics.field.value + Metrics.pad.value + Metrics.tops(results)[selected].value
+        val grid = r.body as? Body.Grid
+            ?: return floatArrayOf(Metrics.pad.value, top, Metrics.width.value - Metrics.pad.value, top + Metrics.rowHeight(r).value, 24f)
+        val pitch = (Metrics.width.value - 28f) / grid.columns
+        val inset = (pitch - Metrics.cell.value) / 2f + 2f
+        val left = 14f + (cell % grid.columns) * pitch
+        val up = top + 8f + (cell / grid.columns) * Metrics.cell.value
+        return floatArrayOf(left + inset, up + 2f, left + pitch - inset, up + Metrics.cell.value - 2f, 14f)
+    }
+
+    // ---- first run: its stage under the empty field
+
+    /**
+     * The screen of first run that is due in this panel (core `FirstRun.stage`), whatever the field holds; null: none.
+     * Not in the Booklight window's demo, not in a panel that was opened to have an example typed into it, and not in
+     * one that carries another app's text.
+     */
+    val due: FirstRun.Screen? by derivedStateOf { if (demo || guided || carries) null else FirstRun.stage(settings.firstRun(), screenDp) }
+    /**
+     * The screen whose stage has the place under the empty field; null: none. Like a tip, only while nothing is typed and
+     * no chip stands. The choices are no stage: they are a list of their own.
+     */
+    // (Not while first run's welcome or its show plays: the stage is what they land in.)
+    val stage: FirstRun.Screen? by derivedStateOf {
+        due?.takeIf { it != FirstRun.Screen.C && query.isEmpty() && chip == null && (playing == null || playing == FirstRun.Playing.LANDING) }
+    }
+    /**
+     * The lesson that stands in this panel (the second, third or fourth step's screen): first its stage under the empty
+     * field, then the list that is typed for it. It goes on standing while that list is on screen, though its stage does not.
+     */
+    val lesson: FirstRun.Screen? by derivedStateOf { due?.takeIf { it.step == FirstRun.Step.OPEN || it.step == FirstRun.Step.SEARCH || it.step == FirstRun.Step.SUM } }
+    /** Which of the stage's answers Enter runs; -1: none (Enter then does nothing). */
+    var stageArmed by mutableIntStateOf(FirstRun.armed(app.prefs.now.firstRun())); private set
+    /** The screen, and its answers, that [stageArmed] was last set for ([rearm]). */
+    private var armedFor = app.prefs.now.firstRun().let { FirstRun.screen(it) to FirstRun.answers(it) }
+    /** The key suggested beside Action, for the keyboard in front ([resuggest]). */
+    var suggested by mutableStateOf(FirstRun.Key.QUICK_INSERT); private set
+    /** The keyboard the last key came from, by its id; null before any key. Set by the panel. */
+    var keyboard: Int? = null
+    /** The key's step waits for the key: none has opened the panel yet, or another one is asked for. */
+    val awaitsKey: Boolean get() = stage.let { it == FirstRun.Screen.K1 || it == FirstRun.Screen.K2 || it == FirstRun.Screen.K3 }
+
+    // ---- first run: how the screen that stands comes onto the glass
+
+    /**
+     * How the screen that stands came (core `SetDown.Comes`: set down part by part, come back to, in another's place,
+     * after a list, at the landing of the opening piece, or whole at once), and when each of its parts comes by that
+     * ([marks], core `SetDown.marks` with `Motion.kt`'s times). Worked out once, in the moment it comes ([came]). The
+     * stage draws by these marks on one clock; [seen] counts by them.
+     */
+    var comes by mutableStateOf(SetDown.Comes.WHOLE); private set
+    var marks by mutableStateOf(SetDown.WHOLE); private set
+    /** When the screen of first run that stands came (the model's making, for the one it was made with), by the clock keys are timed by. */
+    var cameAt by mutableLongStateOf(SystemClock.uptimeMillis()); private set
+    /** The zero of the stage's clock: when the screen came, and not before the glass had opened far enough for it to be seen. */
+    val viewFrom: Long get() = maxOf(arrivedAt, cameAt)
+    /**
+     * For a screen that came while the system's Keyboard shortcuts dialog was over the panel ([under]: "Now press your
+     * keys" a moment after the dialog came, "Your key works" where the key landed under it), and for one the dialog
+     * came over before it had been in view for its moment: when the panel was uncovered again, by the clock keys are
+     * timed by, and [COVERED] for as long as it is not. 0: the screen came in view, and was in view when the dialog
+     * came, if one did. Nobody saw such a screen under the dialog, however long it stood there, so its keys count from
+     * when the dialog went and not from when it came ([taken], core `FirstRun.inView`). Only that: it is drawn by the
+     * moment it came ([viewFrom]: its parts were set down under the dialog and stand), no mark of it is made anew, and
+     * it is said to a screen reader once, for that coming. It never stays [COVERED]: whatever ends the hold says so
+     * through [under], in the one place the hold changes (`OverlayActivity.signal`).
+     */
+    private var uncoveredAt = 0L
+    /** The screen that stands came under the system's dialog and is still under it: no key counts. (For the debug hooks that say so.) */
+    val underDialog: Boolean get() = uncoveredAt == COVERED
+    /** How long after the gate the band of a screen begins that is set down as this panel opens (`Arrival.bandAfter`): said by the activity ([opening]). */
+    private var bandAfter = Motion.BAND_AFTER_MS
+    /** How long a span of motion really is (`Motion.held`: a debug build's slow motion stretches it, and with the system's animations off it is nothing). Set by the activity. */
+    var lasts: (Long) -> Long = { it }
+    /** Debug builds: the stage's clock stands at this many ms (`./bl debug first stage at MS`); null: it runs. */
+    var stageAt by mutableStateOf<Float?>(null)
+
+    /**
+     * What the recipes of lessons 2 and 3 show to type on this device (core `FirstRun.Example`); null until it is worked
+     * out. That is asked only where a screen of first run is due.
+     */
+    var example by mutableStateOf<FirstRun.Example?>(null); private set
+    private var exampling: Job? = null
+
+    /** The recipe of the lesson that stands, on this device (core `FirstRun.recipe`). Lessons 2 and 3 have none until their example is worked out. */
+    fun recipe(f: FirstRun.State = first()): List<FirstRun.Part> =
+        if (example == null && FirstRun.lesson(f) != FirstRun.Screen.L4) emptyList()
+        else FirstRun.recipe(f, example ?: FirstRun.example(null, "", null, "", ""), app.getString(R.string.first_sum_example))
+
+    /**
+     * The screen that stands came in this moment, in the way [how] says. Its marks are worked out (for a screen that
+     * takes the place of [was], the screen and the answers that stood: what they share with it does not move), and its
+     * keys count from when its answers have begun to show ([seen]).
+     */
+    private fun came(how: SetDown.Comes, was: Pair<FirstRun.Screen?, List<FirstRun.Answer>>? = null) {
+        comes = how
+        cameIn = was
+        marks = marksFor(how, was)
+        cameAt = SystemClock.uptimeMillis()
+        // (Under the system's dialog it came unseen: it is in view once the panel is uncovered, which [under] says.)
+        uncoveredAt = if (under) COVERED else 0L
+    }
+    /** What the screen that stands took the place of when it came ([came]): kept for a recipe that is worked out a moment late ([exemplify]). */
+    private var cameIn: Pair<FirstRun.Screen?, List<FirstRun.Answer>>? = null
+
+    /** The marks of the screen that is due, for the way [how] it comes (core `SetDown.marks` with `Motion.kt`'s times). */
+    private fun marksFor(how: SetDown.Comes, was: Pair<FirstRun.Screen?, List<FirstRun.Answer>>?): SetDown.Marks {
+        val f = first()
+        val on = FirstRun.screen(f)
+        // The band's pieces as core's schedule counts them: how many letters each typed part has, 0 for a cap or a sign.
+        // (Letters as a reader counts them, which is how they are written: core `FirstRun.ends`.)
+        val letters = when (on?.step) {
+            FirstRun.Step.KEY -> if (on == FirstRun.Screen.K1) listOf(0, 0, 0) else listOf(0)
+            FirstRun.Step.OPEN, FirstRun.Step.SEARCH, FirstRun.Step.SUM -> recipe(f).map { (it as? FirstRun.Part.Typed)?.text?.let { t -> FirstRun.ends(t).size } ?: 0 }
+            else -> emptyList()
+        }
+        // (The choices are a list of their own: nothing of a stage comes for them.)
+        return if (on == null || on == FirstRun.Screen.C) SetDown.WHOLE else SetDown.marks(
+            how, PACE, letters, ask = on == FirstRun.Screen.Q,
+            // (Under "Your key works" and under the question's answers stands no caption.)
+            caption = on != FirstRun.Screen.K4 && on != FirstRun.Screen.Q, bandAfter = bandAfter,
+            bandChanges = was == null || !SetDown.sameBand(was.first, on), captionChanges = was == null || !SetDown.sameCaption(was.first, on, suggested),
+            answersChange = was == null || was.second != FirstRun.answers(f),
+        )
+    }
+
+    /**
+     * Debug builds (`./bl debug first stage …`): the screen that stands comes again in the way [how] says, as if in this
+     * moment (null: as it came); and its clock stands at [at] ms, or runs (null). For a picture of a set-down at a named
+     * moment. Nothing that is kept changes.
+     */
+    fun stageAs(how: SetDown.Comes?, at: Float?) {
+        stageAt = at
+        if (how != null) came(how)
+    }
+
+    /** The activity says how this panel opens: how long after the gate the band of a screen begins that is set down in it. Said before the glass opens. */
+    fun opening(bandAfter: Int) {
+        this.bandAfter = bandAfter
+        if (comes == SetDown.Comes.SET_DOWN) came(SetDown.Comes.SET_DOWN)
+    }
+
+    /**
+     * The example is worked out, once for this panel, off the main thread (`BooklightApp.firstExample`). It can land a
+     * moment after a lesson came whose recipe it is (a run that stopped on lesson 2 or 3 and is asked for again: the
+     * marks were made for a band with nothing in it). Where that lesson is being set down and its band is not due yet,
+     * the marks are worked out again with the recipe in them, on the clock that runs: the recipe is written a letter at
+     * a time, and its caption and Skip come after it. The screen does not come again by this (it is said once, and its
+     * keys count from the same moment by marks that are only later). Where the band was due already, or the screen came
+     * back as rows do, the recipe fades in where it belongs, as before.
+     */
+    private fun exemplify() {
+        if (example != null || exampling != null) return
+        exampling = scope.launch {
+            example = app.firstExample()
+            val on = stage
+            if ((on != FirstRun.Screen.L2 && on != FirstRun.Screen.L3) || !marks.written || marks.pieces.isNotEmpty()) return@launch
+            val next = marksFor(comes, cameIn)
+            val due = next.pieces.firstOrNull() ?: return@launch
+            if (!arrived || SystemClock.uptimeMillis() - viewFrom < lasts(due.toLong())) marks = next
+        }
+    }
+
+    /** What the question's text needs beyond its four lines; the stage is that much taller (`Metrics.stage`). Measured by the panel before the question stands. */
+    var askMore by mutableStateOf(0.dp); private set
+    fun askRoom(more: Dp) { if (more != askMore) askMore = more }
+
+    // (The keyboards are asked, and the example worked out, only where a screen is due: on every other day nothing here runs.)
+    init {
+        if (!demo && stage != null) resuggest()
+        // (A screen the panel opens on is set down at its gate part by part; one the run has stood on before comes back as rows do.)
+        if (!demo && due != null) { exemplify(); came(if (FirstRun.comesBack(first())) SetDown.Comes.BACK else SetDown.Comes.SET_DOWN) }
+        // The settings also change from outside the model (the window, a debug hook): see [rearm].
+        if (!demo) scope.launch { app.prefs.state.collect { rearm(it.firstRun()) } }
+    }
+
+    private fun first() = app.prefs.now.firstRun()
+
+    /**
+     * A step of first run, worked out inside the settings' own update (`Prefs.firstRun`); what stands is read from the
+     * settings in the same call (they reach [settings] by themselves only a moment later). Nothing is written where
+     * nothing changes.
+     */
+    private fun step(f: (FirstRun.State) -> FirstRun.State) {
+        val was = first()
+        if (f(was) == was) return
+        app.prefs.firstRun(f)
+        settings = app.prefs.now
+        rearm(first())
+        offerChoices()
+    }
+
+    /**
+     * Another screen of first run has its own answer armed, however the screen changed (a step here, the window, a debug
+     * hook): an index kept from the screen before would arm the wrong answer, or none. The screen itself is asked and not
+     * [stage], which is null while something is typed: a key can land then, too.
+     */
+    private fun rearm(first: FirstRun.State) {
+        val on = FirstRun.screen(first) to FirstRun.answers(first)
+        if (on != armedFor) {
+            val was = armedFor
+            armedFor = on; stageArmed = FirstRun.armed(first)
+            // It takes the place of a screen that stood on the glass: its words roll and its band is written where that one's
+            // was. Where none stood there (a list is typed; the choices; nothing), it stands whole whenever it shows.
+            val turns = stage != null && was.first != null && was.first != FirstRun.Screen.C
+            came(if (turns) SetDown.Comes.TURN else SetDown.Comes.WHOLE, was)
+            // A stage's screen that does not stand now (its lesson's Enter was pressed on a list that is still typed on; the
+            // key landed over typed text) has not been in view, however long ago this moment will be when it is first drawn:
+            // it comes into view when the field is empty again, and its keys count from then ([search]). What sets it down
+            // itself in a way of its own says so after emptying the field ([giveWay], [again], [land]).
+            if (on.first != null && on.first != FirstRun.Screen.C && stage == null) unseen = true
+        }
+    }
+
+    /**
+     * The screen that stands has been in view for a moment (core `FirstRun.inView`): the glass is open, and neither it
+     * nor the screen came just now, and where the screen is set down part by part its answers have begun to show
+     * ([marks]). A screen's keys and clicks count from then, each screen for itself: the Enter that skipped a lesson,
+     * pressed again at once, must not answer the question that took the lesson's place, and nothing is answered on a
+     * screen that is still under the lower edge of a glass that grows, or whose answers are still to come.
+     *
+     * Which answer a key can reach says from when it counts (core `SetDown.since`). Enter runs the armed answer and no
+     * other: it counts from when that one began to show ([stageEnter]). Tab, the pointer and a click reach any answer:
+     * they count from when every answer has begun to show, which at the landing of the opening piece is 300 ms after
+     * the armed one; and so does Enter once the arming has been moved from the answer that was armed when the screen
+     * came. This is the one for everything that can reach any answer.
+     *
+     * A screen that came while the system's dialog was over the panel is in view only once the panel is uncovered: no
+     * key counts while it is covered, and each counts a moment after the later of the two, its answer's beginning to
+     * show and the dialog's going ([uncoveredAt]).
+     */
+    val seen: Boolean get() = taken(0L, enter = false)
+    /** Enter would be taken now: the answer that is armed has been in view for a moment. (For the debug hooks that say so; the keys ask [stageEnter].) */
+    val takesEnter: Boolean get() = taken(0L, enter = true)
+    /**
+     * [made]: when the key that asks was pressed (uptime; 0: now). A press counts by when it was made, not by when it is
+     * handled: an Enter pressed while a screen was still coming must not run its answer because the frame that drew the
+     * screen took long. [enter]: the key is Enter.
+     */
+    private fun taken(made: Long, enter: Boolean): Boolean {
+        // (A screen that came under the system's dialog and is still under it is in nobody's view.)
+        if (uncoveredAt == COVERED) return false
+        val since = SetDown.since(marks, enter, moved = stageArmed != FirstRun.armed(first()))
+        return arrived && FirstRun.inView(if (made > 0L) made else SystemClock.uptimeMillis(), arrivedAt, cameAt, lasts(since.toLong()), uncoveredAt)
+    }
+
+    /**
+     * Something takes the place of the stage that stands, in this frame: a typed letter, the last text brought back, a
+     * chip, an example Booklight types. What of the screen has not come never comes: when the field is empty again it
+     * stands whole, and nothing is written twice. And where not every one of its answers had been in view for a moment,
+     * the screen has not been in view: it comes into view when the field is empty again, and takes a key a moment after
+     * that ([search]), whichever way it had come. Nor does the show's highlight arrive that was still on its way into
+     * the screen's armed answer: it is gone with the stage. Called before the field changes, by everything that fills it.
+     */
+    private fun covered() {
+        if (stage == null) return
+        if (!seen) unseen = true
+        if (comes != SetDown.Comes.WHOLE) { comes = SetDown.Comes.WHOLE; marks = SetDown.WHOLE }
+        glideFrom = null
+    }
+
+    /**
+     * The key is suggested for the keyboard in front: the one the last key came from; before any key, the device's own.
+     * Asked when the stage is set down and when the system's dialog is asked for, never while the caps are being read.
+     */
+    fun resuggest() { suggested = FirstRun.suggest(FirstRun.hasQuickInsert(Keyboards.attached(), keyboard)) }
+
+    // The stage's keys count only once the glass has opened and the stage can be seen ([arrived]; core `FirstRun.tabbed` and
+    // `entered`): Tab and Enter pressed while the panel was still opening must not answer a question nobody has read.
+    /** Tab on the stage: the next answer is armed, with [back] the one before; the first press arms the first. */
+    fun stageTab(back: Boolean, made: Long = 0L) { if (stage != null) stageArmed = FirstRun.tabbed(first(), stageArmed, back, taken(made, enter = false)) }
+    /** The pointer is on an answer: it is armed. */
+    fun stageArm(index: Int) { if (stage != null && seen && index in FirstRun.answers(first()).indices) stageArmed = index }
+    /** Enter on the stage: the armed answer; null where none is armed (Enter then does nothing, and is not kept). */
+    fun stageEnter(made: Long = 0L): FirstRun.Answer? = if (stage == null) null else FirstRun.entered(first(), stageArmed, taken(made, enter = true))
+    /**
+     * An answer that was given on the stage: its place among the [answers] it was given on, and when ([at], by the
+     * clock keys are timed by). Each press is one of these, a thing of its own, so that the same slot pressed again
+     * shows again. The stage shows it as pressed on those answers and on no others, from that moment (`FirstStage.kt`,
+     * `pressedInk`): the answers that take their place never show it.
+     */
+    class Pressed(val slot: Int, val answers: List<FirstRun.Answer>, val at: Long = SystemClock.uptimeMillis())
+    /** The answer of the stage that was given last; null before any. Nothing waits for it to show: the answer is run in the call that sets this. */
+    var stagePress by mutableStateOf<Pressed?>(null); private set
+
+    /** An answer was given on the stage: its slot shows as pressed. ("Open Keyboard shortcuts" changes nothing else here: the rest is the window's to do.) */
+    fun answerStage(answer: FirstRun.Answer) {
+        val was = first()
+        val asked = stage == FirstRun.Screen.Q
+        val high = Metrics.height(this)
+        FirstRun.answers(was).let { all -> all.indexOf(answer).takeIf { it >= 0 }?.let { at -> stagePress = Pressed(at, all) } }
+        step { FirstRun.answer(it, answer) }
+        // The question gives way to the choices: the lower edge rises only once the question's words have begun to fade, so
+        // that it cuts none of them (motion.md T9).
+        if (asked && choicesUp) keep(high, Motion.ASK_LEAVES_MS)
+        // "Not now" on the key's step ends the run: the steps wait in the Booklight window, and the bare field says so.
+        if (FirstRun.later(was, first())) later = true
+    }
+    /** The system's Keyboard shortcuts dialog has come over the panel: under it the stage says what to do next. */
+    fun helperCame() = step { FirstRun.helperCame(it) }
+    /** "Your key" on the glass is held down, as the user's own key is in this moment (docs/design/first-run/motion.md §4). */
+    var keyDown by mutableStateOf(false); private set
+    /** It went down under the system's dialog, unseen: the first frame that shows the panel shows it down, with no way there. */
+    var keyUncovered by mutableStateOf(false); private set
+    /** The check may draw in "your key": always, but while a landing is shown, where it waits for the key to come up. */
+    var keyChecked by mutableStateOf(true); private set
+    /**
+     * When the user's key last started the panel that greets it, by the clock keys are timed by; 0: no key has landed in
+     * this panel. The key, held, repeats, and each repeat is a new start of the panel, which on any day puts an open
+     * panel away: for [Motion.KEY_SETTLES_MS] after the last of them a start by the key does nothing ([keyAgain]). Real
+     * time, whatever the motion is: the key is held as long with the system's animations off, and in a panel the key
+     * itself made.
+     */
+    private var keyAt = 0L
+    /** The user's key has just landed here: a start by the key does nothing yet. */
+    val landing: Boolean get() = keyAt != 0L && SystemClock.uptimeMillis() - keyAt < Motion.KEY_SETTLES_MS
+    /**
+     * A start by the key. True: it is the key that landed, still held or pressed again at once; it does nothing (it does
+     * not put the panel away, and it answers nothing), and the wait begins anew with it. False: the wait is over, or
+     * no key landed here, and the start is one like any other.
+     */
+    fun keyAgain(): Boolean {
+        if (!landing) return false
+        keyAt = SystemClock.uptimeMillis()
+        return true
+    }
+    /** The landing as it is shown, and the wait for its lap of light ([keyLanded], [keyOpened]): given up when the panel closes ([closing]). */
+    private var landed: Job? = null
+
+    /**
+     * The user's key has opened the panel, or uncovered it. Where its step waited for it, "Your key works" stands; and
+     * where that step stood on the glass, the landing is shown (motion.md T3 and T4): "your key" is down as the user's is,
+     * for 160 ms in view, for 400 where the panel was [under] the system's dialog and is only now uncovered; it comes
+     * up; 60 ms later its check draws; 240 ms after the key came up the light runs its one lap. With the system's
+     * animations off all of it stands in the first frame.
+     */
+    fun keyLanded(under: Boolean = false) {
+        val waited = awaitsKey
+        step { FirstRun.keyLanded(it) }
+        if (!waited || stage != FirstRun.Screen.K4) return
+        keyAt = SystemClock.uptimeMillis()
+        landed?.cancel()
+        keyUncovered = under; keyDown = true; keyChecked = false
+        landed = scope.launch {
+            delay(lasts(if (under) Motion.KEY_HELD_MS else Motion.KEY_TAP_MS))
+            keyDown = false
+            delay(lasts(Motion.CHECK_AFTER_MS))
+            keyChecked = true
+            // (The light sets off `LAP_AFTER_MS` after the key came up: the check has been drawing since `CHECK_AFTER_MS` of that.)
+            delay(lasts(Motion.LAP_AFTER_MS - Motion.CHECK_AFTER_MS))
+            if (stage == FirstRun.Screen.K4) laps++
+        }
+    }
+
+    /**
+     * The user's key has made this panel, and "Your key works" is set down in it for the first time (the system's dialog
+     * was closed before the keys were pressed): the same lap of light, 240 ms after "your key" has come up at its mark.
+     * Said by the activity.
+     */
+    fun keyOpened() {
+        if (due != FirstRun.Screen.K4) return
+        // (The key that made this panel is held as any key is: its repeats do not put the panel away either.)
+        keyAt = SystemClock.uptimeMillis()
+        landed?.cancel()
+        landed = scope.launch {
+            androidx.compose.runtime.snapshotFlow { arrived }.first { it }
+            delay(lasts(maxOf(0, SetDown.piece(marks, 0)).toLong() + Motion.LAP_AFTER_MS))
+            if (stage == FirstRun.Screen.K4) laps++
+        }
+    }
+    /** Debug builds: the stored state was set from outside (`./bl debug first …`). What stands follows it at once. */
+    fun firstChanged() {
+        settings = app.prefs.now
+        if (stage != null) resuggest()
+        if (due != null) exemplify()
+        rearm(first())
+        // (The choices are a list: it goes where another screen is due now, and comes where they are.)
+        if (choicesUp && due != FirstRun.Screen.C) { choicesUp = false; results = emptyList(); selected = 0; resultsFor = For(null, query) }
+        offerChoices()
+    }
+
+    // ---- first run: what a screen reader is told
+
+    /** What first run has told a screen reader in this panel, the last few sentences as they were said: for the debug hook that prints them (`./bl debug first says`). */
+    var said: List<String> = emptyList(); private set
+    /**
+     * A sentence of first run's for a screen reader: said, and kept for that hook. Not while the system's Keyboard
+     * shortcuts dialog is over the panel ([under]): a reader is with the dialog then, and a sentence from the window
+     * under it would speak into what the dialog says. It waits, the last one alone (only the key's screens change under
+     * the dialog, and what is worth saying is the one that stands when the dialog goes), and is said then.
+     */
+    fun tell(text: String) {
+        if (under) { untold = text; return }
+        said = (said + text).takeLast(SAID); onTell(text)
+    }
+    /**
+     * The system's dialog is over the panel, which is held behind it (core `FirstRun.Hold.UNDER`). Said by the activity,
+     * in the one place the hold changes. Once it has gone (the hold is over: the focus is back, or the panel goes), a
+     * screen that came under it is in view from that moment ([uncoveredAt]), and what waited to be said is said.
+     */
+    var under = false
+        set(value) {
+            val was = field
+            field = value
+            if (value) {
+                // The dialog has come over a screen that had not been in view for its moment (the key landed as the dialog
+                // was on its way up): that one too counts from when the panel is uncovered, as if it had come under it.
+                if (!was && stage != null && !seen) uncoveredAt = COVERED
+                return
+            }
+            if (uncoveredAt == COVERED) uncoveredAt = SystemClock.uptimeMillis()
+            untold?.let { untold = null; tell(it) }
+        }
+    private var untold: String? = null
+    /** The screen that was last said, with the moment it came; whether its recipe was said with it; and whether the greeting was said in this panel. */
+    private var saidFor: Pair<FirstRun.Screen, Long>? = null
+    private var recipeSaid = false
+    private var greeted = false
+
+    /**
+     * The screen [on] is to be said now: true once for each coming of a screen. A stage that is only back, after something
+     * was typed over it and deleted, is not said again. [recipe]: what is said includes its recipe.
+     */
+    fun says(on: FirstRun.Screen, recipe: Boolean): Boolean {
+        val key = on to cameAt
+        if (saidFor == key) return false
+        saidFor = key; recipeSaid = recipe
+        return true
+    }
+    /** The recipe of [on] is still to be said: this device's example was worked out after its lesson was said. True once. */
+    fun saysRecipe(on: FirstRun.Screen): Boolean = (saidFor?.first == on && !recipeSaid).also { if (it) recipeSaid = true }
+    /** The welcome's title is to be said before the first screen's words, where the opening piece is this opening's and is not played: once in a panel, whatever is typed and deleted in it. */
+    fun greeting(): Boolean = (greets && !greeted).also { greeted = true }
+
+    // ---- first run: asked for again, and where the steps wait
+
+    /**
+     * The steps have begun to wait in the Booklight window in this opening (core `FirstRun.later`): "Not now" was
+     * answered on the key's step, or an unfinished run has stood in its three openings (the activity says that one). The
+     * bare field's placeholder says where they are, for the rest of this opening.
+     */
+    var later by mutableStateOf(false)
+
+    /**
+     * "First steps", asked for by its command in this panel (core `FirstRun.againHere`): an unfinished run goes on where
+     * it stopped, a finished one is played again from its first screen, without the opening piece: the user is at work
+     * here. The field is emptied in one change and the screen that is due stands under it, whatever this panel was opened
+     * for (an example typed into it, another app's text) and whatever stood under its empty field before. The screen came
+     * in this moment: the Enter that asked for it, pressed again at once, answers nothing on it ([seen]).
+     */
+    fun again() {
+        if (demo || playing != null) return
+        guided = false; carries = false
+        step { FirstRun.againHere(it) }
+        // (What stood under the empty field in this opening gives its place to the stage: `Under`'s order.)
+        zeroStood = false; zeroUp = false; ended = false; later = false; taken = null; flash = null
+        resuggest()
+        exemplify()
+        // The field is emptied first: emptying it brings into view, whole, a screen that came while something was typed
+        // ([search]), and that would undo the way this one comes. It follows a list: it is set down once the rows have
+        // begun to fade, with its own answer armed, also where it is the screen that stood here before.
+        empty()
+        unseen = false
+        stageArmed = FirstRun.armed(first())
+        came(SetDown.Comes.AFTER_LIST)
+    }
+
+    // ---- first run: the opening piece, played
+
+    /**
+     * The opening piece begins with this panel (core `FirstRun.overture` said so): said by the activity before anything
+     * asks what stands. The welcome stands first; what the show needs of this device is worked out meanwhile, off the
+     * main thread. [at]: debug builds, the welcome's clock stands at that moment and nothing follows.
+     */
+    fun begin(at: Float? = null) {
+        // (A search still on its way must not land among the show's rows: the show types the same words a user might have.)
+        job?.cancel()
+        stop()
+        began = true; playing = FirstRun.Playing.WELCOME; standsAt = at; unseen = false
+        rounds++
+        // (Whatever goes wrong in gathering the cast, the welcome stands and then lands in the key's step: it must not take the panel down.)
+        if (cast == null && casting == null) casting = scope.launch {
+            cast = try { app.cast() } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { null }
+        }
+        // It does not come again once it has played for two seconds, or has ended: a panel that loses the focus in its first moment has not used it up.
+        marking?.cancel()
+        // (Two seconds of the piece in view: counted from the glass's opening, which at Slow is half a second after the panel is made.)
+        marking = if (at == null) scope.launch { androidx.compose.runtime.snapshotFlow { arrived }.first { it }; delay(SHOWN_AFTER_MS); if (playing != null) shown() } else null
+    }
+    /** The two seconds after which a piece that is still playing counts as shown: not counted on once the panel closes ([closing]). */
+    private var marking: Job? = null
+
+    /** The piece has been shown: it does not come again in this run (core `FirstRun.shown`). Where there is no run, nothing is written. */
+    private fun shown() { if (first().run != FirstRun.Run.NONE) step { FirstRun.shown(it) } }
+
+    /**
+     * The piece stops performing: the one place for every way it ends or begins anew (a typed character, the landing, a
+     * panel that closes, a hook that plays it again). Booklight's hand is off the field, nothing of the welcome's is
+     * left to press, and what the show had put into the field and the list goes in one change, so that none of it is
+     * taken for the user's. Answers where the piece was. What follows is the caller's: where [playing] goes, and when the
+     * screen that stands came.
+     */
+    private fun stop(): FirstRun.Playing? {
+        val was = playing
+        performer?.cancel(); performer = null
+        cued = false; cueUp = false; marked = false; standsAt = null; glideFrom = null
+        letGo()
+        if (was == FirstRun.Playing.SHOW) clear()
+        return was
+    }
+
+    /** What was Booklight's goes from the field and from the list, in one change. */
+    private fun clear() {
+        chip = null; word = null; via = null; origin = null; act = null; held = null; touched = false
+        query = ""; results = emptyList(); selected = 0; armed = 0; cell = 0
+        resultsFor = For(null, ""); whenReady = null
+    }
+
+    /**
+     * A key or a click while the piece plays (core `FirstRun.pressed`). True: the piece has used it up, and it reaches
+     * nothing else. False: nothing plays; or it is a typed character, the piece is over, and the character goes to the
+     * field as on any day. [again]: a held key repeating: one press, one step.
+     */
+    fun press(press: FirstRun.Press, again: Boolean = false): Boolean {
+        val on = playing ?: return false
+        if (again && press != FirstRun.Press.TYPES) return true
+        // (Where this device has nothing to show, the cue has no show to begin: it sets the key's step down.)
+        when (FirstRun.pressed(on, press, casts)) {
+            FirstRun.Ends.NOTHING -> {}
+            FirstRun.Ends.BEGIN -> cued = true
+            FirstRun.Ends.LAND -> land()
+            FirstRun.Ends.TYPE -> { typed(); return false }
+        }
+        return true
+    }
+
+    /**
+     * The piece ends in this call for a typed character. What was Booklight's goes from the field and from the list (its
+     * rows fade where they stand, as rows do), so the character is the whole text and its list lands as any list. The
+     * key's step stands under the emptied field from this moment: it came now, and its keys count a moment later
+     * ([seen]). The character follows in the same turn and takes its place before anyone saw it ([type], whose
+     * [covered] says so): it then comes into view when the field is empty again, and counts from then. Should no
+     * character follow after all (a key that only begins one), nothing has covered it: the key's step stands, came this
+     * once, and is said once. (That it has not been in view is [covered]'s to say, where something really covers it:
+     * said here as well, a screen that nothing covered would come a second time at the next emptying of the field.)
+     */
+    private fun typed() {
+        stop()
+        playing = null
+        came(SetDown.Comes.WHOLE)
+        shown()
+    }
+
+    /**
+     * The welcome has handed over: Booklight performs the show from core's script (`Show.script`), a cue at a time.
+     * Nothing in it is run, looked up or fetched: the rows are the cast's, which carry nothing to run, and the engine is
+     * not asked. Without a cast there is no show: the key's step lands. [only]: debug builds, the show up to that moment
+     * at once, and then it stands.
+     */
+    fun show(only: Show.Still? = null) {
+        if (playing != FirstRun.Playing.WELCOME) return
+        val c = cast
+        if (c == null) {
+            // (Only a debug hook asks before the cast is there: the welcome itself waits for it.)
+            if (casting?.isActive == true) scope.launch { casting?.join(); show(only) } else land()
+            return
+        }
+        playing = FirstRun.Playing.SHOW; cued = false; cueUp = false; standsAt = null
+        // (The show shows nothing this installation has switched off: with "Show sums" off the sum's beat is left out.)
+        val script = Show.script(app.getString(R.string.first_sum_example).takeIf { settings.showSums }, c.keyword, c.comma)
+        if (only != null) { Show.until(script, only).forEach { perform(it.step, c) }; return }
+        performer = scope.launch {
+            var at = 0
+            for (cue in script) {
+                if (cue.at > at) { delay(hold((cue.at - at).toLong())); at = cue.at }
+                perform(cue.step, c)
+            }
+        }
+    }
+
+    /** One step of the show: the field, the list, the selection, the arming or the grid's cell as a key of the user's would leave them. */
+    private fun perform(step: Show.Step, c: BooklightApp.Cast) {
+        fun list(rows: List<Result>) { results = rows; selected = 0; armed = 0; cell = 0; resultsFor = For(SHOWS, ""); whenReady = null }
+        when (step) {
+            Show.Step.Letter -> query = c.letter
+            is Show.Step.Typed -> query = step.text
+            Show.Step.Apps -> list(c.apps)
+            Show.Step.Down -> if (selected < results.lastIndex) { selected++; armed = current?.armed ?: 0 }
+            Show.Step.Tab -> current?.let { r -> stops(r).let { st -> if (st.size > 1) armed = st[(st.indexOf(armed).coerceAtLeast(0) + 1) % st.size] } }
+            is Show.Step.Sum -> list(listOf(c.sum(query, step.answer)))
+            Show.Step.Flight -> list(listOf(c.flight))
+            // The keyword's space: the keyword is the chip, the field is empty under it, and the list is its grid.
+            Show.Step.Grid -> { chip = c.scope; word = c.keyword; query = ""; list(listOf(c.grid)) }
+            is Show.Step.Cell -> (current?.body as? Body.Grid)?.let { g ->
+                val to = cell + step.dx + step.dy * g.columns
+                if (to in 0 until minOf(g.cells.size, g.columns * 5)) cell = to
+            }
+            Show.Step.Lap -> laps++
+            Show.Step.Land -> land()
+        }
+    }
+
+    /**
+     * The key's step is set down, from wherever the piece is: the show's own last step, or a press that is not a typed
+     * character. What was Booklight's goes from the field and the list in one change, and the screen that is due stands.
+     * It came now, not when the stored state first said so: its keys count once it has been in view for a moment
+     * ([seen]), and for that long the piece is still [FirstRun.Playing.LANDING] and uses every press up.
+     */
+    fun land() {
+        val was = playing ?: return
+        if (was == FirstRun.Playing.LANDING) return
+        // The lower edge waits while what was Booklight's fades where it stands: it cuts no row and no cell, and nothing of
+        // a welcome that is put out while its glass is tall.
+        val held = if (results.isNotEmpty() || was == FirstRun.Playing.WELCOME) Metrics.height(this) else null
+        // The one highlight goes on: from the grid's square, or from the list's pill, into the armed answer of the screen that
+        // lands. Where that screen arms none, or nothing was highlighted (the welcome), none travels.
+        val from = highlight()?.takeIf { due != null && FirstRun.armed(first()) >= 0 }
+        // (After a show `stop` has taken Booklight's text and rows away; under a welcome the field holds nothing of anyone's.)
+        if (stop() != FirstRun.Playing.SHOW) clear()
+        if (held != null) keep(held, Motion.LANDS_AFTER_MS)
+        answerAt = null
+        glideFrom = from
+        playing = FirstRun.Playing.LANDING; unseen = false
+        resuggest()
+        // (The screen that lands has its own answer armed: the one the highlight travels into, whose words come first.)
+        stageArmed = FirstRun.armed(first())
+        came(SetDown.Comes.LANDS)
+        shown()
+        // (The landing lasts until the key's step is in view: until then every press but a typed character is the piece's, and used up.)
+        scope.launch { delay(lasts(marks.lead.toLong()) + FirstRun.SEEN_MS); if (playing == FirstRun.Playing.LANDING) playing = null }
+    }
+
+    // ---- first run: the lessons
+
+    /**
+     * What Enter does with [a] on [r] now (core `FirstRun.enters`). While a lesson stands nothing opens: an app's Open and
+     * a search inside an app are practice, and a sum is copied for real with the panel staying. On every other day, and
+     * for everything else, as always. (Where Settings stands in for an app that can be searched, a settings page entered in
+     * any lesson is practice; until this device's example is worked out it is too: nothing opens in a lesson, and that is
+     * the side to err on for a moment.)
+     */
+    fun enters(r: Result, a: Action): FirstRun.Enter =
+        if (lesson == null) FirstRun.Enter.AS_ALWAYS else FirstRun.enters(first(), app.guide.used(chip, r, a), a.effect, searchable = example?.enter ?: false)
+
+    /**
+     * The coach line for the footer's left end (core `FirstRun.coach`): while a lesson's list is typed, the next key and
+     * what it does today, by the row that is selected and the action that is armed. Null where no lesson stands, and
+     * where no list does.
+     */
+    val coach: FirstRun.Coach? get() {
+        if (lesson == null || results.isEmpty()) return null
+        // On the arrow's stop Enter opens the row's list: `chosen` would say the row's first action there, and the line
+        // would promise an Enter that does not come.
+        val picked = if (onList != null) null else chosen()
+        val enter = picked?.let { (r, a) -> enters(r, a) } ?: FirstRun.Enter.AS_ALWAYS
+        return FirstRun.coach(first(), enter, picked?.second?.effect, search = current?.actions?.any { (it.effect as? Effect.EnterScope)?.act == Act.SEARCH } == true)
+    }
+
+    /** The coach line has the footer's left seat in this frame: said by the line itself as it is drawn, for a word that comes into that seat (`Footer`). */
+    var coachUp = false
+
+    /**
+     * The field's placeholder where first run has something to say there: what to type, while a lesson's stage stands;
+     * and once the choices were left, for the rest of this opening, how to learn more. Null: the ordinary one. (Under a
+     * chip the chip's own stands, [hint].)
+     */
+    val firstHint: String? get() = when (stage) {
+        FirstRun.Screen.L2 -> app.getString(R.string.first_open_hint)
+        FirstRun.Screen.L3 -> example?.search?.let { FirstRun.head(it, FirstRun.MOST_LETTERS) }?.takeIf { it.isNotEmpty() }?.let { app.getString(R.string.first_search_hint, it) }
+        FirstRun.Screen.L4 -> app.getString(R.string.first_sum_example)
+        else -> when {
+            // The welcome has no placeholder: the field is the lamp's head, and nothing is written on it.
+            playing == FirstRun.Playing.WELCOME -> ""
+            ended -> app.getString(R.string.first_end_hint)
+            // The steps began to wait in the Booklight window in this opening: where they are.
+            later -> app.getString(R.string.first_later_hint)
+            // Where the opening piece is this opening's and is not played, its title greets here, over the key's step.
+            greets && stage?.step == FirstRun.Step.KEY -> app.getString(R.string.first_hello_title)
             else -> null
         }
+    }
+
+    // ---- first run: the choices, and the ending
+
+    /**
+     * First run's choices are the list (docs/design/first-run/design.md §7): two rows under the empty field with none
+     * selected, as the usual rows stand at rest. "Show your usual" with the panel's switch, and the list of everything.
+     */
+    var choicesUp by mutableStateOf(false); private set
+    /** The choices were left in this opening, and first run with them: the field's placeholder says how to learn more. */
+    var ended by mutableStateOf(false); private set
+    /** A list stands under the empty field with nothing selected (the usual rows, first run's choices): Down, Tab or the pointer brings the highlight. */
+    val atRest: Boolean get() = (zeroUp || choicesUp) && current == null
+
+    /**
+     * The choices come, where they are what is due and the field is empty with nothing under it: when their turn comes in
+     * the open panel, and for a panel that opens on them. True if they stand.
+     */
+    fun offerChoices(): Boolean {
+        if (choicesUp) return true
+        if (due != FirstRun.Screen.C || query.isNotEmpty() || chip != null || results.isNotEmpty() || opened != null) return false
+        results = choiceRows(); selected = -1; armed = 0; cell = 0
+        choicesUp = true
+        resultsFor = For(null, query); whenReady = null
+        // The Enter that answered the question must not also be the one that ends the choices: only a new press, a moment later.
+        filledAt = SystemClock.uptimeMillis()
+        // They come onto the glass in this moment, whenever their turn came (it can come while a list is still typed on, and
+        // the choices then stand only once the field is empty): their keys count from now ([seen]).
+        came(SetDown.Comes.WHOLE)
+        return true
+    }
+
+    private fun choiceRows(): List<Result> = listOf(
+        Result(
+            id = "first:usual", provider = FIRST, kind = Kind.OTHER, title = app.getString(R.string.set_usual_show), subtitle = app.getString(R.string.first_usual_text),
+            icon = io.github.kuscher.booklight.core.Icon.Symbol("list"), score = 1.0, learnable = false,
+            actions = listOf(Action("usual", app.getString(R.string.set_usual_show), USUAL, keepOpen = true, symbol = "list")),
+            body = Body.Switch(settings.zero, app.getString(if (settings.zero) R.string.first_on else R.string.first_off)),
+        ),
+        // The list of everything, as its own row is everywhere (a scope's row: Enter or Tab enters it), with its key at the row's end.
+        Result(
+            id = "first:help", provider = FIRST, kind = Kind.SCOPE, title = app.getString(R.string.help_title), subtitle = app.getString(R.string.help_about),
+            icon = io.github.kuscher.booklight.core.Icon.Symbol("booklight"), score = 1.0, learnable = false, label = HELP,
+            actions = listOf(Action("enter", app.getString(R.string.action_open), Effect.EnterScope("help"), keepOpen = true, symbol = "list")),
+        ),
+    )
+
+    /** Enter on "Show your usual": the switch flips where it stands, and the panel stays. The rows themselves come from the next opening on. */
+    private fun flipUsual() {
+        change { it.copy(zero = !it.zero) }
+        settings = app.prefs.now
+        val on = current?.id
+        results = choiceRows()
+        selected = results.indexOfFirst { it.id == on }
+        // (A screen reader is told the switch's new state: the row does not change its place, and may not have the reader's focus.)
+        results.firstOrNull { it.body is Body.Switch }?.let { tell(app.getString(R.string.a11y_selected, it.title, (it.body as Body.Switch).word)) }
+    }
+
+    /**
+     * The choices are left, however they are left (Enter with nothing selected, a typed letter, the row that leads to the
+     * list of everything): first run is over (core `FirstRun.answer`).
+     */
+    private fun leaveChoices() {
+        if (!choicesUp) return
+        choicesUp = false; ended = true
+        step { FirstRun.answer(it, FirstRun.Answer.DONE) }
+    }
+
+    /**
+     * Enter on the choices with nothing selected: "Done". The rows go, and what is left is the bare field; once the glass
+     * has folded to it the light runs its one lap round it (motion.md T10). Not where a letter was typed meanwhile.
+     */
+    private fun fold() {
+        leaveChoices()
+        results = emptyList(); selected = 0; armed = 0; cell = 0
+        resultsFor = For(null, query)
+        folding?.cancel()
+        folding = scope.launch { delay(lasts(Motion.FOLD_LAP_MS)); if (ended && bare && !typedSince) laps++ }
+        typedSince = false
+    }
+    /** Something was typed since the choices were folded away: the fold's light does not come over a list. */
+    private var typedSince = false
+    /** The wait for the fold's lap of light: given up when the panel closes ([closing]), which the light does not run over. */
+    private var folding: Job? = null
+
+    /**
+     * The panel is closing: choices that stand are left by that too. (The list itself stays as it is: it goes with the
+     * glass.) Not choices that were not in view yet (a panel closed as it opened; a second click that fell outside the
+     * glass as it shrank round them): those stand again at the next opening.
+     */
+    fun closing() {
+        // (A piece that had not played its two seconds when the panel closed is not used up: it plays at the next opening.)
+        marking?.cancel(); marking = null
+        // Nor does it play on over a glass that folds away: should the leave be turned round (the key again, text another app
+        // hands over), an ordinary panel stands, and nothing of Booklight's own is written over what it then holds.
+        // (Only where a piece plays: once it has landed, a height that is held is not the piece's to end.)
+        if (playing != null) {
+            stop()
+            playing = null
+            // The key's step is what stands now, and it came in this moment: no key pressed for the piece answers it.
+            came(SetDown.Comes.WHOLE)
+        }
+        // The highlight that may still be on its way into the key's step goes with the glass, also once the piece has
+        // landed: should the leave be turned round, the screen stands whole with its own answer lit ([turned]), and
+        // nothing travels on towards it. (What draws it lets go in the same frame, `Glide`: one highlight, never two.)
+        glideFrom = null
+        // (The fold's lap of light is not asked for over a glass that goes. Nor is the key's: "your key" is up and has its
+        // check from here on, so that a leave turned round shows "Your key works" at rest, not a key held down for good.)
+        folding?.cancel(); folding = null
+        landed?.cancel(); landed = null; keyDown = false; keyChecked = true
+        if (choicesUp && seen) step { FirstRun.answer(it, FirstRun.Answer.DONE) }
+    }
+
+    /**
+     * A panel that was leaving stands again (the key, pressed while it folded): what stands under its field came in this
+     * moment, and takes a key a moment later ([seen]). A key pressed at a glass that was going must not answer anything.
+     */
+    fun turned() { came(SetDown.Comes.WHOLE) }
+
+    /** A lesson's Enter that was taken: what the field held, and the row and the action it was pressed on. */
+    private data class Taken(val on: For, val row: String?, val armed: Int)
+    private var taken by mutableStateOf<Taken?>(null)
+
+    /**
+     * The armed slot of the selected row shows as pressed: a lesson's Enter was taken there, nothing was run (or a sum was
+     * copied and the panel stays), and its list is about to give way.
+     */
+    val pressed: Boolean get() = taken.let { it != null && it == Taken(For(chip?.key, query, act), current?.id, armed) }
+
+    /** A lesson's Enter did [enter]: that lesson is over at once (core `FirstRun.ran`), while its list still stands for a moment ([giveWay]). */
+    fun ran(enter: FirstRun.Enter, r: Result, a: Action) {
+        step { FirstRun.ran(it, enter) }
+        // The row and the action that were run: Ctrl + digit runs another row than the selected one, and that one's slot must not look pressed.
+        taken = Taken(For(chip?.key, query, act), r.id, r.actions.indexOf(a))
+    }
+
+    /**
+     * The list of a lesson that is over gives way to what stands next: the field is emptied in one change, and the next
+     * screen's stage is there. Not where the user has typed on since that Enter: then it comes when the field is empty again.
+     */
+    fun giveWay() {
+        val was = taken ?: return
+        taken = null
+        if (was.on != For(chip?.key, query, act)) return
+        flash = null
+        // The field is emptied first: emptying it brings into view, whole, a screen that came while something was typed
+        // ([search]), as this one did, and that would undo the way it comes. What stands next follows this list: it comes
+        // in this moment, and is set down once the rows have begun to fade.
+        empty()
+        unseen = false
+        came(SetDown.Comes.AFTER_LIST)
+    }
+
+    /** Booklight empties the field itself: chip, text and rows go in one change, and nothing of it counts as typed. */
+    private fun empty() {
+        typist?.cancel(); typist = null
+        answering?.cancel(); answering = null; thinking = false; whenAnswered = null; whenReady = null
+        chip = null; word = null; via = null; origin = null; act = null; held = null; foreign = false; touched = false
+        query = ""
+        search()
+    }
+
+    /** What [r] is about, by its name, for the footer's word: the app, also for a line of one of its row's two lists and for a search inside it. */
+    fun named(r: Result): String = when {
+        r.kind == Kind.ACTION -> closed.firstOrNull { it.id == opened }?.title ?: r.title
+        r.id.startsWith(SearchEngine.IN_APP) -> r.label ?: (chip as? AppChip)?.name ?: r.title
+        else -> r.title
     }
 
     /** The tip that is on screen under the empty field; null = none. */
@@ -199,11 +1139,11 @@ class OverlayModel(
 
     /**
      * The panel has been open for a moment and nothing was typed: a tip, if there is one whose turn
-     * it is. Never as part of the opening, and never while a first-run card is to be shown.
+     * it is. Never as part of the opening, and never while first run's stage stands.
      */
     fun offerTip() {
         // The copy's line has the place: the tip keeps its turn for another opening.
-        if (demo || guided || typedYet || tip != null || copy != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || !settings.tips || card != null) return
+        if (demo || guided || typedYet || tip != null || copy != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || !settings.tips || stage != null || playing != null) return
         tip = app.tips.next(settings) ?: return
         tipArmed = 0; tipOff = false
         tipSince = SystemClock.uptimeMillis()
@@ -270,7 +1210,8 @@ class OverlayModel(
         val untouched = !guided && !typedYet && query.isEmpty() && chip == null && results.isEmpty() && tip == null && copy == null && opened == null
         // Whether a copy is fresh: no, with its line switched off; not known, while the window has no focus yet.
         val fresh: Boolean? = if (!settings.copyRow) false else if (!focused) null else fresh() != null
-        if (Under.choose(untouched, card != null, fresh, settings.zero, zeroSeats, tip = false, last) != Under.What.USUAL) return false
+        // (First run's opening piece has the place as a stage has it.)
+        if (Under.choose(untouched, stage != null || playing != null, fresh, settings.zero, zeroSeats, tip = false, last) != Under.What.USUAL) return false
         val u = usual ?: return false
         results = usualRows(); selected = -1; armed = 0; cell = 0
         zeroUp = true; zeroStood = true
@@ -301,11 +1242,12 @@ class OverlayModel(
      */
     fun up(again: Boolean) {
         if (moveCell(0, -1)) return
-        if (zeroUp) {
+        if (zeroUp || choicesUp) {
             when {
                 selected > 0 -> move(-1)
                 selected == 0 && opened == null -> if (!again) { moved(); selected = -1; armed = 0; cell = 0 }
-                selected < 0 -> if (!again) restoreLast()
+                // (From first run's choices at rest Up goes nowhere: the last text would take their place, and end them.)
+                selected < 0 -> if (!again && zeroUp) restoreLast()
             }
             return
         }
@@ -345,7 +1287,7 @@ class OverlayModel(
      */
     fun offerCopy(back: Boolean = false): Boolean {
         // (Whoever types at once gets no line. Coming back out of the copy's own chip is not that: the line is where it was.)
-        if (demo || guided || copyGone || (typedYet && !back) || tip != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || card != null) return false
+        if (demo || guided || copyGone || (typedYet && !back) || tip != null || query.isNotEmpty() || chip != null || results.isNotEmpty() || stage != null || playing != null) return false
         val offer = fresh() ?: return false
         // The age is said once in an opening: the line that comes back says what it said.
         copy = offer.copy(age = copyAge ?: offer.age)
@@ -375,7 +1317,7 @@ class OverlayModel(
     }
 
     /** Nothing is typed and nothing stands under the field (or only the copy's line). */
-    val bare: Boolean get() = chip == null && query.isEmpty() && results.isEmpty() && card == null && tip == null
+    val bare: Boolean get() = chip == null && query.isEmpty() && results.isEmpty() && stage == null && tip == null
 
     /**
      * Tab on the empty field: a fresh copy opens, whether its line is there or not: before it has
@@ -404,7 +1346,20 @@ class OverlayModel(
     }
 
     fun type(text: String) {
+        // First run's opening piece ends for a typed character, by whichever way it comes (a key, the input method, a debug hook).
+        // (A change of the text, that is: the editor also reports where its caret stands, with the same text, and it does so
+        // after the show's own letters.)
+        if (playing != null && text != query) press(FirstRun.Press.TYPES)
         if (text == query) return
+        // A letter typed on a screen of first run takes its place in this frame, whatever of it has come ([covered]).
+        // And the lower edge turns to the typed list's height from where it is (motion.md T7): for the frame or two until
+        // that list lands the glass keeps the stage's height, in real time: also with the system's animations off, where
+        // it would else step down to the bare field and up again. (Not for a space alone: no list follows it, and the
+        // glass would stand tall and empty.)
+        covered()
+        if (stage != null && text.isNotBlank()) keep(Metrics.height(this), LIST_LANDS_MS, real = true)
+        typedSince = true
+        leaveChoices()                      // a typed letter takes the place of first run's choices: they are done
         typist?.cancel(); typist = null     // the user's own typing takes over from Booklight's
         shown = false
         typedYet = true
@@ -432,6 +1387,8 @@ class OverlayModel(
      * for, else the app's first.
      */
     fun enterScope(s: Scope, text: String = "", word: String? = null, act: Act? = null) {
+        covered()
+        leaveChoices()
         touched = false
         aim(s, text, word, act)
         query = text
@@ -515,6 +1472,8 @@ class OverlayModel(
      * brings: only a new press, a moment later.
      */
     fun typeOut(text: String) {
+        covered()
+        leaveChoices()
         typist?.cancel()
         job?.cancel(); answering?.cancel(); answering = null; thinking = false; whenAnswered = null; whenReady = null
         cancelConfirm()
@@ -625,12 +1584,20 @@ class OverlayModel(
             // Shift held ([keep]) the highlight stays on its row.
             val was = if (keep) opened ?: current?.id else null      // (an opened list closes: the highlight stays on its row)
             shut()
-            results = if (zeroStood) usualRows() else emptyList()
-            zeroUp = results.isNotEmpty()
-            selected = if (zeroUp) results.indexOfFirst { it.id == was } else 0
+            // (First run's choices stand until they are left: a list made anew for the empty field is theirs again.)
+            results = if (choicesUp) choiceRows() else if (zeroStood) usualRows() else emptyList()
+            zeroUp = !choicesUp && results.isNotEmpty()
+            selected = if (zeroUp || choicesUp) results.indexOfFirst { it.id == was } else 0
             armed = current?.armed ?: 0; cell = 0; resultsFor = For(null, text); whenReady = null
             // Back out of an app's chip that was entered from one of the usual rows: that row again, the action that was left armed.
             back?.takeIf { zeroUp }?.place(results, ::stops)?.let { (row, action) -> selected = row; armed = action }
+            // A screen of first run that has not been in view ([unseen]: it came under a typed list, or was typed over before
+            // it had been in view, as the key's step is where the opening piece ended for a typed character): it comes
+            // into view now, with the empty field, and takes a key a moment later ([seen]).
+            if (unseen && text.isEmpty()) { unseen = false; came(SetDown.Comes.WHOLE) }
+            // First run's choices, where their turn has come (a lesson's list has just given way; or it came while something
+            // was typed): they stand now that the field is empty.
+            offerChoices()
             return
         }
         job = scope.launch(Dispatchers.Default) {
@@ -658,6 +1625,8 @@ class OverlayModel(
                 opened = null; list = null; closed = emptyList()
                 zeroUp = false
                 results = local
+                // (The list for a letter typed on first run's stage has landed: the glass goes to its height from the stage's.)
+                if (playing == null && heldHeight != null) letGo()
                 val same = if (keep) local.indexOfFirst { it.id == was } else -1
                 if (same >= 0) {
                     selected = same
@@ -745,7 +1714,7 @@ class OverlayModel(
     private fun went() {
         // Only for the list on screen: for a moment after a keystroke the rows are still the previous text's, and a key that
         // lands in that moment must not look up what is no longer in the field. (The list that comes is looked at by [look].)
-        if (demo || !onScreen) return
+        if (demo || playing != null || !onScreen) return
         val on = current ?: return
         // (Or a row that said "No connection" or "No answer this time" a while ago: going to it asks again.)
         val row = (app.flights.gone(on) ?: app.flights.retry(on))?.also { land(it) } ?: on
@@ -1079,15 +2048,26 @@ class OverlayModel(
      * have, the first of those rows runs when they land, never a row of the previous text.
      * An action that deletes waits for a second Enter, a new press a moment later.
      */
-    fun enter(run: (Result, Action) -> Unit) {
+    fun enter(run: (Result, Action) -> Unit) = enter(0L, run)
+
+    /** [made]: when the key was pressed (uptime; 0: now). First run's choices count a press by when it was made, as its stages do. */
+    fun enter(made: Long, run: (Result, Action) -> Unit) {
+        if (playing != null) return         // first run's opening piece: nothing of it is the user's to run but its cue ([press])
         if (typist != null) return          // Booklight is still typing: there is nothing to run yet
         // The field was just filled in for the user (a scope entered from its row, an example typed): the Enter that
         // did it must not also run what it brought. Only a new press, a moment later, runs.
         if (SystemClock.uptimeMillis() - filledAt < CONFIRM_GAP_MS) return
         if (!onScreen) { whenReady = run; return }
+        // First run's choices, like a stage, take a key only once they have been in view for a moment: a key pressed before
+        // that, and handled a long frame later, is still one pressed before that.
+        if (choicesUp && !taken(made, enter = false)) return
+        // First run's choices with nothing selected: Enter is "Done", and the list folds to the bare field.
+        if (choicesUp && current == null) { fold(); return }
         // On Window or on the row's arrow: Enter opens that stop's lines as a list, or closes them again.
         onList?.let { if (opened != null && list == it) close() else open(it); return }
         val (r, a) = chosen() ?: return
+        // The switch of first run's choices is the panel's own: it flips where it stands, and nothing runs.
+        if (a.effect == USUAL) { flipUsual(); return }
         // "Don't suggest" is the panel's own: nothing runs, and the thing is not counted as run.
         (a.effect as? Effect.Unsuggest)?.let { unsuggest(it.id); return }
         // A row the model answers where it stands: asked now, in its place.
@@ -1143,22 +2123,28 @@ class OverlayModel(
     /**
      * Tab or Right on a scope's row: type into it. Only for the list that is on screen: if the rows for the
      * current text are still on their way, nothing happens (an arrow key must never run a row nobody has seen).
+     * [made]: when the key was pressed (uptime; 0: now).
      */
-    fun fill(): Boolean {
+    fun fill(made: Long = 0L): Boolean {
         if (!onScreen) return false
+        // (On the second row of first run's choices this enters the list of everything, and the run is over: like Enter
+        // there, only once the choices have been in view for a moment, by when the key was pressed.)
+        if (choicesUp && !taken(made, enter = false)) return false
         val e = chosen()?.second?.effect as? Effect.EnterScope ?: return false
         into(e)
         return true
     }
 
     /** Ctrl + a digit: that row's first action, straight away. Never one that removes something, and only for rows on screen. */
-    fun runRow(n: Int, run: (Result, Action) -> Unit) {
-        if (!onScreen) return
+    fun runRow(n: Int, made: Long = 0L, run: (Result, Action) -> Unit) {
+        if (!onScreen || playing != null) return
+        if (choicesUp && !taken(made, enter = false)) return      // first run's choices take a key only once they are in view, as Enter has it
         val r = results.getOrNull(n)?.takeIf { it.body !is Body.Grid } ?: return
         val a = r.actions.firstOrNull()?.takeIf { !it.danger && !it.confirm } ?: return
         (a.effect as? Effect.EnterScope)?.let { into(it, r to a); return }
         if (a.effect == PromptScope.ASK || a.effect is Effect.Ask || needsAnswer(a.effect) || (r.body as? Body.Stream)?.busy == true) return     // an answer is Enter's
         if (a.effect is Effect.Unsuggest) return        // and so is "Don't suggest"
+        if (a.effect == USUAL) { flipUsual(); return }  // the switch of first run's choices flips where it stands
         (a.effect as? Effect.Type)?.let { typeOut(it.text); return }
         run(r, a)
     }
@@ -1183,6 +2169,10 @@ class OverlayModel(
         if (query.isNotEmpty() || chip != null) return false
         val last = app.lastText ?: return false
         app.lastText = null
+        covered()
+        // (On a screen of first run the last text takes the stage's place as a typed letter does: the glass keeps the
+        // stage's height until that text's list lands, [type].)
+        if (stage != null && last.text.isNotBlank()) keep(Metrics.height(this), LIST_LANDS_MS, real = true)
         val s = last.key?.let { app.engine.scope(it) }
         // (An app's chip comes back as it was left: the action that was armed, and the keyword it was entered by.)
         if (s != null) { enterScope(s, last.text, last.word, last.act); via = last.via?.let { app.engine.scope(it) } } else { query = last.text; search() }
@@ -1192,6 +2182,7 @@ class OverlayModel(
     /** The panel is closing without having run anything: keep what was typed for [restoreLast]. */
     fun keep() {
         hideTip()
+        if (playing != null) return         // what Booklight typed in first run's show is nobody's last text
         // Text another app handed over is never kept, in its own chip or once it has moved into a note or a code. Nor is
         // an example Booklight typed, unless the user made it their own by editing it.
         // (An app's chip has no keyword either, but what is typed under it is the user's own.)
@@ -1226,6 +2217,7 @@ class OverlayModel(
         /** How long a confirmation waits for its second Enter. */
         const val CONFIRM_MS = 3000L
         private const val CONFIRM_GAP_MS = 350L
+
         /** After Tab on the copy's line a row may be run this soon: its rows are readable by then. */
         private const val COPY_GUARD_MS = 200L
         /** A holder of one of the first two usual seats that has had no row for this long has given its seat up. */
@@ -1244,5 +2236,22 @@ class OverlayModel(
         private const val LOOK_LIGHT_MS = 600L
         /** How long "Tips are off…" stands before the card goes. */
         const val TIP_OFF_MS = 1600L
+        /** The rows of first run's choices are the panel's own: no provider made them. */
+        private const val FIRST = "first"
+        /** What the switch of first run's choices does: caught by the panel before anything runs. */
+        private val USUAL = Effect.Internal("usual")
+        /** First run's opening piece does not come again once it has played for this long, or has ended. */
+        private const val SHOWN_AFTER_MS = 2000L
+        /** How many of first run's sentences for a screen reader are kept for the debug hook. */
+        private const val SAID = 8
+        /**
+         * A list lands a frame or two after its letter: the glass waits no longer than this for one before it goes to its own
+         * height. Real time: the engine is no quicker with the system's animations off, and no slower in a debug build's slow motion.
+         */
+        private const val LIST_LANDS_MS = 300L
+        /** In place of the moment the panel was uncovered, for a screen that came under the system's dialog and is still under it ([uncoveredAt]). */
+        private const val COVERED = Long.MAX_VALUE
+        /** What the list is said to be for while first run's show performs: never what the field holds, so nothing takes its rows for the rows of what is typed. */
+        private const val SHOWS = "first:show"
     }
 }
