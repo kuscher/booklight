@@ -2,9 +2,10 @@ package io.github.kuscher.booklight.core
 
 /**
  * What the arming can rest on, on a row. A row shows some of its actions as icons and keeps the
- * others as lines of a list: behind its arrow, and on an app's row also behind Window. Tab and the
- * arrows go along the stops; Enter on a stop that opens a list opens it. The places are indices into
- * the row's actions; the arrow, which is no action, is the number of actions.
+ * others as lines of a list: behind its arrow, and behind a stop of its own (Window on an app's row,
+ * Calendar on an event's). Tab and the arrows go along the stops; Enter on a stop that opens a list
+ * opens it. The places are indices into the row's actions; the arrow, which is no action, is the
+ * number of actions.
  */
 object Stops {
     /**
@@ -16,13 +17,13 @@ object Stops {
      */
     fun of(r: Result, open: Boolean = false): List<Int> {
         val typed = r.armed.takeIf { r.actions.getOrNull(it)?.more == true && !open }
-        val place = typed?.takeIf { r.actions[it].behind == Behind.WINDOW }
-        val shown = r.actions.indices.filter { !r.actions[it].more && !r.actions[it].off }.map { if (place != null && r.actions[it].effect is Effect.OpenList) place else it }
+        val place = typed?.takeIf { r.actions[it].behind != Behind.ARROW }
+        val shown = r.actions.indices.filter { !r.actions[it].more && !r.actions[it].off }.map { if (place != null && (r.actions[it].effect as? Effect.OpenList)?.behind == r.actions[place].behind) place else it }
         if (r.actions.none { it.more && it.behind == Behind.ARROW }) return shown
         return shown + (typed?.takeIf { place == null } ?: r.actions.size)
     }
 
-    /** The list the stop at [armed] opens: the arrow's, or the one of a stop made for it (Window). Null for a stop that runs something. */
+    /** The list the stop at [armed] opens: the arrow's, or the one of a stop made for it (an app's Window, an event's Calendar). Null for a stop that runs something. */
     fun list(r: Result, armed: Int): Behind? {
         if (armed == r.actions.size) return Behind.ARROW.takeIf { r.actions.any { it.more && it.behind == Behind.ARROW } }
         return (r.actions.getOrNull(armed)?.effect as? Effect.OpenList)?.behind

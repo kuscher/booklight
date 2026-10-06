@@ -17,7 +17,9 @@ import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Scope
 import io.github.kuscher.booklight.core.Slot
 import io.github.kuscher.booklight.core.SlotState
+import io.github.kuscher.booklight.core.Spans
 import io.github.kuscher.booklight.data.Notes
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -28,19 +30,21 @@ import java.util.Locale
 private fun locale(context: Context): Locale = context.resources.configuration.locales[0]
 internal fun day(context: Context, t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE d MMM", locale(context)))
 internal fun clock(context: Context, t: LocalDateTime): String = t.format(DateTimeFormatter.ofPattern(if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a", locale(context)))
-/** As [clock], but a full hour on the 12-hour clock is just "3 PM": a range has to fit its slot. */
-private fun short(context: Context, t: LocalDateTime): String = if (!DateFormat.is24HourFormat(context) && t.minute == 0) t.format(DateTimeFormatter.ofPattern("h a", locale(context))) else clock(context, t)
 
-/** When an event is, as its row says it: "Fri 2 Oct, 19:00–20:00". */
-internal fun span(context: Context, e: EventDraft): String = when {
-    e.allDay -> context.getString(R.string.jot_all_day, day(context, e.start))
-    else -> {
-        // "3–4 PM", not "3:00 PM–4:00 PM": the half of the day is said once when both ends share it.
-        val from = short(context, e.start)
-        val to = short(context, e.end)
-        val half = to.substringAfterLast(' ', "")
-        "${day(context, e.start)}, ${if (half.isNotEmpty() && from.endsWith(" $half")) from.removeSuffix(" $half") else from}–$to"
-    }
+/**
+ * When an event is, as its row says it: "Fri 2 Oct, 19:00–20:00", "Wed 14 – Fri 16 Oct, all day", with the year where it
+ * is not this year's. The words are core's (`Spans.say`): every form of them is short enough for the row to show whole.
+ */
+internal fun span(context: Context, e: EventDraft): String =
+    Spans.say(e, LocalDate.now(), locale(context), DateFormat.is24HourFormat(context)) { context.getString(R.string.jot_all_day, it) }
+
+/**
+ * The calendar's editor for [e], filled in; with [link], the calendar link that is sent to the Calendar app first (core `Cals.link`).
+ * An all-day event is midnight to midnight in UTC, whatever the device's zone: that is how calendars store one.
+ */
+internal fun insert(e: EventDraft, link: String = ""): Effect.InsertEvent {
+    val zone = if (e.allDay) ZoneOffset.UTC else ZoneId.systemDefault()
+    return Effect.InsertEvent(e.title, e.start.atZone(zone).toInstant().toEpochMilli(), e.end.atZone(zone).toInstant().toEpochMilli(), e.allDay, e.place, link)
 }
 
 /**
@@ -56,8 +60,9 @@ abstract class JotScope(protected val context: Context, final override val key: 
     final override val about: String = context.getString(about)
 
     protected fun text(id: Int, vararg args: Any) = context.getString(id, *args)
-    protected fun slot(label: Int, value: String, guessed: Boolean = false) =
-        Slot(context.getString(label), value, if (value.isEmpty()) SlotState.EMPTY else if (guessed) SlotState.GUESSED else SlotState.TYPED)
+    /** [whole]: the value is never cut; the slot after it gives way (when an event is: core `Slot.whole`). */
+    protected fun slot(label: Int, value: String, guessed: Boolean = false, whole: Boolean = false) =
+        Slot(context.getString(label), value, if (value.isEmpty()) SlotState.EMPTY else if (guessed) SlotState.GUESSED else SlotState.TYPED, whole = whole)
 
     /** The scope's one row: a preview of what was understood. No actions = not enough typed yet. */
     protected fun preview(caption: String, slots: List<Slot>, note: String?, actions: List<Action>) = Result(
@@ -71,11 +76,7 @@ abstract class JotScope(protected val context: Context, final override val key: 
     protected fun clock(t: LocalDateTime): String = clock(context, t)
     protected fun span(e: EventDraft): String = span(context, e)
 
-    protected fun insert(e: EventDraft): Effect {
-        // An all-day event is midnight to midnight in UTC, whatever the device's zone: that is how calendars store one.
-        val zone = if (e.allDay) ZoneOffset.UTC else ZoneId.systemDefault()
-        return Effect.InsertEvent(e.title, e.start.atZone(zone).toInstant().toEpochMilli(), e.end.atZone(zone).toInstant().toEpochMilli(), e.allDay, e.place)
-    }
+    protected fun insert(e: EventDraft): Effect = io.github.kuscher.booklight.scopes.insert(e)
 }
 
 /** `mail anna@x.com Lunch? / See you at 1`: the mail app's compose window, filled in. */
@@ -127,20 +128,12 @@ class NoteScope(context: Context, private val notes: Notes) : JotScope(context, 
     }
 }
 
-/** `event Fri 3pm Dentist @ Main St`: the calendar's editor, filled in. */
-class EventScope(context: Context) : JotScope(context, "event", R.string.event_keys, R.string.event_name, R.string.event_hint, R.string.event_about, "event") {
-    override suspend fun rows(arg: String): List<Result> {
-        val e = Jot.event(arg, LocalDateTime.now())
-        val actions = if (arg.isBlank()) emptyList() else listOf(
-            Action("create", text(R.string.action_create), insert(e), symbol = "plus"),
-            copy(listOf(e.title, span(e), e.place).filter { it.isNotEmpty() }.joinToString(", ")),
-        )
-        return listOf(preview(
-            text(R.string.event_caption),
-            listOfNotNull(slot(R.string.slot_when, span(e), guessed = !e.dayGiven || !e.timeGiven), slot(R.string.slot_title, e.title), slot(R.string.slot_where, e.place).takeIf { e.place.isNotEmpty() }),
-            null, actions,
-        ))
-    }
+/**
+ * `event Fri 3pm Dentist @ Main St`, or the event the way it is said: the calendar's editor, filled in, or the event saved.
+ * Its row is `providers/Events.kt`'s, the same one a sentence typed without the keyword gets.
+ */
+class EventScope(context: Context, private val events: io.github.kuscher.booklight.providers.Events) : JotScope(context, "event", R.string.event_keys, R.string.event_name, R.string.event_hint, R.string.event_about, "event") {
+    override suspend fun rows(arg: String): List<Result> = listOf(events.row(arg))
 }
 
 /**
@@ -161,7 +154,7 @@ class RemindScope(context: Context) : JotScope(context, "remind", R.string.remin
             listOf(Action("set", text(R.string.action_set), Effect.SetAlarm(plan.spec.hour, plan.spec.minute, plan.spec.label), symbol = "check", done = text(R.string.done_alarm))),
         )
         is ReminderPlan.Event -> preview(
-            text(R.string.remind_caption_event), listOf(slot(R.string.slot_when, span(plan.draft)), slot(R.string.slot_title, plan.draft.title)), null,
+            text(R.string.remind_caption_event), listOf(slot(R.string.slot_when, span(plan.draft), whole = true), slot(R.string.slot_title, plan.draft.title)), null,
             listOf(Action("create", text(R.string.action_create), insert(plan.draft), symbol = "plus")),
         )
     })

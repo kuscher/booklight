@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An event from a sentence (docs/design/event-sentence/design.md): the calendars in the Booklight window, the event row's slots, actions and lines. -->
+<resources>
+    <!-- The window › Privacy › What Booklight may use: the list of calendars. Not allowed; allowed; allowed, and events are added too. -->
+    <string name="win_calendars">Calendars</string>
+    <string name="win_calendars_off">The names and colours of your calendars, to put an event on one by its name. Never an event. Not allowed yet.</string>
+    <string name="win_calendars_on">Booklight reads the list of your calendars. It never reads an event.</string>
+    <string name="win_calendars_write">Booklight reads the list of your calendars and adds the events you save from it. It never reads an event.</string>
+    <!-- The window › Results: an event typed as a sentence. -->
+    <string name="win_events">Events</string>
+    <string name="set_save_events">Save events without opening Calendar</string>
+    <string name="set_save_events_text">Enter saves an event at once where its day and its time are both sure: “tomorrow at 7pm”, not “at 7”. Any other opens in Calendar, filled in.</string>
+    <string name="set_event_calendar">New events go to</string>
+    <string name="set_event_calendar_text">For a saved event that names no calendar.</string>
+    <string name="set_event_calendar_off">Your own calendar. To choose another, allow Calendars.</string>
+    <string name="set_event_calendar_none">No calendar here takes new events.</string>
+
+    <!-- The event row. Its second line of slots: where (strings_11.xml) and on which calendar. -->
+    <string name="slot_calendar">Calendar</string>
+    <!-- With "Save events without opening Calendar" on: Enter saves; the second action opens the editor instead ("Open", strings.xml), and is the first for a guess. -->
+    <!-- The caption says what Enter does on the armed action: this one only while Save is armed, else "Opens in your calendar to save." (strings_11.xml). -->
+    <string name="action_save_event">Save</string>
+    <string name="event_caption_save">New event. Enter saves it.</string>
+    <!-- And while Copy, or the stop that opens the list of calendars, is the armed one. -->
+    <string name="event_caption_copy">New event. Enter copies it.</string>
+    <string name="event_caption_calendar">New event. Enter lists your calendars.</string>
+    <!-- With the switch on, for a line typed without the keyword that begins with a word of everyday searches ("book", "plan", "schedule", "put"): it is never saved from the list. -->
+    <string name="event_caption_everyday">An event, or a search? Opens in your calendar to save.</string>
+    <!-- The footer once it is saved. %1$s is the calendar's name. -->
+    <string name="done_saved_event">Saved to %1$s</string>
+    <!-- The word a calendar chosen from the row's list is written into the sentence with: "… to Team". -->
+    <string name="event_into">to</string>
+    <!-- The footer's quiet line under an event's row: the sentence names a calendar and the list is not allowed; "every Monday", "weekly"; -->
+    <!-- why Enter does not save although the switch is on: a guess, a calendar that takes no events (%1$s is its name), a calendar's name typed only as far as its first letters. -->
+    <string name="event_footer_allow">Allow Calendars to put it on a calendar by name</string>
+    <string name="event_footer_repeats">A repeat is set in Calendar</string>
+    <string name="event_footer_guess">Opens in Calendar: the day or the time is a guess</string>
+    <string name="event_footer_closed">Opens in Calendar: %1$s takes no new events</string>
+    <string name="event_footer_rest">Opens in Calendar: the calendar’s name is not finished</string>
+    <!-- A calendar that was named by the word and is none of the user's; and a line that begins like an everyday search (%1$s is its first word, as typed). -->
+    <string name="event_footer_named">Opens in Calendar: that calendar is not one of yours</string>
+    <string name="event_footer_everyday">Opens in Calendar: “%1$s” often begins a search</string>
+    <!-- To a screen reader: a slot whose value is a guess. %1$s is the slot as it is said, "When Tue 6 Oct, 7–8 PM". -->
+    <string name="a11y_guess">%1$s, a guess</string>
+    <!-- First run: Enter on Save while a lesson stands. Nothing is saved, as practice opens nothing; the footer says what Enter would have done. -->
+    <string name="first_practice_save">That saves the event</string>
+</resources>

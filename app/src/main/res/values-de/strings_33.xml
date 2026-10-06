@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="win_calendars">Kalender</string>
+    <string name="win_calendars_off">Die Namen und Farben deiner Kalender, um einen Termin mit dem Namen in einen davon zu legen. Nie ein Termin. Noch nicht erlaubt.</string>
+    <string name="win_calendars_on">Booklight liest die Liste deiner Kalender. Es liest nie einen Termin.</string>
+    <string name="win_calendars_write">Booklight liest die Liste deiner Kalender und trägt die Termine ein, die du daraus speicherst. Es liest nie einen Termin.</string>
+    <string name="win_events">Termine</string>
+    <string name="set_save_events">Termine speichern, ohne Kalender zu öffnen</string>
+    <string name="set_save_events_text">Enter speichert einen Termin sofort, wenn Tag und Uhrzeit beide sicher sind: „morgen um 19 Uhr“, nicht „um 7“. Jeder andere öffnet sich im Kalender, ausgefüllt.</string>
+    <string name="set_event_calendar">Neue Termine kommen in</string>
+    <string name="set_event_calendar_text">Für einen gespeicherten Termin, der keinen Kalender nennt.</string>
+    <string name="set_event_calendar_off">Deinen eigenen Kalender. Für einen anderen: Kalender erlauben.</string>
+    <string name="set_event_calendar_none">Hier nimmt kein Kalender neue Termine an.</string>
+
+    <string name="slot_calendar">Kalender</string>
+    <string name="action_save_event">Speichern</string>
+    <string name="event_caption_save">Neuer Termin. Enter speichert ihn.</string>
+    <string name="event_caption_copy">Neuer Termin. Enter kopiert ihn.</string>
+    <string name="event_caption_calendar">Neuer Termin. Enter zeigt deine Kalender.</string>
+    <string name="event_caption_everyday">Termin oder Suche? Öffnet sich im Kalender zum Speichern.</string>
+    <string name="done_saved_event">Gespeichert in %1$s</string>
+    <string name="event_into">in</string>
+    <string name="event_footer_allow">Kalender erlauben, um ihn mit Namen in einen zu legen</string>
+    <string name="event_footer_repeats">Eine Wiederholung stellst du im Kalender ein</string>
+    <string name="event_footer_guess">Öffnet sich im Kalender: Tag oder Uhrzeit sind geraten</string>
+    <string name="event_footer_closed">Öffnet sich im Kalender: %1$s nimmt keine neuen Termine an</string>
+    <string name="event_footer_rest">Öffnet sich im Kalender: der Name des Kalenders ist nicht fertig</string>
+    <string name="event_footer_named">Öffnet sich im Kalender: diesen Kalender hast du nicht</string>
+    <string name="event_footer_everyday">Öffnet sich im Kalender: mit „%1$s“ beginnt oft eine Suche</string>
+    <string name="a11y_guess">%1$s, geraten</string>
+    <string name="first_practice_save">Das speichert den Termin</string>
+</resources>

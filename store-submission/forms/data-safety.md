@@ -18,7 +18,9 @@ typed for Play in Spotify goes to Spotify (see "Spotify lookups"). (The library 
   show, where the first steps stand (which are done, in how many openings they stood, how often the system's
   Keyboard shortcuts dialog was opened from them, whether the app's icon has shown the panel once), and (1.1)
   what the user made: links, snippets, recipes, the emoji
-  picked lately, and the address of the notes folder the user granted.
+  picked lately, and the address of the notes folder the user granted; and, with an event from a sentence (see that
+  section), whether events are saved from the panel, the owner's address of the calendar chosen for them, and that
+  the system's question for the calendars has been answered.
 - (1.1) `Notes.md` in a folder the user chose with the system's folder picker: the notes typed with `note …`.
   Outside the app's storage, in the user's own files; Booklight holds a write grant for that folder only.
 - (1.1) Files made with `new file …` go to the shared Documents folder; QR codes saved go to Downloads.
@@ -42,6 +44,7 @@ typed for Play in Spotify goes to Spotify (see "Spotify lookups"). (The library 
   other words, typed in one go without a chip (`netflix severance`), is sent like any other text until the
   user has picked that app's own search row for such a text; from then on that app leads for words after its
   name and such a text is not sent (`History.leads`, with tests; the web's row picked twice running undoes it).
+  Nor is a line that reads as an event (see "An event from a sentence": it goes to the calendar, not to a search).
 
   | Engine | Address |
   | --- | --- |
@@ -199,4 +202,63 @@ not leave the device; the library's usage metrics do.
 - **Notes:** the granted folder is now read as well as written (`notes`, `todo`), on the device.
 - **Suggestions:** unchanged, still off by default; text typed inside a chip (a prompt's included) is never
   sent to the search engine.
+
+## An event from a sentence: what changed for the form
+
+Nothing new leaves the device through Booklight, and nothing new is collected. New, all on the device or handed
+to an app the user sees open:
+
+- **Permissions, both runtime, both the Calendar group's, both asked for only by the user's own press in the
+  Booklight window:** `android.permission.READ_CALENDAR` and `android.permission.WRITE_CALENDAR`. Three rows ask:
+  Privacy › Calendars › Allow… and Results › "New events go to" › Allow… ask for the first; the switch Results ›
+  "Save events without opening Calendar" asks for both (the list is needed to save into one of its calendars).
+  Neither has a Play declaration form. Until the user allows one, Booklight asks the system nothing of it. No
+  `<queries>` line was added.
+- **What is read with the first:** the system's list of calendars and nothing else, and only the calendars of
+  Google accounts: for each its id, name, colour, owner's address, whether it is the account's own, how much may
+  be done with it (whether events can be added), and the account's name, which is used only to tell which calendar
+  is the account's own (`device/CalendarList.kt` names the seven columns). **No event is read, anywhere in the
+  app.** The list is kept in memory while the app runs and is not written to storage.
+- **What is written with the second:** one event, on the user's Enter or click on Save, with the switch on: its
+  title, start, end, all day or not (an all-day event also as "free", as the Calendar app's own editor makes one),
+  the device's time zone, the place, the calendar; and one reminder row that
+  says "this calendar's default". Into the calendar the sentence names; with none named, the one chosen under "New
+  events go to"; with none chosen, the account's own, else the first that takes events (core `Cals.target`). Only
+  where nothing of when it is is a guess (core `Cals.saves` and `EventDraft.sure`, with tests): the day and the
+  time both read from the typed sentence, the time with its half of the day, or the day with "all day", or a range
+  of days (those two are saved as all-day events); no repeat asked for; no second day or time in the line;
+  nothing else of the day or the time chosen by the parser (a year, "next Tuesday", which number is the month);
+  the calendar's name typed whole, and one of the user's; and not a line typed without the keyword that begins
+  like an everyday search (schedule, put, book, plan). Booklight never updates or deletes an event and keeps no
+  record of the ones it wrote. **The saved event is then an ordinary event of the user's calendar: the account that owns the calendar
+  syncs it to its own servers, as it does every event. That is the account's doing, under its terms, not a
+  transmission by Booklight.**
+- **Handed to a calendar app by the user's Enter (the switch off, the event a guess, or the row's "Open"):** where
+  the event names no calendar, the `INSERT` request of 1.1, to whichever calendar app there is, as before. Where
+  there is a calendar to name (the one the sentence names; or, with the switch on, the one the event would be
+  saved to, where the row shows it), a
+  link to `https://calendar.google.com/calendar/render?action=TEMPLATE` with the title, the dates, the place and
+  the calendar's address (`src`: the owner's address, for most calendars an e-mail address), sent to
+  `com.google.android.calendar`, Google's Calendar app, alone; where no such app takes it, the `INSERT` request
+  again, without a calendar. An ordinary Android hand-over: the calendar app
+  opens its editor with those fields and the user saves there, or does not. Booklight itself opens no connection
+  for it.
+- **The model on the device** is asked to split an event's sentence into title, time, place and calendar, where
+  Booklight's own rules leave the title in pieces: after 0.7 s without a key, once for a text. The sentence stays
+  on the device, as every prompt does (see "2.0: what changed for the form" for what the library itself reports).
+- **Stored in `files/settings.json`:** whether the switch is on, the chosen calendar's owner's address ("New
+  events go to"; empty until one is chosen; for most calendars an e-mail address), and that the system's question
+  has been answered once. **That file is in the user's own Android backup and device-to-device transfer, and the
+  address with it.** (That the question was answered, and that the switch is on, are believed only on the device
+  they were set on: a mark beside the settings, `files/calendars.asked`, which no backup holds. Settings that
+  arrive with a restore never have saving on.)
+- **Suggestions:** a line that reads as an event (it begins with add, schedule, put, book or plan, in German with
+  „trag … ein“, „plane“ or „neuer Termin“, and holds a day or a time; both, after schedule, put, book and plan)
+  is not sent to the search engine, with suggestions on or off. Before it reads as one it is a typed
+  line like any other.
+- **For the data-safety answers:** no new data type. "Calendar events" is not collected and not shared: nothing of
+  a calendar is transmitted off the device by Booklight. In the Console's questionnaire "Data collected" and "Data
+  shared" stay "No" for Calendar events (and for everything else they are "No" for today). Should the Console's own
+  check ask about the two Calendar permissions: they are used on the device only, to list the user's calendars and
+  to add the one event the user saves; that answer is this section.
 

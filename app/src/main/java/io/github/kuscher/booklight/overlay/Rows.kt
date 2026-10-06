@@ -581,8 +581,12 @@ private fun ActionRow(r: Result, selected: Boolean, modifier: Modifier, onHover:
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // The glyph sits in the icon column, the name on the title's edge.
-        Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) { Icon(Symbols.of((r.icon as? RowIcon.Symbol)?.name ?: "app"), null, Modifier.size(18.dp), tint = ink) }
+        // The glyph sits in the icon column, the name on the title's edge. (A line that is told by a colour, a calendar's, has a dot of it there.)
+        Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
+            val dot = r.icon as? RowIcon.Swatch
+            if (dot != null) Box(Modifier.size(DOT).clip(CircleShape).background(Color(dot.argb)))
+            else Icon(Symbols.of((r.icon as? RowIcon.Symbol)?.name ?: "app"), null, Modifier.size(18.dp), tint = ink)
+        }
         // The names are what is chosen from: full ink, selected or not (over a white window second ink is the faintest text in the panel).
         Text(r.title, color = if (bad) ink else scheme.onSurface, style = LABEL, maxLines = 1, modifier = Modifier.padding(start = 16.dp).weight(1f))
         // Where the row's arrow stands: the Enter mark of the action the pill is on.
@@ -658,8 +662,17 @@ fun ResultRow(
     val body = r.body
     // (A flight's row is said with what it answers: who and where, then the headline and the badge.)
     // (A switch's row is said by its name: its state is the switch's own to say.)
+    // (A preview is said with what it understood, slot by slot, a guess as a guess: what Enter hands over, or saves, is heard
+    // before Enter. An event's row also says what Enter does on its armed action, and the footer's line where it has one:
+    // why Enter opens the calendar where it could have saved.)
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val described = if (body is Body.Switch) r.title
-        else stringResource(R.string.a11y_selected, if (body is Body.Flight) listOfNotNull(r.title, body.headline.ifEmpty { null }, body.badge).joinToString(", ") else r.title, r.actions.getOrNull(armed)?.label ?: kind)
+        else stringResource(R.string.a11y_selected, when (body) {
+            is Body.Flight -> listOfNotNull(r.title, body.headline.ifEmpty { null }, body.badge).joinToString(", ")
+            // (What Enter does is said where the row can save, so that "Enter saves it" is heard on Save and not on Open; a row that only ever opens says what the footer says of it.)
+            is Body.Slots -> (listOf(r.title) + body.said { resources.getString(R.string.a11y_guess, it) } + listOfNotNull(body.caption(r.actions.getOrNull(armed)?.id).takeIf { r.actions.any { a -> a.effect is Effect.SaveEvent } }, body.footer)).joinToString(", ")
+            else -> r.title
+        }, r.actions.getOrNull(armed)?.label ?: kind)
     // The answer body as it last was: it goes on being drawn while it fades, when the row turns back into its name.
     val lastStream = remember { arrayOfNulls<Body.Stream>(1) }
     if (body is Body.Stream) lastStream[0] = body
@@ -684,7 +697,7 @@ fun ResultRow(
 
         when {
             body is Body.Flight || guess -> FlightSeat(r.title, body as? Body.Flight, line, on, dim)
-            body is Body.Slots -> SlotsBody(body, on)
+            body is Body.Slots -> SlotsBody(body, on, r.actions.getOrNull(armed)?.id)
             body is Body.Code -> Column(Modifier.weight(1f).padding(start = 20.dp, end = 12.dp)) {
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 3, overflow = TextOverflow.Ellipsis)
                 r.subtitle?.let { Text(it, color = dim, style = SMALL, maxLines = 1, modifier = Modifier.padding(top = 4.dp)) }
@@ -736,11 +749,12 @@ fun ResultRow(
         // What the row can do arrives on the selected row; the others say what kind of thing they are.
         // The icons are the actions that are not kept in a list; the last slot is the arrow, or the one of its lines
         // that a typed verb named. Window is an icon like the others, and a typed place stands in its slot.
+        // (An event's Calendar is such a stop too: what is said of Window here holds for any stop that opens a list of its own.)
         val shown = r.actions.filter { !it.more }
         val more = r.actions.any { it.more && it.behind == Behind.ARROW }
         val tenth = stops.lastOrNull()?.takeIf { more }?.let { r.actions.getOrNull(it) }
         val window = shown.indexOfFirst { it.effect is Effect.OpenList }
-        val place = stops.firstOrNull { r.actions.getOrNull(it)?.let { a -> a.more && a.behind == Behind.WINDOW } == true }?.takeIf { window >= 0 }
+        val place = stops.firstOrNull { r.actions.getOrNull(it)?.let { a -> a.more && a.behind != Behind.ARROW } == true }?.takeIf { window >= 0 }
         val slot = r.actions.getOrNull(armed).let { a ->
             when {
                 more && (armed == r.actions.size || (a?.more == true && a.behind == Behind.ARROW)) -> shown.size
@@ -775,16 +789,16 @@ fun ResultRow(
                 // (While this is on its way out the row may already have lost its actions: an empty range must not be coerced into.)
                 // Window's slot holds the place a typed verb named ("chrome left"), and reads Less while its own list is open.
                 // (Only the stop itself gives its slot up: a strip that is on its way out may hold other actions at that place.)
-                state == 2 -> ActionStrip(trail.actions.mapIndexed { k, a -> if (k != window || a.effect !is Effect.OpenList) a else place?.let { r.actions.getOrNull(it) } ?: if (opened == Behind.WINDOW) a.copy(label = less) else a },
+                state == 2 -> ActionStrip(trail.actions.mapIndexed { k, a -> if (k != window || a.effect !is Effect.OpenList) a else place?.let { r.actions.getOrNull(it) } ?: if (opened != null && opened != Behind.ARROW) a.copy(label = less) else a },
                     slot.coerceAtMost(trail.actions.size), confirming, confirmLabel = stringResource(R.string.confirm_again),
                     // (A click on the arrow while Window's list is open goes the way Enter does: that list closes and the arrow's opens.)
-                    onArm = { onArm(full(it)) }, onRun = { if (more && tenth == null && it == shown.size && opened != Behind.WINDOW) onToggle() else onAction(full(it)) },
+                    onArm = { onArm(full(it)) }, onRun = { if (more && tenth == null && it == shown.size && (opened == null || opened == Behind.ARROW)) onToggle() else onAction(full(it)) },
                     more = more, tenth = tenth, opened = opened == Behind.ARROW,
                     moreLabel = stringResource(R.string.action_more), lessLabel = less, turn = { arrow.value }, icons = icons, pressed = pressed)
                 // One of its lists is open and the pill is on one of its lines: the row keeps only an arrow, turned over, in
                 // its place; before it, for Window's list, the word that says which list this is.
                 state == 1 -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (opened == Behind.WINDOW) Text(stringResource(R.string.action_window), color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1, modifier = Modifier.padding(end = 8.dp))
+                    if (opened != Behind.ARROW) Text(r.actions.firstOrNull { (it.effect as? Effect.OpenList)?.behind == opened }?.label.orEmpty(), color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1, modifier = Modifier.padding(end = 8.dp))
                     Box(Modifier.size(32.dp).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onToggle), contentAlignment = Alignment.Center) {
                         Icon(Symbols.of("more"), null, Modifier.size(18.dp).graphicsLayer { rotationZ = turn.value }, tint = scheme.onSurface.copy(alpha = SECOND))
                     }

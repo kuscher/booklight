@@ -24,7 +24,19 @@
 #                            lists them, `flight show off` ends it; the service is not asked),
 #                            flight pin NAME (the same flight in the pinned window),
 #                            appsearch (which lines of the bundled table and which declared searches the
-#                            attached device takes: run it before a release)
+#                            attached device takes: run it before a release),
+#                            event TEXT (an event from a sentence: what is read of TEXT and what Enter would
+#                            send or write, said and not done; with `event ` before it TEXT is the keyword's
+#                            line, else a sentence typed without the keyword), event ask TEXT (the device's model asked as
+#                            the row asks it; with a panel open), calendars [pretend NAME,NAME,…|pretend off]
+#                            (what the system allows and what was read; or a list in place of the device's),
+#                            pref save on|off, pref eventcal OWNER|none, pref calasked yes|no,
+#                            key calendar (arms an event's Calendar stop; `key enter` then opens its list),
+#                            rush TEXT (TEXT at once and Enter in the same turn, before its list has landed; refused
+#                            where the field holds TEXT already, or saving is on with the device's own calendars).
+#                            `dump` says an event's row with both lines of slots (`●` a colour's dot, `?` a guess),
+#                            its caption and `while ID:` what it says while that action is armed, `rest=`, `footer=`,
+#                            a line of its Calendar list as `+c`, `armed=calendar`, and `looking` while the model is asked
 #   ./bl shot [NAME] [OUT]   a PNG of the panel's own window (PixelCopy: no other apps; debug builds)
 #   ./bl wshot [NAME] [OUT]  the same of the Booklight window
 #   ./bl window [SECTION]    open the Booklight window, at a section if one is named (start, commands, look…);

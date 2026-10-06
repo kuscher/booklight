@@ -8,10 +8,26 @@ data class MailDraft(val to: List<String>, val subject: String, val body: String
 
 /**
  * An event for the calendar's editor. [dayGiven] and [timeGiven] say what was typed; the rest is
- * guessed (today, all day, one hour) and shown dimmer in the preview.
+ * guessed (today, all day, one hour) and shown dimmer in the preview. "All day" said outright, and a
+ * range of days, count as the time given. [repeats]: the line said "every Monday" or "weekly", which
+ * this version cannot carry: the day is the next such day, and no more than a guess. [vague]: the time
+ * that was typed does not say its half of the day ("at 7", "7:30"): that half is a guess. [twice]: a
+ * second day or time is left in the title ("Mon 3pm Tue 4pm"), or words about the time of day that
+ * were not read with it ("in the evening", "all day"): which was meant is a guess. [doubts]: what
+ * else of the day or the time was chosen by the parser and not typed ([Doubt]): a year, which number is
+ * the month, "next Tuesday", a number or a word of time that was left in the title.
  */
 data class EventDraft(val title: String, val start: LocalDateTime, val end: LocalDateTime, val allDay: Boolean,
-    val place: String, val dayGiven: Boolean, val timeGiven: Boolean)
+    val place: String, val dayGiven: Boolean, val timeGiven: Boolean, val repeats: Boolean = false, val vague: Boolean = false, val twice: Boolean = false,
+    val doubts: Set<Doubt> = emptySet()) {
+    /**
+     * Nothing of when it is is a guess: the day and the time were both read from what was typed, the time
+     * says its half of the day, the line asks for no repeat, no other day or time stands in it, and
+     * nothing else of it was the parser's choice ([doubts]). Only such an event is ever saved without the
+     * calendar's editor.
+     */
+    val sure: Boolean get() = dayGiven && timeGiven && !repeats && !vague && !twice && doubts.isEmpty()
+}
 
 data class TimerSpec(val seconds: Int, val label: String)
 data class AlarmSpec(val hour: Int, val minute: Int, val label: String)
@@ -62,24 +78,36 @@ object Jot {
     fun note(arg: String): String = parts(arg).joinToString("\n").trim()
 
     /**
-     * "Fri 3pm Dentist @ Main St": what follows the last " @ " is the place, a day or time at either
-     * end is when ([When]), the rest is the title. No day: today. No time: all day. No end: one hour.
+     * "Fri 3pm Dentist @ Main St": what follows the last " @ " is the place, a day or time anywhere in
+     * the line is when ([When.spot]), the rest is the title. No day: today. No time: all day. No end:
+     * one hour. The line of the keyword `event`: two bare numbers at one of its ends are the time of a
+     * day at the other ("9-10 standup tomorrow"), as they have always been there.
      */
     fun event(arg: String, now: LocalDateTime): EventDraft {
-        var text = " " + arg.trim()
-        var place = ""
+        val (text, place) = placed(arg)
+        return draft(When.spot(text, now, bare = true)?.moment, text, place, now)
+    }
+
+    /** [arg] without its place, and the place: what follows the last " @ ". A " @" at the very end is a place about to be typed. */
+    internal fun placed(arg: String): Pair<String, String> {
+        val text = " " + arg.trim()
         val at = text.lastIndexOf(" @ ")
-        if (at >= 0) {
-            place = text.substring(at + 3).trim()
-            text = text.substring(0, at)
-        } else if (text.endsWith(" @")) {
-            text = text.dropLast(2)                       // the place is about to be typed
+        return when {
+            at >= 0 -> text.substring(0, at).trim() to text.substring(at + 3).trim()
+            text.endsWith(" @") -> text.dropLast(2).trim() to ""
+            else -> text.trim() to ""
         }
-        text = text.trim()
-        val m = When.parse(text, now)
-            ?: return now.toLocalDate().atStartOfDay().let { EventDraft(text, it, it.plusDays(1), true, place, dayGiven = false, timeGiven = false) }
+    }
+
+    /** The event that [m] and its rest make; with no day or time read, [text] is the title, today, all day. */
+    internal fun draft(m: Moment?, text: String, place: String, now: LocalDateTime, title: String? = null): EventDraft {
+        if (m == null) return now.toLocalDate().atStartOfDay().let { EventDraft(title ?: text, it, it.plusDays(1), true, place, dayGiven = false, timeGiven = false) }
         val end = m.end ?: if (m.allDay) m.start.plusDays(1) else m.start.plusHours(1)
-        return EventDraft(m.rest, m.start, end, m.allDay, place, m.dayGiven, m.timeGiven)
+        val name = title ?: m.rest
+        // (A number or a word of time that is still in the title was typed and not read: a length, "for 2 hours", "2 hour
+        // workshop"; the minutes, another week, a zone. The end and the day the row shows are then the parser's own.)
+        return EventDraft(name, m.start, end, m.allDay, place, m.dayGiven, m.timeGiven, m.repeats, m.vague, twice = When.again(name, now),
+            doubts = if (When.left(name, m.start.toLocalTime().takeIf { !m.allDay })) m.doubts + Doubt.LEFT else m.doubts)
     }
 
     /**
@@ -95,9 +123,15 @@ object Jot {
         if (hint.isEmpty()) return null
         val sentence = SENTENCE.split(text).firstOrNull { near in it } ?: return null
         val words = sentence.trim().trimEnd('.', '!', '?').split(SPACE).map { it.trim(',', ';', ':', '(', ')', '"', '„', '“', '”') }.filter { it.isNotEmpty() }.take(WORDS)
-        /** The longest run of [w] that is all of it a day or a time, and passes [fits]; the earliest of the longest. */
+        /**
+         * The longest run of [w] that is all of it a day or a time, and passes [fits]; the earliest of the longest. Not a run
+         * that takes a month's day for a span's first hour ("Oct 14 to noon"), nor one that ends in the number of an hour
+         * („… bis 18“ before „Uhr“): those are a day and a time, each a run of its own.
+         */
         fun run(w: List<String>, fits: (Moment, List<String>) -> Boolean): IntRange? {
+            val low = w.map { it.lowercase() }
             for (len in minOf(RUN, w.size) downTo 1) for (i in 0..w.size - len) {
+                if (When.dated(low, i, len) || When.halved(low, i + len)) continue
                 val part = w.subList(i, i + len)
                 val m = When.parse(part.joinToString(" "), now) ?: continue
                 if (m.rest.isBlank() && fits(m, part)) return i until i + len
@@ -130,6 +164,7 @@ object Jot {
      * anything later a half-hour event, at 09:00 when only a day was given. No day or time: null.
      */
     fun reminder(arg: String, now: LocalDateTime): ReminderPlan? {
+        // ("All day" alone names neither a day nor a time to ring at: [When.find] reads none of it.)
         val hit = When.find(arg, now) ?: return null
         val seconds = hit.seconds
         if (seconds != null && seconds <= DAY) return ReminderPlan.Timer(TimerSpec(seconds.toInt(), hit.rest))

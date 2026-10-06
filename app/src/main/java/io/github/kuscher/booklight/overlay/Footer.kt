@@ -58,7 +58,8 @@ fun Footer(model: OverlayModel) {
             val word = model.flash
             // (Under an answer that came from somewhere else: who gave it and when, said as quietly as a cell's name.)
             // (Under first run's choices: where the two things live that need a key of the user's own.)
-            val quiet = grid?.cells?.getOrNull(model.cell)?.name?.let { " $it" } ?: (r?.body as? Body.Flight)?.source?.let { " $it" }
+            // (Under an event's row: why Enter opens the calendar instead of saving, or what the row cannot do yet.)
+            val quiet = grid?.cells?.getOrNull(model.cell)?.name?.let { " $it" } ?: (r?.body as? Body.Flight)?.source?.let { " $it" } ?: (r?.body as? Body.Slots)?.footer?.let { " $it" }
                 ?: if (model.choicesUp) " " + stringResource(R.string.first_labs) else null
             AnimatedContent(word ?: quiet, transitionSpec = {
                 // (No size animation of the box: it would uncover a long word letter by letter, cut through its letters.)

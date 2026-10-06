@@ -2,6 +2,55 @@
 
 *Living status. Newest first.*
 
+## 2026-10-06: 3.2: an event from a sentence
+
+Alex, on the design: "Yes. Re 2 add save too behind an option. Ship and ship also to production directly."
+`docs/design/event-sentence/design.md`, §11.
+
+- **What it is:** an event typed the way it is said, with the keyword `event` or without; one row shows what
+  was read (when, title, where, calendar); Enter opens the Calendar app's editor on that calendar, or, with
+  "Save events without opening Calendar" on, saves the event. The rules read at every letter; the model on the
+  device helps to split and never reckons a date. `CHANGELOG.md`, under "Unreleased", says it for a user.
+- **Two new permissions**, both asked for in the Booklight window alone: `READ_CALENDAR` (the list of calendars,
+  never an event) and `WRITE_CALENDAR` (the one event the row shows, only with the switch). `docs/PLAN.md` §4 and
+  §6, `PRIVACY.md`, `store-submission/forms/data-safety.md`.
+- **How it was built:** `docs/superpowers/plans/2026-10-05-event-from-a-sentence.md`, twelve tasks, each one
+  commit. Its "Decided here" is a table of what the design left open, each for Alex to overturn.
+- **Reviewed, and fixed once** (6 October): eleven task reviews, and one round of fixes on the same branch. What
+  that settled for whoever picks this up: **what is a guess is never saved without the editor**, and a guess is
+  now also a time that does not say its half of the day ("at 7"), any word for a repeat, a second day or time in
+  the line, and a calendar's name still being typed (core `EventDraft.sure`, `Cals.saves`); the gate on the
+  model's answer is positional and never makes a reading more sure than the rules' (core `Splits.merge`); an
+  Enter that came before its list, or as the row changed under it, never saves (`OverlayModel`); the event is
+  written off the main thread with the panel locked (`OverlayActivity.save`).
+- **Fixed a second time** (6 October), after the re-reviews, a review of the whole and a first pass on the test
+  device. What that round ruled is in the design's §11 ("Ruled in the last round of fixes", each for Alex to
+  overturn): "next Tuesday" is never today and always a guess; schedule, put, book and plan need a day and a
+  time and never save; under the keyword `event` the line is read as 3.1 read it; with no calendar to name Enter
+  sends 3.1's request; „9 Uhr“ and "09:30" are sure; a date that had passed is a guess and the row says the
+  year; the switch is this device's own. And "When" is never cut in the row (core `Spans`).
+- **Fixed a third time** (6 October), after the re-reviews of the second round ran the parser over some
+  thousand sentences. What it ruled is in the design's §11 too: „9 Uhr“ to „12 Uhr“ say their half of the day,
+  „1 Uhr“ to „8 Uhr“ are guesses; **a net under every rule**: a number standing alone or a word of time left in
+  the title makes the reading a guess (core `When.left`; its cost: "Sprint 12 planning tomorrow 9am" opens the
+  editor); after "on" and "in" a calendar's name must be exact or have the word "calendar"; a calendar's phrase at
+  the line's end is not the line going on ("Add dinner at 7 to Team" keeps its time).
+- **The row, as a device changed it** (a layout Alex has not seen, his to overturn): its two lines are `WHEN` with
+  `WHERE`, and `TITLE` with `CALENDAR` (they were When with Title, and Where with Calendar). Beside "When" and
+  the strip a title had room for two words; on the second line it has nearly all of it.
+- **Checked on the Lenovo Googlebook, three times**, the last on the build that is released:
+  `docs/research/event-sentence.md` has what a device said before the build, forty-two checks and their answers.
+  Two events were really saved, a timed one and an all-day one, each into the account's own calendar, read back
+  over adb and removed; an event saved this way reaches the account within about a minute. Open, and marked [A]
+  there: everything by hand (the system's question, Ctrl + digit, Enter in the instant the words change), the
+  window at its other widths, the HP Googlebook, and what only an eye says.
+- **For Alex to overturn**, each a constant, a condition or a few lines: the plan's "Decided here"; the design's
+  §11, "As built" and the two lists of rulings under it; and the row's two lines, above.
+- **The release**: 3.2, versionCode 10. Two permissions are new, and neither has a Play declaration form; the
+  data-safety answers do not change (`store-submission/forms/data-safety.md`). So it was sent as the releases
+  before it, through the API, although the design's §7 had said the Console. The store's privacy page is made
+  from `PRIVACY.md` with this release.
+
 ## 2026-10-05 (later): 3.1 is released: first steps
 
 Alex, on the finished branch: "Let's push and release to closed testing and make sure github works".

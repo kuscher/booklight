@@ -107,4 +107,14 @@ object Metrics {
         val room = screenHeightDp * (1 - TOP) - 56 - field.value - pad.value * 2 - footer.value - (flight - row).value
         return (room / row.value).toInt().coerceIn(3, 8)
     }
+
+    /**
+     * How many lines of an event's list of calendars fit under its row [r] on a screen this tall: twelve at the most (the
+     * row offers no more), three at the least. Reckoned as [maxRows] reckons the list, with the same room kept under the
+     * panel: twelve lines under a 92 dp row are 692 dp of panel, more than any other list, and would run off a low screen.
+     */
+    fun maxLines(screenHeightDp: Float, r: Result): Int {
+        val room = screenHeightDp * (1 - TOP) - 56 - field.value - pad.value * 2 - footer.value - rowHeight(r).value
+        return (room / action.value).toInt().coerceIn(3, 12)
+    }
 }

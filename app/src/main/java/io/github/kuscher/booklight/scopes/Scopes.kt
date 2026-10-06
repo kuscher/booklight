@@ -45,6 +45,8 @@ class Scopes(
     private val flights: io.github.kuscher.booklight.providers.FlightsProvider,
     /** An installed app by its package: the name and the icon of the app an app command of the user's own asks. */
     private val installed: (String) -> io.github.kuscher.booklight.providers.AppsProvider.Installed? = { null },
+    /** An event's row, for the keyword `event`: the same one a sentence typed without the keyword gets. */
+    private val events: io.github.kuscher.booklight.providers.Events,
 ) {
     /** The tasks: it remembers what was ticked while the panel is open. */
     val todo = TodoScope(context, notes)
@@ -53,11 +55,11 @@ class Scopes(
     private val takers = Takers(context)
 
     private val fixed: List<Scope> = listOf(
-        MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, PinScope(context, pinned), EventScope(context), RemindScope(context), TimerScope(context), AlarmScope(context),
+        MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, PinScope(context, pinned), EventScope(context, events), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context), HelpScope(context, guide) { prefs.now.used },
         io.github.kuscher.booklight.providers.FlightScope(context, flights, ::linkKeywords),
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), LettersScope(context, prefs), QrScope(context), ColorScope(context),
-        SnipScope(context, prefs), TextScope(context, null, web, { prefs.now.prompts }, ai, flight = { flights.found(it) }), TranslateScope(context, ai, ::linkKeywords) { editable },
+        SnipScope(context, prefs), TextScope(context, null, web, { prefs.now.prompts }, ai, flight = { flights.found(it) }, event = ::keyed), TranslateScope(context, ai, ::linkKeywords) { editable },
         LevelScope(context, dials, volume = true), LevelScope(context, dials, volume = false), PlayScope(context),
         // `s` and `k`: the two that give their letter up to a link of the user's own with that keyword.
         SettingsScope(context, settings, ::linkKeywords), KeysScope(context, keys, ::linkKeywords),
@@ -96,7 +98,10 @@ class Scopes(
 
     /** [copied]: it is what the user copied, opened from the line for a fresh copy; else another app handed it over. */
     fun receive(text: String, editable: Boolean = false, copied: Boolean = false): Scope =
-        TextScope(context, text, web, { prefs.now.prompts }, ai, { this.editable }, if (copied) TextFrom.COPY else TextFrom.HANDED, flight = { flights.found(it) }).also { incoming = it; this.editable = editable }
+        TextScope(context, text, web, { prefs.now.prompts }, ai, { this.editable }, if (copied) TextFrom.COPY else TextFrom.HANDED, flight = { flights.found(it) }, event = ::keyed).also { incoming = it; this.editable = editable }
+
+    /** An event's line as the row under the keyword `event` reads it: what a copied date's row shows is what its Enter leads to. */
+    private fun keyed(line: String) = events.rules(line, keyword = true).draft
 
     /** The panel closed: someone else's text is not kept, and neither is what was read of the user's notes. */
     fun forget() { incoming = null; editable = false; todo.closed(); notes.forget() }

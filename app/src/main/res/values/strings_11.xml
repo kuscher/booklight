@@ -48,7 +48,7 @@
     <string name="note_caption_first">Notes go to Notes.md in a folder you choose, once</string>
     <string name="event_keys">event,meeting</string>
     <string name="event_name">Event</string>
-    <string name="event_hint">When, title @ place</string>
+    <string name="event_hint">What and when, the way you say it</string>
     <string name="event_about">A calendar event, filled in</string>
     <string name="event_caption">New event. Opens in your calendar to save.</string>
     <string name="remind_keys">remind,reminder</string>

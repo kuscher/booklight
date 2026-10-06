@@ -455,6 +455,8 @@ fun Panel(
             // With a modifier held they are the text's own (select, a word back).
             Key.DirectionRight -> when {
                 !atEnd || !bare -> false
+                // The rest of a calendar's name, grey after the text of an event's sentence: Right takes it.
+                model.take() -> true
                 r?.body is Body.Grid -> model.moveCell(1, 0)
                 model.nudge(1) -> true
                 entersScope -> { if (!again) model.fill(e.nativeKeyEvent.eventTime); true }

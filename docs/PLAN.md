@@ -104,6 +104,18 @@ New in the manifest, through Google's ML Kit library and by Alex's decision ("li
 `BIND_SERVICE`, `ACCESS_NETWORK_STATE`, and the library's usage reporting (§6). The Play audience moves to 18
 and over. Still not built: the Gmail relay; the layer of extensions that answer while you type.
 
+### An event from a sentence: what was built (5 October 2026)
+
+Alex asked for a calendar entry "just from typing out freeform text", with the calendar permission "if that
+helps so we can even better match calendars", and approved the design the same day: "Yes. Re 2 add save too
+behind an option" (`design/event-sentence/design.md`; its §11 is what was settled). An event is typed the way it
+is said, with the keyword or without; the rules read it at every letter, the model on the device helps to split
+a sentence the rules cannot and never reckons a date; a calendar is named and completed; Enter opens the Calendar
+app's editor on that calendar, or, with a switch, saves the event. **Two permissions are new, by his word, both
+asked for in the Booklight window alone and inert until then (§6):** `READ_CALENDAR` for the list of calendars
+(never an event), `WRITE_CALENDAR` for the one event the row shows, only with "Save events without opening
+Calendar" on. The plan and what it decided on the way: `superpowers/plans/2026-10-05-event-from-a-sentence.md`.
+
 ### After 1.0: plenty before any permission that makes review harder
 
 From [research/use-cases.md](research/use-cases.md): of 63 ideas, 39 need no permission, 6 an
@@ -152,6 +164,7 @@ In short:
 | 0 (1.1) | Nothing at install: `REQUEST_DELETE_PACKAGES` and `SET_ALARM` are granted without a prompt | Uninstall (Android confirms each one), timers, alarms, reminders through the Clock app | None: no form, no declaration |
 | 1 (1.1) | A notes folder (system picker), once; "Modify system settings" (a switch in Settings) | Notes.md in that folder; brightness | No form; the switch must be the user's own clear choice and easy to undo |
 | 0 (2.0) | Nothing at install: AICore's `BIND_SERVICE` and `ACCESS_NETWORK_STATE` come with Google's ML Kit library and are granted without a prompt | Prompts answered by the system's own model, on the device | The library reports usage to Google: data-safety entries (device or other IDs, diagnostics), and an audience of 18 and over |
+| 1 (an event from a sentence) | The Calendar permission, Android's own question, asked only by a press in the Booklight window: `READ_CALENDAR` (Privacy › Calendars, or Results › "New events go to"), and `WRITE_CALENDAR` only by switching on "Save events without opening Calendar" (Results), which asks for both | The list of calendars (names, colours, ids; never an event): a calendar named in a sentence, completed in the field, and chosen in the editor that opens. With the switch: the one event the row shows is written, on Enter, never a guess | No declaration form for these two. Nothing is collected or shared: the list stays on the device. A release with a new permission is sent through the Play Console, not the API |
 | 1 | A folder (system picker); contacts (runtime prompt) | Files in that folder; people | Standard data-safety answers |
 | 2 | Digital assistant role (Settings) | Action + Space, Assistant key, status-bar assistant chip | None found; user must pick it |
 | 3 | Accessibility service; usage access | Window list, clipboard history, system commands, any hotkey, system-wide ranking | Accessibility declaration, prominent disclosure, video; blocked under Android 17 Advanced Protection |

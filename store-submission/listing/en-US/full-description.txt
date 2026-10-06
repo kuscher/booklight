@@ -1,19 +1,20 @@
 Booklight is a keyboard launcher for Googlebooks. Press your shortcut and a small glass panel appears over your desktop. Type a few letters and press Enter.
 
 WHAT IT FINDS
-- Apps. Type the start of a name, the start of any word in it, or its initials. A few loose letters are enough.
+- Apps. Type the start of a name, the start of any word in it, or its initials.
 - Settings pages, by name or by what they are for: "dark", "pair", "printer".
 - Sums. 150 + 20%, 12 * 3.5, sqrt(2). Enter copies the answer.
 - The web. A typed address opens in your browser, and anything you type can be searched for. A keyword and a space search one site: yt lofi.
 
 WHAT IT DOES
 - Do things inside your apps. A row shows what it can do as icons: Open, Search, Play, Window. Type an app, Tab to Search or Play, Enter, then the words. "chrome left" places a window straight away.
-- Jot things down in one line: mail anna@example.com Lunch? / See you at 1 opens your mail app's compose window, filled in. note, event, remind, timer, alarm and new file work the same way, each with a preview of what was understood.
+- Jot things down in one line: mail anna@example.com Lunch? / See you at 1 opens your mail app's compose window, filled in. note, remind, timer, alarm and new file work the same way.
+- Events as you say them: "Add dinner with Sam tomorrow at 7pm to the Team calendar" opens your calendar, filled in, or saves it, if you switch that on.
 - Small controls: vol and brightness change with the arrow keys, pause and next reach your music.
-- Things to copy: an emoji grid, symbols, the letters of other languages (ä ö ü ß, æ ø å, é, ñ), colour values, QR codes, passwords.
+- Things to copy: an emoji grid, symbols, the letters of other languages (ä ö ü ß, é, ñ), colour values, QR codes, passwords.
 - A question or a longer text opens in the Gemini app, typed in for you. You send it there.
 - What you just copied: Tab opens the link, adds the date as an event, translates it, or runs your prompt on it.
-- Flights: with your own free AirLabs key, LH455 shows a line with the plane on it, the times, the gate, and whether it is on time.
+- Flights: with your own free AirLabs key, LH455 shows the times, the gate, and whether it is on time.
 - Music: with your own free Spotify key, play a song, album or artist by name.
 - Your own commands: links with placeholders, snippets, and recipes that do several things at once.
 
@@ -27,14 +28,14 @@ YOUR SHORTCUT
 Booklight opens when its keyboard shortcut is pressed. The first time you open it, Booklight helps you set one: it suggests Action + Quick Insert and opens the system's Keyboard shortcuts with the steps on its own page. The app's icon opens a window with every setting, and First steps.
 
 HOW IT LOOKS
-One panel in the upper middle of the screen, in the colours of your wallpaper or its own, light or dark. It unfolds when it opens, the selection glides from row to row, lists arrive in a quick cascade, and nothing pops. You choose how see-through it is and how fast it opens.
+One panel in the upper middle of the screen, in the colours of your wallpaper or its own, light or dark. It unfolds as it opens, the selection glides from row to row, and nothing pops. You choose how see-through it is and how fast it opens.
 
 PRIVACY
-No account and no ads, and Booklight's developer receives nothing from it. What Booklight learns is kept on your device, and you can clear it.
-Prompts are answered on the device by the system's own model, through a library of Google's. Your text and the answer stay on the device. The library reports how it is used to Google: the device model and Android version, the app's version, an identifier made for this installation, timings and error codes. Not the text.
-Search suggestions are off until you turn them on. If you do, the text you type is sent to the search engine you chose (Google, DuckDuckGo, Bing, Brave Search or Ecosia) to suggest searches. Sums, web addresses and anything typed after a keyword are not sent.
-Flight times are looked up only with an AirLabs key of your own; then the flight number and the key go to airlabs.co. A song is looked up only with a Spotify key of your own; then its name goes to Spotify.
+No account, no ads, and Booklight's developer receives nothing. What Booklight learns stays on your device, and you can clear it.
+Prompts are answered on the device by the system's own model, through Google's library. Your text and the answer stay on the device. The library reports its use to Google: the device model and Android version, the app's version, an identifier made for this installation, timings and error codes. Not the text.
+Search suggestions are off until you turn them on. Then the text you type is sent to the search engine you chose (Google, DuckDuckGo, Bing, Brave Search or Ecosia). Sums, web addresses and anything typed after a keyword are not sent.
+Flight times are looked up only with your own AirLabs key; then the flight number and the key go to airlabs.co. A song is looked up only with your own Spotify key; then its name goes to Spotify.
 A mail, an event, a timer or a question for Gemini is handed to the app that opens; Booklight sends nothing itself.
-Booklight has no accessibility service and shows no permission prompts. Uninstalling an app is confirmed by Android; brightness works only after you switch it on in Settings.
+Booklight has no accessibility service. It asks for your calendar only when you allow it in its window, to name a calendar or save an event. Android confirms an uninstall; brightness works only after you switch it on in Settings.
 
 Booklight is a personal hobby project, not affiliated with or endorsed by any employer.

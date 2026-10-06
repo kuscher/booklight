@@ -81,6 +81,8 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
                 "web" -> "web"
                 "answers" -> if (row.id == "answer:color") "color" else "password"
                 "flights" -> "flight"
+                // An event typed as a sentence, without the keyword: the `event` line's all the same.
+                io.github.kuscher.booklight.providers.Events.ID -> "event"
                 "dials" -> if (row.id == "dial:media") "media" else null
                 "user" -> "own".takeIf { row.id.startsWith("own:") }
                 else -> null

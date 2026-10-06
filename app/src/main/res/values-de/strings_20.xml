@@ -178,7 +178,7 @@
         <item>sms|write|chat|sms|sms +49 30 23125 123 komme später|SMS|Die Nachrichten-App, ausgefüllt; nichts wird gesendet</item>
         <item>wa|write|chat|wa|wa +49 30 23125 123 komme später|WhatsApp|Der Chat mit dieser Nummer, dein Text im Feld; nichts wird gesendet</item>
         <item>tg|write|chat|tg|tg anna bin unterwegs|Telegram|Der Chat mit diesem Nutzernamen, oder einer Nummer, dein Text im Feld; nichts wird gesendet</item>
-        <item>event|write|event|event|termin Fr 15 Uhr Zahnarzt|Termin|Der Editor des Kalenders, ausgefüllt</item>
+        <item>event|write|event|event|termin Abendessen mit Sam morgen 19 Uhr|Termin|So getippt, wie du es sagst, auch ohne das Wort: trag Abendessen mit Sam morgen um 19 Uhr ein</item>
         <item>remind|write|bell|remind|erinnere 17 Uhr Bank anrufen|Erinnerung|Ein Timer, ein Wecker oder ein Termin, je nachdem wann</item>
         <item>new|write|plus|new|neu doc Plan Q3|Neu|Datei, Ordner, Dokument, Tabelle oder Präsentation</item>
         <item>timer|time|timer|timer|timer 10m Tee|Timer|Die Uhr startet ihn; „Starten und anheften“ hält den Countdown oben</item>

@@ -71,4 +71,42 @@ class StopsTest {
         assertEquals(true, Stops.at(r, Behind.WINDOW) in Stops.of(r, open = true))
         assertEquals(true, Stops.at(r, Behind.ARROW) in Stops.of(r, open = true))
     }
+
+    /** An event's row: Create · Copy · Calendar, the user's calendars as the lines behind that stop; nothing behind an arrow. */
+    private fun event(vararg calendars: String, armed: Int = 0): Result {
+        val actions = listOf(a("create"), a("copy"), Action("calendar", "Calendar", Effect.OpenList(Behind.CALENDAR))) +
+            calendars.map { Action("cal:$it", it, Effect.Internal(it), more = true, behind = Behind.CALENDAR) }
+        return Result("sentence:event", "events", Kind.OTHER, "Event", icon = Icon.Symbol("event"), score = 0.5, actions = actions, armed = armed)
+    }
+
+    @Test fun anEventsRowStopsOnItsActionsAndOnCalendar() {
+        val r = event("Sam", "Team")
+        assertEquals(listOf("create", "copy", "calendar"), ids(r))
+        // Calendar opens its own list, which is the row's only one: no arrow, and no stop for one.
+        assertEquals(Behind.CALENDAR, Stops.list(r, 2))
+        assertNull(Stops.list(r, 0))
+        assertNull(Stops.list(r, r.actions.size))
+        assertEquals(2, Stops.at(r, Behind.CALENDAR))
+        assertEquals(listOf("create", "copy", "calendar"), ids(r, Stops.of(r, open = true)))
+        // No calendars known: no such stop.
+        assertEquals(listOf(0, 1), Stops.of(event().let { it.copy(actions = it.actions.take(2)) }))
+    }
+
+    @Test fun aLineOfAStopsOwnListStandsInThatStopAndInNoOther() {
+        // A line of the Calendar list, armed while the list is closed, stands in Calendar's slot, as a typed place stands in Window's.
+        val r = event("Sam", "Team", armed = 4)
+        assertEquals(listOf("create", "copy", "cal:Team"), ids(r))
+        // On an app's row a typed place still stands in Window's slot, and only there.
+        assertEquals(listOf("open", "search", "play", "left", "more"), ids(app("left")))
+    }
+
+    @Test fun aCaptionSaysWhatTheArmedActionDoes() {
+        // An event's row: "Enter saves it" only while Save is the armed action; on Open, on Copy and on the list's stop, where it opens.
+        val body = Body.Slots("New event. Opens in your calendar to save.", emptyList(), captions = mapOf("save" to "New event. Enter saves it."))
+        assertEquals("New event. Enter saves it.", body.caption("save"))
+        for (armed in listOf("open", "copy", "calendar", null)) assertEquals("$armed", "New event. Opens in your calendar to save.", body.caption(armed))
+        // A preview with one caption says it whatever is armed.
+        assertEquals("To", Body.Slots("To", emptyList()).caption("send"))
+        assertEquals(null, Body.Slots(null, emptyList()).caption("send"))
+    }
 }

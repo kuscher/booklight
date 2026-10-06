@@ -25,7 +25,8 @@ import java.io.FileOutputStream
  * Test hooks for driving Booklight from adb (`./bl debug …`). Debug builds only. The receiver requires
  * the DUMP permission, which only the shell (adb) holds, so other apps can't use it.
  *   keys TEXT (typed one character at a time, as a person does: every list in between is made) |
- *   ping | dump | type TEXT | key up|down|left|right|tab|backtab|esc|enter|enter2|stay|back|more|window | close | shot [NAME]
+ *   ping | dump | type TEXT | key up|down|left|right|tab|backtab|esc|enter|enter2|stay|back|more|window|calendar | close | shot [NAME]
+ *   rush TEXT (TEXT at once and Enter in the same turn, as a fast hand's Enter comes before its list: it is kept for that list, and never saves an event)
  *   find TEXT (ranked results without the panel; "KEY: TEXT" searches inside a scope) | apps | forget
  *   pref suggestions on|off | pref engine ID | pref glass clear|balanced|frosted|solid | pref opening off|fast|medium|slow
  *   ai none|downloadable|downloading|ready|real (what the rows of a prompt show on a device in that state; `real` asks the device again)
@@ -72,6 +73,28 @@ import java.io.FileOutputStream
  *   under the system's dialog and is still under it: no key counts until a moment after the dialog has gone), `later`, `keydown`, `landing`.
  *   While a lesson of first run stands, `key enter` on an app's Open and on a search inside an app is practice, as the key is: nothing opens.
  *   `key enter2` is Enter twice in one turn, as a quick double press; dump says `due=`, `coach=`, `pressed`, `choices`, `ended`.
+ *   event TEXT (an event from a sentence, without the panel: what the rules read of TEXT, whether a line typed without the keyword would be
+ *   offered as an event, whether the model would be asked, the row's actions, and what Enter would do: the calendar link it would send, the
+ *   insert request where no calendar is named, or the values it would write. TEXT is read as the bare field reads it: with the keyword and a
+ *   space before it (`event 9-10 standup tomorrow`, `termin …`) as the keyword's line, which it says with `keyword`; else as a sentence typed
+ *   without one. Nothing is opened and nothing is written by it) |
+ *   event ask TEXT (with a panel open: the device's model asked about TEXT as the row asks it, at once: its answer as it came, whether it passed
+ *   every check, and the reading with it. Nothing is opened, written or kept) |
+ *   calendars (what the system allows and how many calendars were read, each with its name: the names are the user's own, and are never copied
+ *   into a file of the repo) | calendars pretend NAME,NAME,… (a list in place of the device's, to look at the row without the permission: the first
+ *   is the account's own, a name that ends in ! takes no new events; nothing can be written while a list is pretended) | calendars pretend off |
+ *   pref save on|off ("Save events without opening Calendar", as stored: the row offers Save only where the system also allows it, or a list is
+ *   pretended) | pref eventcal OWNER|none ("New events go to", by the calendar's owner's address) | pref calasked yes|no (the system's question for
+ *   the calendars has been answered once: the row no longer points at it); dump says an event's row with both lines of slots (● a colour's dot,
+ *   `?` a guess), its caption and, after `while ID:`, what the caption says while that action is armed, `rest=` (what is left of a calendar's
+ *   name), `footer=`, a line of its Calendar list as `+c`, `armed=calendar` on that stop (`key calendar` arms it), and `looking` while the
+ *   model is asked. `event TEXT` says why a reading is a guess: `no day`, `no time`, `half of the day not said`, `repeats`, `a second day or time`,
+ *   `the date has passed`, `“next” means two days to people`, `a weekday by two letters`, `which number is the month was not said`, `which night was
+ *   not said`, `a word beside the day or the time changes it`, `a number or a word of time is left in the title`, `it ends where it starts`, `it
+ *   ends on the next day, more than twelve hours on`, `this week or the next was not said`; and `named` (a calendar that is none of the user's),
+ *   `rest=`, `everyday` (it begins like an everyday search): none of them is saved.
+ *   rush TEXT (TEXT set at once and Enter in the same turn, before its list can have landed; it refuses where TEXT is what the field holds
+ *   already, and where saving is on with the device's own calendars: an early Enter is what it is for, never a save).
  */
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -120,6 +143,11 @@ class DebugReceiver : BroadcastReceiver() {
                     "tint" -> app.prefs.update { it.copy(tint = v == "on") }
                     "zero" -> app.prefs.update { it.copy(zero = v == "on") }
                     "sums" -> app.prefs.update { it.copy(showSums = v == "on") }
+                    // "Save events without opening Calendar", as it is stored. The row offers Save only where the system allows it too, or a list is pretended.
+                    "save" -> app.prefs.update { it.copy(saveEvents = v == "on") }
+                    // "New events go to": a calendar by its owner's address (`calendars` does not print it: it is read from the system's own list).
+                    "eventcal" -> app.prefs.update { it.copy(eventCalendar = if (v == "none") "" else v) }
+                    "calasked" -> app.prefs.update { it.copy(calendarsAsked = v == "yes") }
                     "dim" -> app.prefs.update { it.copy(dim = v == "on") }
                     // tips on|off|again (from the first one)|at ID (that tip next)
                     "tips" -> app.prefs.update { s -> when (v) {
@@ -134,13 +162,63 @@ class DebugReceiver : BroadcastReceiver() {
                     // The user's key for Spotify: `pref spotifykey ID SECRET`, `pref spotifykey none`. It is never printed.
                     "spotifykey" -> arg.split(' ').let { w -> if (v == "none") app.prefs.setSpotifyKey("", "") else app.prefs.setSpotifyKey(v, w.getOrElse(2) { "" }) }
                 }
-                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim} shadow=${it.shadow} tips=${it.tips} copy=${it.copyRow} zero=${it.zero} sums=${it.showSums} hidden=${it.zeroHidden.size} flightkey=${if (app.prefs.flightKey.value.isEmpty()) "none" else "set"} spotifykey=${if (app.prefs.spotifyKey.value.isEmpty()) "none" else "set"}" })
+                out(app.prefs.now.let { "engine=${it.engine} suggestions=${it.suggestions} glass=${it.glass} opening=${it.opening} theme=${it.theme} tint=${it.tint} dim=${it.dim} shadow=${it.shadow} tips=${it.tips} copy=${it.copyRow} zero=${it.zero} sums=${it.showSums} hidden=${it.zeroHidden.size} flightkey=${if (app.prefs.flightKey.value.isEmpty()) "none" else "set"} spotifykey=${if (app.prefs.spotifyKey.value.isEmpty()) "none" else "set"} save=${it.saveEvents} eventcal=${if (it.eventCalendar.isEmpty()) "own" else "chosen"} calasked=${it.calendarsAsked}" })
             }
             "find" -> app.scope.launch {
                 val t0 = System.nanoTime()
                 val scoped = app.engine.scopeFor(arg)
                 val r = if (scoped != null) app.engine.search(Query(scoped.text, scoped.scope.key, scoped.word)) else app.engine.search(Query(arg))
                 out("${(System.nanoTime() - t0) / 1000} us | " + r.joinToString(" | ") { describe(it) })
+            }
+            // An event from a sentence. `event TEXT`: what the rules read of TEXT here and now, and what Enter on its row would do, said and not done:
+            // the calendar link that would be sent, or the values that would be written. `event ask TEXT`: the device's model asked as the row asks
+            // it, at once (it answers only while a panel is in front): its answer as it came, and the reading with it.
+            // TEXT is read as the bare field would read it: after the keyword `event` (or another of its words) and a space, as the keyword's line.
+            "event" -> if (arg.startsWith("ask ")) {
+                if (act == null) return out("no panel: the model answers only while the panel is in front")
+                val (text, keyword) = keyed(app, arg.removePrefix("ask ").trim())
+                app.scope.launch {
+                    val t0 = android.os.SystemClock.uptimeMillis()
+                    val (said, own, merged) = app.events.split(text, keyword)
+                    out("asks=${io.github.kuscher.booklight.core.Splits.asks(own, text)} ai=${app.onDevice.state.value} ${android.os.SystemClock.uptimeMillis() - t0} ms | model=${said.replace('\n', ' ').ifEmpty { "(nothing)" }} | " +
+                        "${if (merged === own) "not taken: the rules' reading stands" else "taken"} | ${reading(merged)}${if (keyword) " keyword" else ""}")
+                }
+            } else {
+                val now = java.time.LocalDateTime.now()
+                val (text, keyword) = keyed(app, arg)
+                val read = app.events.rules(text, keyword)
+                val row = app.events.row("debug:event", text, read, now, keyword = keyword)
+                val zone = java.time.ZoneId.systemDefault()
+                fun at(ms: Long, z: String = zone.id) = java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneId.of(z)).toLocalDateTime().toString()
+                val enter = row.actions.firstOrNull()?.let { a ->
+                    when (val e = a.effect) {
+                        is io.github.kuscher.booklight.core.Effect.SaveEvent -> "${a.id}: would write calendar=${app.calendars.known.firstOrNull { it.id == e.calendar }?.name} title='${e.title}' start=${at(e.startMillis, e.zone)} end=${at(e.endMillis, e.zone)} allDay=${e.allDay} zone=${e.zone} place='${e.place}' + the calendar's default reminder" +
+                            // (The row is as it would be with the system's leave, to be looked at: the executor refuses while a list is pretended.)
+                            if (app.calendars.pretends) " (pretended: Enter writes nothing)" else ""
+                        // With a calendar to name: the calendar link. With none: the request Booklight has always sent, which names no calendar.
+                        is io.github.kuscher.booklight.core.Effect.InsertEvent ->
+                            if (e.link.isNotEmpty()) "${a.id}: would send ${e.link} (where no Calendar app takes it: the insert request, title='${e.title}' allDay=${e.allDay} place='${e.place}')"
+                            else "${a.id}: would send the insert request (no calendar to name: as 3.1 did), title='${e.title}' start=${at(e.startMillis, if (e.allDay) "UTC" else zone.id)} end=${at(e.endMillis, if (e.allDay) "UTC" else zone.id)} allDay=${e.allDay} place='${e.place}'"
+                        else -> "${a.id}: ${e::class.simpleName}"
+                    }
+                } ?: "nothing (no actions)"
+                // (Under the keyword every line is the event's row: "offered" is a question only for a line typed without it.)
+                out("offered=${if (keyword) "keyword" else io.github.kuscher.booklight.core.Sentence.reads(read).toString()} asks=${io.github.kuscher.booklight.core.Splits.asks(read, text)} | ${reading(read)}${if (keyword) " keyword" else ""} | enter=$enter | ${describe(row)}")
+            }
+            // What the system allows of the calendars and what was read; and a list in place of the device's, to look at the row without the
+            // permission. The names it prints are the user's own: never copied into a file of the repo.
+            "calendars" -> {
+                val words = arg.split(' ', limit = 2)
+                if (words[0] == "pretend") {
+                    val names = words.getOrNull(1).orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() }
+                    app.calendars.pretend(if (names.isEmpty() || names == listOf("off")) null else names.mapIndexed { i, n ->
+                        io.github.kuscher.booklight.core.Cal(900L + i, n.removeSuffix("!"), PRETEND_COLORS[i % PRETEND_COLORS.size], "pretend-$i@example.com", primary = i == 0, writable = !n.endsWith("!"))
+                    })
+                }
+                val c = app.calendars
+                // ("not offered": its name would not read back as this calendar, so it is no line of the row's list and is never completed.)
+                out("allowed=${c.allowed} writes=${c.writes} pretended=${c.pretends} asked=${app.prefs.now.calendarsAsked} save=${app.prefs.now.saveEvents} count=${c.known.size}: " +
+                    c.known.joinToString(" | ") { "${it.name}${if (it.primary) " (own)" else ""}${if (!it.writable) " (no new events)" else ""}${if (!it.nameable) " (not offered)" else ""}" })
             }
             // `flight show NAME`: a sample flight's row in the open panel, in the phase its name says (`FlightSamples`: `friday`, `soon`, `air`, `air-late`,
             // `landed`, `cancelled`, `looking`, `offline`…, and the saved replies by their names, `LH455-in-the-air`). Its number is typed for it, the row
@@ -198,6 +276,19 @@ class DebugReceiver : BroadcastReceiver() {
                 arg.forEachIndexed { i, c -> main.postDelayed({ m.type(m.query + c) }, 40L * (i + 1)) }
                 main.postDelayed({ out("ok") }, 40L * (arg.length + 2))
             }
+            // A fast hand: TEXT set at once and Enter in the same turn, before the list for it can have landed. The Enter is kept for
+            // that list, as the key's is: it runs row one when the list lands, or is dropped where that would save an event.
+            // Only ever an early Enter: with the text the field holds already nothing is typed, the list has landed, and Enter would
+            // run the row as it stands; and with saving on over the device's own calendars a row could save. Both are refused.
+            "rush" -> main.post {
+                val m = act?.model ?: return@post out("no panel")
+                if (!app.calendars.pretends && app.prefs.now.saveEvents) return@post out("not an early Enter: saving is on with the device's own calendars (pretend a list first, or `pref save off`)")
+                while (m.leaveScope()) {}
+                if (arg == m.query) return@post out("not an early Enter: the field holds this text already")
+                m.type(arg)
+                m.enter { r, a -> act.run(r, a) }
+                out("typed, and Enter in the same turn")
+            }
             // Under whatever chip is there (the copy's, a scope's): `type` leaves it first.
             "in" -> main.post { act?.model?.type(arg); out(if (act != null) "ok" else "no panel") }
             "type" -> main.post { act?.model?.let { m -> while (m.leaveScope()) {}; m.type(arg) }; out(if (act != null) "ok" else "no panel") }
@@ -214,13 +305,14 @@ class DebugReceiver : BroadcastReceiver() {
                     "down" -> m.down(false)
                     "up" -> m.up(false)
                     // As the keys do (`Panel.keys`): Tab and Right only move on a row that offers more than one thing; Right again on Window or on the arrow opens its list.
-                    "right" -> if (!m.moveCell(1, 0) && !m.nudge(1)) { if (m.tabEnters) m.fill() else if (m.opened == null) { if (m.onList != null) m.open() else m.arm(1, wrap = false) } }
+                    "right" -> if (!m.take() && !m.moveCell(1, 0) && !m.nudge(1)) { if (m.tabEnters) m.fill() else if (m.opened == null) { if (m.onList != null) m.open() else m.arm(1, wrap = false) } }
                     "left" -> if (m.opened != null) m.close() else if (!m.moveCell(-1, 0) && !m.nudge(-1)) m.arm(-1, wrap = false)
                     "tab" -> if (m.stage != null) m.stageTab(false) else if (m.tip != null) m.tipTab() else if (m.atRest && m.chip == null && m.query.isBlank()) m.down(false) else if (m.copy != null || m.bare) m.tabCopy() else if (m.keyword != null) m.enterKeyword() else if (m.tabEnters) m.fill() else if (m.opened != null) m.step(1) else if (m.otherAct != null) m.swap() else m.arm(1, wrap = true)
                     "backtab" -> if (m.stage != null) m.stageTab(true) else if (m.opened != null) m.step(-1) else if (m.otherAct != null) m.swap() else m.arm(-1, wrap = true)
-                    // Straight to one of the row's two list stops: `key more` the arrow, `key window` Window. Enter (or `key right`) then opens it.
+                    // Straight to one of the row's list stops: `key more` the arrow, `key window` Window, `key calendar` an event's Calendar. Enter (or `key right`) then opens it.
                     "more" -> m.armList(io.github.kuscher.booklight.core.Behind.ARROW)
                     "window" -> m.armList(io.github.kuscher.booklight.core.Behind.WINDOW)
+                    "calendar" -> m.armList(io.github.kuscher.booklight.core.Behind.CALENDAR)
                     "back" -> m.back()
                     "esc" -> if (!m.cancelConfirm() && !m.leaveAnswer()) act.close()
                     "enter" -> if (m.stage != null) m.stageEnter()?.let { act.stage(it) } else if (m.tip != null) m.tipEnter() else m.enter { r, a -> act.run(r, a) }
@@ -335,7 +427,7 @@ class DebugReceiver : BroadcastReceiver() {
                 val d = act.window.decorView
                 val loc = IntArray(2).also { d.getLocationOnScreen(it) }
                 // (Under an app's chip: the action that is armed there after a colon, the keyword it was entered by after "via", and the line that offers its other action.)
-                out("chip=${m.chip?.key}${m.act?.let { ":" + it.id } ?: ""}${m.chipVia?.let { " via=$it" } ?: ""}${m.otherAct?.let { " line=" + it.id } ?: ""} hint='${m.hint ?: m.firstHint.orEmpty()}' query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""} selected=${m.selected} armed=${when (m.onList) { io.github.kuscher.booklight.core.Behind.ARROW -> "more"; io.github.kuscher.booklight.core.Behind.WINDOW -> "window"; null -> m.chosen()?.second?.id }}${if (m.confirming) "?" else ""} opened=${m.opened}${m.list?.let { ":" + it.name.lowercase() } ?: ""} cell=${m.cell} flash=${m.flash} " +
+                out("chip=${m.chip?.key}${m.act?.let { ":" + it.id } ?: ""}${m.chipVia?.let { " via=$it" } ?: ""}${m.otherAct?.let { " line=" + it.id } ?: ""} hint='${m.hint ?: m.firstHint.orEmpty()}' query='${m.query}' ai=${app.onDevice.state.value}${if (m.thinking) " thinking" else ""}${if (m.looked) " looking" else ""} selected=${m.selected} armed=${when (m.onList) { io.github.kuscher.booklight.core.Behind.ARROW -> "more"; io.github.kuscher.booklight.core.Behind.WINDOW -> "window"; io.github.kuscher.booklight.core.Behind.CALENDAR -> "calendar"; null -> m.chosen()?.second?.id }}${if (m.confirming) "?" else ""} opened=${m.opened}${m.list?.let { ":" + it.name.lowercase() } ?: ""} cell=${m.cell} flash=${m.flash} " +
                     "search=${m.lastSearchMicros}us window=${d.width}x${d.height}@${loc[0]},${loc[1]} blur=${act.windowManager.isCrossWindowBlurEnabled} completion=${m.completion} first=${m.stage?.name ?: "none"}${if (m.stage != null) " armed=" + m.stageArmed else ""}${FirstRun.count(app.prefs.now.firstRun())?.let { " ${it.first}/${it.second}" } ?: ""} playing=${m.playing?.name?.lowercase() ?: "none"}${if (m.began) " cast=" + (if (m.cast != null) "ready" else "none") + " laps=" + m.laps else if (m.laps > 0) " laps=" + m.laps else ""}${if (m.gliding) " gliding" else ""} due=${m.due?.name ?: "none"}${if (m.stage != null) " comes=" + m.comes.name.lowercase() + " lead=" + m.marks.lead + (if (m.marks.all != m.marks.lead) " all=" + m.marks.all else "") + " end=" + m.marks.end + (if (m.seen) " seen" else if (m.takesEnter) " enter" else if (m.underDialog) " covered" else "") else ""}${if (m.later) " later" else ""}${if (m.keyDown) " keydown" else ""}${if (m.landing) " landing" else ""}${m.coach?.let { " coach=" + it.name.lowercase() } ?: ""}${if (m.pressed) " pressed" else ""}${if (m.choicesUp) " choices" else ""}${if (m.ended) " ended" else ""} zero=${if (m.zeroUp) m.results.count { it.kind != io.github.kuscher.booklight.core.Kind.ACTION } else 0} copy=${m.copy?.let { "${it.age}:${it.things.joinToString("+")}${if (it.looking) "…" else ""}" }} tip=${m.tip?.id}${if (m.tipArmed != 0) ":" + m.tipArmed else ""}${if (m.tipOff) " off" else ""} rows=" +
                     m.results.joinToString(" | ") { describe(it) })
             }
@@ -614,6 +706,8 @@ class DebugReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        /** The colours of a pretended list of calendars (`calendars pretend`): four that a calendar may have. */
+        private val PRETEND_COLORS = listOf(0xFF3F51B5.toInt(), 0xFF0B8043.toInt(), 0xFFF4511E.toInt(), 0xFF8E24AA.toInt())
         /**
          * The frames the last `first trace N` took, each as its two clocks and the rest of its line. Kept by the receiver
          * itself, for as long as the process lives: the log is cleared before every hook (`bl`'s `dbg`), so a check that
@@ -647,11 +741,39 @@ class DebugReceiver : BroadcastReceiver() {
         ).joinToString(" ")
     }
 
+    /** [arg] as the bare field would read it: the text after the keyword `event` (or another of that scope's words) and a space, and true; else all of it, and false. */
+    private fun keyed(app: BooklightApp, arg: String): Pair<String, Boolean> =
+        app.engine.scopeFor(arg)?.takeIf { it.scope.key == "event" }?.let { it.text to true } ?: (arg to false)
+
+    /** An event's reading in a line: what the row's slots are made from, and every reason it is a guess (and so never saved without the editor). */
+    private fun reading(r: io.github.kuscher.booklight.core.EventReading): String = r.draft.let { e ->
+        val why = listOfNotNull("no day".takeIf { !e.dayGiven }, "no time".takeIf { !e.timeGiven }, "half of the day not said".takeIf { e.vague }, "repeats".takeIf { e.repeats }, "a second day or time".takeIf { e.twice }) +
+            e.doubts.map { when (it) {
+                io.github.kuscher.booklight.core.Doubt.PAST -> "the date has passed"
+                io.github.kuscher.booklight.core.Doubt.NEXT -> "“next” means two days to people"
+                io.github.kuscher.booklight.core.Doubt.WEAK -> "a weekday by two letters"
+                io.github.kuscher.booklight.core.Doubt.MONTH -> "which number is the month was not said"
+                io.github.kuscher.booklight.core.Doubt.NIGHT -> "which night was not said"
+                io.github.kuscher.booklight.core.Doubt.BESIDE -> "a word beside the day or the time changes it"
+                io.github.kuscher.booklight.core.Doubt.LEFT -> "a number or a word of time is left in the title"
+                io.github.kuscher.booklight.core.Doubt.END -> "it ends where it starts"
+                io.github.kuscher.booklight.core.Doubt.LONG -> "it ends on the next day, more than twelve hours on"
+                io.github.kuscher.booklight.core.Doubt.WEEK -> "this week or the next was not said"
+            } }
+        "title='${e.title}' when=${e.start}..${e.end}${if (e.allDay) " all day" else ""}${if (e.sure) "" else " (a guess: ${why.joinToString(", ")})"} place='${e.place}' calendar=${r.calendar?.name ?: "none"}" +
+            "${r.rest?.let { " rest='$it'" } ?: ""}${if (r.named) " named" else ""}${if (r.cue) " cue" else ""}${if (r.everyday) " everyday" else ""}${if (r.loose) " loose" else ""} said='${r.said}'"
+    }
+
     /** A row in one line: its title, kind, what it holds, and its actions with the armed one marked. */
     private fun describe(r: io.github.kuscher.booklight.core.Result): String {
         val body = when (val b = r.body) {
             null -> ""
-            is io.github.kuscher.booklight.core.Body.Slots -> " {" + listOfNotNull(b.caption).plus(b.slots.map { "${it.label}=${it.value}${if (it.state == io.github.kuscher.booklight.core.SlotState.GUESSED) "?" else ""}" }).plus(listOfNotNull(b.note)).joinToString("; ") + "}"
+            // (A slot whose value has a colour's dot before it is marked ●; the second line of slots follows a bar; `rest=` is what the field shows in grey.)
+            is io.github.kuscher.booklight.core.Body.Slots -> {
+                fun slot(s: io.github.kuscher.booklight.core.Slot) = "${s.label}=${if (s.dot != null) "●" else ""}${s.value}${if (s.state == io.github.kuscher.booklight.core.SlotState.GUESSED) "?" else ""}"
+                // (The caption; and, where it follows the arming, what it says while that action is armed.)
+                " {" + listOfNotNull(b.caption).plus(b.captions.map { (id, says) -> "while $id: $says" }).plus(b.slots.map(::slot)).plus(if (b.more.isEmpty()) emptyList() else listOf("| " + b.more.joinToString("; ", transform = ::slot))).plus(listOfNotNull(b.note, b.completes?.let { "rest=$it" }, b.footer?.let { "footer=$it" })).joinToString("; ") + "}"
+            }
             is io.github.kuscher.booklight.core.Body.Level -> " {${b.percent}%${if (b.muted) " muted" else ""}${if (b.locked) " locked" else ""}${b.target?.let { " →$it" } ?: ""}}"
             is io.github.kuscher.booklight.core.Body.Grid -> " {${b.cells.size} cells: ${b.cells.take(6).joinToString("") { it.glyph }}…}"
             is io.github.kuscher.booklight.core.Body.Code -> " {qr}"
@@ -674,8 +796,8 @@ class DebugReceiver : BroadcastReceiver() {
                 ).joinToString("; ") + "}"
             }
         }
-        // (A line behind the arrow is marked +, one behind Window +w.)
-        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (!a.more) "" else if (a.behind == io.github.kuscher.booklight.core.Behind.WINDOW) "+w" else "+") + (if (a.off) "(off)" else "") }.joinToString(",")
+        // (A line behind the arrow is marked +, one behind Window +w, one behind an event's Calendar +c.)
+        val acts = r.actions.mapIndexed { i, a -> (if (i == r.armed) "*" else "") + a.id + (if (!a.more) "" else when (a.behind) { io.github.kuscher.booklight.core.Behind.WINDOW -> "+w"; io.github.kuscher.booklight.core.Behind.CALENDAR -> "+c"; else -> "+" }) + (if (a.off) "(off)" else "") }.joinToString(",")
         return "${r.answer ?: r.title}${r.subtitle?.let { " ($it)" } ?: ""} [${r.label ?: r.kind}]$body <$acts>"
     }
 }

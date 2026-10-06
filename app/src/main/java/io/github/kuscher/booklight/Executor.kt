@@ -5,6 +5,7 @@ import android.app.ActivityOptions
 import android.app.SearchManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
@@ -22,6 +23,7 @@ import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.core.net.toUri
 import io.github.kuscher.booklight.core.AppPage
+import io.github.kuscher.booklight.core.Cals
 import io.github.kuscher.booklight.core.Effect
 import io.github.kuscher.booklight.device.Clipboard
 import io.github.kuscher.booklight.core.MediaKey
@@ -116,12 +118,20 @@ class Executor(private val context: Context) {
             } catch (_: ActivityNotFoundException) {
                 start(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, effect.text), null))
             }
-            is Effect.InsertEvent -> start(Intent(Intent.ACTION_INSERT, CalendarContract.Events.CONTENT_URI)
-                .putExtra(CalendarContract.Events.TITLE, effect.title)
-                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, effect.startMillis)
-                .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, effect.endMillis)
-                .putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, effect.allDay)
-                .apply { if (effect.place.isNotBlank()) putExtra(CalendarContract.Events.EVENT_LOCATION, effect.place) })
+            is Effect.InsertEvent -> {
+                val insert = Intent(Intent.ACTION_INSERT, CalendarContract.Events.CONTENT_URI)
+                    .putExtra(CalendarContract.Events.TITLE, effect.title)
+                    .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, effect.startMillis)
+                    .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, effect.endMillis)
+                    .putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, effect.allDay)
+                    .apply { if (effect.place.isNotBlank()) putExtra(CalendarContract.Events.EVENT_LOCATION, effect.place) }
+                // A calendar link says which calendar, which the request above cannot (the Calendar app ignores a calendar's id
+                // in it): the link goes to the Calendar app first, and to that app alone. Only the one address Booklight builds
+                // itself (core `Cals.link`). Where no Calendar app takes it: the request, without a calendar.
+                if (!effect.link.startsWith(Cals.TEMPLATE)) start(insert)
+                else try { start(Intent(Intent.ACTION_VIEW, effect.link.toUri()).setPackage(CALENDAR)) } catch (_: ActivityNotFoundException) { start(insert) }
+            }
+            is Effect.SaveEvent -> return save(effect)
             is Effect.SetTimer -> start(Intent(AlarmClock.ACTION_SET_TIMER)
                 .putExtra(AlarmClock.EXTRA_LENGTH, effect.seconds).putExtra(AlarmClock.EXTRA_SKIP_UI, true)
                 .apply { if (effect.label.isNotBlank()) putExtra(AlarmClock.EXTRA_MESSAGE, effect.label) })
@@ -166,6 +176,8 @@ class Executor(private val context: Context) {
             is Effect.Grant -> when (effect.what) {
                 "brightness" -> start(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.fromParts("package", context.packageName, null)))
                 "notes" -> start(Intent(context, PickFolderActivity::class.java))
+                // The calendars are allowed in the Booklight window and nowhere else: the window, on that row.
+                "calendars" -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_PAGE, MainActivity.PAGE_CALENDARS))
                 // With a note to add once the folder is chosen: "notes", a line break, the note.
                 else -> if (effect.what.startsWith("notes\n")) start(Intent(context, PickFolderActivity::class.java).putExtra(PickFolderActivity.EXTRA_NOTE, effect.what.substringAfter('\n'))) else return false
             }
@@ -182,7 +194,7 @@ class Executor(private val context: Context) {
             is Effect.Edit -> start(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_EDIT, effect.kind).putExtra(MainActivity.EXTRA_ID, effect.id))
             // A recipe: each step in turn; it stops at the first that can't be done.
             is Effect.Steps -> return effect.steps.all { perform(it, from) }
-            is Effect.EnterScope, is Effect.OpenList, is Effect.Type, is Effect.Ask, is Effect.Unsuggest -> return false     // the panel does these itself
+            is Effect.EnterScope, is Effect.OpenList, is Effect.Type, is Effect.Retype, is Effect.Ask, is Effect.Unsuggest -> return false     // the panel does these itself
             // 2.0, each in its own task:
             is Effect.Open -> return open(effect, ctx)
             // The app the text came from asked for text back (its selection menu): this is the answer to that.
@@ -209,6 +221,49 @@ class Executor(private val context: Context) {
         PERMISSION,
         /** Android would not start it. */
         FAILED,
+    }
+
+    /**
+     * Writes one event into a calendar: the event the row showed, on the user's Enter, and nothing else. Only with "Save
+     * events without opening Calendar" switched on and the system's leave to add events, both asked again here whoever made
+     * the effect; and only into a calendar of the list that was read, one that takes events. Two rows are written: the event
+     * (its title, start and end, all day or not, the time zone, the place; and of an all-day event that it leaves the day
+     * free, as the Calendar app's own editor makes one), and its reminder, which says "this calendar's
+     * own default" in the provider's own words and no time of Booklight's. Nothing is read: not the event that was written,
+     * and no other. Booklight keeps no trace of it, and never changes or removes an event. Called off the main thread
+     * (`OverlayActivity.save`), once for one Enter: whoever calls it has locked the panel first.
+     */
+    private fun save(e: Effect.SaveEvent): Boolean {
+        val calendars = app.calendars
+        if (!app.prefs.now.saveEvents || !calendars.allowed || !calendars.writes || calendars.pretends) return false
+        if (e.title.isBlank() || e.endMillis <= e.startMillis || calendars.known.none { it.id == e.calendar && it.writable }) return false
+        val event = ContentValues().apply {
+            put(CalendarContract.Events.CALENDAR_ID, e.calendar)
+            put(CalendarContract.Events.TITLE, e.title)
+            put(CalendarContract.Events.DTSTART, e.startMillis)
+            put(CalendarContract.Events.DTEND, e.endMillis)
+            put(CalendarContract.Events.ALL_DAY, if (e.allDay) 1 else 0)
+            put(CalendarContract.Events.EVENT_TIMEZONE, e.zone)
+            if (e.place.isNotBlank()) put(CalendarContract.Events.EVENT_LOCATION, e.place)
+            // An all-day event is "Free": a birthday or a day out does not block the day, and that is how the Calendar app's own
+            // editor makes one. A timed event is as the provider makes it ("Busy").
+            if (e.allDay) put(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_FREE)
+        }
+        val saved = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, event) ?: return false
+        // From here on the event is in the calendar, and this says so whatever follows: an answer of "not saved" would
+        // have the user press Enter again, and save it twice.
+        // The reminder. Its failing takes nothing from the event, which is saved: the footer still says so. (That it failed
+        // is logged, by its kind alone: nothing of the event.)
+        val reminder = runCatching {
+            val id = saved.lastPathSegment?.toLongOrNull() ?: return@runCatching null
+            context.contentResolver.insert(CalendarContract.Reminders.CONTENT_URI, ContentValues().apply {
+                put(CalendarContract.Reminders.EVENT_ID, id)
+                put(CalendarContract.Reminders.MINUTES, CalendarContract.Reminders.MINUTES_DEFAULT)
+                put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_DEFAULT)
+            })
+        }
+        if (reminder.getOrNull() == null) Log.w(BooklightApp.TAG, "event saved without its reminder (${reminder.exceptionOrNull()?.javaClass?.simpleName ?: "no row"})")
+        return true
     }
 
     /**
@@ -369,6 +424,8 @@ class Executor(private val context: Context) {
 
     companion object {
         const val GEMINI = "com.google.android.apps.bard"
+        /** The Calendar app: a calendar link is sent to it and to no other app. (No `<queries>` line: it is only ever started, never asked about.) */
+        const val CALENDAR = "com.google.android.calendar"
         /** A number as an address takes it: digits, with a + in front or without. Anything else is not put into one. */
         private val NUMBER = Regex("\\+?[0-9]+")
         /**

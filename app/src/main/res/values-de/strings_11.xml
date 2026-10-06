@@ -48,7 +48,7 @@
     <string name="note_caption_first">Notizen kommen in Notes.md, in einen Ordner, den du einmal wählst</string>
     <string name="event_keys">termin,event,meeting</string>
     <string name="event_name">Termin</string>
-    <string name="event_hint">Wann, Titel @ Ort</string>
+    <string name="event_hint">Was und wann, so wie du es sagst</string>
     <string name="event_about">Ein Kalendertermin, ausgefüllt</string>
     <string name="event_caption">Neuer Termin. Öffnet sich im Kalender zum Speichern.</string>
     <string name="remind_keys">erinnere,erinnerung,remind</string>

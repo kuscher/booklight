@@ -492,3 +492,72 @@ built and what was decided on the way). As built:
 | ↓ ↑ | ↓: nothing. ↑: the last text that was not run comes back, and the stage gives way to its list; with none kept, nothing | the highlight comes to a row, and goes | the key's step lands |
 | Esc | closes; the screen waits | closes; the choices are done | the key's step lands |
 
+## 20. An event from a sentence (5 October 2026)
+
+`docs/design/event-sentence/design.md`; §11 there is what Alex settled.
+
+- **One row, with the keyword or without.** `event dinner tomorrow 7pm` as before; and a line that begins with
+  add, schedule, put, book or plan („trag … ein“, „plane“, „neuer Termin“) and holds a day or a time is the same
+  row with no keyword typed. That row stands below everything of the device that matches and above everything of
+  the web: if nothing of the device matches it is row one and Enter runs it. Never for a line without a day or a
+  time, and not for one whose only "day" is a word that is far more often something else ("add pictures of the
+  sun", "add 2-3 eggs"). **Schedule, put, book, plan and „plane“ are also how everyday searches begin** ("schedule
+  nfl sunday", "book the midnight library", "plan trip to rome oct 14 to oct 16"): after one of them the row needs
+  a day and a time of day, both, „plane“ counts only where the day or the time was said in German, and the row
+  never has Save: Enter opens the editor, and the caption and the footer say why.
+- **Under the keyword the line is the event.** No first word is dropped there but "new event" and „neuer Termin“
+  (`event put out bins thu 7am` is called "put out bins"), and two bare numbers at one end of the line are the time
+  of a day at the other (`event 9-10 standup tomorrow`), a guess at the half of the day: both as 3.1 read them.
+  Without the keyword "add 1-2 eggs tomorrow" is tomorrow, all day.
+- **What it reads, at every letter:** the day and time wherever they stand; the place after an @; a calendar by
+  its name after "to", "in" or "on" as the last words of the sentence, also after the place ("… @ Cafe Luna to
+  Team"), by the name as it was typed first (a calendar called "Family Calendar" by that name, one called "The
+  Tigers" with its article or without); before a day or a time only with the word "calendar" after the name ("…
+  to the Team calendar tomorrow": "Drive to work tomorrow" is what the event is called); the cue dropped ("add",
+  "schedule", "put") or kept ("book", "plan": "Book club" is a title, and "plan" alone is none); the rest is the
+  title. What is far more often something else is not read in the middle of a line: a short weekday that is a
+  word, a weekday by two letters with its time ("to do 3pm"), two bare numbers, a fraction, a number after "at"
+  with a word after it ("at 5 Main Street"). "All day" with no day is neither a day nor a time. "The day after
+  tomorrow" is two days on, and a weekday before a date that falls on it ("Wednesday 28 October") is part of the
+  date.
+- **A guess is read, shown a step lighter, and never saved without the editor**: a day or a time that was not
+  typed; a time that does not say its half of the day ("at 7", "7:30", „um 7“: "7pm", "19:30", "7 in the
+  evening", „9 Uhr“ and "09:30" say it); a line that asks for a repeat ("every Monday", "weekly"); a line that
+  holds a second day or time; and whatever else of the day or the time was the parser's to choose: the year of a
+  date that had passed and was put most of a year ahead ("Oct 5" on 6 October; the row says the year wherever it
+  is not this year's), which number of "12/10" is the month, "next Tuesday" (never today, and a guess always:
+  people mean two days by it), a weekday by two letters ("Mo", "do"), midnight beside a day (which night), a word
+  beside the day that changes it ("the day before Friday", "not tomorrow", "until Friday"), a length left in the
+  title ("for 2 hours"). Nor is an event saved while its calendar is read by the first letters of its name, or
+  where it names a calendar by the word that is none of the user's.
+- **The model on the device helps and is never waited for.** Only where the title is left in pieces, 0.7 s after
+  the last key, once for a text. Every part it names must be words that were typed, side by side, and no two
+  parts the same words; its "when" must be the very words the rules read, so the day and time are the rules' own
+  and it never makes a guess sure; a calendar only where the sentence says it is one; no typed word may be lost
+  but by its place (a cue first, "at the" before the place). Then the slots change where they stand. An Enter in
+  the moment they change is not taken; a new press is. An answer that changes nothing counts as nothing.
+- **A calendar's name is completed** in grey at the very end of the sentence, from two letters on, and the row
+  already reads that calendar; Right takes the rest. Once the name is whole the row has the calendar, and keeps
+  it from the third letter of the word "calendar" typed after it (one letter or two are as likely a name going
+  on: "to Sam K"). Only a calendar whose name reads back as itself is completed or is a line of the row's list:
+  not the second of two with one name, not a name of signs alone, not one that reads as a day.
+- **Keys on the row.** Enter: Create (the Calendar app's editor, filled in; on the calendar that was named, by a
+  calendar link, and with none named by the request Booklight has always sent, as in 3.1). Tab: Copy,
+  then Calendar. Enter on Calendar opens the list of calendars under the row; Enter on a line (or Ctrl + its
+  digit) writes that calendar into the sentence and closes the list, and does not also run the row.
+- **Save is the user's choice, and never a guess.** With "Save events without opening Calendar" on, Enter is Save
+  and "Open" the second action; the caption says what Enter does on the armed one ("Enter saves it" only while
+  that is Save). Where the reading is a guess, Enter opens Calendar instead and the footer says why. Save is
+  written by Enter, or a click, on the selected row and by nothing else: not by Ctrl + digit, not by an Enter
+  that was pressed before the row was on the glass or as it changed under the pill (that press is dropped; the
+  next one saves), not while a lesson of first run stands, and never twice (the panel is locked while the event
+  is written, and goes with it, Shift held or not). The footer says "Saved to" and the calendar once it is in.
+- **Why Save may be the armed action.** The rule is that what removes or cannot be taken back is never armed
+  first. Save adds one event the user has typed and sees whole in the row; it removes nothing, it is on only by
+  the user's own switch, and the calendar keeps the event for the user to change or delete. What Booklight cannot
+  do is take it back itself (it never changes or removes an event): that is said here so that nobody adds an Undo
+  by reading an event.
+- **Nothing is asked for in the panel.** Both permissions are given in the Booklight window. Where a sentence
+  names a calendar by the word and the list is not allowed, the row has "Allow…" as its last action and the
+  footer says so, until Android's question has been answered once; it leads to the window's row.
+

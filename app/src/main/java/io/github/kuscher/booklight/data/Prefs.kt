@@ -137,11 +137,23 @@ data class Settings(
     val firstOpens: Int = 0,
     val firstHelper: Int = 0,
     val firstIcon: Boolean = false,
+    /**
+     * An event typed as a sentence (core `Sentence`). [saveEvents]: Enter saves it into the calendar itself, where its day
+     * and time were both read; off unless chosen in the Booklight window, and it counts only while the system's permission
+     * to add events is there. [eventCalendar]: where a saved event goes that names no calendar, as that calendar's owner's
+     * address; empty for the account's own. [calendarsAsked]: the system's question for the calendars has been answered
+     * once, yes or no: the event row no longer points at it. The switch and "asked" are true of one device alone: each is
+     * believed only where that device's own mark stands beside it (`Prefs.askedHere`), so settings that came with a
+     * backup never arrive with saving on.
+     */
+    val saveEvents: Boolean = false,
+    val eventCalendar: String = "",
+    val calendarsAsked: Boolean = false,
     /** The section the Booklight window was left on (`window/Nav.kt`): it opens there again. */
     val windowPart: String = "start",
     /** How many of the ready-made prompts this installation has been given: a version that brings a new one adds it once. */
     val seeded: Int = 0,
-    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference, 6 = app commands of the user's own, 7 = first run. */
+    /** The shape of this file: 1 = Booklight 1.0, 2 = 1.1, 3 = 2.0, 4 = 2.2, 5 = ready-made prompts by reference, 6 = app commands of the user's own, 7 = first run, 8 = events saved from the panel. */
     val schema: Int = 1,
 ) {
     fun engine(): Engine = Engines.byId(engine)
@@ -176,10 +188,18 @@ fun Settings.asUpdate(): Settings = withFirstRun(FirstRun.forUpdate(firstRun()))
 /** The settings as `files/settings.json`: read once at start, written off the main thread on change. */
 class Prefs(private val context: Context, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "settings.json")
+    /**
+     * That the system's question for the calendars has been answered ([Settings.calendarsAsked]), and that events are
+     * saved from the panel ([Settings.saveEvents]), are true of this device alone, and the settings travel with a backup
+     * to another. So each counts only beside this mark, a file of its own that no backup holds (the rules name the two
+     * files that travel): settings that came to a device which was never asked say "asked", or "save", and are not
+     * believed. The switch is on only by a press in this device's own window. The mark stands while either is true.
+     */
+    private val askedHere = File(context.filesDir, "calendars.asked")
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val writing = Mutex()
     private companion object {
-        const val SCHEMA = 7
+        const val SCHEMA = 8
         /** The ready-made prompts 2.0 came with: what an installation from before schema 5 has been given. */
         const val FIRST_SEEDS = 5
     }
@@ -200,7 +220,8 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
      * to other apps and asks for no permission, with nothing granted along.
      */
     private fun load(): Settings = try {
-        if (file.exists()) current(migrate(json.decodeFromString(Settings.serializer(), file.readText()))) else started(Settings(schema = SCHEMA, first = FirstRun.Run.NEW.id))
+        if (file.exists()) current(migrate(json.decodeFromString(Settings.serializer(), file.readText()))).let { if ((it.calendarsAsked || it.saveEvents) && !askedHere.exists()) it.copy(calendarsAsked = false, saveEvents = false) else it }
+        else started(Settings(schema = SCHEMA, first = FirstRun.Run.NEW.id))
     } catch (e: Exception) {
         // The file holds what the user made (links, snippets, recipes): put it aside rather than write over it.
         // Only the kind of error is logged: the message of a parse error quotes the file.
@@ -239,6 +260,10 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
         if (s.schema < 6) s = s.copy(ownCommands = emptyList(), recipes = s.recipes.map { r -> r.copy(steps = r.steps.filter { it.kind != "open" }) })
         // Schema 7: first run. An installation that was there before gets no run, or the key's step once ([asUpdate]).
         if (s.schema < 7) s = s.asUpdate()
+        // Schema 8: an event saved straight into a calendar. The switch is only ever turned on in the Booklight window, by
+        // the user, with the system's question answered there: a file from before has none that was, so whatever it holds
+        // of the three is not taken.
+        if (s.schema < 8) s = s.copy(saveEvents = false, eventCalendar = "", calendarsAsked = false)
         return s.copy(schema = SCHEMA)
     }
 
@@ -323,8 +348,12 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
             // One write at a time; each writes the newest state, so the last one to run leaves the newest file.
             writing.withLock {
                 runCatching {
+                    val now = _state.value
+                    // (The mark first: settings that say "asked" or "save" without it are not believed, and that is the safe way to be left.)
+                    val here = now.calendarsAsked || now.saveEvents
+                    if (here != askedHere.exists()) { if (here) askedHere.createNewFile() else askedHere.delete() }
                     val tmp = File(file.parentFile, file.name + ".tmp")
-                    tmp.writeText(json.encodeToString(Settings.serializer(), _state.value))
+                    tmp.writeText(json.encodeToString(Settings.serializer(), now))
                     tmp.renameTo(file)
                 }.onFailure { Log.w(BooklightApp.TAG, "settings not saved", it) }
             }

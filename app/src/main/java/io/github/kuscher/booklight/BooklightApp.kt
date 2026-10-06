@@ -51,6 +51,8 @@ class BooklightApp : Application() {
     lateinit var notes: Notes private set
     /** The device's own model, where the system has one for apps: it answers the user's prompts. */
     lateinit var onDevice: OnDevice private set
+    /** The list of the user's calendars, once they allowed it in the window: names, colours, ids. Never an event. */
+    lateinit var calendars: io.github.kuscher.booklight.device.CalendarList private set
     /** What the pinned window shows, while there is one. */
     val pinned = kotlinx.coroutines.flow.MutableStateFlow<io.github.kuscher.booklight.pin.Pinned?>(null)
     /** Everything Booklight does, with examples: the list behind `?`, the Commands page, the tips. */
@@ -60,6 +62,8 @@ class BooklightApp : Application() {
     lateinit var commands: AppCommands private set
     /** A flight number's row. With a key of the user's own it asks a flight service: the other network code, beside [suggest]. */
     lateinit var flights: FlightsProvider private set
+    /** An event typed as a sentence: its row under the keyword `event`, and for a line typed without it. */
+    lateinit var events: io.github.kuscher.booklight.providers.Events private set
     /** What Spotify has by a name, for `play`. With a key of the user's own it asks Spotify: network code like [flights]'. */
     lateinit var songs: io.github.kuscher.booklight.providers.Songs private set
     /**
@@ -169,6 +173,19 @@ class BooklightApp : Application() {
     @Volatile var panelDp: Float? = null
     private val ownDp: Float by lazy { getSystemService(android.view.WindowManager::class.java).maximumWindowMetrics.bounds.height() / resources.displayMetrics.density }
 
+    /**
+     * What the system allows of the calendars, looked at as a panel is made and when the Booklight window has the keys
+     * again: the list is read again (or emptied, where it may no longer be read), and "Save events without opening
+     * Calendar" goes off where its permission is gone. So the switch is on only by the user's own press in the window,
+     * also after the permission was taken back and given again in the system's screens, and on a device the settings
+     * came to with a backup. (Not while a list is pretended, in a debug build: there the switch is set by its hook, to
+     * look at the row, and nothing can be written.)
+     */
+    fun lookAtCalendars() {
+        calendars.refresh()
+        if (prefs.now.saveEvents && !calendars.pretends && !(calendars.allowed && calendars.writes)) prefs.update { it.copy(saveEvents = false) }
+    }
+
     /** Every source of results. A new ability is one more line here. */
     lateinit var providers: List<Provider> private set
 
@@ -188,12 +205,14 @@ class BooklightApp : Application() {
         val pages = SettingsProvider(this, prefs)
         val keys = KeysProvider(this, prefs)
         onDevice = OnDevice(scope)
+        calendars = io.github.kuscher.booklight.device.CalendarList(this, scope)
         guide = Guide(this, prefs, commands)
         tips = Tips(this, prefs)
         flights = FlightsProvider(this, prefs, scope)
         songs = io.github.kuscher.booklight.providers.Songs(this, prefs, scope)
-        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, onDevice, guide, others = { commands.scopes(it) }, pinned = { pinned.value }, flights = flights, installed = { apps.installed(it) })
-        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), pages, CommandsProvider(this), dials, User(this, prefs, apps), commands, keys, flights, web)
+        events = io.github.kuscher.booklight.providers.Events(this, prefs, calendars, onDevice)
+        scopes = Scopes(this, prefs, dials, notes, { web.search(it) }, pages, keys, onDevice, guide, others = { commands.scopes(it) }, pinned = { pinned.value }, flights = flights, installed = { apps.installed(it) }, events = events)
+        providers = listOf(apps, CalcProvider(this, prefs), Answers(this), pages, CommandsProvider(this), dials, User(this, prefs, apps), commands, keys, flights, events, web)
         engine = SearchEngine(
             providers, historyStore.history,
             scopes = { scopes.all() },

@@ -39,10 +39,12 @@ import io.github.kuscher.booklight.device.SystemWords
 import io.github.kuscher.booklight.ui.AppIcons
 import io.github.kuscher.booklight.ui.BooklightTheme
 import io.github.kuscher.booklight.window.MainActivity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 import java.util.function.Consumer
 import kotlin.math.roundToInt
@@ -145,6 +147,8 @@ class OverlayActivity : ComponentActivity() {
         staged = due && FirstRun.overture(run, motion.on, reader, level, screenDp) != FirstRun.Overture.NONE
         // The very first opening of a new installation, the one its opening piece begins, runs at Slow whatever is set.
         val slowly = staged && FirstRun.slow(run, FirstRun.Overture.WELCOME)
+        // The list of calendars is read as the panel is made, where the user allowed it, off the main thread: typing never reads it.
+        app.lookAtCalendars()
         model = OverlayModel(app, lifecycleScope, limit = Metrics.maxRows(screenDp), screenDp = screenDp)
         // Said before anything asks the model what stands (the words to read, the window's first height).
         if (app.example != null) model.guided = true
@@ -523,6 +527,12 @@ class OverlayActivity : ComponentActivity() {
             lessonOver(lesson, r, a)
             return
         }
+        // An event is not saved while a lesson stands either: "Practice: nothing opens" holds for what is written into a
+        // calendar others may see, and Booklight could not take it back. The footer says what Enter would have done; the
+        // lesson, which is about something else, goes on.
+        if (a.effect is Effect.SaveEvent && model.lesson != null) { say(getString(R.string.first_practice_save)); return }
+        // An event that is saved: written off the main thread, with the panel locked meanwhile ([save]).
+        if (a.effect is Effect.SaveEvent) { save(r, a); return }
         // A pinned text exists nowhere else: when another pin takes its place, the footer says which one went.
         fun pins(e: Effect): Boolean = e is Effect.Pin || (e is Effect.Steps && e.steps.any(::pins))
         val replaced = app.pinned.value?.takeIf { it.kind == "text" && pins(a.effect) }?.title(this)?.let { getString(R.string.pin_replaced, if (it.length > 24) it.take(23) + "…" else it) }
@@ -549,6 +559,39 @@ class OverlayActivity : ComponentActivity() {
             word != null -> { settled = true; lifecycleScope.launch { delay(520); close() } }
             r.nudge != null -> { settled = true; model.refresh(); lifecycleScope.launch { delay(400); close() } }
             else -> close()
+        }
+    }
+
+    /**
+     * An event is saved: the one the row showed when Enter was pressed, whose values the action carries. The two rows are
+     * written into the system's calendar provider off the main thread, and until that has answered nothing else runs:
+     * the panel is locked in the turn of the Enter itself, so no second Enter or click can write the event again while
+     * the first is on its way, and it counts as run from then on, so a panel that goes meanwhile does not keep the
+     * sentence for Up, where one more Enter would save it a second time. "Saved to …" is said only once the event is
+     * in, and the panel then goes whether Shift was held or not: one that stayed would save again on the next Enter.
+     * A failure says so, unlocks, and keeps the sentence: in the field, or for Up where the panel has gone by then.
+     * The device's model is no longer asked about the sentence from here on: its answer would change the row's words
+     * under "Saved to …" into a split that was not what was written.
+     * (The work is the application's, not this window's: it is finished, and its outcome is kept, whatever becomes of the panel.)
+     */
+    private fun save(r: Result, a: Action) {
+        val app = application as BooklightApp
+        settled = true
+        ran = true
+        model.saving()
+        app.scope.launch(Dispatchers.Main) {
+            val saved = withContext(Dispatchers.IO) { app.executor.run(a.effect) }
+            if (!saved) {
+                ran = false; settled = false
+                if (leaving || isFinishing || isDestroyed) model.keep() else say(getString(R.string.failed), bad = true)
+                return@launch
+            }
+            model.learn(r, a)
+            model.used(r, a)
+            if (isDestroyed) return@launch
+            a.done?.let { say(it) }
+            delay(520)
+            close()
         }
     }
 
@@ -631,7 +674,7 @@ class OverlayActivity : ComponentActivity() {
         if (staged) getSystemService(android.view.accessibility.AccessibilityManager::class.java)?.removeTouchExplorationStateChangeListener(readerCame)
         if (current.get() === this) {
             current = WeakReference(null)
-            (application as BooklightApp).let { it.panelDp = null; it.scopes.forget(); it.onDevice.close() }
+            (application as BooklightApp).let { it.panelDp = null; it.scopes.forget(); it.events.forget(); it.onDevice.close() }
         }
         super.onDestroy()
     }

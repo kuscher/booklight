@@ -229,23 +229,57 @@ fun Connected(names: List<String>, chosen: Int, pad: Dp = CHOICE_PAD, onCard: Bo
 @Composable
 fun Pick(
     page: Page, key: String, title: String, about: String?, ids: List<String>, names: List<String>, chosen: String, mark: String? = null, place: Place? = null,
+    /** Where the button stands, when the page decides it for all its menus together ([menuBeside]); else the row decides for itself. */
+    beside: Boolean? = null,
+    /**
+     * The names are the user's own and may be long (their calendars'): the button is never wider than its place has room
+     * for, and a name that is too long for it is cut inside the button. So such a menu never decides where a page's menus
+     * stand: it stands where the others do, at every width.
+     */
+    cut: Boolean = false,
     onPick: (String) -> Unit,
 ) {
     val at = ids.indexOf(chosen).coerceAtLeast(0)
     var open by remember { mutableStateOf(false) }
-    val width = menuWidth(names)
-    val room = LocalColumn.current - INSET * 2 - (if (mark != null) MARK + 12.dp else 0.dp)
     // The button is narrow enough to stay at the row's trailing end down to the window's smallest width, on the line
     // the switches under it end on: the row's name keeps its one line beside it, and the line under the name wraps.
-    val beside = room - 12.dp - width >= 120.dp
+    @Suppress("NAME_SHADOWING") val beside = beside ?: (cut || menuBeside(names, mark != null))
+    // (Beside the row's name: what the row has, less the room the name keeps: for a button that is cut to its room, the
+    // name's own one line, so that the button never breaks the name in two. Under the text: the text's own width.)
+    val keep = if (cut && beside) maxOf(MENU_TEXT, widths(listOf(title), MaterialTheme.typography.bodyLarge).first() + 8.dp) else MENU_TEXT
+    val most = if (!cut) null else menuRoom(mark != null, beside, keep)
     val button: @Composable () -> Unit = {
         Box(Modifier.padding(top = if (beside) 0.dp else 8.dp, bottom = if (beside) 0.dp else 2.dp)) {
-            MenuButton(names, at, open, { if (it) page.selected = key; open = it }) { onPick(ids[it]) }
+            MenuButton(names, at, open, { if (it) page.selected = key; open = it }, most = most) { onPick(ids[it]) }
         }
     }
     PageRow(page, key, title, about, mark = mark?.let { m -> { MarkIcon(m) } }, onStep = { d -> ids.getOrNull(at + d)?.let { onPick(it); true } ?: false }, onEnter = { open = true },
         below = if (beside) null else button, place = place, trailing = if (beside) ({ button() }) else null)
 }
+
+/**
+ * Whether the button of a menu of these names has room at the trailing end of its row, beside the row's name. A page
+ * with more than one menu asks this for all of them and puts them all in the same place, as it does for its choices.
+ */
+@Composable
+fun menuBeside(names: List<String>, mark: Boolean): Boolean = menuWidth(names) <= menuRoom(mark, beside = true)
+
+/**
+ * The most room the button of a menu has in its row: at the row's trailing end ([beside]), what the row has for its text
+ * and its control, less what the row's name keeps ([keep]: 120 dp, or the name's own one line) and the 12 between them;
+ * under the text, the text's own width.
+ */
+@Composable
+fun menuRoom(mark: Boolean, beside: Boolean, keep: Dp = MENU_TEXT): Dp {
+    val room = LocalColumn.current - INSET * 2 - (if (mark) MARK + 12.dp else 0.dp)
+    return if (beside) room - 12.dp - keep else room
+}
+
+/** The least room a row's name keeps beside the button of its menu. */
+private val MENU_TEXT = 120.dp
+
+/** The narrowest the button of a menu gets where its names are cut to the row's room: the arrow, and a few letters to tell the name by. */
+private val MENU_LEAST = 96.dp
 
 /** How wide the button of a menu of these names is: 16, the longest name, 8, the arrow (or the check) of 20, 16. */
 @Composable
@@ -255,18 +289,20 @@ fun menuWidth(names: List<String>): Dp = widths(names, MaterialTheme.typography.
  * The button of a choice of five or more: it shows the chosen name and opens a menu of all of them, exactly as
  * wide as itself, with the keys on the chosen name. [stop]: it is a stop for the keys itself (in an editor,
  * where Tab goes through everything), and has them once it is pressed; on a page it is not: its row is.
+ * [most]: the widest it may be, where its names may be longer than its place has room for: a name is then cut
+ * inside the button, and in the menu, with an ellipsis.
  */
 @Composable
-fun MenuButton(names: List<String>, at: Int, open: Boolean, onOpen: (Boolean) -> Unit, stop: Boolean = false, onPick: (Int) -> Unit) {
+fun MenuButton(names: List<String>, at: Int, open: Boolean, onOpen: (Boolean) -> Unit, stop: Boolean = false, most: Dp? = null, onPick: (Int) -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    val width = menuWidth(names)
+    val width = menuWidth(names).let { w -> if (most == null) w else minOf(w, maxOf(most, MENU_LEAST)) }
     val focus = remember { FocusRequester() }
     Box {
         Button(
             { if (stop) runCatching { focus.requestFocus() }; onOpen(true) }, Modifier.width(width).height(CONTROL).focusRequester(focus).focusProperties { canFocus = stop },
             colors = ButtonDefaults.buttonColors(containerColor = scheme.ground, contentColor = scheme.onSurface), contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
         ) {
-            Text(names[at], Modifier.weight(1f), maxLines = 1, softWrap = false)
+            Text(names[at], Modifier.weight(1f), maxLines = 1, softWrap = false, overflow = if (most != null) TextOverflow.Ellipsis else TextOverflow.Clip)
             val turn by animateFloatAsState(if (open) 180f else 0f, LocalMotion.current.pop(), label = "arrow")
             Icon(Symbols.of("more"), null, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = scheme.onSurfaceVariant)
         }
@@ -276,7 +312,7 @@ fun MenuButton(names: List<String>, at: Int, open: Boolean, onOpen: (Boolean) ->
             LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
             names.forEachIndexed { i, name ->
                 SelectableDropdownMenuItem(
-                    selected = i == at, onClick = { onOpen(false); onPick(i) }, text = { Text(name, maxLines = 1) }, shapes = MenuDefaults.itemShape(i, names.size),
+                    selected = i == at, onClick = { onOpen(false); onPick(i) }, text = { Text(name, maxLines = 1, overflow = if (most != null) TextOverflow.Ellipsis else TextOverflow.Clip) }, shapes = MenuDefaults.itemShape(i, names.size),
                     modifier = if (i == at) Modifier.focusRequester(first) else Modifier,
                     trailingContent = if (i == at) ({ Icon(Symbols.check, null, Modifier.size(20.dp)) }) else null,
                     colors = MenuDefaults.selectableItemColors(containerColor = scheme.card, selectedContainerColor = scheme.secondaryContainer, selectedTextColor = scheme.onSecondaryContainer, selectedTrailingContentColor = scheme.onSecondaryContainer),

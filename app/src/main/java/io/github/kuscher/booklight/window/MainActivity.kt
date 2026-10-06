@@ -1,9 +1,13 @@
 package io.github.kuscher.booklight.window
 
 import androidx.compose.animation.ExitTransition
+import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import android.provider.Settings as SystemSettings
 import android.view.KeyEvent
 import android.view.KeyboardShortcutGroup
 import android.view.KeyboardShortcutInfo
@@ -13,6 +17,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -138,6 +143,56 @@ class MainActivity : ComponentActivity() {
      */
     var guides = false
 
+    /** Who asked the system for the Calendar permission, and when: the answer is handed on once. */
+    private var answered: ((Boolean) -> Unit)? = null
+    private var askedAt = 0L
+    /** As the question was asked, the system said it would show it (it says so after one refusal, until the second). */
+    private var wouldAsk = false
+
+    /**
+     * The system's answer to its own question for the Calendar permission, read here and nowhere else: the list of
+     * calendars is read again (or emptied), the settings note that the question has been answered once, and whoever
+     * asked hears whether all that was asked for was given.
+     */
+    private val calendarQuestion = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { got ->
+        val app = application as BooklightApp
+        val then = answered
+        answered = null
+        // An answer about nothing: the request was interrupted or replaced before the system answered it. Nothing was
+        // asked and nothing refused: nothing is noted, and no page opens.
+        if (got.isEmpty()) { then?.invoke(false); return@registerForActivityResult }
+        val given = got.values.all { it }
+        app.calendars.refresh()
+        if (!app.prefs.now.calendarsAsked) app.prefs.update { it.copy(calendarsAsked = true) }
+        // Refused for good, the system shows no question and says no at once: Booklight's page in the system's Settings
+        // is then the one place where it can still be allowed, so that page opens. The system's own signs first: it had
+        // not said it would ask (it says so after one refusal: that question was shown, and "no" to it is an answer, not
+        // a reason to open a page), and it does not say so now. What those two cannot tell apart, a question that was
+        // never asked and was put away, from one that is refused for good, the time tells: no one answers in a third of a second.
+        if (!given && !wouldAsk && got.filterValues { !it }.keys.none { shouldShowRequestPermissionRationale(it) } && SystemClock.uptimeMillis() - askedAt < NO_QUESTION_MS) systemPage()
+        then?.invoke(given)
+    }
+
+    /**
+     * Asks the system for the Calendar permission: to read the list of calendars and, with [write], to add an event too.
+     * Only ever for a press on a row of this window: nothing else in Booklight asks. [then] hears whether all of it was given.
+     * One question at a time: a second press before the system has answered the first (Enter twice) is that same question,
+     * and asks nothing. Asked again, the system would answer the second with nothing at once, that empty answer would be
+     * taken for the first's, and the real answer would find nobody to hear it: the switch would stay off though it was allowed.
+     */
+    fun askCalendar(write: Boolean, then: (Boolean) -> Unit = {}) {
+        if (answered != null) return
+        val asked = if (write) arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR) else arrayOf(Manifest.permission.READ_CALENDAR)
+        answered = then
+        askedAt = SystemClock.uptimeMillis()
+        wouldAsk = asked.any { shouldShowRequestPermissionRationale(it) }
+        // (A question that could not be put at all leaves nothing pending: the next press asks again.)
+        runCatching { calendarQuestion.launch(asked) }.onFailure { answered = null }
+    }
+
+    /** Booklight's own page in the system's Settings: where a permission is taken back, and given after it was refused for good. */
+    fun systemPage() { runCatching { startActivity(Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))) } }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -202,6 +257,18 @@ class MainActivity : ComponentActivity() {
         const val PAGE_FLIGHTS = "flights"
         /** The same for the row where the key for Spotify is set: it opens wherever the flight key's row does. */
         const val PAGE_SONGS = "songs"
+        /** Privacy, on the row where the calendars are allowed: where the event row's "Allow…" leads. */
+        const val PAGE_CALENDARS = "calendars"
+        /** An answer from the system sooner than this was no person's: it showed no question. */
+        private const val NO_QUESTION_MS = 300L
+
+        /** The section and the row a start of the window may ask for by one word. */
+        fun rowFor(goto: String?): Pair<Part, String>? = when (goto) {
+            PAGE_FLIGHTS -> Part.LABS to FLIGHT_KEY_ROW
+            PAGE_SONGS -> Part.LABS to SONG_KEY_ROW
+            PAGE_CALENDARS -> Part.PRIVACY to CALENDARS_ROW
+            else -> null
+        }
         const val PRIVACY_URL = "https://googlebook.studio/privacy/booklight"
         /** The window that is open, for pictures of it (debug builds). */
         var current: java.lang.ref.WeakReference<MainActivity> = java.lang.ref.WeakReference(null)
@@ -226,7 +293,7 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
      * The section the rail says is open, and the one whose page is on screen: the page follows a moment later. The
      * window opens on the section it was left on (a first run: Start), unless the panel asked for one.
      */
-    var part by remember { mutableStateOf(Part.of(goto) ?: if (goto == MainActivity.PAGE_FLIGHTS || goto == MainActivity.PAGE_SONGS) Part.LABS else if (edit != null) Part.COMMANDS else Part.of(s.windowPart) ?: Part.START) }
+    var part by remember { mutableStateOf(Part.of(goto) ?: MainActivity.rowFor(goto)?.first ?: if (edit != null) Part.COMMANDS else Part.of(s.windowPart) ?: Part.START) }
     var shown by remember { mutableStateOf(part) }
     val rail = remember { NavState(part, bar = false) }
     val bar = remember { NavState(part, bar = true) }
@@ -265,6 +332,9 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
     LifecycleResumeEffect(Unit) { resumed++; onPauseOrDispose { } }
     val windowFocus = LocalWindowInfo.current.isWindowFocused
     LaunchedEffect(windowFocus) { if (windowFocus) resumed++ }
+    // The list of calendars is read again whenever the window has the keys again (the permission may have been given or
+    // taken back in the system's own screens meanwhile). Where it is not allowed this asks the system nothing.
+    LaunchedEffect(resumed) { app.lookAtCalendars() }
     /** "Open Keyboard shortcuts" was pressed: the line about the key says what to do next, whichever section was looked at in between. */
     val askedForKey = remember { mutableStateOf(false) }
     // The rows know whether the ring is on the page: the one it is on takes its focused shape.
@@ -285,7 +355,8 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
     LaunchedEffect(goto) {
         // "Set up times" on a flight's row: Labs, with the keys on the row where the key goes.
         // "Set up playing" on the row of `play`: the same, on the row where Spotify's key goes.
-        if (goto == MainActivity.PAGE_FLIGHTS || goto == MainActivity.PAGE_SONGS) { picked[Part.LABS] = if (goto == MainActivity.PAGE_SONGS) SONG_KEY_ROW else FLIGHT_KEY_ROW; landing = true; go(Part.LABS); inNav = false; entering = true; byKeys = true; onGone(); return@LaunchedEffect }
+        // "Allow…" on an event's row: Privacy, on the row where the calendars are allowed.
+        MainActivity.rowFor(goto)?.let { (to, row) -> picked[to] = row; landing = true; go(to); inNav = false; entering = true; byKeys = true; onGone(); return@LaunchedEffect }
         val to = Part.of(goto) ?: return@LaunchedEffect
         go(to); inNav = false
         if (to == Part.COMMANDS) { commands.yours = false; commands.ask = true } else entering = true
@@ -529,9 +600,9 @@ private fun Window(app: BooklightApp, s: Settings, edit: Pair<String, String>?, 
                                         Part.COMMANDS -> CommandsPage(page, app, s, commands, edit, onEdited, onTyping = { editing = it; if (!it) focus.requestFocus() }, onGrow = ::follow, arrive, from)
                                         Part.LOOK -> LookPage(page, s, app, arrive, from)
                                         // (Guarded: the page says "no field has the keys" once more as the window closes, when nothing can take them.)
-                                        Part.RESULTS -> ResultsPage(page, app, s, arrive, from)
+                                        Part.RESULTS -> ResultsPage(page, app, s, resumed, arrive, from)
                                         Part.LABS -> LabsPage(page, app, arrive, from, onTyping = { editing = it; if (!it) runCatching { focus.requestFocus() } })
-                                        Part.PRIVACY -> PrivacyPage(page, app, resumed, arrive, from)
+                                        Part.PRIVACY -> PrivacyPage(page, app, s, resumed, arrive, from)
                                     }
                                 }
                             }

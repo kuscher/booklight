@@ -4,7 +4,7 @@
 
 ## 1. Principles
 
-1. **One sheet of flat glass, one coloured thing.** Veil, white outline, black hairline; the selection pill is the only chromatic surface. (One exception since 3.0, with the owner's word of 2 October 2026: the badge of a flight's row, green or amber, §14.)
+1. **One sheet of flat glass, one coloured thing.** Veil, white outline, black hairline; the selection pill is the only chromatic surface. (One exception since 3.0, with the owner's word of 2 October 2026: the badge of a flight's row, green or amber, §14. And one sample of a colour that is the user's own, as a swatch is: the dot of a calendar's colour, §18.)
 2. **A highlight is the opposite material of its ground:** colour on glass (the pill), glass on colour (the armed chip). One per level, and it travels; never drawn twice, never faded between two places.
 3. **Sizes are settled before anything moves.** Every slot reserves its final size; motion changes edges, offsets and alpha, never a text measurement.
 4. **Things open from where they are:** the panel from a seam, a chip from the typed keyword, a track from its number. Leading edge first.
@@ -700,4 +700,51 @@ five tools flick out a beat apart. At the hand-over the handle is pressed, the t
 the caret and the night lifts without an edge; the handle travels to row one's seat and becomes the list's
 pill. The show then types on `Show`'s script (core) with the panel's own motion, and its first rows stand in the
 frame the pill arrives. Nothing of the two is drawn outside the glass, and the window is never resized in width.
+
+## 18. An event’s row (5 October 2026)
+
+`docs/design/event-sentence/design.md`. The preview row of §3c, 92 dp, with nothing new drawn but a dot.
+
+- **Two lines of slots, always.** The caption, then `WHEN` and `WHERE`, then `TITLE` and, where the list of
+  calendars is known, `CALENDAR` (the title takes what its line has, the calendar a share of at most 200 dp: on
+  the first line, beside "When" and the strip, a title had room for two words). Both lines stand from the first letter; an empty slot is its label and the rule.
+  So the row's three lines never change their places: when a place or a calendar is read, by the rules at a key
+  or by the device's model a moment later, a value changes where it stands and nothing moves. (One line cannot
+  hold four slots beside a strip of four actions: at 720 dp the third slot of the old row was already cut.)
+- **The dot.** A calendar's own colour, 10 dp, round, before the calendar's name in its slot and in the icon
+  column of its line in the list of calendars. It is a sample of something that is the user's, as a colour's
+  swatch is, not a state: no word and no line of the row is coloured, and the dot never says anything a word
+  does not say beside it.
+- **"When" is never cut.** What is saved stands on the glass whole: `WHEN` takes the room its words need, never
+  ends in an ellipsis, and `WHERE`, the slot beside it, is the one that gives way. So its
+  words are made short (core `Spans`, 31 letters at the most in English and German, which leaves the place 96 dp
+  beside the widest strip): "Wed 7 Oct, 11:30 AM–12:30 PM"; a range of days in one month with both weekdays and
+  the month once, "Wed 14 – Fri 16 Oct, all day", across months without the weekdays, "28 Oct – 2 Nov, all day";
+  the year wherever it is not this year's, after the day or once after a range's last day; and where a form
+  would be longer, first the weekday goes, then the room round the dash, then the dot of a month's short name.
+- **A guess is a step lighter** (ink 0.80), as ever: "When" where the day or the time was not typed, where the
+  time does not say its half of the day, where the sentence asks for a repeat or holds a second day or time, and
+  where anything else of it was the parser's to choose (a year, "next Tuesday", "12/10"); the
+  calendar where it was not typed and is the one a saved event goes to, and where only the start of its name is.
+- **The strip.** Create · Copy · Calendar. With "Save events without opening Calendar" on: Save · Open · Copy ·
+  Calendar, and for a guess Open first, with the footer's quiet line saying why. "Open" is the short word every
+  row has: the long one ("Open in Calendar"), unrolled, left the title six letters at 720 dp. Save has the
+  check, like every action that acts at once and says so in the footer; it is not a removal and not red.
+- **The caption says what Enter does on the armed action**: "New event. Enter saves it." only while Save is
+  armed, "New event. Enter copies it." on Copy, "New event. Enter lists your calendars." on the Calendar stop,
+  and "New event. Opens in your calendar to save." on Create and Open. When the arming moves it rolls into
+  place, as an answer's caption does. A line typed without the keyword that begins like an everyday search
+  ("book …", "schedule …") says, with the switch on, "An event, or a search? Opens in your calendar to save."
+- **The footer's quiet line says why Enter does not save** though the switch is on, one reason at a time: the
+  day or the time is a guess; a repeat is set in Calendar; the calendar takes no new events; its name is not
+  finished; it is not one of yours; “book” often begins a search.
+- **Calendar** is a stop that opens a list under the row, as Window does on an app's row (§16): Tab only moves,
+  Enter opens, the row keeps the word and the turned arrow while the pill is on a line. Twelve lines at most,
+  and no more than the screen has room for under the row.
+- **The field** shows what is left of a calendar's name in grey after the text, as it shows an app's; Right takes it.
+- **The window.** "Calendars" is a row of Privacy › What Booklight may use, with "Allow…" as its word, like
+  Brightness. Results has a group "Events": a switch, and a menu button for "New events go to", which stands
+  where the search engine's stands at every width (both at the rows' ends, or both under their text): the search
+  engines' names decide which, and the calendar's button takes the room that place leaves, its name cut inside
+  the button where the room ends.
 

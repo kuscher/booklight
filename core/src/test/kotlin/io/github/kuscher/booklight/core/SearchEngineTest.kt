@@ -71,6 +71,64 @@ class SearchEngineTest {
         assertEquals(listOf("apps", "web", "flights"), few.map { it.provider })
     }
 
+    /** A line read as a sentence (an event typed the way it is said), and the question for Gemini that ranks as a match where the line is five words long. */
+    private fun sentence(score: Double = 0.5) = object : Provider {
+        override val id = "events"
+        override suspend fun query(q: Query) = listOf(Result(SearchEngine.SENTENCE + "event", id, Kind.OTHER, "Event", icon = Icon.Symbol("event"), score = score,
+            actions = listOf(Action("create", "Create", Effect.InsertEvent("x", 0, 1, false, ""))), learnable = false))
+    }
+    private val gemini = object : Provider {
+        override val id = "gemini"
+        override suspend fun query(q: Query) = listOf(Result("web:gemini", id, Kind.WEB, "Ask Gemini", icon = Icon.Symbol("spark"), score = 0.79,
+            actions = listOf(Action("ask", "Ask", Effect.AskGemini(q.text))), learnable = false))
+    }
+
+    @Test fun aSentenceStandsUnderWhatTheDeviceMatchesAndOverTheWeb() = runTest {
+        // Nothing of the device matches: the sentence's row is row one, over Gemini's question and the web search.
+        val r = engine(History(), sentence(), gemini).search(Query("add dinner with sam tomorrow at 7pm"))
+        assertEquals(listOf("sentence:event", "web:gemini", "web:search"), r.map { it.id })
+        // Something of the device matches, however weakly, and however the sentence's row is scored: that comes first.
+        for (score in listOf(0.01, 0.5, 1.0, 5.0)) {
+            val both = engine(History(), sentence(score), gemini).search(Query("ca"))
+            assertEquals("$score", listOf("app:Camera", "app:Canvas", "app:Calendar", "app:Calculator", "sentence:event", "web:gemini", "web:search"), both.map { it.id })
+        }
+        // An answer is the device's too.
+        assertEquals(listOf("calc", "sentence:event", "web:gemini", "web:search"), engine(History(), sentence(), gemini).search(Query("2+2")).map { it.id })
+    }
+
+    @Test fun aSentencesRowIsNeverCrowdedOut() = runTest {
+        // A list too short for everything: the device's rows give way, the sentence's row and the web's keep their places.
+        val r = engine(History(), sentence(), gemini).search(Query("ca"), limit = 4)
+        assertEquals(listOf("app:Camera", "app:Canvas", "sentence:event", "web:search"), r.map { it.id })
+        assertEquals(listOf("sentence:event", "web:search"), engine(History(), sentence(), gemini).search(Query("ca"), limit = 2).map { it.id })
+    }
+
+    @Test fun theWebsOwnRowsStandUnderASentenceAndASentenceIsNotLearned() = runTest {
+        // A typed address is the web's, like the question for Gemini: under the sentence's row, over the web search.
+        val address = object : Provider {
+            override val id = "web"
+            override suspend fun query(q: Query) = listOf(Result("web:url", id, Kind.WEB, "example.com", icon = Icon.Symbol("globe"), score = 0.95, actions = listOf(Action("open", "Open", Effect.OpenUrl("https://example.com")))))
+        }
+        assertEquals(listOf("sentence:event", "web:url", "web:search"), engine(History(), sentence(5.0), address).search(Query("add dinner tomorrow 7pm at example.com")).map { it.id })
+        // Running the sentence's row teaches nothing: what was typed is the user's appointment, and is kept nowhere.
+        val h = History()
+        val e = engine(h, sentence())
+        val q = Query("add dinner with sam tomorrow at 7pm")
+        val row = e.search(q).first()
+        assertEquals("sentence:event", row.id)
+        e.picked(q, row); e.picked(q, row)
+        assertTrue(h.items().isEmpty())
+        assertEquals(History.Data(), h.data())
+    }
+
+    @Test fun withoutASentenceTheOrderIsAsItWas() = runTest {
+        // Gemini's question for a line that reads as one ranks as a match: over a weaker local row, as before.
+        val r = engine(History(), gemini).search(Query("clr"))
+        assertEquals(listOf("web:gemini", "app:Calendar", "app:Calculator", "web:search"), r.map { it.id })
+        // With one, those local rows stand over it, and Gemini's question under it.
+        assertEquals(listOf("app:Calendar", "app:Calculator", "sentence:event", "web:gemini", "web:search"), engine(History(), sentence(), gemini).search(Query("clr")).map { it.id })
+    }
+
     @Test fun answersGoFirst() = runTest {
         val r = engine().search(Query("2+2"))
         assertEquals("4", r.first().answer)

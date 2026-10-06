@@ -18,6 +18,7 @@ import io.github.kuscher.booklight.core.Under
 import io.github.kuscher.booklight.core.Clip
 import io.github.kuscher.booklight.core.Offer
 import io.github.kuscher.booklight.device.Clipboard
+import io.github.kuscher.booklight.providers.Events
 import io.github.kuscher.booklight.providers.FlightsProvider
 import io.github.kuscher.booklight.providers.Songs
 import io.github.kuscher.booklight.providers.WebProvider
@@ -158,6 +159,10 @@ class OverlayModel(
 
     init {
         scope.launch { app.prefs.state.collect { settings = it } }
+        // The list of calendars is read as a panel is made, off the main thread, and can land after an event's row was built
+        // (the last text, brought back with Up in the panel's first moment): that row has no calendar and no Save yet. The
+        // list is made anew for the same text then. Only where an event's row stands: nothing else reads the calendars.
+        if (!demo) scope.launch { app.calendars.now.drop(1).collect { if ((if (opened != null) closed else results).any { it.provider == Events.ID }) refresh() } }
         // What the system says about its model (there, being fetched, how far) changes a prompt's rows.
         if (!demo) {
             scope.launch {
@@ -1068,6 +1073,9 @@ class OverlayModel(
         // check from here on, so that a leave turned round shows "Your key works" at rest, not a key held down for good.)
         folding?.cancel(); folding = null
         landed?.cancel(); landed = null; keyDown = false; keyChecked = true
+        // The device's model is not asked on behalf of a panel that is going: an event's sentence that was being split
+        // stays as the rules read it, also where the leave is turned round.
+        if (lookingFor == Events.SCOPE || lookingFor == Events.SENTENCE) { looking?.cancel(); looking = null }
         if (choicesUp && seen) step { FirstRun.answer(it, FirstRun.Answer.DONE) }
     }
 
@@ -1337,12 +1345,31 @@ class OverlayModel(
         return true
     }
 
-    /** The rest of the selected row's name, shown grey after the typed text ("chr" + "ome"). */
+    /**
+     * The rest of the selected row's name, shown grey after the typed text ("chr" + "ome"). On an event's row: the rest of
+     * the calendar's name it read by its start at the very end of the sentence ("… to tea" + "m"), which Right takes ([take]).
+     */
     val completion: String? by derivedStateOf {
         val r = current
+        // (Only for the rows of what the field holds now, and not after a space: the word is finished then.)
+        // ([onScreen] reads what the list was made for, which is no state of Compose's: this is worked out again because
+        // [search] writes that before it sets the rows, which are. Keep that order.)
+        val name = (r?.body as? Body.Slots)?.completes?.takeIf { onScreen && opened == null && query.isNotEmpty() && !query.last().isWhitespace() }
         // (A flight's row is named "LH 455 · Lufthansa": that is what the number is, not the rest of what was typed.)
-        if (chip != null || r == null || r.answer != null || r.body != null || r.nudge != null || r.kind == Kind.WEB || r.kind == Kind.SUGGESTION || r.kind == Kind.SCOPE || r.provider == FlightsProvider.ID) null
+        if (name != null) name
+        else if (chip != null || r == null || r.answer != null || r.body != null || r.nudge != null || r.kind == Kind.WEB || r.kind == Kind.SUGGESTION || r.kind == Kind.SCOPE || r.provider == FlightsProvider.ID) null
         else Matcher.completion(query, r.title)
+    }
+
+    /**
+     * Right at the end of the text, on an event's row that shows the rest of a calendar's name in grey: the rest is typed,
+     * as if by hand. False where there is nothing of that kind to take: Right then goes along the row's actions, as ever.
+     */
+    fun take(): Boolean {
+        val rest = (current?.body as? Body.Slots)?.completes?.takeIf { it == completion } ?: return false
+        // (The name as the calendar has it, in place of its typed start: "to te" becomes "to Team", "to the ti" "to The Tigers".)
+        type(app.events.completed(query, keyword = current?.id == Events.SCOPE) ?: (query + rest))
+        return true
     }
 
     fun type(text: String) {
@@ -1431,6 +1458,8 @@ class OverlayModel(
         // A prompt: ask the system what it has, and have its model loaded by the time the text is typed. (An app's chip has
         // a question for the model only behind Play's arrow.)
         if (s is Answering && (s !is AppChip || Act.PLAY in s.acts)) scope.launch { if (app.onDevice.check() == OnDevice.State.READY && s.eager) app.onDevice.warm() }
+        // An event: the model may be asked to split its sentence, so it is loaded as the keyword is entered. Nothing is asked by this.
+        if (s.key == EVENT) scope.launch { if (app.onDevice.check() == OnDevice.State.READY) app.onDevice.warm() }
         // An app's chip shows only the app: a screen reader is told which action is armed, and what to type.
         if (s is AppChip) act?.let { onTell(app.getString(R.string.a11y_chip, s.name, label(it), wanted(s, it))) }
     }
@@ -1611,10 +1640,13 @@ class OverlayModel(
             val took = (System.nanoTime() - t0) / 1000
             withContext(Dispatchers.Main.immediate) {
                 val was = current?.id
+                // (The selected row as it stood, or the row whose list is open.)
+                val before = if (opened != null) closed.firstOrNull { it.id == opened } else current
                 lastSearchMicros = took; resultsFor = For(key, text, armedAct)
                 // A row that is open stays open over a refresh (something ran with Shift held), if it is still there.
                 val parent = if (keep) local.firstOrNull { it.id == opened } else null
                 if (parent != null) {
+                    changed(before, parent)
                     zeroUp = false
                     closed = local
                     results = listOf(parent) + actionRows(parent, list ?: Behind.ARROW)
@@ -1637,8 +1669,13 @@ class OverlayModel(
                 back?.takeIf { key == null && it.text == text }?.place(local, ::stops)?.let { (row, action) -> selected = row.coerceAtLeast(0); armed = action; touched = true }
                 ask()
                 look()
+                // A list made anew under the selection (not for a key: the calendars were read, something ran with Shift held) that
+                // brings an event's row back changed: an Enter in that moment was pressed for the row as it stood, and is not taken.
+                if (keep) changed(before, current)
                 // An Enter that came before these rows did: now it runs, by the same rules as any Enter (a scope's row enters it, a delete waits).
-                whenReady?.let { run -> whenReady = null; enter(run) }
+                // Never where it would save an event: that row was not on the glass when the key was pressed, and what is written into
+                // a calendar is what the row showed. The row stands now, and a new Enter saves it.
+                whenReady?.let { run -> whenReady = null; if (chosen()?.second?.effect !is Effect.SaveEvent) enter(run) }
             }
             // Suggestions come from the network: after a pause in typing, never holding up the
             // list, and dropped if the text has moved on (this job is cancelled by then).
@@ -1646,7 +1683,8 @@ class OverlayModel(
             // What is meant for one app is not sent to the search engine either: an address of an app's own, or an app's name
             // and what to look for in it ("spotify daft punk") once that app leads for words after its name. While the web
             // leads, such a text is an ordinary web search, and its suggestions come as for any other.
-            if (local.any { app.engine.leads(it) || it.id == WebProvider.IN_APP }) return@launch
+            // Nor a line that reads as an event: it is the user's own appointment, and goes to the calendar.
+            if (local.any { app.engine.leads(it) || it.id == WebProvider.IN_APP || it.id == Events.SENTENCE }) return@launch
             delay(SUGGEST_PAUSE_MS)
             val more = app.suggest.fetch(text)
             if (more.isEmpty()) return@launch
@@ -1691,7 +1729,12 @@ class OverlayModel(
     /** A lookup for [r] is on its way. */
     private fun lookedUp(r: Result) = looking?.isActive == true && lookingFor == r.id
     private fun needsAnswer(e: Effect) = e == FlightsProvider.WAIT || e == Songs.WAIT
-    private suspend fun answer(row: Result, pause: Boolean): Result? = if (row.provider == Songs.PROVIDER) app.songs.answer(row.id, pause) else app.flights.answer(row.id, pause)
+    private suspend fun answer(row: Result, pause: Boolean): Result? = when (row.provider) {
+        Songs.PROVIDER -> app.songs.answer(row.id, pause)
+        // (An event's row: the device's model, asked to split the sentence. Nothing waits for it, and no Enter does.)
+        Events.ID -> app.events.answer(row, pause)
+        else -> app.flights.answer(row.id, pause)
+    }
 
     /** The list has landed: a flight's row that stands waiting for its answer is looked up, once, after a pause in typing. */
     private fun look() {
@@ -1703,7 +1746,9 @@ class OverlayModel(
         // A flight's row wherever it stands. The row that plays only as row one, and only where it may be asked unasked: under
         // an app's own row ("play store") the text is that app's name, and is sent nowhere unless the user asks for it. The
         // row is there only while Play is armed on an app's chip: under Search nothing is looked up.
-        (results.firstOrNull { app.flights.waits(it) } ?: results.firstOrNull()?.takeIf { app.songs.asks(it) })?.let { lookUp(it, pause = true) }
+        // An event's row whose sentence the rules left in pieces: the device's model is asked to split it, once the typing
+        // has rested. Only here, where a list has landed: never because the user went to the row, and never without the rest.
+        (results.firstOrNull { app.flights.waits(it) } ?: results.firstOrNull()?.takeIf { app.songs.asks(it) } ?: results.firstOrNull { app.events.asks(it) })?.let { lookUp(it, pause = true) }
     }
 
     /**
@@ -1732,6 +1777,22 @@ class OverlayModel(
             val slow = launch { delay((if (pause) LOOK_PAUSE_MS else 0L) + LOOK_LIGHT_MS); lit = true; looked = true }
             val got = try { answer(row, pause) } finally { slow.cancel(); if (lit) looked = false }
             if (got == null) return@launch
+            if (got.provider == Events.ID) {
+                // The device's model has split an event's sentence. Its answer is for the text its row was made from: it lands
+                // only if, in this very moment, the field still holds that text and its list is the one on the glass. (Every
+                // key cancels the asking, in [search]; this is asked all the same, here, where the row is changed.)
+                val was = (if (opened != null) closed else results).firstOrNull { it.id == got.id }
+                // (The text the answer was made from is the asked row's own, whatever the row on the glass says by now.)
+                val asked = (row.body as? Body.Slots)?.ask
+                if (!onScreen || was == null || asked == null || asked.trim() != query.trim()) return@launch
+                land(got)
+                // Where it changed what the row shows, with the pill on it: an Enter in that moment was pressed for the row as
+                // it stood, and is not taken (a new press, a moment later, is). And the row is said again to a screen reader,
+                // slot by slot. An answer that split the sentence as the rules had changes nothing, and counts as nothing.
+                if (changed(was, got) && (current?.id == got.id || opened == got.id))
+                    (got.body as? Body.Slots)?.let { b -> onTell((listOf(got.title) + b.said { app.getString(R.string.a11y_guess, it) } + listOfNotNull(b.footer)).joinToString(", ")) }
+                return@launch
+            }
             land(got)
             // What Spotify found is said once to a screen reader: the song, who it is by, and what Enter does with it.
             if (got.provider == Songs.PROVIDER && current?.id == got.id) got.actions.firstOrNull { it.id == Act.PLAY.id && !it.off && !needsAnswer(it.effect) }
@@ -1746,6 +1807,27 @@ class OverlayModel(
                         ?: got.actions.getOrNull(got.armed)?.takeIf { got.provider == Songs.PROVIDER && id == Act.PLAY.id && it.id == Act.SEARCH.id })?.let { run(got, it) }
             }
         }
+    }
+
+    /**
+     * An event is being saved (`OverlayActivity.save` has locked the panel): the device's model is no longer asked about
+     * its sentence, and an answer on its way is given up. The row stands as it was when Enter was pressed: those are the
+     * words that are written, and "Saved to …" is said under them.
+     */
+    fun saving() { looking?.cancel(); looking = null; whenLooked = null }
+
+    /**
+     * An event's row took the place of itself ([was], then [now]) by something other than a key: the model's answer, the
+     * calendars read, a list made anew. Where that changed what the row shows or what its actions do, and the pill is on
+     * the row (or on a line of its open list), Enter is not taken for a moment ([filledAt]): a press on its way was for
+     * the row as it stood. True where it did. (What only says whether the model may still be asked is no change.)
+     */
+    private fun changed(was: Result?, now: Result?): Boolean {
+        if (was == null || now == null || was.id != now.id || now.provider != Events.ID) return false
+        fun shown(r: Result) = (r.body as? Body.Slots)?.copy(ask = null) to r.actions
+        if (shown(was) == shown(now)) return false
+        if (current?.id == now.id || opened == now.id) filledAt = SystemClock.uptimeMillis()
+        return true
     }
 
     /**
@@ -1955,9 +2037,12 @@ class OverlayModel(
     /** For `./bl debug key more` and `key window`: the arming goes to the stop of one of the row's lists, if the row has it. */
     fun armList(behind: Behind) { current?.let { armAt(stop(it, behind)) } }
 
-    private fun actionRows(r: Result, behind: Behind): List<Result> = r.actions.filter { it.more && it.behind == behind }.map { a ->
+    private fun actionRows(r: Result, behind: Behind): List<Result> = r.actions.filter { it.more && it.behind == behind }
+        // (An event's list of calendars is the longest list under the tallest row: on a low screen it has as many lines as fit.)
+        .let { if (behind == Behind.CALENDAR) it.take(Metrics.maxLines(screenDp, r)) else it }.map { a ->
         Result(
-            id = "act:${r.id}:${a.id}", provider = r.provider, kind = Kind.ACTION, title = a.label, icon = io.github.kuscher.booklight.core.Icon.Symbol(a.symbol),
+            // (A line that is told from the others by a colour, a calendar's, is marked by a dot of it.)
+            id = "act:${r.id}:${a.id}", provider = r.provider, kind = Kind.ACTION, title = a.label, icon = io.github.kuscher.booklight.core.Icon.Swatch.of(a.symbol) ?: io.github.kuscher.booklight.core.Icon.Symbol(a.symbol),
             score = 1.0, actions = listOf(a.copy(more = false)), learnable = false,
         )
     }
@@ -2102,7 +2187,26 @@ class OverlayModel(
         (a.effect as? Effect.EnterScope)?.let { into(it); return }
         // "Try it": Booklight types the example.
         (a.effect as? Effect.Type)?.let { typeOut(it.text); return }
+        // A line that changes what the row reads (a calendar chosen for an event): written into the field, and nothing runs.
+        (a.effect as? Effect.Retype)?.let { retype(it.text); return }
         run(r, a)
+    }
+
+    /**
+     * A line of a row's list wrote into the field: the list closes, the text is [text], and the pill is on the row the
+     * list was opened under, with that row's own first action armed. The Enter that chose the line does not also run
+     * the row: only a new press, a moment later (for an event whose Enter saves, that moment is what keeps one press
+     * from being two).
+     */
+    private fun retype(text: String) {
+        val row = opened
+        shut()
+        row?.let { id -> results.indexOfFirst { it.id == id }.takeIf { it >= 0 }?.let { selected = it } }
+        armed = current?.armed ?: 0
+        filledAt = SystemClock.uptimeMillis()
+        touched = false
+        query = text
+        search(keep = true)
     }
 
     private fun into(e: Effect.EnterScope, /** The row and the action that were run, where they are not the selected row's (Ctrl + digit). */ ran: Pair<Result, Action>? = chosen()) {
@@ -2144,7 +2248,10 @@ class OverlayModel(
         (a.effect as? Effect.EnterScope)?.let { into(it, r to a); return }
         if (a.effect == PromptScope.ASK || a.effect is Effect.Ask || needsAnswer(a.effect) || (r.body as? Body.Stream)?.busy == true) return     // an answer is Enter's
         if (a.effect is Effect.Unsuggest) return        // and so is "Don't suggest"
+        if (a.effect is Effect.SaveEvent) return        // and so is saving an event: written on Enter (or a click) on the row that is selected, and by nothing else
         if (a.effect == USUAL) { flipUsual(); return }  // the switch of first run's choices flips where it stands
+        // A calendar's line of the list under an event's row: that calendar is chosen, as Enter on the line chooses it.
+        (a.effect as? Effect.Retype)?.let { retype(it.text); return }
         (a.effect as? Effect.Type)?.let { typeOut(it.text); return }
         run(r, a)
     }
@@ -2228,6 +2335,8 @@ class OverlayModel(
         /** How long an answer may take in all. A model that takes the question and then says nothing is given up on; what has arrived by then stands. */
         private const val ANSWER_MS = 60_000L
         private const val HELP = "?"
+        /** The key of the event scope: its model is loaded as it is entered. */
+        private const val EVENT = "event"
         /** While the system is still looking at a copy just made: how often Booklight looks again, and how long between. */
         private const val COPY_LOOKS = 5
         private const val COPY_LOOK_MS = 400L

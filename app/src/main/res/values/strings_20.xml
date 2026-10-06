@@ -187,7 +187,7 @@
         <item>sms|write|chat|sms|sms +49 30 23125 123 running late|SMS|The messages app, filled in; nothing is sent</item>
         <item>wa|write|chat|wa|wa +49 30 23125 123 running late|WhatsApp|The chat with that number, your text in its field; nothing is sent</item>
         <item>tg|write|chat|tg|tg anna on my way|Telegram|The chat with that user name, or a number, your text in its field; nothing is sent</item>
-        <item>event|write|event|event|event Fri 3pm Dentist|Event|The calendar’s editor, filled in</item>
+        <item>event|write|event|event|event dinner with Sam tomorrow 7pm|Event|Typed the way you say it, also without the keyword: add dinner with Sam tomorrow at 7pm</item>
         <item>remind|write|bell|remind|remind 5pm call the bank|Reminder|A timer, an alarm or an event, depending on when</item>
         <item>new|write|plus|new|new doc Q3 plan|New|A file, a folder, a doc, a sheet or slides</item>
         <item>timer|time|timer|timer|timer 10m tea|Timer|The Clock starts it; Start and pin keeps the countdown on top</item>

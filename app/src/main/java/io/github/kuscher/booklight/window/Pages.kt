@@ -4,6 +4,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.EnterTransition
 import android.content.Intent
 import android.provider.Settings as SystemSettings
+import androidx.compose.runtime.collectAsState
+import io.github.kuscher.booklight.core.Cals
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
@@ -321,12 +323,22 @@ fun LookPage(page: Page, s: Settings, app: BooklightApp, arrive: Animatable<Floa
  * has a mark, so all text starts on one edge, and every control ends on one line at the rows' trailing end.
  */
 @Composable
-fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<Float, *>, from: Float) {
+fun ResultsPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, arrive: Animatable<Float, *>, from: Float) {
     fun set(change: (Settings) -> Settings) = app.prefs.update(change)
+    val window = LocalActivity.current as? MainActivity
+    // The calendars an event can be added to, where the list is allowed. (A very long name is cut for the menu's button.)
+    val calendars by app.calendars.now.collectAsState()
+    val open = calendars.filter { it.writable }
+    val names = open.map { if (it.name.length > CALENDAR_NAME) it.name.take(CALENDAR_NAME - 1).trimEnd() + "…" else it.name }
+    // The page's two menus stand in the same place: both at their rows' trailing ends, or both under their text. The search
+    // engines' names decide which, at every width; a calendar's name is the user's own and may be any length: its button
+    // takes the room that place leaves, and the name is cut inside it (`Pick`'s `cut`).
+    val engines = Engines.all.map { it.name }
+    val beside = menuBeside(engines, true)
     Rise(arrive, 1, from) {
         Group(stringResource(R.string.win_search), first = true) {
             // Five names are too many for buttons: a menu.
-            row("engine") { Pick(page, "engine", stringResource(R.string.set_engine), stringResource(R.string.set_engine_text), Engines.all.map { e -> e.id }, Engines.all.map { e -> e.name }, s.engine, mark = "search", place = it) { v -> set { st -> st.copy(engine = v) } } }
+            row("engine") { Pick(page, "engine", stringResource(R.string.set_engine), stringResource(R.string.set_engine_text), Engines.all.map { e -> e.id }, engines, s.engine, mark = "search", place = it, beside = beside) { v -> set { st -> st.copy(engine = v) } } }
             row("suggest") {
                 val engine = s.engine()
                 Toggle(page, "suggest", stringResource(R.string.set_suggestions), stringResource(R.string.set_suggestions_text, engine.name, engine.suggestHost), s.suggestions, mark = "globe", place = it) { v -> set { st -> st.copy(suggestions = v, suggestionsCard = false) } }
@@ -341,7 +353,36 @@ fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<F
             row("keys") { Toggle(page, "keys", stringResource(R.string.set_show_keys), stringResource(R.string.set_show_keys_text), s.showKeys, mark = "key", place = it) { v -> set { st -> st.copy(showKeys = v) } } }
         }
     }
+    // An event typed as a sentence: whether Enter saves it, and where one goes that names no calendar.
     Rise(arrive, 3, from) {
+        resumed     // (read: what the system allows is looked at again when the window has the keys again)
+        val reads = app.calendars.allowed
+        val may = reads && app.calendars.writes
+        Group(stringResource(R.string.win_events)) {
+            // On only while the system's permission to add events is there: refused, or taken back, the switch stands off.
+            row("save-events") {
+                Toggle(page, "save-events", stringResource(R.string.set_save_events), stringResource(R.string.set_save_events_text), s.saveEvents && may, mark = "event", place = it) { on ->
+                    when {
+                        !on -> set { st -> st.copy(saveEvents = false) }
+                        may -> set { st -> st.copy(saveEvents = true) }
+                        // The system's own question first: for the list of calendars and for adding an event. Refused, nothing changes.
+                        else -> window?.askCalendar(write = true) { given -> if (given) set { st -> st.copy(saveEvents = true) } }
+                    }
+                }
+            }
+            row("event-calendar") { place ->
+                when {
+                    // Not allowed yet: the row asks. Allowed, and no calendar that takes events: it only says so.
+                    !reads -> PageRow(page, "event-calendar", stringResource(R.string.set_event_calendar), stringResource(R.string.set_event_calendar_off), place = place, mark = { MarkIcon("list") },
+                        onEnter = { window?.askCalendar(write = false) }) { Word(stringResource(R.string.action_allow)) }
+                    open.isEmpty() -> PageRow(page, "event-calendar", stringResource(R.string.set_event_calendar), stringResource(R.string.set_event_calendar_none), place = place, mark = { MarkIcon("list") }, still = true)
+                    else -> Pick(page, "event-calendar", stringResource(R.string.set_event_calendar), stringResource(R.string.set_event_calendar_text), open.map { c -> c.owner }, names,
+                        Cals.target(null, open, s.eventCalendar)?.owner.orEmpty(), mark = "list", place = place, beside = beside, cut = true) { v -> set { st -> st.copy(eventCalendar = v) } }
+                }
+            }
+        }
+    }
+    Rise(arrive, 4, from) {
         val offers = app.commands.offers
         val icons = remember { app.icons ?: AppIcons(app).also { app.icons = it } }
         val show = stringResource(R.string.win_app_show)
@@ -360,6 +401,12 @@ fun ResultsPage(page: Page, app: BooklightApp, s: Settings, arrive: Animatable<F
         }
     }
 }
+
+/** The most letters of a calendar's name on the button of "New events go to". */
+private const val CALENDAR_NAME = 28
+
+/** The row of the window where the list of calendars is allowed: "Allow…" on an event's row in the panel opens the window on it. */
+const val CALENDARS_ROW = "calendars"
 
 /** An app's own icon as a row's mark. It fades in when it had to be loaded: nothing cuts in. */
 @Composable
@@ -387,13 +434,17 @@ fun LabsPage(page: Page, app: BooklightApp, arrive: Animatable<Float, *>, from: 
  * row that forgets it (last in its group, never first), the policy, and who made it.
  */
 @Composable
-fun PrivacyPage(page: Page, app: BooklightApp, resumed: Int, arrive: Animatable<Float, *>, from: Float) {
+fun PrivacyPage(page: Page, app: BooklightApp, s: Settings, resumed: Int, arrive: Animatable<Float, *>, from: Float) {
     val scheme = MaterialTheme.colorScheme
     val activity = LocalActivity.current as ComponentActivity
     Rise(arrive, 1, from) {
         resumed
         val folder = if (app.notes.ready) app.notes.where else null
         val bright = app.executor.screen.allowed
+        // (Read here, beside `resumed`, and not in the row: a row whose own values did not change is not drawn again, and
+        // it went on saying "Not allowed yet" after the system's question had been answered with Allow.)
+        val reads = app.calendars.allowed
+        val writes = reads && app.calendars.writes
         Group(stringResource(R.string.win_may_use)) {
             row("notes") { place ->
                 PageRow(page, "notes", stringResource(R.string.win_notes), folder?.let { stringResource(R.string.win_notes_in, it) } ?: stringResource(R.string.win_notes_none), place = place,
@@ -402,6 +453,16 @@ fun PrivacyPage(page: Page, app: BooklightApp, resumed: Int, arrive: Animatable<
             row("brightness") { place ->
                 PageRow(page, "brightness", stringResource(R.string.dial_brightness), stringResource(if (bright) R.string.win_brightness_on else R.string.win_brightness_off), place = place,
                     mark = { MarkIcon("sun") }, onEnter = { app.executor.run(Effect.Grant("brightness"), activity) }) { Word(stringResource(if (bright) R.string.win_change else R.string.action_allow)) }
+            }
+            // The list of calendars: allowed by this row and by nothing else in Booklight. Allowed, the row leads to the
+            // system's own page, where it is taken back. The line says what is read, and what is written only where the
+            // switch for that is on and the system agreed.
+            row(CALENDARS_ROW) { place ->
+                PageRow(page, CALENDARS_ROW, stringResource(R.string.win_calendars),
+                    stringResource(if (!reads) R.string.win_calendars_off else if (s.saveEvents && writes) R.string.win_calendars_write else R.string.win_calendars_on), place = place,
+                    mark = { MarkIcon("event") }, onEnter = { (activity as? MainActivity)?.let { w -> if (reads) w.systemPage() else w.askCalendar(write = false) } }) {
+                    Word(stringResource(if (reads) R.string.win_change else R.string.action_allow))
+                }
             }
         }
     }

@@ -5,7 +5,7 @@ library of Google's, which reports how it is used to Google (see "Answers on thi
 
 **On your device.** Booklight remembers what you pick for the text you type, so your usual choice comes
 first, and it keeps your settings, your links, snippets and recipes, and the emoji you picked lately.
-These are files in the app's own storage. With what it learns it also keeps, for an app whose own search
+These are files in the app's own storage, and they are part of your own Android backup and device transfer. With what it learns it also keeps, for an app whose own search
 row you picked after typing its name and some words (`netflix severance`), that this app comes before the web
 for such a text. The Booklight window › What Booklight keeps › Forget
 everything clears what it has learned. If you turn on Show your usual, the empty panel shows the two things you
@@ -26,7 +26,7 @@ their own packages. It starts one only when you press Enter on its row, and thos
 over HTTPS to the search engine you chose (Google by default; DuckDuckGo, Bing, Brave Search or Ecosia
 if you change it) to get suggested searches. Sums, web addresses, an app's own address, and anything
 typed after a keyword or with an app in the field (a note, a mail, a search of one site or of one app, a song
-to play) are not sent. An app's name followed by other words, typed in one go (`netflix severance`), is a
+to play) are not sent. Nor is a line that reads as an event (see "Calendar events"). An app's name followed by other words, typed in one go (`netflix severance`), is a
 web search like any other and is sent, until you have picked that app's own row for such a text: from then
 on the app comes first for words after its name, and they are not sent (picking the web's row twice running
 makes it a web search again). No cookies or identifiers are added; like any
@@ -85,9 +85,54 @@ link is kept with the recipe. The key is a file in the app's own storage; it is 
 goes to Spotify only. Take it out in the same place and nothing is sent again. Booklight ships no key and
 its developer sees neither yours nor your lookups.
 
+**Calendar events.** An event you type (`event dinner tomorrow 7pm`, or a sentence that begins with add, schedule,
+put, book or plan, in German with „trag … ein“, „plane“ or „neuer Termin“, and holds a day or a time; both, after
+schedule, put, book and plan, which as often begin a search) is read on the device, by Booklight's own rules. Where those rules cannot tell the title from the place, the model on the
+device (see "Answers on this device") is asked which words are which, a moment after you stop typing. It works out
+no date, and what it says is shown only if every word of it is one you typed.
+**Enter hands the event to a calendar app**: its title, its time and its place. Where the event names no
+calendar, that is Android's own request to add an event, as Booklight has always sent it, to whichever calendar
+app there is. Where there is a calendar to name, it is a calendar link
+(`https://calendar.google.com/calendar/render?…`) with that calendar's address in it (for most calendars an
+e-mail address), given to Google's Calendar app and to no other: for the calendar you named; and, with "Save
+events without opening Calendar" on, also for the calendar new events go to, where the row shows it and you
+choose "Open". Where no such app takes the link, the same event goes as Android's request, without a calendar.
+The calendar app opens its editor, filled in, and you save the event there, or you don't.
+**The list of your calendars is read only if you allow it**, in one of three places in the Booklight window:
+Privacy › Calendars; "New events go to" under Results; or the switch "Save events without opening Calendar", which
+asks for both, to read the list and to add events. What is read is the list of the calendars of your Google
+accounts and nothing else: for each its name, its colour, the id the system has for it, its owner's address, the
+account it belongs to, whether it is that account's own, and whether events can be added to it. Booklight never
+reads an event. Nothing of the list leaves the device through Booklight, and the list itself is kept in memory
+only: it is not written to Booklight's files. Android has one question for all of this and asks it about "your
+calendar" as a whole; what Booklight asks the system for is the list of calendars and nothing else. (Where you
+have already allowed the list, Android does not ask again when you switch saving on: its one question was for
+the calendar as a whole. The switch stays off until you press it.)
+**Booklight saves an event itself only if you switch that on** ("Save events without opening Calendar", the
+Booklight window › Results). Then Enter, or a click, on Save writes the one event the row shows, with its
+calendar's own default reminder: into the calendar you named; with none named, into the one chosen under "New
+events go to"; with none chosen, into your account's own calendar, or, where that takes no events, the first of
+your calendars that does. The row shows which before you press Enter. Only where nothing of when it is is a
+guess: the day and the time were both read from what you typed (the time with its half of the day: "7pm",
+"19:30", „9 Uhr“, "7 in the evening"), or the day with "all day", or a range of days, which are saved as all-day
+events that leave the day free. Never a line that asks for a repeat, one that says "next Tuesday" (people mean
+two days by it), one with a date that had just passed and would land a year ahead, one that names a calendar
+which is none of yours, or one typed without the keyword that begins with schedule, put, book or plan. Any
+other event opens in a calendar app, filled in, as above. An event
+that was saved is an ordinary event of your calendar: the account the calendar belongs to syncs it, as it does
+every event, under its own terms. Booklight sends it nowhere, never changes or removes an event, and keeps no
+copy of one.
+**What Booklight keeps of this**, in its settings: whether the switch is on; that Android's question has been
+answered on this device; and, once you choose a calendar under "New events go to", that calendar's owner's
+address (for most calendars an e-mail address). The settings are in your own Android backup and device transfer,
+and so that address is too. The switch and the answer are believed only on the device they were set on: settings
+that arrive with a backup never have saving on.
+A line that reads as an event is not sent for search suggestions; before it does (no day or time typed yet) it is
+a typed line like any other.
+
 **Handing things to other apps.** A web row opens in your browser. A mail, an event, a note for Keep, a
-timer or a question for Gemini is handed to the app that opens: your mail app, your calendar, the Clock,
-Gemini. Booklight sends none of it anywhere itself, and a mail or a Gemini question is only filled in:
+timer or a question for Gemini is handed to the app that opens: your mail app, the Calendar app (see "Calendar
+events" for what it is given), the Clock, Gemini. Booklight sends none of it anywhere itself, and a mail or a Gemini question is only filled in:
 you send it there, or you don't.
 
 **Answers on this device.** A prompt (`fix …`, `sum`, one of your own) is answered by the system's own
@@ -121,8 +166,11 @@ the panel closes.
 uninstall an app (Android asks you before it does). Setting alarms and timers in the Clock app. Changing
 the brightness, which does nothing until you switch on "Modify system settings" for Booklight yourself.
 Since 2.0, from Google's library: connecting to the system's on-device AI service, and seeing whether the
-network is up. None of these shows a prompt. No accessibility service, no notification access, no access
-to your contacts or location. Nothing of Booklight's own runs in the background; the library's usage
+network is up. None of these shows a prompt. The Calendar permission does: Android asks you, and only when you
+press Allow… in the Booklight window (on Privacy › Calendars or on "New events go to": to read the list of your
+calendars), or switch on "Save events without opening Calendar" there (to read that list and to add the event
+you save). Until then Booklight reads and writes nothing of it. No
+accessibility service, no notification access, no access to your contacts or location. Nothing of Booklight's own runs in the background; the library's usage
 report is a short job the system runs. (A pinned flight's window is on your screen, not in the background:
 it asks only while it is there.)
 

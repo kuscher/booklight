@@ -229,6 +229,8 @@ class TextScope(
     val from: TextFrom = if (fixed == null) TextFrom.CLIP else TextFrom.HANDED,
     /** The row of a flight number that stands in the text, if one does. It answers when the user goes to it, never unasked. */
     private val flight: (String) -> Result? = { null },
+    /** An event's line as the row under the keyword `event` reads it, calendars and all: the row a copied date leads to. */
+    private val event: (String) -> io.github.kuscher.booklight.core.EventDraft = { Jot.event(it, java.time.LocalDateTime.now()) },
 ) : Scope, Answering {
     override val key = if (from == TextFrom.CLIP) "clip" else "text"
     override val keywords: List<String> = if (from == TextFrom.CLIP) context.getString(R.string.clip_keys).split(',') else emptyList()
@@ -346,8 +348,8 @@ class TextScope(
             )
         }
         Thing.DATE -> Jot.eventIn(text, f.text, java.time.LocalDateTime.now())?.let { line ->
-            // The event row's own reading of it, so the day is seen before the calendar opens; Enter goes on in that row.
-            val e = Jot.event(line, java.time.LocalDateTime.now())
+            // The reading of the row it leads to (the keyword's: `Events.rules`), so the day is seen before the calendar opens; Enter goes on in that row.
+            val e = event(line)
             row("date", span(context, e), "event", e.title.ifEmpty { null }, text(R.string.label_event), Action("add", text(R.string.action_add_event), Effect.EnterScope("event", line), keepOpen = true, symbol = "plus"))
         }
         Thing.PHONE -> {

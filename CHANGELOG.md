@@ -1,5 +1,44 @@
 # Changelog
 
+## 3.2 (6 October 2026)
+
+**An event from a sentence** (`docs/design/event-sentence/design.md`).
+
+- **Type an event the way you say it.** "Add dinner with Sam tomorrow at 7pm to the Team calendar": one row
+  shows what Booklight understood (when, the title, where, the calendar), and Enter opens the Calendar app's
+  editor, filled in, on that calendar. In any order. With the keyword `event`, or without it where the line
+  begins with add, schedule, put, book or plan („trag … ein“, „plane“, „neuer Termin“) and holds a day or a
+  time (both, after schedule, put, book and plan: those also begin everyday searches, and such a line always
+  opens the editor); such a row stands below anything of your device that matches and above the web. An event
+  that names a calendar goes to Google's Calendar app as a calendar link, which alone can say which calendar;
+  one that names none goes as the request Booklight has always sent.
+- **The day and time are read anywhere in the line**, and more of them: `tmrw`, "on the 12th at 6:45 in the
+  morning", "7 in the evening", "12 at night", "from 9am to 10am", "Oct 14 to Oct 16", "all day"; in German „von
+  9 bis 10 Uhr“, „am 12.“, „vom 14. bis 16. Oktober“, „ganztägig“, „7 Uhr abends“, "the day after tomorrow",
+  "Wednesday 28 October". The row says the year wherever it is not this year's. What leaves something open is
+  read and shown as a guess, a step lighter: a time that does not say its half of the day ("at 7", "7:30",
+  „um 7“; „9 Uhr“ and "09:30" say it), "every Monday" and any other word for a repeat ("weekly"), a line that
+  holds a second day or time, "next Tuesday" (never today, and people mean two days by it), a date without a
+  year that had just passed, "12/10", midnight beside a day, and a word beside the day that changes it ("the day
+  before Friday", "not tomorrow").
+- **Your calendars, if you allow it**, in the Booklight window: Privacy › Calendars, "New events go to", or the
+  switch below. Booklight then reads the list of your calendars (names and colours, never an event): name one in
+  the sentence, with "the" or without, its start is completed in grey and Right takes it, and a Calendar stop on
+  the row lists them.
+- **The model on your device helps to split.** Where the rules cannot tell a place from the title, the model is
+  asked a moment after you stop typing, and the words in the row change where they stand. It works out no date,
+  nothing waits for it, and nothing it says is shown unless you typed every word of it.
+- **Save without opening Calendar, if you switch it on.** Booklight window › Results › "Save events without
+  opening Calendar", and "New events go to". Enter then saves the event the row shows, all-day events too, into
+  the calendar you named, else the one you chose there, else your account's own; "Open" is the second action, and
+  the row's caption says what Enter does on the one that is armed. A guess is never saved: where the day or the
+  time is one, a calendar's name is still being typed or is none of yours, or the line was typed without the
+  keyword and begins like an everyday search ("book flight to boston friday 9am"), Enter opens Calendar and the
+  footer says why. An event that was saved is synced by the calendar's own account, not by Booklight.
+- Two new permissions, both asked for only in the Booklight window: to read the list of calendars, and (with the
+  switch, which asks for both) to add events. `PRIVACY.md` says what each does, and that the address of the
+  calendar chosen under "New events go to" is kept in Booklight's settings, which are in your Android backup.
+
 ## 3.1 (5 October 2026)
 
 **First steps** (`docs/design/first-run/`; `BUILD.md` there says what was built and what was decided on the way).

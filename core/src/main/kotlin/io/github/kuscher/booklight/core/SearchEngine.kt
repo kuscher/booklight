@@ -11,7 +11,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  * One list, best first (Alfred, Raycast, Spotlight since macOS 26), not groups: Enter always
  * runs the first row. Order = the provider's match score × the kind's weight + what [History]
  * has learned for this exact text. Answers (a sum) go first; the web search comes after every
- * local row, and suggestions from the search engine, when they arrive, go below it.
+ * local row, and suggestions from the search engine, when they arrive, go below it. A line read as
+ * a whole sentence (an event typed the way it is said) stands below everything of the device that
+ * matches and above everything of the web.
  *
  * Inside a scope (the chip in the field) only that scope is asked, its rows keep their own order,
  * and the way out to the web for the keyword and the text together keeps the last place.
@@ -52,7 +54,14 @@ class SearchEngine(
         val ways = ranked.filter(::isFallback).take(MAX_FALLBACKS)
         val under = if (ways.isEmpty()) emptyList() else ranked.filter { it.id.startsWith(IN_APP) && !leads(it) }
         val out = letter + ways.take(1) + under.take(MAX_UNDER) + ways.drop(1) + ranked.filter(::isGuess).take(1)
-        return (ranked.filterNot { isFallback(it) || isGuess(it) || it in letter || it in under }.take((limit - out.size).coerceAtLeast(0)) + out).take(limit)
+        val room = (limit - out.size).coerceAtLeast(0)
+        val rest = ranked.filterNot { isFallback(it) || isGuess(it) || it in letter || it in under }
+        // A sentence read as a whole: its place is not a score's. Under every row of the device that matches, over every row
+        // of the web that ranks as a match (the question for Gemini, a typed address), and never crowded out by either: only
+        // where the ways out alone fill the list (a limit no panel has) is there no row for it.
+        val sentence = rest.firstOrNull(::isSentence) ?: return (rest.take(room) + out).take(limit)
+        val (web, local) = rest.filter { it !== sentence }.partition { it.kind == Kind.WEB }
+        return ((local.take((room - 1).coerceAtLeast(0)) + sentence + web).take(room) + out).take(limit)
     }
 
     private suspend fun inScope(q: Query, limit: Int): List<Result> {
@@ -147,6 +156,8 @@ class SearchEngine(
 
     private fun isGuess(r: Result) = r.score <= GUESS
 
+    private fun isSentence(r: Result) = r.id.startsWith(SENTENCE)
+
     /** The row of a scope whose keyword is the one letter that was typed. */
     private fun isLetterRow(r: Result, text: String): Boolean {
         if (r.kind != Kind.SCOPE || text.length != 1) return false
@@ -229,6 +240,11 @@ class SearchEngine(
          * the app's package follows. The row's label is the app's name.
          */
         const val IN_APP = "appsearch:"
+        /**
+         * How the id of a row starts that reads the whole typed line as a sentence, without a keyword ("Add dinner with Sam
+         * tomorrow at 7pm" as an event): it stands below everything of the device that matches, and above the web.
+         */
+        const val SENTENCE = "sentence:"
         /** The id of the web's row: "Search Google for …". */
         const val WEB_SEARCH = "web:search"
         /** How the id of a scope's way out to another search starts ("Search the Settings app"). */

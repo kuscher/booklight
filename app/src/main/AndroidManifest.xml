@@ -17,7 +17,15 @@
     <!-- Brightness. Does nothing until the user switches on "Modify system settings" for Booklight in
          Settings; the brightness row says so and opens that page. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
-    <!-- No runtime permissions, no accessibility service. -->
+    <!-- The list of the user's calendars (names, colours, ids): an event typed as a sentence can name one, and opens on
+         it. Never an event: Booklight reads none. Asked for only in the Booklight window (Privacy › Calendars), by the
+         user's own press; until then nothing is read and the system shows no question. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- To add the one event the row shows, on the user's Enter, and only with "Save events without opening
+         Calendar" switched on in the Booklight window, which is where this is asked for. Booklight never changes or
+         removes an event. Without the switch an event opens in the Calendar app, filled in, and is saved there. -->
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <!-- Two runtime permissions, both the Calendar's, both asked for in the Booklight window alone. No accessibility service. -->
 
     <!-- The app list: launchable apps only (no QUERY_ALL_PACKAGES), and the Settings app for its pages. -->
     <queries>

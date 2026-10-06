@@ -27,6 +27,11 @@ few letters, press Enter.
 - **`?` lists everything**, each with an example that Booklight types for you.
 - **Jot things down.** `mail …`, `note …`, `event …`, `remind …`, `timer 10m tea`, `new file ideas.md`:
   one line, a preview of what was understood, Enter. Longer questions go to Gemini.
+- **An event, the way you say it.** "Add dinner with Sam tomorrow at 7pm to the Team calendar": the row shows
+  what was understood, and Enter opens your calendar's editor on that calendar, filled in. If you allow it,
+  Booklight reads the list of your calendars (never an event) to complete a calendar's name; if you switch it
+  on, Enter saves the event without opening Calendar, where its day and its time are sure ("tomorrow at 7pm";
+  "at 7" is a guess, and opens Calendar).
 - **Small controls.** `vol`, `brightness`, `pause`; an emoji grid, the letters of other languages (`abc danish`), colour values, QR codes, passwords.
 - **Settings pages, sums and the web.** "dark", `150 + 20%`, a typed address, or a search. A keyword
   and a space search one site: `yt lofi`.
@@ -99,6 +104,7 @@ they stopped.
 | `notes milk` · `todo call the bank` | A line of your notes; your tasks |
 | `mail anna@x.com Lunch? / See you at 1` | A filled-in compose window |
 | `note buy milk` · `event Fri 3pm Dentist` · `remind 5pm call bank` | A note, an event, a reminder |
+| `add dinner with Sam tomorrow at 7pm to the Team calendar` | An event, typed the way you say it |
 | `timer 10m tea` · `alarm 7:30` · `new file ideas.md` | A timer, an alarm, a new file |
 | `vol 40` · `brightness` · `pause` · `play lofi` | Controls |
 | `emoji party` · `sym arrow` · `abc german` · `#3478f6` · `qr …` · `password 20` | Things to copy |
@@ -111,7 +117,7 @@ The app's icon opens an ordinary desktop window with everything else, its naviga
 six sections: Start (what Booklight is, your key, tips and the first steps again, your usual, what you copied), Commands (everything it
 does, and yours: links, snippets, recipes, prompts; Enter on a row types the example into the panel), Look
 (theme, colours, glass, shadow, opening, with a live preview), Results (the search engine, suggestions, which
-kinds of rows show, other apps' commands), Labs (what needs a key of your own: Spotify, flight times) and Privacy (the notes folder, brightness,
+kinds of rows show, whether an event is saved without opening Calendar and where it goes, other apps' commands), Labs (what needs a key of your own: Spotify, flight times) and Privacy (the notes folder, brightness, your calendars,
 what Booklight keeps, about). "Booklight settings" in the panel opens it too.
 A search-pill widget and a Quick Settings tile open the panel without a keyboard.
 

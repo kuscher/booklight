@@ -49,7 +49,17 @@ sealed interface Icon {
     /** One of Booklight's own symbols, by name (`ui/Icons.kt`). */
     data class Symbol(val name: String) : Icon
     /** A patch of one colour (a colour value typed into the panel). */
-    data class Swatch(val argb: Int) : Icon
+    data class Swatch(val argb: Int) : Icon {
+        /** This colour as an action's mark: a line of a row's list that is told from the others by its colour (a calendar's own) is marked by a dot of it. */
+        val symbol: String get() = SYMBOL + Integer.toHexString(argb)
+
+        companion object {
+            private const val SYMBOL = "dot:"
+
+            /** The colour a symbol names; null for any other symbol. */
+            fun of(symbol: String): Swatch? = if (!symbol.startsWith(SYMBOL)) null else symbol.substring(SYMBOL.length).toLongOrNull(16)?.takeIf { it in 0..0xFFFFFFFFL }?.let { Swatch(it.toInt()) }
+        }
+    }
     /** A character shown as the picture: an emoji, a snippet's first letter. */
     data class Glyph(val text: String) : Icon
 }
@@ -88,9 +98,11 @@ enum class Act(val id: String) {
 
 /**
  * Which stop of its row an action waits behind, where it is not an icon on the row ([Action.more]):
- * the arrow, or Window (where an app's window goes). Two lists at most, and never a list inside a list.
+ * the arrow, or a stop of the row's own: Window (where an app's window goes), Calendar (which of the
+ * user's calendars an event goes to). A row has the arrow's list and at most one other: two lists at
+ * most, and never a list inside a list.
  */
-enum class Behind { ARROW, WINDOW }
+enum class Behind { ARROW, WINDOW, CALENDAR }
 
 /** One of an app's own pages in the system's Settings. */
 enum class AppPage { NOTIFICATIONS, LANGUAGE, DEFAULTS, BATTERY }
@@ -145,8 +157,19 @@ sealed interface Effect {
     data class OpenNote(val file: String) : Effect
     /** The notes app's editor with this text. */
     data class KeepNote(val text: String) : Effect
-    /** The calendar's editor, filled in. Times are epoch milliseconds. */
-    data class InsertEvent(val title: String, val startMillis: Long, val endMillis: Long, val allDay: Boolean, val place: String) : Effect
+    /**
+     * The calendar's editor, filled in. Times are epoch milliseconds. [link]: a calendar link for the
+     * same event ([Cals.link]), which names the calendar too: it is sent to the Calendar app first, and
+     * the rest is what is sent where no Calendar app takes it. Nothing is saved: the user saves it there.
+     */
+    data class InsertEvent(val title: String, val startMillis: Long, val endMillis: Long, val allDay: Boolean, val place: String, val link: String = "") : Effect
+    /**
+     * The event itself, written into the calendar with the id [calendar] on this device, with that
+     * calendar's own default reminder. Times are epoch milliseconds; [zone] is the device's time zone
+     * ("UTC" for an all-day event). Only ever what the row shows, on the user's own Enter, with the
+     * option switched on and the permission given: the executor checks the last two again.
+     */
+    data class SaveEvent(val calendar: Long, val title: String, val startMillis: Long, val endMillis: Long, val allDay: Boolean, val zone: String, val place: String) : Effect
     data class SetTimer(val seconds: Int, val label: String) : Effect
     data class SetAlarm(val hour: Int, val minute: Int, val label: String) : Effect
     /** The Clock's list of alarms, or its list of [timers]. */
@@ -208,7 +231,13 @@ sealed interface Effect {
     data class OpenList(val behind: Behind) : Effect
     /** Booklight types [text] into the field, a letter at a time (an example from a tip or from the list of everything). The panel does this itself. */
     data class Type(val text: String) : Effect
-    /** Opens the place where the user allows something, once: `brightness`, `notes`. */
+    /**
+     * What stands in the field becomes [text], at once: a line of a row's list that changes what the
+     * row reads (a calendar chosen for an event is written into its sentence). The panel does this
+     * itself; nothing runs, and the Enter that chose it does not also run the row.
+     */
+    data class Retype(val text: String) : Effect
+    /** Opens the place where the user allows something, once: `brightness`, `notes`, `calendars` (the Booklight window, on that row). */
     data class Grant(val what: String) : Effect
 
     data class SaveSnippet(val key: String, val text: String) : Effect
@@ -248,8 +277,22 @@ data class Action(
 
 /** What a row shows besides, or instead of, its title. */
 sealed interface Body {
-    /** A preview of what was understood: labelled slots that fill as the argument is typed, and a line for the long part (a message). */
-    data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null) : Body
+    /**
+     * A preview of what was understood: labelled slots that fill as the argument is typed, and a line for the long part (a message).
+     * [more]: a second line of slots, in the note's place (an event's place and calendar): the row is as high with it as without.
+     * [completes]: what is left of a name the row read by its start ("tea" for the Team calendar): the field shows it in grey
+     * after the text, and Right takes it. [footer]: what the footer says of the row while it is selected. [ask]: the typed
+     * line this preview was made from, where the device's own model may be asked to split it better (an event's sentence
+     * whose title the rules left in pieces); null where there is nothing to ask. The row carries it, so that an answer is
+     * only ever for the text the row itself was made from. [captions]: what the caption says instead while one of the
+     * row's actions is armed, by that action's id: a caption that says what Enter does says it of the action Enter would
+     * run ("Enter saves it" only while Save is armed).
+     */
+    data class Slots(val caption: String?, val slots: List<Slot>, val note: String? = null, val more: List<Slot> = emptyList(),
+        val completes: String? = null, val footer: String? = null, val ask: String? = null, val captions: Map<String, String> = emptyMap()) : Body {
+        /** The caption while the action [armed] (its id; null: none) is the armed one. */
+        fun caption(armed: String?): String? = captions[armed] ?: caption
+    }
     /** A level from 0 to 100 (volume, brightness). [target]: a typed value, not yet set. [locked]: needs a grant first. */
     data class Level(val percent: Int, val target: Int? = null, val muted: Boolean = false, val locked: Boolean = false) : Body
     /** A grid of characters to pick from; the arrows move between cells. */
@@ -307,7 +350,14 @@ enum class Tone { PLAIN, GOOD, LATE }
 data class Stop(val code: String, val time: String, val struck: Boolean = false, val words: String? = null, val brief: String? = null)
 
 enum class SlotState { TYPED, GUESSED, EMPTY }
-data class Slot(val label: String, val value: String, val state: SlotState)
+/**
+ * [dot]: a colour that belongs to the value (a calendar's own), drawn as a dot before it; null for none. [whole]: the
+ * value is never cut and never ends in an ellipsis: it takes the room it needs, and the slots after it in its line
+ * give way (an event's "When": what is saved stands on the glass whole). [wide]: the value takes what its line has
+ * left once the slot after it has its room, and that one keeps to a share (an event's title, which may be long, beside
+ * its calendar).
+ */
+data class Slot(val label: String, val value: String, val state: SlotState, val dot: Int? = null, val whole: Boolean = false, val wide: Boolean = false)
 data class Cell(val glyph: String, val name: String)
 
 /** What Left and Right do on a control row, at once and without closing. */

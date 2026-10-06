@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -82,30 +83,70 @@ private val VALUE = TextStyle(fontFamily = Fonts.text, fontSize = 17.sp, fontWei
 
 /**
  * A preview of what was understood from the typed line: a caption, then labelled slots that fill
- * as you type, then a line for the long part (a message). What was typed is in full ink, what was
- * guessed a step lighter, and an empty slot is its label and a short rule. The values change in
- * the same frame as the typing: they mirror the field and are never animated.
+ * as you type, then a line for the long part (a message), or a second line of slots in its place
+ * (an event's place and calendar). What was typed is in full ink, what was guessed a step lighter,
+ * and an empty slot is its label and a short rule. The values change in the same frame as the
+ * typing: they mirror the field and are never animated. A row's lines are the same lines whatever
+ * its slots hold: when a value comes later (the device's model has split the sentence), it changes
+ * where it stands and nothing moves. [armed]: the id of the row's armed action: a caption that says what
+ * Enter does says it of that one, and changes where it stands when the arming moves.
  */
 @Composable
-fun RowScope.SlotsBody(b: Body.Slots, ink: Color) {
+fun RowScope.SlotsBody(b: Body.Slots, ink: Color, armed: String? = null) {
+    val motion = LocalMotion.current
     Column(Modifier.weight(1f).padding(start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         // (Too long, it fades at its end like the panel's other texts: never an ellipsis.)
-        b.caption?.let { Box(Modifier.fillMaxWidth().fadeEnd()) { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) } }
-        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            b.slots.forEachIndexed { i, s ->
-                // The first slots keep to their share; the last takes what is left, so a growing value never pushes its neighbour away.
-                val last = i == b.slots.lastIndex
-                Row(if (last) Modifier.weight(1f, fill = false) else Modifier.widthIn(max = if (i == 0) 240.dp else 170.dp)) {
-                    // Label and value sit on one baseline.
-                    Text(s.label.uppercase(), color = ink.copy(alpha = ink.alpha * SECOND), style = HINT, maxLines = 1, modifier = Modifier.alignByBaseline().padding(end = 7.dp))
-                    if (s.state == SlotState.EMPTY) Text("–", color = ink.copy(alpha = ink.alpha * 0.40f), style = VALUE, modifier = Modifier.alignByBaseline())
-                    else Text(s.value, color = ink.copy(alpha = ink.alpha * if (s.state == SlotState.GUESSED) SECOND else 1f), style = VALUE, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
-                }
+        b.caption(armed)?.let { caption ->
+            Box(Modifier.fillMaxWidth().fadeEnd()) {
+                val words: @Composable (String) -> Unit = { Text(it, color = ink.copy(alpha = ink.alpha * SECOND), style = SMALL, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) }
+                // What is typed changes it in the same frame, like the slots. Where it says what the armed action does, it follows
+                // the arming as a value that changed: it rolls into place, as an answer's caption does.
+                if (b.captions.isEmpty()) words(caption)
+                else AnimatedContent(caption, transitionSpec = { motion.roll() }, contentAlignment = Alignment.CenterStart, label = "caption") { words(it) }
             }
         }
+        SlotLine(b.slots, ink)
+        if (b.more.isNotEmpty()) SlotLine(b.more, ink)
         b.note?.let { Text(it, color = ink, style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis) }
     }
 }
+
+/**
+ * A preview's slots as they are said to a screen reader, each with its label, and a guess said to be one ([guess] makes
+ * "When …, a guess" of "When …"): what Enter hands over, or saves, is heard as the row shows it.
+ */
+internal fun Body.Slots.said(guess: (String) -> String): List<String> =
+    // (Down the two lines' first slots, then their second ones: an event is heard as when, title, where, calendar.)
+    (0 until maxOf(slots.size, more.size)).flatMap { listOfNotNull(slots.getOrNull(it), more.getOrNull(it)) }
+        .filter { it.value.isNotEmpty() }.map { s -> "${s.label} ${s.value}".let { if (s.state == SlotState.GUESSED) guess(it) else it } }
+
+/** One line of slots. A slot whose value has a colour of its own (a calendar's) shows it as a dot before the value: a sample, as a colour's swatch is. */
+@Composable
+private fun SlotLine(slots: List<io.github.kuscher.booklight.core.Slot>, ink: Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        slots.forEachIndexed { i, s ->
+            // The first slots keep to their share; the last takes what is left, so a growing value never pushes its neighbour away.
+            // A value that is never cut (an event's "When": what is saved stands on the glass whole) has no share: it takes the
+            // room it needs, its words are made short enough for that, and the slot after it gives way. And where a slot is
+            // the wide one of its line (an event's title), it is that one that takes what is left, and the last keeps to a share.
+            val last = i == slots.lastIndex
+            val flex = if (slots.any { it.wide }) s.wide else last
+            Row(if (flex) Modifier.weight(1f, fill = false) else if (s.whole) Modifier else Modifier.widthIn(max = if (last) 200.dp else if (i == 0) 240.dp else 170.dp)) {
+                // Label and value sit on one baseline.
+                Text(s.label.uppercase(), color = ink.copy(alpha = ink.alpha * SECOND), style = HINT, maxLines = 1, modifier = Modifier.alignByBaseline().padding(end = 7.dp))
+                if (s.state == SlotState.EMPTY) Text("–", color = ink.copy(alpha = ink.alpha * 0.40f), style = VALUE, modifier = Modifier.alignByBaseline())
+                else {
+                    s.dot?.let { Box(Modifier.align(Alignment.CenterVertically).padding(end = 6.dp).size(DOT).clip(CircleShape).background(Color(it))) }
+                    Text(s.value, color = ink.copy(alpha = ink.alpha * if (s.state == SlotState.GUESSED) SECOND else 1f), style = VALUE, maxLines = 1, softWrap = !s.whole,
+                        overflow = if (s.whole) TextOverflow.Clip else TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
+                }
+            }
+        }
+    }
+}
+
+/** A calendar's own colour, as a dot: before its name in a slot, and in the icon column of its line in the list of calendars. */
+internal val DOT = 10.dp
 
 /** How many letters behind its head an answer being written is still coming into view. */
 private const val SOFT = 14f

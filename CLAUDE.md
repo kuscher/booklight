@@ -9,9 +9,12 @@ own model, a pinned window, other apps' commands, `?`, tips, `s` and `k`, places
 **Permissions:** `INTERNET` (suggestions, off until the user turns them on; a flight's times, only with a key the user put in), `REQUEST_DELETE_PACKAGES`
 (Uninstall; Android confirms), `SET_ALARM` (Clock), `WRITE_SETTINGS` (brightness; inert until the user
 flips the switch); since 2.0, merged in from Google's ML Kit GenAI library (shipped as it is, Alex's decision):
-AICore's `BIND_SERVICE` and `ACCESS_NETWORK_STATE`, and the library's usage reporting to Google. No runtime
-permissions, no accessibility service, nothing of Booklight's own in the background (the user's rule: adding a
-permission needs his say-so and a place in docs/PLAN.md §4/§6).
+AICore's `BIND_SERVICE` and `ACCESS_NETWORK_STATE`, and the library's usage reporting to Google. Two runtime
+permissions, both the Calendar's and both Alex's word of 5 October 2026, asked for in the Booklight window and
+nowhere else, inert until then: `READ_CALENDAR` (the list of calendars: names, colours, ids; **never an event**)
+and `WRITE_CALENDAR` (the one event the row shows, on Enter, only with "Save events without opening Calendar" on;
+Booklight never changes or removes an event). No accessibility service, nothing of Booklight's own in the
+background (the user's rule: adding a permission needs his say-so and a place in docs/PLAN.md §4/§6).
 
 ## This repo is public
 The Play listing links here. Keep out of every file, commit message and release note: device serial numbers and
@@ -44,7 +47,10 @@ private projects and paths into their repos, and where keys are backed up. Those
     The design: `docs/design/app-structure/`.
   - `Matcher.kt`, `History.kt`, `Calc.kt`, `Web.kt`, `Sites.kt`, `Suggest.kt`: as in 1.0.
   - Parsers, each with its tests: `Verbs.kt` ("chrome uninstall"), `When.kt` + `WhenParts.kt` + `Durations.kt`
-    (dates and times, English and German), `Jot.kt` (mail, event, reminder, timer, new), `Colors.kt`,
+    (dates and times, English and German; `When.spot` finds them anywhere in an event's line, and `Moment.vague`, `repeats` and `doubts` (`Doubt`: a year, "next Tuesday", "12/10", a weekday by two letters, midnight beside a day, a word beside the day or before the time, a number or a word of time left in the title, today's weekday) say what of a reading was the parser's to choose), `Jot.kt` (mail, event, reminder, timer, new; `EventDraft.sure`: nothing of when it is is a guess),
+    `Sentence.kt` (an event the way it is said: the cue, the place, the calendar by its name, `reads` for a line without the keyword, `put`; read with `keyword` for the line under `event`, where no first word is dropped and two bare numbers are a time, as in 3.1; `EventReading.everyday`: a line that begins like an everyday search; `Cal` and `Cals`: which calendar a name means, which calendars can be named at all (`marked`), where a new event goes, the calendar link, the values of a direct save, and `saves`: never a guess),
+    `Spans.kt` (when an event is, as its row says it: forms short enough for the row to show whole, the year where it is not this year's),
+    `Split.kt` (the device's model as a splitter: when it is asked, its question, its answer taken apart and merged with the rules' reading only where every part was typed, no two parts are the same words, its "when" is the very words the rules read and no word is lost but by its place; the day and time are the rules' own, and it never makes a guess sure), `Colors.kt`,
     `Templates.kt` (link placeholders), `Clip.kt` (the clipboard's transforms, and when a fresh copy is offered),
     `Zero.kt` (your usual: which rows stand under the empty field, and `Under`: what has that place), `FirstRun.kt` (first run: which screen stands at the next opening, what an answer changes, who gets a run at all, what Enter does while a lesson stands, the coach line, the recipes and this device's example; `overlay/FirstStage.kt` draws the key's step, the three lessons and the question on one skeleton, the choices are a list of two rows; `Show.kt` is the opening's show as data, its beats, their times and its example flight; `overlay/Welcome.kt` draws the welcome on one clock, whose marks are `Lights` in `overlay/Motion.kt`, and the highlight's way into the key's step; `SetDown.kt` says when each part of a stage comes, for every way a screen can come (set down part by part, come back to, in another's place, after a list, at the piece's landing), and from which of those marks a key counts (`since`), and the stage is drawn by those marks on one clock; "First steps" asks for the run again, as a command in the panel and as a row on the window's Start page),
     `Reach.kt` (a way to go, a phone number and its text, a Telegram name, a Meet code, and their links), `Schemes.kt` (which addresses a link may have, and when typed text is an app's address), `Requests.kt` (what an app command asks an app for, as an `intent:` address and back; the `am start` reader),
@@ -73,14 +79,18 @@ private projects and paths into their repos, and where keys are backed up. Those
     links as ways into it, the typed sentence), `Keys.kt` (the system's
     shortcuts, and the `s` and `k` scopes), `SuggestProvider` and `Flights.kt` (the only network code of Booklight's
     own: suggestions once switched on, and a flight's times once the user has put in their own AirLabs key;
-    `FlightsProvider` is the row, `FlightScope` the keyword `flight`).
+    `FlightsProvider` is the row, `FlightScope` the keyword `flight`). `Events.kt` (an event from a sentence: the event's row,
+    the same under the keyword `event` and for a line typed without it; its slots on two lines, Create or Save and Open in
+    Calendar, the Calendar stop's list; it asks the device's model to split after a rest and lands the answer in the row).
   - `scopes/` rows that take text: `Scopes.kt` (the registry: **a new scope is one line there**; links that
     take text, prompts), `Jot.kt` (mail, note, event, remind, timer, alarm, new, ask), `Picks.kt` (emoji, symbols,
     QR, colour, snippets; `TextScope`: what was copied or handed over, and what can be done with it; `tr`), `NotesScopes.kt` (notes, todo, pin),
     `Prompts.kt` (a prompt's row and its answer), `Help.kt` (`?`).
   - `Executor.kt` performs effects: the only place that starts activities, writes the clipboard or changes
     a system value. Helpers in `device/` (audio, screen, files, QR images; `Clipboard`, the one place that
-    touches the system's clipboard and its text classifier) and `data/Notes.kt`.
+    touches the system's clipboard and its text classifier; `CalendarList`, the one place that reads the system's
+    list of calendars, and reads nothing else of it) and `data/Notes.kt`. An event is written in `Executor.save`
+    and nowhere else.
   - `overlay/` the panel: `OverlayActivity` (window, icon-or-shortcut routing, text from other apps),
     `OverlayModel` (chip and the action armed on an app's chip, text, rows, selection, arming, an opened row and
     which of its two lists, grid cell, confirmation, the answer of the model, tips, Booklight typing), `Panel` (keys,
@@ -147,6 +157,28 @@ private projects and paths into their repos, and where keys are backed up. Those
   once and so never shows a row changing under the selection (a crash hid behind that in 1.1's review). `./bl shot NAME` = PNG of the panel's own window (debug builds).
   `./bl open stay tint=0.2 blur=24 dim=0.1 opening=slow` tries glass values and the arrival; `DARK=true ./bl open stay` the dark theme.
   The highlight's motion: `./bl debug pill N` logs the pill's two edges for the next N frames it moves in (`./bl logs`), `./bl debug held down|up [TIMES] [MS]` repeats a key as a held one does (debug builds).
+- An event from a sentence (`docs/design/event-sentence/design.md`; the checks: `docs/research/event-sentence.md`):
+  `./bl debug event TEXT` says what the rules read of TEXT and what Enter on its row would do, said and not done (the
+  link it would send, the insert request where there is no calendar to name, or the values it would write); TEXT is
+  read as the bare field reads it: `event 9-10 standup tomorrow` as the keyword's line (it says `keyword`), any
+  other text as a sentence typed without one; `./bl debug event ask TEXT` asks the device's model as the row
+  does (with a panel open); `./bl debug calendars` says what the system allows and what was read, and `calendars
+  pretend Sam,Team,Holidays!` puts a list in place of the device's (the first is the account's own; `!`: takes no
+  new events; `pretend off` ends it; nothing can be written while one is pretended); `pref save on|off`, `pref
+  eventcal OWNER|none`, `pref calasked yes|no`; `key calendar` arms an event's Calendar stop; `rush TEXT` sets TEXT
+  and presses Enter in the same turn, before its list can land (an Enter that is kept, and never saves; the hook
+  refuses where the field holds TEXT already, and where saving is on with the device's own calendars). `event
+  TEXT` says why a reading is a guess (`no day`, `no time`, `half of the day not said`, `repeats`, `a second day
+  or time`, `the date has passed`, `“next” means two days to people`, `a weekday by two letters`, `which number is
+  the month was not said`, `which night was not said`, `a word beside the day or the time changes it`, `a number or
+  a word of time is left in the title`, `it ends where it starts`, `it ends on the next day, more than twelve hours
+  on`, `this week or the next was not said`), and `named`, `rest=` and
+  `everyday`, which are never saved either. `calendars` marks a calendar `(not offered)` whose name would not read
+  back as itself. `dump` says an event's row with both lines of slots (`●` a colour's dot, `?` a guess), its caption
+  and after `while save:`, `while copy:` and `while calendar:` what it says while that action is armed, `rest=`, `footer=`, a line of its Calendar list as
+  `+c`, `armed=calendar`, `flash=` (the footer's word of the moment: "Saved to …"), and `looking` while the model
+  is asked. **The hooks print the names of the user's calendars: never copy one into a
+  file of this repo** (the examples are Sam and Team).
 - First run's stored state (core `FirstRun`; `docs/design/first-run/`): `./bl debug first` shows the run, what is done, the screen that stands and its
   counter, whether the opening piece would play, the key that would be suggested for the keyboards attached, the system's words for its
   dialog as they were read (`words=`), the hold (`hold=`) and the last start as the panel read it (`last start:`). `first new|update|off`,
@@ -227,7 +259,9 @@ private projects and paths into their repos, and where keys are backed up. Those
   An action carries a symbol for what it does and never an app's icon.
 - One coloured surface, the selection. The one exception is the badge of a flight's row: green for on time and early,
   amber for late (`FlightColors` in `ui/Theme.kt`; Alex, 2 October 2026). Always a small fill with its own ink on it,
-  never a coloured word or line on the glass, and never red: red is for what removes something.
+  never a coloured word or line on the glass, and never red: red is for what removes something. (A calendar's own
+  colour, as a 10 dp dot before its name, is a sample of something that is the user's, like a colour's swatch: not a
+  state, and never without the name beside it.)
 - Flat glass: visibly see-through, blurred, a thin tint, a crisp white outline. No bevels, glows or
   sculpted highlights (Alex: "not too 3D esp the highlights. I do like the white outline"). Lifted for first run's welcome alone, by
   his word (night, a lamp's light, large type, a drawn knife: `overlay/Welcome.kt`); it holds again from the key's step on.
@@ -241,8 +275,14 @@ private projects and paths into their repos, and where keys are backed up. Those
   (`OverlayActivity.frameGlass`; device-findings.md, "The blur follows the glass"): the blur is the glass's own
   from the seam on. Nothing may be drawn outside the glass: the root view clips it.
 - Destructive actions are last, in the error colour, never first, and never run by an arrow or Ctrl + digit.
+  Saving an event is not one (it adds what the row shows, by the user's own switch), so Save may be armed; but it
+  is Enter's, or a click's, on the selected row: never Ctrl + digit, never an Enter that was pressed before the
+  row was on the glass, never twice, never a guess.
 - What the device's model says is only shown, copied, pinned or put back where the text came from: it never
-  runs anything and never outranks a local match.
+  runs anything and never outranks a local match. One more thing is allowed since the event's row: the model may
+  fill that row's slots, where every part it names was typed and the day and time are the parser's. It still runs
+  nothing and saves nothing by itself: the user's Enter saves what the row shows, and every field that will be
+  saved stands in the row before Enter. It is asked only after the typing has rested, never for a date or a sum.
 - The opening is always the field's height; whatever is under the field comes after it (a tip, first run's stage).
 - Every user-facing string is a resource, English and German. Copy is plain: "Open", "Copy", "Search".
 - The Booklight window is not the panel: rows in Material's containers, hover and focus as two things, one focus
@@ -265,6 +305,66 @@ private projects and paths into their repos, and where keys are backed up. Those
 - `Metrics.maxRows` keeps room for one row of the list to be 136 dp (a flight's, a grown answer): a taller kind of
   row in an ordinary list needs that room made larger.
 - Hover selects only on pointer movement (rows appear under a resting pointer as the list grows).
+- An event's row has two lines of slots from its first letter (`Body.Slots.more`), empty ones included: so nothing in
+  it moves when the model's answer lands. Do not hide a slot that is empty. The answer lands through
+  `OverlayModel.lookUp` and `land`, as a flight's does, and only if the field still holds the text it was asked
+  for; where it changed what the row shows or does (`OverlayModel.changed`), Enter is not taken for a moment
+  (`filledAt`), so a press made for the row as it stood saves nothing else. The same holds for a list made anew
+  under the selection (`refresh`: the calendars were read while the panel was open). The model's ask is the
+  lookup's job: any key cancels it (`search`), so does the panel closing, and `Events.answer` keeps an answer only
+  once it is whole, and `OverlayActivity.save` ends it (`OverlayModel.saving`), so the row cannot change under
+  "Saved to …". The row's caption is the armed action's (`Body.Slots.captions`): "Enter saves it" only on Save.
+- **An event's "When" is never cut in the row** (`Slot.whole`: it takes the room its words need, and the place
+  beside it gives way; the title has the second line, where it is the `wide` slot and the calendar keeps to a share). That holds only because core `Spans.say` keeps every form to `Spans.ROOM` letters (`SpansTest` says each
+  form's longest): a new form, or a new word in one, must fit there. The year is said wherever it is not this year's.
+- **What is a guess is never saved without the editor**, and what is a guess is one property: core
+  `EventDraft.sure` (no day, no time, a time without its half of the day ("at 7", "7:30", and „1 Uhr“ to „8 Uhr“
+  with no zero before them, alone or as a span's start: people say „um 7 Uhr“ for the evening; „9 Uhr“, „08 Uhr“
+  and "09:30" say it), a repeat, a second day or time in the line, and `doubts`: a date without a year that had
+  passed and was put more than 300 days ahead, "12/10", "next Tuesday", a weekday by two letters, midnight beside a
+  day (by its name or as "0:00"), a word beside the day that changes it ("until Friday", "the following Friday",
+  "first Monday in November", "Friday next 7pm"), before the time ("till 5pm", "quarter to 8pm", „halb 9 Uhr“) or
+  after it ("3pm PT", "3pm London time", a word after the minutes of „15 Uhr 30“),
+  a span that ends where it starts or more than twelve hours into the next day, a weekday that is today's by its
+  name (alone or as a range's first day), and **the net under all of these, `Doubt.LEFT` (`When.left`)**: a
+  number standing alone or a word of time that is still in the title once the day and time are read ("Zahnarzt
+  30", "2 hour workshop", "dinner next week", "7pm EST"; a number inside a word, "Q3", is none, and the place is
+  not asked). Its cost is known: "Sprint 12 planning tomorrow 9am" opens the editor. A word for a half of the day
+  ("night", "morning", „Abend“) counts only where the time that was read is not in that half ("movie night Friday 8pm"
+  is sure, „Essen Freitag Abend 9 Uhr“ is not), and "1:1" is no time.
+  To these `Cals.saves` adds a calendar's name that is still being typed (`rest`), a calendar named by the word
+  that is none of the user's (`named`), and a line typed without the keyword that begins like an everyday search
+  (`everyday`: schedule, put, book, plan, „plane“). A new way to read a day, a time or a calendar must say there
+  whether it is sure; where in doubt, it is a guess. `Splits.merge` gives back a reading that is sure only where
+  the rules' own is, and carries `everyday` and `named` over.
+- What is read only at an end of an event's line ("at 7", two bare numbers, "3/4", a short weekday, a weekday by two
+  letters with its time) is read where the line's own words end too: a matched calendar's phrase after them is not
+  the line going on (`When.spot`'s `own`, set in `Sentence.parsed`). So `Sentence.put` keeps a line's day and time
+  (`NamedTest.aCalendarWrittenIntoALineKeepsItsDayAndItsTime`): anything new that is read only at a line's end
+  must ask `inside` there. After "on" and "in" a calendar is its name as the calendar has it, or has the word
+  "calendar" after it (`Sentence.EXACT`): "on Teams" is no Team calendar, for the model's answer either.
+- An event's line is read in two ways, and everything that reads one must say which (`keyword`): under the keyword
+  `event` (`Events.SCOPE`) as 3.1 read it, without it as a sentence. `Sentence.read`, `put`, `Splits.merge` and
+  `Events.completed` all take it; a row's id says it (`Events.row`'s `keyword`).
+- A calendar is a line of the row's list, and is completed from its first letters, only if its name reads back as
+  itself (`Cal.nameable`, worked out once where the list is read: core `Cals.marked`). Whatever writes a
+  calendar's name into the field must go through `Sentence.put` and may offer only such a calendar.
+- An Enter that comes before the list for the last keystroke has landed is kept (`whenReady`) and runs row one
+  when it lands, as ever, but never a `SaveEvent`: that one is dropped, the row stands, and a new Enter saves it.
+  Anything new that writes for good on Enter must be asked there too. The save itself is `OverlayActivity.save`:
+  it locks the panel (`settled`, `ran`) in the Enter's own turn, writes off the main thread, and says "Saved to …"
+  only once the provider has answered. Never start a `SaveEvent` any other way; in a lesson of first run it is not
+  run at all.
+- The list of calendars is read where a panel is made and where the window has the keys again
+  (`BooklightApp.lookAtCalendars`), never while typing; "Save events without opening Calendar" goes off there when its
+  permission is gone. An event is saved by `Executor.save` alone, which asks for the switch and the permission again.
+  Nothing in Booklight reads an event: a query of the calendar provider anywhere but `CalendarList` is a bug.
+  `Settings.calendarsAsked` and `Settings.saveEvents` are true of one device: each is believed only beside
+  `files/calendars.asked`, a mark that is not in the backup (`Prefs.askedHere`), so a restore never arrives with
+  saving on. With no calendar to name, Create and Open send the insert request, as 3.1 did; the calendar link is
+  for a row that shows a calendar (`Events.row`).
+- A line of a row's list that writes into the field (`Effect.Retype`: a calendar chosen for an event) closes the list
+  and sets `filledAt`: the Enter that chose it does not also run the row.
 - While a lesson of first run stands (`OverlayModel.lesson`: also while its list is typed, when `stage` is null), nothing opens:
   `OverlayActivity.run`, where everything that runs passes, asks core `FirstRun.enters` before the executor. An app's Open and a
   search inside an app are practice (and a settings page under its keyword, where Settings stands in for an app that can be searched
