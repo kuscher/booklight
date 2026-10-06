@@ -46,6 +46,12 @@ Alex, on the design: "Yes. Re 2 add save too behind an option. Ship and ship als
   window at its other widths, the HP Googlebook, and what only an eye says.
 - **For Alex to overturn**, each a constant, a condition or a few lines: the plan's "Decided here"; the design's
   §11, "As built" and the two lists of rulings under it; and the row's two lines, above.
+- **Out on 6 October 2026** (Alex: "Ship and ship also to production directly"): tag `v3.2`, the GitHub release
+  (the README's link serves it; checksum and certificate checked), and on Play closed testing and production,
+  both sent for review that morning with the listing's new description; managed publishing is on, so what is
+  approved waits for his Publish click. Checked before the tag with the signed build on the Lenovo Googlebook: a
+  sum, an event's row from real keys, the model's split, and Enter (the calendar's quick editor, closed unsaved).
+  And, on the build before it, the system's own question from the window's three rows, answered by taps.
 - **The release**: 3.2, versionCode 10. Two permissions are new, and neither has a Play declaration form; the
   data-safety answers do not change (`store-submission/forms/data-safety.md`). So it was sent as the releases
   before it, through the API, although the design's §7 had said the Console. The store's privacy page is made
