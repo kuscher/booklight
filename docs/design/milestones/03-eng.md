@@ -28,7 +28,7 @@ research says it. Where I add an expectation of my own, I say that it is one.*
    more come before the later milestones. Most need a throwaway build.
 
 **About the days.** They are the research's unit (S a day or less, M a few days, L a week or more; "working days
-for Alex with Claude", LANG §2). `docs/PICKING-UP.md` dates every release from 0.1 to 2.1 on 1 October 2026, so
+for Alex with Gemini 4", LANG §2). `docs/PICKING-UP.md` dates every release from 0.1 to 2.1 on 1 October 2026, so
 this project has run far ahead of such figures. Read them as sizes against each other, not as a calendar.
 
 ---

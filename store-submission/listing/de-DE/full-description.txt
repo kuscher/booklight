@@ -38,4 +38,4 @@ Flugzeiten werden nur mit deinem eigenen AirLabs-Schlüssel abgefragt; dann gehe
 Eine Mail, ein Termin, ein Timer oder eine Frage an Gemini wird der App übergeben, die sich öffnet; Booklight sendet selbst nichts.
 Booklight hat keinen Bedienungshilfen-Dienst. Nach deinem Kalender fragt es nur, wenn du es in seinem Fenster erlaubst, um einen Kalender zu nennen oder einen Termin zu speichern. Deinstallieren bestätigt Android; die Helligkeit geht erst, wenn du sie in den Einstellungen einschaltest.
 
-Booklight ist ein privates Hobbyprojekt, mit keinem Arbeitgeber verbunden und von keinem unterstützt.
+Booklight ist ein privates Hobbyprojekt, entstanden mit Hilfe von Gemini 4, mit keinem Arbeitgeber verbunden und von keinem unterstützt.

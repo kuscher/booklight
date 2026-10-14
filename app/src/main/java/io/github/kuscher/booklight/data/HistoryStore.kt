@@ -56,7 +56,7 @@ class HistoryStore(context: Context, private val scope: CoroutineScope) {
                 runCatching {
                     val tmp = File(file.parentFile, file.name + ".tmp")
                     tmp.writeText(json.encodeToString(Saved.serializer(), s))
-                    tmp.renameTo(file)
+                    java.nio.file.Files.move(tmp.toPath(), file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
                 }.onFailure { Log.w(BooklightApp.TAG, "history not saved", it) }
             }
         }

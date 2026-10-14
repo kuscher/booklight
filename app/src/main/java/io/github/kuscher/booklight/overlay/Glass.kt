@@ -58,7 +58,7 @@ object Look {
     var dimLight = 0.10f
     var dimDark = 0.22f
 
-    fun use(level: GlassLevel) { tintLight = level.tintLight; tintDark = level.tintDark; blurDp = level.blurDp }
+    fun use(level: GlassLevel) { tintLight = level.tintLight; tintDark = level.tintDark; blurDp = level.blurDp; dimLight = 0.10f; dimDark = 0.22f }
 
 }
 

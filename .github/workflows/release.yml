@@ -126,7 +126,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh run download "$GITHUB_RUN_ID" --name bundle --dir bundle
 
-      - name: Google Play (a draft on closed testing; a dry run only checks the key)
+      - name: Google Play (a draft on production; a dry run only checks the key)
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: |

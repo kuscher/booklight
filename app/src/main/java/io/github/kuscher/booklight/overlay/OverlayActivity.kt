@@ -533,6 +533,7 @@ class OverlayActivity : ComponentActivity() {
         if (a.effect is Effect.SaveEvent && model.lesson != null) { say(getString(R.string.first_practice_save)); return }
         // An event that is saved: written off the main thread, with the panel locked meanwhile ([save]).
         if (a.effect is Effect.SaveEvent) { save(r, a); return }
+        if (writes(a.effect)) { write(r, a, keep); return }
         // A pinned text exists nowhere else: when another pin takes its place, the footer says which one went.
         fun pins(e: Effect): Boolean = e is Effect.Pin || (e is Effect.Steps && e.steps.any(::pins))
         val replaced = app.pinned.value?.takeIf { it.kind == "text" && pins(a.effect) }?.title(this)?.let { getString(R.string.pin_replaced, if (it.length > 24) it.take(23) + "…" else it) }
@@ -559,6 +560,38 @@ class OverlayActivity : ComponentActivity() {
             word != null -> { settled = true; lifecycleScope.launch { delay(520); close() } }
             r.nudge != null -> { settled = true; model.refresh(); lifecycleScope.launch { delay(400); close() } }
             else -> close()
+        }
+    }
+
+    private fun writes(e: Effect): Boolean = when (e) {
+        is Effect.AppendNote, is Effect.AddTodo, is Effect.TickTodo -> true
+        is Effect.NewFile -> !e.pick
+        is Effect.QrImage -> e.use != io.github.kuscher.booklight.core.ImageUse.SHARE
+        else -> false
+    }
+
+    /** Writes a note, task, file, or QR image off the main thread while locking the panel against a duplicate Enter. */
+    private fun write(r: Result, a: Action, keep: Boolean) {
+        val app = application as BooklightApp
+        settled = true
+        app.scope.launch(Dispatchers.Main) {
+            val ok = withContext(Dispatchers.IO) { app.executor.run(a.effect, this@OverlayActivity) }
+            if (!ok) {
+                settled = false
+                if (!isDestroyed) say(getString(R.string.failed), bad = true)
+                return@launch
+            }
+            ran = true
+            if (!a.danger && a.id !in NOT_A_RUN) model.learn(r, a) else app.lastText = null
+            model.used(r, a)
+            if (isDestroyed) return@launch
+            val word = a.done
+            if (word != null) say(word)
+            when {
+                a.keepOpen || keep -> { settled = false; model.refresh() }
+                word != null -> { delay(520); close() }
+                else -> close()
+            }
         }
     }
 
@@ -712,7 +745,8 @@ class OverlayActivity : ComponentActivity() {
  * language that is put together by the input method itself ([COMPOSED]).
  */
 private class KeysFirst(context: Context, private val content: View) : FrameLayout(context) {
-    private val composed = context.getSystemService(InputMethodManager::class.java)?.currentInputMethodSubtype?.languageTag.orEmpty().substringBefore('-').lowercase() in COMPOSED
+    private val imm = context.getSystemService(InputMethodManager::class.java)
+    private fun composed() = imm?.currentInputMethodSubtype?.languageTag.orEmpty().substringBefore('-').lowercase() in COMPOSED
 
     init { addView(content) }
 
@@ -720,7 +754,7 @@ private class KeysFirst(context: Context, private val content: View) : FrameLayo
         val plain = !e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed
         // Only a key that prints something as it is pressed now (a number-pad key with Num Lock off is an arrow), and only if
         // the field took it: what nobody took goes the usual way, and keeps what the system makes of it.
-        if (plain && !composed && (e.unicodeChar != 0 || e.keyCode == KeyEvent.KEYCODE_DEL) && content.dispatchKeyEvent(e)) return true
+        if (plain && !composed() && (e.unicodeChar != 0 || e.keyCode == KeyEvent.KEYCODE_DEL) && content.dispatchKeyEvent(e)) return true
         return super.dispatchKeyEventPreIme(e)
     }
 }

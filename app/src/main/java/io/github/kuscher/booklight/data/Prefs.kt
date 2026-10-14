@@ -305,6 +305,12 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
     private val _flightKey = MutableStateFlow(runCatching { if (keyFile.exists()) keyFile.readText().trim() else "" }.getOrDefault(""))
     val flightKey: StateFlow<String> = _flightKey
 
+    private fun writeAtomically(target: File, text: String) {
+        val tmp = File(target.parentFile, target.name + ".tmp")
+        tmp.writeText(text)
+        java.nio.file.Files.move(tmp.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
+    }
+
     /** [key] empty takes the key away. */
     fun setFlightKey(key: String) {
         val k = key.trim()
@@ -313,7 +319,7 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
             // One write at a time; each writes the newest key, so the last one to run leaves the newest file.
             writing.withLock {
                 val now = _flightKey.value
-                runCatching { if (now.isEmpty()) keyFile.delete() else keyFile.writeText(now) }.onFailure { Log.w(BooklightApp.TAG, "flight key not saved (${it.javaClass.simpleName})") }
+                runCatching { if (now.isEmpty()) keyFile.delete() else writeAtomically(keyFile, now) }.onFailure { Log.w(BooklightApp.TAG, "flight key not saved (${it.javaClass.simpleName})") }
             }
         }
     }
@@ -337,7 +343,7 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
             // One write at a time; each writes the newest key, so the last one to run leaves the newest file.
             writing.withLock {
                 val now = _spotifyKey.value
-                runCatching { if (now.isEmpty()) songFile.delete() else songFile.writeText(now) }.onFailure { Log.w(BooklightApp.TAG, "spotify key not saved (${it.javaClass.simpleName})") }
+                runCatching { if (now.isEmpty()) songFile.delete() else writeAtomically(songFile, now) }.onFailure { Log.w(BooklightApp.TAG, "spotify key not saved (${it.javaClass.simpleName})") }
             }
         }
     }
@@ -352,9 +358,7 @@ class Prefs(private val context: Context, private val scope: CoroutineScope) {
                     // (The mark first: settings that say "asked" or "save" without it are not believed, and that is the safe way to be left.)
                     val here = now.calendarsAsked || now.saveEvents
                     if (here != askedHere.exists()) { if (here) askedHere.createNewFile() else askedHere.delete() }
-                    val tmp = File(file.parentFile, file.name + ".tmp")
-                    tmp.writeText(json.encodeToString(Settings.serializer(), now))
-                    tmp.renameTo(file)
+                    writeAtomically(file, json.encodeToString(Settings.serializer(), now))
                 }.onFailure { Log.w(BooklightApp.TAG, "settings not saved", it) }
             }
         }

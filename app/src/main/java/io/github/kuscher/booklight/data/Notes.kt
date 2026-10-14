@@ -70,7 +70,17 @@ class Notes(private val context: Context, private val prefs: Prefs) {
         return try {
             // A notes file is text a person wrote: past a few megabytes only its end is read (the newest notes are there).
             val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
-            val text = (if (bytes.size > MAX_BYTES) bytes.copyOfRange(bytes.size - MAX_BYTES, bytes.size) else bytes).toString(Charsets.UTF_8)
+            val text = if (bytes.size <= MAX_BYTES) bytes.toString(Charsets.UTF_8) else {
+                val start = bytes.size - MAX_BYTES
+                var nl = start
+                while (nl < bytes.size && bytes[nl] != '\n'.code.toByte()) nl++
+                val from = if (nl < bytes.size) nl + 1 else {
+                    var c = start
+                    while (c < bytes.size && (bytes[c].toInt() and 0xC0) == 0x80) c++
+                    c
+                }
+                bytes.copyOfRange(from, bytes.size).toString(Charsets.UTF_8)
+            }
             kept[name.lowercase()] = Kept(System.currentTimeMillis(), text)
             text
         } catch (e: Exception) { Log.w(BooklightApp.TAG, "notes file not read: ${e.javaClass.simpleName}"); null }
@@ -82,13 +92,40 @@ class Notes(private val context: Context, private val prefs: Prefs) {
             .also { synchronized(this) { listed = null } }
     }
 
+    /** True if [file] is non-empty and its last byte is not a line break. */
+    private fun endsWithoutBreak(name: String, file: Uri): Boolean {
+        synchronized(this) { kept[name.lowercase()] }?.text?.let { return it.isNotEmpty() && !it.endsWith('\n') }
+        return try {
+            resolver.openFileDescriptor(file, "r")?.use { pfd ->
+                val len = pfd.statSize
+                if (len == 0L) return false
+                if (len > 0L) {
+                    java.io.FileInputStream(pfd.fileDescriptor).use { fis ->
+                        fis.channel.position(len - 1)
+                        return fis.read() != '\n'.code
+                    }
+                }
+                null
+            } ?: resolver.openInputStream(file)?.use { ins ->
+                val buf = ByteArray(8192)
+                var last = -1
+                while (true) {
+                    val n = ins.read(buf)
+                    if (n <= 0) break
+                    last = buf[n - 1].toInt() and 0xFF
+                }
+                last != -1 && last != '\n'.code
+            } ?: false
+        } catch (_: Exception) { false }
+    }
+
     /** Adds [entry] at the end of [name], on a line of its own. */
     private fun add(name: String, entry: (lead: String) -> String): Boolean {
         if (!ready) return false
         return try {
             val file = find(name) ?: create(name) ?: return false
             // If the file's last line was left without a line break (edited by hand), start a new one first.
-            val open = resolver.openInputStream(file)?.use { it.readBytes() }?.let { it.isNotEmpty() && it.last() != '\n'.code.toByte() } ?: false
+            val open = endsWithoutBreak(name, file)
             resolver.openOutputStream(file, "wa")?.use { it.write(entry(if (open) "\n" else "").toByteArray()) } ?: return false
             synchronized(this) { kept.remove(name.lowercase()) }
             true

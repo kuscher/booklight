@@ -7,6 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import io.github.kuscher.booklight.BooklightApp
 import io.github.kuscher.booklight.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Asks once where notes should go: shows the system's folder picker and keeps the grant. It has
@@ -20,7 +23,13 @@ class PickFolderActivity : ComponentActivity() {
             contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             app.prefs.update { it.copy(notesFolder = tree.toString()) }
             val note = intent.getStringExtra(EXTRA_NOTE)
-            if (note != null) Toast.makeText(this, if (app.notes.append(note)) R.string.done_note else R.string.failed_note, Toast.LENGTH_SHORT).show()
+            if (note != null) {
+                val ctx = applicationContext
+                app.scope.launch(Dispatchers.Main) {
+                    val ok = withContext(Dispatchers.IO) { app.notes.append(note) }
+                    Toast.makeText(ctx, if (ok) R.string.done_note else R.string.failed_note, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
         finish()
     }

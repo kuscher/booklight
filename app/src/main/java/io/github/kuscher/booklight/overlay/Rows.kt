@@ -218,7 +218,7 @@ fun ResultsBody(model: OverlayModel, icons: AppIcons, onRun: (Result, Action) ->
             SlotRow(slot.top, slot.leaving, if (under) 0 else slot.delay, whole = slot.whole, onGone = { slots.remove(slot) }, wait = {
                 when {
                     typedAway || open != null || held == null || mine != null -> false
-                    under -> closing!!.top + closing.row + closing.height * block.value > slot.top + Metrics.row / 2
+                    under -> closing.top + closing.row + closing.height * block.value > slot.top + Metrics.row / 2
                     else -> block.value > 0.04f
                 }
             }) {
@@ -696,7 +696,8 @@ fun ResultRow(
         else Box(pinned.graphicsLayer { scaleX = pop; scaleY = pop }) { RowPicture(r.icon, icons, dim) }
 
         when {
-            body is Body.Flight || guess -> FlightSeat(r.title, body as? Body.Flight, line, on, dim)
+            body is Body.Flight -> FlightSeat(r.title, body, line, on, dim)
+            guess -> FlightSeat(r.title, null, line, on, dim)
             body is Body.Slots -> SlotsBody(body, on, r.actions.getOrNull(armed)?.id)
             body is Body.Code -> Column(Modifier.weight(1f).padding(start = 20.dp, end = 12.dp)) {
                 Text(r.title, color = on, style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, fontWeight = FontWeight(500)), maxLines = 3, overflow = TextOverflow.Ellipsis)

@@ -173,7 +173,9 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     /** The app of this user with the package [pkg], as the launcher shows it: its name, and the activity its icon is of. Null for one Booklight does not see. */
     fun shown(pkg: String): Pair<String, String>? = index.firstOrNull { it.pkg == pkg && it.user == me }?.let { it.label to it.cls }
 
-    override fun byIds(ids: Set<String>): List<Result> = index.map { result(it, 1.0, 0) }.filter { it.id in ids }
+    private fun idOf(a: App) = "app:${a.pkg}/${a.cls}" + if (a.user != 0L) "#${a.user}" else ""
+
+    override fun byIds(ids: Set<String>): List<Result> = if (ids.isEmpty()) emptyList() else index.filter { idOf(it) in ids }.map { result(it, 1.0, 0) }
 
     /** An app of the user Booklight runs as, by what names it: its package, the name it shows, and the activity its icon comes from. */
     class Installed(val pkg: String, val label: String, val cls: String)
@@ -185,10 +187,10 @@ class AppsProvider(private val context: Context, private val scope: CoroutineSco
     fun installed(pkg: String): Installed? = index.firstOrNull { it.pkg == pkg && it.user == me }?.let { Installed(it.pkg, it.label, it.cls) }
 
     /** Every app's id (the debug hook `seed` picks five). */
-    fun ids(): Set<String> = index.mapTo(HashSet()) { result(it, 1.0, 0).id }
+    fun ids(): Set<String> = index.mapTo(HashSet(), ::idOf)
 
     private fun result(a: App, score: Double, display: Int) = Result(
-        id = "app:${a.pkg}/${a.cls}" + if (a.user != 0L) "#${a.user}" else "",
+        id = idOf(a),
         provider = id, kind = Kind.APP, title = a.label,
         subtitle = if (display > 0) context.getString(R.string.place_on_display, display) else null,
         icon = Icon.App(a.pkg, a.cls, a.user), score = score,

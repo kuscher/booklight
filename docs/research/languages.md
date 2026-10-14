@@ -42,7 +42,7 @@ western European languages alone: about **four weeks** (21 days) including the f
 
 ## 2. One row per language
 
-Effort is working days for Alex with Claude, after the one-time work of §7, without the wait for a native reader.
+Effort is working days for Alex with Gemini 4, after the one-time work of §7, without the wait for a native reader.
 "Model" is about the five prompts a new installation starts with (§5).
 
 | Language | Difficulty | What makes it so | On-device model | Rough effort |
@@ -340,7 +340,7 @@ and the field for CJK), and item 4 with item 7 (what makes eleven more languages
    keyword, pin, snippet, recipe, prompt, link, note, to-do, and every keyword. Decided once, used everywhere. The
    keywords are **chosen**, not translated: the word a person would type without thinking, short, not an everyday
    first word of a sentence, not another scope's.
-2. **Draft by machine** (Claude, with the glossary, the English and the German side by side, and the comments of
+2. **Draft by machine** (Gemini 4, with the glossary, the English and the German side by side, and the comments of
    item 4). The German copy is the better source for tone: "Copy is plain" (`CLAUDE.md`).
 3. **Checks that need no reader:** the resource test of item 4, the core tests of that language's lexicon, and
    `./bl debug guide` in that language: every example of the list of everything is typed and must give a row

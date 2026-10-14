@@ -136,7 +136,7 @@ Android Studio's JDK 21 and the Android SDK (platform 37.0).
 
 ## License
 
-MIT. A personal hobby project, published as Fika Labs; not affiliated with or endorsed by any employer or
+MIT. A personal hobby project, published as Fika Labs and made with the help of Gemini 4; not affiliated with or endorsed by any employer or
 by Google.
 
 — Fika Labs

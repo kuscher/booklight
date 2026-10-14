@@ -38,4 +38,4 @@ Flight times are looked up only with your own AirLabs key; then the flight numbe
 A mail, an event, a timer or a question for Gemini is handed to the app that opens; Booklight sends nothing itself.
 Booklight has no accessibility service. It asks for your calendar only when you allow it in its window, to name a calendar or save an event. Android confirms an uninstall; brightness works only after you switch it on in Settings.
 
-Booklight is a personal hobby project, not affiliated with or endorsed by any employer.
+Booklight is a personal hobby project made with the help of Gemini 4, not affiliated with or endorsed by any employer.

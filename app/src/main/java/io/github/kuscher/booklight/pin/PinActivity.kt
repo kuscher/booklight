@@ -83,6 +83,8 @@ import io.github.kuscher.booklight.R
 import io.github.kuscher.booklight.core.Colors
 import io.github.kuscher.booklight.core.ImageUse
 import io.github.kuscher.booklight.device.QrImages
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import io.github.kuscher.booklight.overlay.DrawnCheck
 import io.github.kuscher.booklight.overlay.LocalDark
 import io.github.kuscher.booklight.overlay.LocalMotion
@@ -189,9 +191,9 @@ class PinActivity : ComponentActivity() {
     }
 
     /** The system says when the window has landed on top: then its content is shown. */
-    override fun onPictureInPictureUiStateChanged(state: PictureInPictureUiState) {
-        super.onPictureInPictureUiStateChanged(state)
-        if (isInPictureInPictureMode && (Build.VERSION.SDK_INT < 35 || !state.isTransitioningToPip)) arrive()
+    override fun onPictureInPictureUiStateChanged(pipState: PictureInPictureUiState) {
+        super.onPictureInPictureUiStateChanged(pipState)
+        if (isInPictureInPictureMode && (Build.VERSION.SDK_INT < 35 || !pipState.isTransitioningToPip)) arrive()
     }
 
     private fun arrive() { shown = true }
@@ -209,7 +211,7 @@ class PinActivity : ComponentActivity() {
         val p = pinned ?: return
         when (p.kind) {
             "timer" -> return
-            "qr" -> QrImages.use(this, p.text, ImageUse.COPY)
+            "qr" -> { val ctx = applicationContext; (application as BooklightApp).scope.launch(kotlinx.coroutines.Dispatchers.IO) { QrImages.use(ctx, p.text, ImageUse.COPY) } }
             else -> io.github.kuscher.booklight.device.Clipboard.set(this, p.text)
         }
         copied = System.nanoTime()
