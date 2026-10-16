@@ -110,4 +110,44 @@ object NoteText {
         } ?: return null
         return file to rest
     }
+
+    private val BULLET = Regex("""^\s*(?:[-*•]+|\d+[.)])\s*(?:\[[ xX]]\s*)?""")
+    private val EXPLICIT_TASK = Regex("""^\s*(?:[-*•]\s*\[\s]\s+|(?:todo|task|action|aufgabe|to-do)\s*:\s*)(.+)$""", RegexOption.IGNORE_CASE)
+    private val NONE_REPLIES = setOf("none", "none.", "no tasks", "no tasks.", "nothing", "keine", "keine.", "keine aufgaben", "nichts")
+
+    /**
+     * Cleans lines returned by the on-device model (or a bulleted list) into individual one-line tasks.
+     */
+    fun extractTasks(raw: String, limit: Int = 6): List<String> {
+        val seen = HashSet<String>()
+        val out = ArrayList<String>()
+        for (line in raw.lines()) {
+            val stripped = Plain.of(line.replace(BULLET, "").trim()).trim()
+            if (stripped.length < 2 || stripped.lowercase() in NONE_REPLIES) continue
+            // Skip introductory chatter lines that end with a colon ("Here are the tasks:")
+            if (stripped.endsWith(":")) continue
+            if (seen.add(stripped.lowercase())) {
+                out.add(stripped)
+                if (out.size >= limit) break
+            }
+        }
+        return out
+    }
+
+    /**
+     * Finds explicit task lines (`- [ ] ...` or `TODO: ...`) already written in [content], without a model.
+     */
+    fun explicitTasks(content: String, limit: Int = 6): List<String> {
+        val seen = HashSet<String>()
+        val out = ArrayList<String>()
+        for (line in content.lines()) {
+            val m = EXPLICIT_TASK.find(line.trimEnd('\r')) ?: continue
+            val text = Plain.of(m.groupValues[1].trim()).trim()
+            if (text.length >= 2 && seen.add(text.lowercase())) {
+                out.add(text)
+                if (out.size >= limit) break
+            }
+        }
+        return out
+    }
 }

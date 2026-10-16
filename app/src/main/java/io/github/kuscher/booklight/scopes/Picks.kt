@@ -283,6 +283,7 @@ class TextScope(
         for (p in all.drop(3)) if (p.seed != Seeds.TRANSLATION && rows.none { it.id == "text:ask:${p.id}" }) named += p.name to asks(p, text)
         if (rows.none { it.id == translation.id }) named += "${translation.title} ${text(R.string.tr_name)}" to translation
         named += text(R.string.note_name) to row("note", text(R.string.note_name), "note", one, null, Action("note", text(R.string.scope_type), Effect.EnterScope("note", one), keepOpen = true, symbol = "edit"))
+        named += text(R.string.tasks_name) to row("tasks", text(R.string.tasks_name), "check", one, null, Action("tasks", text(R.string.scope_type), Effect.EnterScope("tasks", text), keepOpen = true, symbol = "check"))
         named += text(R.string.mail_name) to row("mail", text(R.string.mail_name), "mail", one, null, Action("compose", text(R.string.action_compose), Effect.Compose(emptyList(), "", text), symbol = "edit"))
         if (one.length <= 1200) named += text(R.string.qr_name) to row("qr", text(R.string.qr_name), "qr", one, null, Action("qr", text(R.string.scope_type), Effect.EnterScope("qr", one), keepOpen = true, symbol = "qr"))
         for (t in Clip.transforms(text)) {

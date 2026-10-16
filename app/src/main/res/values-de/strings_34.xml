@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Booklight 3.3: Einheiten, Zeitzonen und Weltuhr, angeheftete Aufgaben (pin todo) und Aufgaben aus Text (tasks). -->
+<resources>
+    <string name="action_copy_number">Zahl kopieren</string>
+    <string name="pin_kind_zone">Weltuhr</string>
+    <string name="pin_kind_todo">Aufgaben</string>
+    <string name="pin_todo_words">todo,todos,tasks,task,checklist,aufgaben,aufgabe,checkliste</string>
+    <string name="pin_todo_title">Offene Aufgaben anheften</string>
+    <string name="pin_todo_sub">Hält deine offenen Aufgaben aus Todo.md über deinen Fenstern</string>
+    <string name="pin_todo_more">+%1$d weitere</string>
+
+    <string name="tasks_keys">tasks,aufgaben</string>
+    <string name="tasks_name">Aufgaben aus Text</string>
+    <string name="tasks_title">Aufgaben im Text finden</string>
+    <string name="tasks_hint">Text oder Notizen, oder nichts für die Zwischenablage</string>
+    <string name="tasks_about">Aufgaben aus dem Kopierten oder Getippten, für Todo.md</string>
+    <string name="tasks_none">Keine Aufgaben in diesem Text gefunden</string>
+    <string name="tasks_prompt">Lies die konkreten Aufgaben und To-dos aus diesem Text heraus. Antworte mit einer kurzen Aufgabe pro Zeile, jede Zeile beginnend mit "- ", in der Sprache des Textes. Wenn es keine Aufgaben gibt, antworte mit NONE.\n\n{text}</string>
+</resources>

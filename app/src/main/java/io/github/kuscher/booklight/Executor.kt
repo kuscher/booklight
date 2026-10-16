@@ -104,8 +104,8 @@ class Executor(private val context: Context) {
                     else Intent(Intent.ACTION_SENDTO, "smsto:${effect.number}".toUri()).apply { if (effect.text.isNotBlank()) putExtra("sms_body", effect.text) })
             }
             is Effect.AppendNote -> return app.notes.append(effect.text, effect.file)
-            is Effect.AddTodo -> return app.notes.addTodo(effect.text)
-            is Effect.TickTodo -> return app.notes.tick(effect.line, effect.text, effect.done).also { if (it) app.scopes.todo.ticked(effect.line, effect.done) }
+            is Effect.AddTodo -> return app.notes.addTodo(effect.text).also { if (it) refreshTodoPin() }
+            is Effect.TickTodo -> return app.notes.tick(effect.line, effect.text, effect.done).also { if (it) { app.scopes.todo.ticked(effect.line, effect.done); refreshTodoPin() } }
             // Whatever edits text opens the file; Booklight hands over the right to read and write this one file.
             is Effect.OpenNote -> {
                 val uri = app.notes.uri(effect.file) ?: return false
@@ -376,6 +376,15 @@ class Executor(private val context: Context) {
         // whichever Booklight window is in front (docs/research/device-findings.md).
         ctx.startActivity(Intent(context, PinActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK).putExtras(p.bundle()),
             ActivityOptions.makeBasic().setLaunchBounds(bounds).toBundle())
+    }
+
+    /** Keeps a pinned checklist in sync when tasks are added or ticked in the panel. */
+    private fun refreshTodoPin() {
+        if (app.pinned.value?.kind != "todo") return
+        val open = io.github.kuscher.booklight.core.NoteText.tasks(app.notes.read(io.github.kuscher.booklight.core.NoteText.TODO).orEmpty()).filter { !it.done }
+        val updated = Pinned("todo", open.joinToString("\n") { "- [ ] ${it.text}" }, value = open.size.toLong())
+        app.pinned.value = updated
+        PinActivity.current.get()?.takeIf { !it.isFinishing }?.refresh(updated)
     }
 
     /** Opens an app: as the launcher would, or in a place on a screen, or as another window of it. */

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Booklight 3.3: unit conversions, time zones and world clock, pinned checklist (pin todo), and tasks from text (tasks). -->
+<resources>
+    <string name="action_copy_number">Copy number</string>
+    <string name="pin_kind_zone">World clock</string>
+    <string name="pin_kind_todo">To-do</string>
+    <string name="pin_todo_words">todo,todos,tasks,task,checklist</string>
+    <string name="pin_todo_title">Pin open tasks</string>
+    <string name="pin_todo_sub">Keeps your open tasks from Todo.md on top of your windows</string>
+    <string name="pin_todo_more">+%1$d more</string>
+
+    <string name="tasks_keys">tasks</string>
+    <string name="tasks_name">Tasks from text</string>
+    <string name="tasks_title">Find tasks in text</string>
+    <string name="tasks_hint">Text or notes, or nothing for what you copied</string>
+    <string name="tasks_about">Action items from what you copied or typed, for Todo.md</string>
+    <string name="tasks_none">No tasks found in this text</string>
+    <string name="tasks_prompt">Extract the actionable tasks and to-do items from this text. Reply with one short task per line, starting each line with "- ", in the language of the text. If there are no tasks, reply with NONE.\n\n{text}</string>
+</resources>

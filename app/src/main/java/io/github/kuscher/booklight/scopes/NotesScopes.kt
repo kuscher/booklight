@@ -106,16 +106,18 @@ class TodoScope(private val context: Context, private val notes: Notes) : Scope 
             icon = Icon.Symbol("check"), score = 1.0, learnable = false, actions = emptyList(),
         )
         // A task is its line in the file, not its words: two tasks that say the same are two tasks.
+        val pinTodo = todoPinEffect(notes)
         shown.take(FIT - rows.size).mapTo(rows) { t ->
             Result(
                 id = "todo:${t.line}", provider = key, kind = Kind.OTHER, title = t.text, icon = Icon.Symbol("check"), score = 1.0, learnable = false,
                 label = shortDay(context, t.date), body = Body.Task(t.done),
-                actions = listOf(
+                actions = listOfNotNull(
                     Action(
                         "tick", context.getString(if (t.done) R.string.action_undo else R.string.action_done), Effect.TickTodo(t.line, t.text, !t.done), keepOpen = true,
                         symbol = if (t.done) "again" else "check", done = context.getString(if (t.done) R.string.done_unticked else R.string.done_ticked),
                     ),
                     Action("copy", context.getString(R.string.action_copy), Effect.CopyText(t.text)),
+                    Action("pin", context.getString(R.string.action_pin), pinTodo, symbol = "pin").takeIf { !t.done },
                 ),
             )
         }
@@ -125,36 +127,57 @@ class TodoScope(private val context: Context, private val notes: Notes) : Scope 
     private companion object { const val FIT = 7 }
 }
 
+internal fun todoPinEffect(notes: Notes): Effect.Pin {
+    val open = NoteText.tasks(notes.read(NoteText.TODO).orEmpty()).filter { !it.done }
+    return Effect.Pin("todo", open.joinToString("\n") { "- [ ] ${it.text}" }, value = open.size.toLong())
+}
+
 /**
- * `pin gate B22, 14:05`: a line in a small window that stays on top. With nothing typed: what is
- * pinned, with the way to take it away (a keyboard launcher must not make a window only the
- * pointer can close). A pinned text exists nowhere else, so a new one says what it replaces.
+ * `pin gate B22, 14:05`: a line in a small window that stays on top; `pin todo`: the open tasks of
+ * Todo.md as a checklist on top. With nothing typed: what is pinned, with the way to take it away
+ * (a keyboard launcher must not make a window only the pointer can close). A pinned text exists
+ * nowhere else, so a new one says what it replaces.
  */
-class PinScope(private val context: Context, private val pinned: () -> io.github.kuscher.booklight.pin.Pinned?) : Scope {
+class PinScope(private val context: Context, private val notes: Notes, private val pinned: () -> io.github.kuscher.booklight.pin.Pinned?) : Scope {
     override val key = "pin"
     override val keywords: List<String> = context.getString(R.string.pin_keys).split(',')
     override val name: String = context.getString(R.string.action_pin)
     override val symbol = "pin"
     override val hint: String = context.getString(R.string.pin_hint)
     override val about: String = context.getString(R.string.pin_about)
+    private val todoWords: Set<String> = context.getString(R.string.pin_todo_words).split(',').mapTo(HashSet()) { it.trim().lowercase() }
+
+    private fun todoRow(): Result = Result(
+        id = "pin:todo", provider = key, kind = Kind.OTHER,
+        title = context.getString(R.string.pin_todo_title),
+        subtitle = context.getString(R.string.pin_todo_sub),
+        icon = Icon.Symbol("check"), score = 1.0, learnable = false,
+        actions = listOf(Action("pin", context.getString(R.string.action_pin), todoPinEffect(notes), symbol = "pin")),
+    )
 
     override suspend fun rows(arg: String): List<Result> {
         val text = arg.trim()
         val now = pinned()
-        if (text.isEmpty()) return listOf(
-            if (now == null) Result(
+        if (text.isEmpty()) {
+            val first = if (now == null) Result(
                 id = "pin:none", provider = key, kind = Kind.OTHER, title = context.getString(R.string.pin_none), subtitle = context.getString(R.string.pin_none_sub),
                 icon = Icon.Symbol("pin"), score = 1.0, learnable = false, actions = emptyList(),
             ) else Result(
                 id = "pin:now", provider = key, kind = Kind.OTHER, title = now.title(context), subtitle = now.label(context), icon = Icon.Symbol("pin"), score = 1.0, learnable = false,
                 // What is pinned may exist nowhere else: taking it away is never the first thing Enter does where there is
                 // something else to do, and never runs by a digit.
-                actions = (now.kind != "timer" && now.kind != "qr").let { copies -> listOfNotNull(
+                actions = (now.kind != "timer" && now.kind != "qr" && now.kind != "todo").let { copies -> listOfNotNull(
                     Action("copy", context.getString(R.string.action_copy), Effect.CopyText(now.text)).takeIf { copies },
                     Action("unpin", context.getString(R.string.action_unpin), Effect.Unpin, keepOpen = true, symbol = "trash", danger = copies, done = context.getString(R.string.done_unpinned)),
                 ) },
-            ),
-        )
+            )
+            val hasOpenTasks = notes.ready && now?.kind != "todo" && NoteText.tasks(notes.read(NoteText.TODO).orEmpty()).any { !it.done }
+            return if (hasOpenTasks) listOf(first, todoRow()) else listOf(first)
+        }
+        if (text.lowercase() in todoWords) {
+            if (!notes.ready) return listOf(chooseFolder(context, key))
+            return listOf(todoRow())
+        }
         val old = now?.takeIf { it.kind == "text" }?.title(context)?.let { if (it.length > 24) it.take(23) + "…" else it }
         return listOf(Result(
             id = "pin:new", provider = key, kind = Kind.OTHER, title = text, subtitle = old?.let { context.getString(R.string.pin_replaces, it) } ?: context.getString(R.string.pin_sub),
@@ -165,4 +188,105 @@ class PinScope(private val context: Context, private val pinned: () -> io.github
             ),
         ))
     }
+}
+
+/**
+ * `tasks` / `aufgaben`: extracts action items and tasks from what you copied or typed. Explicit task lines
+ * (`- [ ] …`, `TODO: …`) become task rows at once; unstructured prose is read by the model on this device
+ * and turned into individual rows where Enter adds a task to Todo.md (keeping the panel open so several
+ * tasks can be added in turn).
+ */
+class TasksScope(
+    private val context: Context,
+    private val notes: Notes,
+    private val ai: io.github.kuscher.booklight.ai.OnDevice,
+) : Scope, Answering {
+    override val key = "tasks"
+    override val keywords: List<String> = context.getString(R.string.tasks_keys).split(',')
+    override val name: String = context.getString(R.string.tasks_name)
+    override val title: String = context.getString(R.string.tasks_title)
+    override val symbol = "check"
+    override val hint: String = context.getString(R.string.tasks_hint)
+    override val about: String = context.getString(R.string.tasks_about)
+    override val row = "tasks:ask"
+
+    override fun asking(r: Result, e: Effect.Ask): Result = r
+
+    private fun taskRows(items: List<String>): List<Result> = items.mapIndexed { idx, item ->
+        val actions = if (notes.ready) listOf(
+            Action("add", context.getString(R.string.action_add), Effect.AddTodo(item), keepOpen = true, symbol = "plus", done = context.getString(R.string.done_todo)),
+            Action("copy", context.getString(R.string.action_copy), Effect.CopyText(item)),
+        ) else listOf(
+            Action("copy", context.getString(R.string.action_copy), Effect.CopyText(item)),
+            Action("choose", context.getString(R.string.win_choose), Effect.Grant("notes"), symbol = "folder"),
+        )
+        Result(
+            id = "tasks:item:$idx", provider = key, kind = Kind.OTHER, title = item,
+            subtitle = if (notes.ready) context.getString(R.string.todo_add_sub) else context.getString(R.string.notes_choose),
+            icon = Icon.Symbol("check"), score = 1.0, learnable = false,
+            actions = actions,
+        )
+    }
+
+    override suspend fun rows(arg: String): List<Result> {
+        val typed = arg.trim()
+        val clip = if (typed.isEmpty()) clipboard(context) else null
+        val text = typed.ifEmpty { clip?.text?.trim().orEmpty() }
+        if (text.isEmpty()) return listOf(Result(
+            id = row, provider = key, kind = Kind.OTHER, title = name,
+            subtitle = context.getString(if (clip?.private == true) R.string.prompt_private else R.string.prompt_empty),
+            icon = Icon.Symbol(symbol), score = 1.0, learnable = false, actions = emptyList(),
+        ))
+        val explicit = NoteText.explicitTasks(text, FIT)
+        if (explicit.isNotEmpty()) return taskRows(explicit)
+
+        val full = io.github.kuscher.booklight.core.Prompts.fill(context.getString(R.string.tasks_prompt), text)
+        val state = ai.state.value
+        val fits = full.length <= TextScope.HERE_SUMMARY
+        val here = state == io.github.kuscher.booklight.ai.OnDevice.State.READY && fits
+        val caption = when {
+            state == io.github.kuscher.booklight.ai.OnDevice.State.READY && !fits -> context.getString(R.string.prompt_long)
+            clip != null -> context.getString(R.string.prompt_clip)
+            else -> name
+        }
+        val shown = if (clip != null) text.lineSequence().first().let { if (it.length < text.length || it.length > 300) "${it.take(300)} …" else it } else text.take(PromptScope.MAX)
+        return listOf(Result(
+            id = row, provider = key, kind = Kind.OTHER, title = name, icon = Icon.Symbol(symbol), score = 1.0, learnable = false,
+            body = Body.Stream(shown, busy = false, caption = caption, ask = full.takeIf { here }),
+            actions = listOfNotNull(
+                Action("ask", context.getString(R.string.action_ask), PromptScope.ASK, keepOpen = true, symbol = "spark").takeIf { here },
+                Action("gemini", context.getString(if (here) R.string.action_in_gemini else R.string.gemini_title), Effect.AskGemini(full.take(100_000)), symbol = "send"),
+            ),
+        ))
+    }
+
+    override fun answered(r: Result, text: String, busy: Boolean): Result {
+        val was = r.body as? Body.Stream ?: return r
+        val full = was.ask ?: return r
+        val said = io.github.kuscher.booklight.core.Plain.of(text)
+        return r.copy(
+            body = Body.Stream(said, busy, context.getString(R.string.prompt_device), answer = true, ask = full),
+            actions = listOf(Action("copy", context.getString(R.string.action_copy), Effect.CopyText(said))),
+        )
+    }
+
+    override fun answeredRows(r: Result, text: String): List<Result>? {
+        val items = NoteText.extractTasks(text, FIT)
+        if (items.isNotEmpty()) return taskRows(items)
+        return listOf(Result(
+            id = "tasks:none", provider = key, kind = Kind.OTHER, title = context.getString(R.string.tasks_none),
+            icon = Icon.Symbol(symbol), score = 1.0, learnable = false, actions = emptyList(),
+        ))
+    }
+
+    override fun unanswered(r: Result): Result {
+        val was = r.body as? Body.Stream ?: return r
+        val full = was.ask ?: return r
+        return r.copy(
+            body = was.copy(caption = context.getString(R.string.prompt_failed), ask = null, busy = false),
+            actions = listOf(Action("gemini", context.getString(R.string.gemini_title), Effect.AskGemini(full.take(100_000)), symbol = "send")),
+        )
+    }
+
+    private companion object { const val FIT = 7 }
 }

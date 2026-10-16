@@ -55,7 +55,7 @@ class Scopes(
     private val takers = Takers(context)
 
     private val fixed: List<Scope> = listOf(
-        MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, PinScope(context, pinned), EventScope(context, events), RemindScope(context), TimerScope(context), AlarmScope(context),
+        MailScope(context), NoteScope(context, notes), NotesScope(context, notes), todo, TasksScope(context, notes, ai), PinScope(context, notes, pinned), EventScope(context, events), RemindScope(context), TimerScope(context), AlarmScope(context),
         NewScope(context), AskScope(context), HelpScope(context, guide) { prefs.now.used },
         io.github.kuscher.booklight.providers.FlightScope(context, flights, ::linkKeywords),
         EmojiScope(context, prefs, symbols = false), EmojiScope(context, prefs, symbols = true), LettersScope(context, prefs), QrScope(context), ColorScope(context),

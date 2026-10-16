@@ -1913,8 +1913,16 @@ class OverlayModel(
             } finally { thinking = false }
             val all = text.toString().trim()
             if (all.isEmpty()) { whenAnswered = null; put(s.unanswered(row)); return@launch }
-            answered = q to put(s.answered(row, all, busy = false))
-            whenAnswered?.let { run -> whenAnswered = null; if (current?.id == row.id) chosen()?.let { (r, a) -> run(r, a) } }
+            val multi = s.answeredRows(row, all)
+            if (multi != null && multi.isNotEmpty()) {
+                results = multi
+                selected = 0
+                armed = multi[0].armed
+                cell = 0
+            } else {
+                answered = q to put(s.answered(row, all, busy = false))
+            }
+            whenAnswered?.let { run -> whenAnswered = null; if (current?.id == row.id || multi != null) chosen()?.let { (r, a) -> run(r, a) } }
         }
     }
 

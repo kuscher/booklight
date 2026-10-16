@@ -22,6 +22,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -152,7 +153,7 @@ class PinActivity : ComponentActivity() {
             val dark = isDark(s.theme)
             BooklightTheme(dark, tint = s.tint) {
                 CompositionLocalProvider(LocalMotion provides motion, LocalDark provides dark) {
-                    pinned?.let { PinWindow(it, pip, shown, copied, onCopy = ::copy, onClose = ::finishAndRemoveTask) }
+                    pinned?.let { PinWindow(it, pip, shown, copied, onCopy = ::copy, onTick = ::tickTask, onClose = ::finishAndRemoveTask) }
                 }
             }
         }
@@ -160,12 +161,17 @@ class PinActivity : ComponentActivity() {
 
     /** What the window shows: at first, and when a new pin of the same shape takes the window of the one before. */
     fun show(p: Pinned) {
+        refresh(p)
+        // A window the user had opened out goes back on top.
+        if (entered && !isInPictureInPictureMode) enter()
+    }
+
+    /** Updates the pinned state in place without forcing an opened-out window back into picture-in-picture. */
+    fun refresh(p: Pinned) {
         pinned = p
         intent.replaceExtras(p.bundle())      // what the window shows if the system makes it again
         (application as BooklightApp).pinned.value = p
         setTaskDescription(ActivityManager.TaskDescription.Builder().setLabel(p.label(this)).build())
-        // A window the user had opened out goes back on top.
-        if (entered && !isInPictureInPictureMode) enter()
     }
 
     override fun onResume() {
@@ -206,15 +212,28 @@ class PinActivity : ComponentActivity() {
             .build()
     }
 
-    /** Copies what is pinned: the text, the answer, the colour as it was typed; a QR code as its picture. */
+    /** Copies what is pinned: the text, the answer, the colour as it was typed; a QR code as its picture; or ticks the top task of a pinned checklist. */
     fun copy() {
         val p = pinned ?: return
         when (p.kind) {
             "timer" -> return
+            "todo" -> { tickTask(null); return }
             "qr" -> { val ctx = applicationContext; (application as BooklightApp).scope.launch(kotlinx.coroutines.Dispatchers.IO) { QrImages.use(ctx, p.text, ImageUse.COPY) } }
             else -> io.github.kuscher.booklight.device.Clipboard.set(this, p.text)
         }
         copied = System.nanoTime()
+    }
+
+    /** Ticks a task in Todo.md from the opened-out checklist (or the first open task when [item] is null). */
+    private fun tickTask(item: io.github.kuscher.booklight.core.TodoItem? = null) {
+        val app = application as BooklightApp
+        val open = io.github.kuscher.booklight.core.NoteText.tasks(app.notes.read(io.github.kuscher.booklight.core.NoteText.TODO).orEmpty()).filter { !it.done }
+        val target = item ?: open.firstOrNull() ?: return
+        if (app.notes.tick(target.line, target.text, true)) {
+            app.scopes.todo.ticked(target.line, true)
+            val remaining = io.github.kuscher.booklight.core.NoteText.tasks(app.notes.read(io.github.kuscher.booklight.core.NoteText.TODO).orEmpty()).filter { !it.done }
+            refresh(Pinned("todo", remaining.joinToString("\n") { "- [ ] ${it.text}" }, value = remaining.size.toLong()))
+        }
     }
 
     override fun onDestroy() {
@@ -235,7 +254,7 @@ private val FIGURE = TextStyle(fontFamily = Fonts.round, fontSize = 34.sp, fontW
 private val WORD = TextStyle(fontFamily = Fonts.text, fontSize = 14.sp, fontWeight = FontWeight(600))
 
 @Composable
-private fun PinWindow(p: Pinned, pip: Boolean, shown: Boolean, copied: Long, onCopy: () -> Unit, onClose: () -> Unit) {
+private fun PinWindow(p: Pinned, pip: Boolean, shown: Boolean, copied: Long, onCopy: () -> Unit, onTick: (io.github.kuscher.booklight.core.TodoItem?) -> Unit, onClose: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val motion = LocalMotion.current
     val context = LocalContext.current
@@ -248,7 +267,7 @@ private fun PinWindow(p: Pinned, pip: Boolean, shown: Boolean, copied: Long, onC
         (if (pip) Modifier.fillMaxSize().background(scheme.surfaceContainerHigh) else Modifier.fillMaxSize().background(scheme.surfaceContainerHigh).safeDrawingPadding())
             .focusRequester(focus).focusable()
             // Only as an ordinary window does it get keys and clicks: on top, the system keeps them from it.
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, enabled = !pip, onClick = onCopy)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, enabled = !pip && p.kind != "todo", onClick = onCopy)
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown || pip) return@onPreviewKeyEvent false
                 when (e.key) {
@@ -270,6 +289,8 @@ private fun PinWindow(p: Pinned, pip: Boolean, shown: Boolean, copied: Long, onC
                 when (now.kind) {
                     "timer" -> Countdown(now)
                     "flight" -> PinnedFlight(now)
+                    "zone" -> PinnedZone(now)
+                    "todo" -> PinnedTodo(now, pip, onTick)
                     "answer" -> Column(Modifier.fillMaxSize().padding(horizontal = Pinned.MARGIN.dp), verticalArrangement = Arrangement.Center) {
                         Text(now.note, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.height(20.dp))
                         Spacer(Modifier.height(2.dp))
@@ -299,6 +320,102 @@ private fun PinWindow(p: Pinned, pip: Boolean, shown: Boolean, copied: Long, onC
                         Text(stringResource(R.string.copied), color = scheme.onSurface, style = WORD, maxLines = 1)
                     }
                 }
+            }
+        }
+    }
+}
+
+/** A pinned world clock (`p.value == 0L`, ticking every 15 seconds while visible) or a pinned time-zone conversion (`p.value > 0L`). */
+@Composable
+private fun PinnedZone(p: Pinned) {
+    val scheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val owner = LocalLifecycleOwner.current
+    val parts = remember(p.note) { p.note.split('|') }
+    val targetName = parts.getOrNull(0).orEmpty()
+    val targetZoneId = parts.getOrNull(1).orEmpty()
+    val subtitle = parts.getOrNull(4).orEmpty()
+    var nowMillis by remember(p) { mutableLongStateOf(System.currentTimeMillis()) }
+    if (p.value == 0L) {
+        LaunchedEffect(p) {
+            owner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    nowMillis = System.currentTimeMillis()
+                    delay(15_000L)
+                }
+            }
+        }
+    }
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val displayTime = remember(p, nowMillis, locale) {
+        if (p.value > 0L || targetZoneId.isEmpty()) p.text
+        else runCatching {
+            val pattern = if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a"
+            Instant.ofEpochMilli(nowMillis).atZone(ZoneId.of(targetZoneId)).format(DateTimeFormatter.ofPattern(pattern, locale))
+        }.getOrDefault(p.text)
+    }
+    val mainLine = if (targetName.isEmpty()) displayTime else "$displayTime · $targetName"
+    Column(Modifier.fillMaxSize().padding(horizontal = Pinned.MARGIN.dp), verticalArrangement = Arrangement.Center) {
+        Text(subtitle.ifEmpty { targetName }, color = scheme.onSurface.copy(alpha = SECOND), style = SMALL, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.height(20.dp))
+        Spacer(Modifier.height(2.dp))
+        Box(Modifier.height(42.dp).fillMaxWidth().fadeEnd(), contentAlignment = Alignment.CenterStart) {
+            Text(mainLine, color = scheme.onSurface, style = if (mainLine.length > 12) FIGURE.copy(fontSize = 24.sp) else FIGURE, maxLines = 1, softWrap = false)
+        }
+    }
+}
+
+/** A pinned checklist of open tasks from Todo.md; when opened out (`!pip`), clicking a row or pressing Enter ticks the task. */
+@Composable
+private fun PinnedTodo(p: Pinned, pip: Boolean, onTick: (io.github.kuscher.booklight.core.TodoItem?) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val ink = scheme.onSurface
+    val open = remember(p) {
+        val app = context.applicationContext as BooklightApp
+        val fromFile = io.github.kuscher.booklight.core.NoteText.tasks(app.notes.read(io.github.kuscher.booklight.core.NoteText.TODO).orEmpty()).filter { !it.done }
+        if (fromFile.isNotEmpty() || p.text.isBlank()) fromFile
+        else io.github.kuscher.booklight.core.NoteText.tasks(p.text).filter { !it.done }
+    }
+    Column(Modifier.fillMaxSize().padding(horizontal = Pinned.MARGIN.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = if (open.isEmpty()) stringResource(R.string.pin_kind_todo) else "${stringResource(R.string.pin_kind_todo)} · ${open.size}",
+            color = ink.copy(alpha = SECOND),
+            style = SMALL,
+            maxLines = 1,
+        )
+        if (open.isEmpty()) {
+            Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                DrawnCheck(true, ink, Modifier.size(18.dp))
+                Text(stringResource(R.string.todo_none), color = ink, style = TITLE, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        } else {
+            val maxShown = if (open.size > 4) 3 else 4
+            for (t in open.take(maxShown)) {
+                Row(
+                    Modifier.fillMaxWidth().height(26.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(enabled = !pip) { onTick(t) },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(Modifier.size(15.dp).border(1.5.dp, ink.copy(alpha = SECOND), RoundedCornerShape(4.dp)))
+                    Text(
+                        text = t.text,
+                        color = ink,
+                        style = TITLE.copy(fontSize = 15.sp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            if (open.size > maxShown) {
+                Text(
+                    text = stringResource(R.string.pin_todo_more, open.size - maxShown),
+                    color = ink.copy(alpha = SECOND),
+                    style = SMALL,
+                    maxLines = 1,
+                )
             }
         }
     }

@@ -1,1 +1,4 @@
-An event from a sentence. Type “Add dinner with Sam tomorrow at 7pm to the Team calendar”: one row shows what Booklight understood (when, where, the title, the calendar) and Enter opens Calendar, filled in. Allow Calendars in the Booklight window and a calendar is found by its name and completed as you type. Switch on “Save events without opening Calendar” and Enter saves what the row shows; a guess is never saved. Days and times are read anywhere in a line.
+Units, time zones & pinned tasks.
+• Convert units in the field: “72f in c”, “5 ft 10 in cm”, “16 oz in ml”, “65 mph in km/h”. Enter copies the answer; Copy number copies the digits; Pin keeps it on top.
+• Time zones & world clock: “3pm sfo in berlin”, “14:00 cet”, “time in tokyo” across cities, zones and airports, with Pin and Add to calendar.
+• Pin your checklist (“pin todo”) to keep open tasks from Todo.md on top, and use “tasks” to extract action items from copied notes into Todo.md.

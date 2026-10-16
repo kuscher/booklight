@@ -27,6 +27,8 @@ interface Answering {
     fun asking(r: Result, e: Effect.Ask): Result
     /** [r] with the model's [text] in it: so far ([busy]), or all of it. */
     fun answered(r: Result, text: String, busy: Boolean): Result
+    /** When the finished answer expands into multiple rows (such as tasks extracted from text), returns them; null keeps the single answered row. */
+    fun answeredRows(r: Result, text: String): List<Result>? = null
     /** [r] when the model gave no answer (busy, over its allowance, gone): the text again, and the way to the Gemini app. */
     fun unanswered(r: Result): Result
 }

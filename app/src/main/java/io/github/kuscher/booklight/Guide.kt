@@ -76,7 +76,7 @@ class Guide(private val context: Context, private val prefs: Prefs, private val 
             key == null -> when (row.provider) {
                 AppsProvider.ID -> if (action.id in PLACES) "places" else if (action.id in AppPages.ids) "pages" else "apps"
                 "commands" -> if (row.id == "command:alarms" || row.id == "command:timers") "alarms" else if (row.id == "command:first") "first" else null
-                "calc" -> FirstRun.LINE_SUMS
+                "calc" -> when (row.id) { "unit" -> "units"; "zone" -> "zones"; else -> FirstRun.LINE_SUMS }
                 "appcommands" -> if (row.id.startsWith(SearchEngine.IN_APP)) FirstRun.LINE_SEARCH else "commands"
                 "web" -> "web"
                 "answers" -> if (row.id == "answer:color") "color" else "password"

@@ -1,5 +1,26 @@
 # Changelog
 
+## 3.3 (15 October 2026)
+
+**Units, time zones, pinned tasks, and tasks from text.**
+
+- **Units in the field.** `72f in c`, `5 ft 10 in cm`, `16 oz in ml`, `65 mph in km/h`, `15,5 gb in mb`, `36 h in d`:
+  temperature, length (including compound feet and inches), weight (including pounds and ounces), volume and cooking
+  measures, speed, area, data size and duration are answered as you type, in English and German. Enter copies the
+  answer with its unit; "Copy number" copies the number alone; Pin keeps it on top.
+- **Time zones and world clock.** `3pm sfo in berlin`, `14:00 cet`, `15 uhr berlin nach sfo`, `time in tokyo`
+  („uhrzeit in tokio“): conversions across time-zone codes, cities and major airports (`sfo`, `jfk`, `lhr`, `fra`,
+  `hnd`, `sin`, `syd` and more), with the day change and offset difference. Enter copies; Pin keeps a live world
+  clock or converted time on top; Add… opens your calendar at that hour.
+- **Pinned checklist (`pin todo`).** `pin todo` (or Pin on an open task in `todo`) keeps the open tasks of `Todo.md`
+  in the small window on top of your other windows. Opened out, clicking a task or pressing Enter ticks it in
+  `Todo.md`; adding or ticking tasks in the panel updates the pinned checklist in place.
+- **Tasks from text (`tasks`).** Copy meeting notes or a message and type `tasks` (in German: `aufgaben`). Explicit
+  tasks (`- [ ] …`, `TODO: …`) become task rows at once; unstructured prose is read by the model on your device and
+  turned into individual rows where Enter adds each task to `Todo.md` without closing the panel.
+- **Hardening.** Bounded directory listing in `Notes`, tail-byte newline inspection without full-stream reads, and
+  word-boundary checks for calendar name completion in `Sentence`.
+
 ## 3.2 (6 October 2026)
 
 **An event from a sentence** (`docs/design/event-sentence/design.md`).

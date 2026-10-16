@@ -21,13 +21,15 @@ data class Pinned(val kind: String, val text: String, val value: Long = 0, val n
     fun title(context: Context): String = when (kind) {
         "timer" -> listOf(note, context.getString(R.string.pin_kind_timer)).first { it.isNotEmpty() }
         "answer" -> if (note.isEmpty()) text else "$note = $text"
+        "zone" -> note.split('|').let { parts -> parts.getOrNull(4)?.takeIf { it.isNotEmpty() } ?: "${parts.getOrNull(0).orEmpty()} · $text" }
+        "todo" -> context.getString(R.string.pin_kind_todo)
         else -> text.trim().replace('\n', ' ')
     }
 
     /** What the system calls the window where it names windows. */
     fun label(context: Context): String = context.getString(when (kind) {
         "timer" -> R.string.pin_kind_timer; "answer" -> R.string.pin_kind_answer; "color" -> R.string.pin_kind_color; "qr" -> R.string.pin_kind_qr
-        "flight" -> R.string.pin_kind_flight
+        "flight" -> R.string.pin_kind_flight; "zone" -> R.string.pin_kind_zone; "todo" -> R.string.pin_kind_todo
         else -> R.string.pin_kind_text
     })
 
@@ -40,6 +42,7 @@ data class Pinned(val kind: String, val text: String, val value: Long = 0, val n
     fun size(context: Context): Pair<Int, Int> = when (kind) {
         "color" -> WIDTH to 140
         "qr" -> 216 to 216
+        "todo" -> WIDTH to 176
         "text" -> WIDTH to maxOf(LOW, 40 + LINE * lines(context))
         else -> WIDTH to LOW
     }

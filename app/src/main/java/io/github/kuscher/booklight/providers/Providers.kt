@@ -21,26 +21,68 @@ import io.github.kuscher.booklight.core.Query
 import io.github.kuscher.booklight.core.Result
 import io.github.kuscher.booklight.core.Schemes
 import io.github.kuscher.booklight.core.SearchEngine
+import io.github.kuscher.booklight.core.Units
 import io.github.kuscher.booklight.core.Web
+import io.github.kuscher.booklight.core.Zones
 import io.github.kuscher.booklight.data.Prefs
 import io.github.kuscher.booklight.data.Recipes
 
-/** A sum typed into the panel is answered in place; Enter copies the answer. */
+/** A sum, unit conversion, or time-zone conversion typed into the panel is answered in place; Enter copies the answer. */
 class CalcProvider(private val context: Context, private val prefs: Prefs) : Provider {
     override val id = "calc"
     override suspend fun query(q: Query): List<Result> {
         if (!prefs.now.showSums) return emptyList()
+        val locale = context.resources.configuration.locales[0]
         // One and a half is 1,5 where the user's language writes it so; the answer is written the same way.
-        val comma = java.text.DecimalFormatSymbols.getInstance(context.resources.configuration.locales[0]).decimalSeparator == ','
-        val a = Calc.answer(q.text, comma) ?: return emptyList()
-        return listOf(Result(
-            id = "calc", provider = id, kind = Kind.ANSWER, title = a, subtitle = q.text.removePrefix("=").trim(),
-            icon = Icon.Symbol("calc"), score = 1.0, answer = a, learnable = false,
-            actions = listOf(
-                Action("copy", context.getString(R.string.action_copy), Effect.CopyText(Calc.plain(a, comma))),
-                Action("pin", context.getString(R.string.action_pin), Effect.Pin("answer", a, note = q.text.removePrefix("=").trim()), symbol = "pin"),
-            ),
-        ))
+        val comma = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator == ','
+        Calc.answer(q.text, comma)?.let { a ->
+            return listOf(Result(
+                id = "calc", provider = id, kind = Kind.ANSWER, title = a, subtitle = q.text.removePrefix("=").trim(),
+                icon = Icon.Symbol("calc"), score = 1.0, answer = a, learnable = false,
+                actions = listOf(
+                    Action("copy", context.getString(R.string.action_copy), Effect.CopyText(Calc.plain(a, comma))),
+                    Action("pin", context.getString(R.string.action_pin), Effect.Pin("answer", a, note = q.text.removePrefix("=").trim()), symbol = "pin"),
+                ),
+            ))
+        }
+        Units.convert(q.text, comma)?.let { u ->
+            return listOf(Result(
+                id = "unit", provider = id, kind = Kind.ANSWER, title = u.formatted, subtitle = u.source,
+                icon = Icon.Symbol("calc"), score = 1.0, answer = u.formatted, learnable = false,
+                actions = listOf(
+                    Action("copy", context.getString(R.string.action_copy), Effect.CopyText(u.formatted)),
+                    Action("copy_number", context.getString(R.string.action_copy_number), Effect.CopyText(u.plainNumber), symbol = "copy"),
+                    Action("pin", context.getString(R.string.action_pin), Effect.Pin("answer", u.formatted, note = u.source), symbol = "pin"),
+                ),
+            ))
+        }
+        val is24Hour = android.text.format.DateFormat.is24HourFormat(context)
+        Zones.convert(q.text, is24Hour = is24Hour, german = locale.language == "de")?.let { z ->
+            val actions = buildList {
+                add(Action("copy", context.getString(R.string.action_copy), Effect.CopyText(z.title)))
+                add(Action("pin", context.getString(R.string.action_pin), Effect.Pin("zone", z.time, value = z.epochMillis ?: 0L, note = z.pinNote), symbol = "pin"))
+                z.epochMillis?.let { epoch ->
+                    add(Action(
+                        id = "event",
+                        label = context.getString(R.string.action_add_event),
+                        effect = Effect.InsertEvent(
+                            title = "${z.sourceName} / ${z.targetName}",
+                            startMillis = epoch,
+                            endMillis = epoch + 3_600_000L,
+                            allDay = false,
+                            place = "",
+                        ),
+                        symbol = "event",
+                    ))
+                }
+            }
+            return listOf(Result(
+                id = "zone", provider = id, kind = Kind.ANSWER, title = z.title, subtitle = z.subtitle,
+                icon = Icon.Symbol("globe"), score = 1.0, answer = z.title, learnable = false,
+                actions = actions,
+            ))
+        }
+        return emptyList()
     }
 }
 
